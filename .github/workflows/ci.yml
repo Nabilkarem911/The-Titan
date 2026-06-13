@@ -31,7 +31,8 @@ jobs:
       - name: Check for secrets in history
         run: |
           # Block .env files and common secret patterns from being committed
-          if git log --all --full-history -- .env .env.local .env.* ; then
+          # Note: .env.example is a template and is allowed
+          if git log --all --full-history -- .env .env.local .env.development .env.production .env.staging .env.test ; then
             echo "ERROR: .env file found in git history. Remove it immediately."
             exit 1
           fi
