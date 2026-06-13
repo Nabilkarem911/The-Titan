@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Prisma
+packages/database/prisma/migrations/dev.db*
+
+# Docker volumes (if mounted locally)
+.docker-data/
+
+# Test artifacts
+.jest/
+*.test.local
+
+# Temporary
+tmp/
+temp/
+.cache/
+*.local
+.eslintcache
+.turbo/
+
+# Smoke / ad-hoc test scripts (not part of test suite)
+smoke-*
+test-*.js
+test-*.cjs
+
+# Windsurf/Cascade IDE artifacts
+.windsurf/
+.devin/

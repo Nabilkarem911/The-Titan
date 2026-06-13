@@ -1,0 +1,60 @@
+{
+  "name": "titan",
+  "version": "0.1.0",
+  "description": "Universal Autonomous Agent Framework - Foundation Layer",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build:shared": "tsc -p packages/shared",
+    "build:config": "tsc -p packages/config",
+    "build:logging": "tsc -p packages/logging",
+    "build:database": "tsc -p packages/database",
+    "build:memory": "tsc -p packages/memory",
+    "build:tools": "tsc -p packages/tools",
+    "build:queue": "tsc -p packages/queue",
+    "build:auth": "tsc -p packages/auth",
+    "build:websocket": "tsc -p packages/websocket",
+    "build:observability": "tsc -p packages/observability",
+    "build:telemetry": "tsc -p packages/telemetry",
+    "build:core": "tsc -p apps/core",
+    "build": "npm run build:shared && npm run build:config && npm run build:logging && npm run build:database && npm run build:memory && npm run build:tools && npm run build:queue && npm run build:auth && npm run build:websocket && npm run build:observability && npm run build:telemetry && npm run build:core",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"packages/**/*.ts\" \"apps/**/*.ts\"",
+    "format:check": "prettier --check \"packages/**/*.ts\" \"apps/**/*.ts\"",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "dev:core": "npm run dev --workspace=apps/core",
+    "start:core": "node apps/core/dist/index.js",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "db:migrate": "npm run build:shared && npm run build:database && node packages/database/dist/migrate.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "22.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.61.0",
+    "@typescript-eslint/parser": "^8.61.0",
+    "@vitest/coverage-v8": "^4.1.8",
+    "@vitest/ui": "^4.1.8",
+    "eslint": "^10.5.0",
+    "globals": "^17.6.0",
+    "prettier": "3.4.2",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3",
+    "typescript-eslint": "^8.61.0",
+    "vitest": "^4.1.8"
+  }
+}

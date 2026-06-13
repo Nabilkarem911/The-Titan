@@ -1,0 +1,119 @@
+name: titan-foundation
+
+services:
+  # ============================================================================
+  # PostgreSQL with pgvector
+  # ============================================================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: titan-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-titan}
+      POSTGRES_USER: ${POSTGRES_USER:-titan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-titan_dev_password_change_in_production}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./docker/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./docker/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    command:
+      - "postgres"
+      - "-c"
+      - "config_file=/etc/postgresql/postgresql.conf"
+      - "-c"
+      - "hba_file=/etc/postgresql/pg_hba.conf"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-titan} -d ${POSTGRES_DB:-titan}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - titan-net
+
+  # ============================================================================
+  # Redis (Queue + Pub/Sub + Cache + Rate Limiting)
+  # ============================================================================
+  redis:
+    image: redis:7.4-alpine
+    container_name: titan-redis
+    restart: unless-stopped
+    command:
+      - "redis-server"
+      - "/usr/local/etc/redis/redis.conf"
+      - "--requirepass"
+      - "${REDIS_PASSWORD:-titan_dev_redis_password_change_in_production}"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-titan_dev_redis_password_change_in_production}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - titan-net
+
+  # ============================================================================
+  # pgAdmin (optional - dev only)
+  # ============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: titan-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@titan.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_PORT: 80
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - tools
+    networks:
+      - titan-net
+
+  # ============================================================================
+  # Redis Insight (optional - dev only)
+  # ============================================================================
+  redis-insight:
+    image: redis/redisinsight:2.56
+    container_name: titan-redis-insight
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    volumes:
+      - redis_insight_data:/db
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - tools
+    networks:
+      - titan-net
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  redis_insight_data:
+    driver: local
+
+networks:
+  titan-net:
+    driver: bridge
+    name: titan-net
