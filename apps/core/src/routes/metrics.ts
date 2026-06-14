@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { snapshot, renderPrometheus } from '@titan/observability';
 import { getPool } from '@titan/database';
-import { getRedis } from '@titan/queue';
+import { getRedis, getQueueStats } from '@titan/queue';
 
 export const metricsRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   app.get('/metrics', async (_req, reply) => {
@@ -34,5 +34,14 @@ export const metricsRoutes: FastifyPluginAsync = async (app: FastifyInstance) =>
       redis: redisInfo,
       timestamp: new Date().toISOString(),
     };
+  });
+
+  app.get<{ Params: { name: string } }>('/api/v1/admin/queues/:name/stats', async (req, reply) => {
+    try {
+      const stats = await getQueueStats(req.params.name as Parameters<typeof getQueueStats>[0]);
+      return reply.send(stats);
+    } catch {
+      return reply.send({ waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 });
+    }
   });
 };

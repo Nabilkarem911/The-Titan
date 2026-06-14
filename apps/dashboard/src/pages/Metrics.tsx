@@ -24,7 +24,7 @@ export default function Metrics() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/metrics.json');
+      const res = await fetch('/metrics.json');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = (await res.json()) as MetricsJson;
       setData(json);

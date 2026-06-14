@@ -1,4 +1,6 @@
-const API_BASE = ((import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE_URL) ?? '/api/v1';
+const _env = (import.meta as unknown as { env: Record<string, string> }).env;
+const API_BASE = _env.VITE_API_BASE_URL ?? '/api/v1';
+const API_KEY = _env.VITE_API_KEY ?? '';
 
 export interface ApiRun {
   id: string;
@@ -44,6 +46,7 @@ async function fetchJson<T>(path: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...(API_KEY ? { 'X-API-Key': API_KEY } : {}),
       ...(opts?.headers ?? {}),
     },
     ...opts,
