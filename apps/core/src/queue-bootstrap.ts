@@ -231,3 +231,19 @@ export async function closeAllWorkers(): Promise<void> {
   }
   workers.length = 0;
 }
+
+// Self-executing entry point for worker container
+if (import.meta.url === `file://${process.argv[1]}`) {
+  registerAllWorkers();
+
+  const gracefulShutdown = async (signal: string) => {
+    log.info({ signal }, 'worker shutting down gracefully');
+    await closeAllWorkers();
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  log.info('titan worker started');
+}

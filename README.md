@@ -1,41 +1,52 @@
-# Titan Foundation
+# Titan
 
-Universal Autonomous Agent Framework - **Phase 1: Foundation Layer**
+Universal Autonomous Agent Framework — **Production-Ready AI Operating System**
 
-This monorepo provides a production-ready foundation for building, deploying, and operating autonomous AI agents. No LangChain. No framework wrappers. Only vanilla Node.js.
+This monorepo provides a complete, open-source autonomous AI agent framework. No LangChain. No CrewAI. No AutoGen. Only vanilla Node.js + TypeScript.
 
 ## Status
 
-**Phase 1 — Foundation** (complete)
+**All Phases Complete** — Titan is production-ready for local development and single-node deployment.
 
-- Docker stack: PostgreSQL 16 (with pgvector) + Redis 7.4
-- Queue topology: 8 BullMQ queues with priority, retry, and backoff
-- Auth: JWT (RS-style) + API keys (workspace-scoped) + RBAC
-- WebSocket: JSON-RPC 2.0 protocol with auth, ping/pong, methods registry
-- Config: env-driven with Zod validation; secrets via Vault or .env
-- Logging: structured (pino) with async-context propagation
-- Telemetry: OpenTelemetry opt-in (loads only when enabled)
-- Database: typed repositories + forward-only migration runner
+| Phase | Feature | Status |
+|-------|---------|--------|
+| 1 | Foundation (DB, Queue, Auth, Gateway) | ✅ |
+| 2 | Agent Engine (ReAct loop, streaming, rules) | ✅ |
+| 3 | Tool Arsenal (bash, patch, read, scrape, docker) | ✅ |
+| 4 | Agent REST API | ✅ |
+| 5 | Dashboard (React + Tailwind) | ✅ |
+| 6 | Execution Sandbox (Docker container pool) | ✅ |
+| 7 | Memory / RAG Integration | ✅ |
+| 8 | LLM Providers (OpenAI, Claude, any compatible) | ✅ |
+| — | Multi-Agent Swarm | ✅ |
+| — | Infrastructure Monitoring (Prometheus metrics) | ✅ |
 
 ## Repository Layout
 
 ```
 .
 ├── apps/
-│   └── core/                # Fastify HTTP + WebSocket gateway
+│   ├── core/                # Fastify HTTP + WebSocket gateway
+│   └── dashboard/           # React + Vite + Tailwind UI
 ├── packages/
+│   ├── agent-engine/        # ReAct loop, AgentRunner, LLM providers
 │   ├── auth/                # JWT, API keys, password hashing, RBAC
-│   ├── config/              # Env loading + validation
+│   ├── config/              # Env loading + Zod validation
 │   ├── database/            # pg client + repositories + migrations
 │   ├── logging/             # Pino logger + async-context
+│   ├── memory/              # Provider interface + pgvector + semantic search
+│   ├── observability/       # Prometheus-compatible metrics
 │   ├── queue/               # BullMQ + ioredis wrapper
+│   ├── sandbox/             # Docker container pool with resource isolation
 │   ├── shared/              # Types, constants, Zod schemas, errors
 │   ├── telemetry/           # OpenTelemetry (opt-in)
+│   ├── tools/               # Tool registry + implementations
 │   └── websocket/           # JSON-RPC 2.0 server + router
 ├── docker/
 │   ├── postgres/            # init.sql + postgresql.conf
 │   └── redis/               # redis.conf
-├── docker-compose.yml       # Postgres + Redis (plus optional pgAdmin, RedisInsight)
+├── docker-compose.yml       # Full stack (Postgres + Redis + Core + Worker)
+├── Dockerfile               # Multi-stage production image
 ├── tsconfig.base.json       # Shared TS config
 └── package.json             # npm workspaces root
 ```
@@ -87,9 +98,12 @@ npm run dev:core
 
 The service will be available at:
 - HTTP: http://localhost:3000
+- Dashboard: http://localhost:3000 (proxied from localhost:3000)
 - WebSocket: ws://localhost:3000/ws
 - Health: http://localhost:3000/health/live
 - Readiness: http://localhost:3000/health/ready
+- Prometheus Metrics: http://localhost:3000/metrics
+- JSON Metrics: http://localhost:3000/metrics.json
 
 ## API
 
@@ -137,6 +151,51 @@ curl -X POST http://localhost:3000/api-keys \
 # Use API key
 curl http://localhost:3000/workspaces \
   -H 'X-API-Key: tk_<...>'
+```
+
+### Agent Runs
+
+```bash
+# Trigger an agent run
+curl -X POST http://localhost:3000/api/v1/agents/default-agent/run \
+  -H 'Authorization: Bearer <accessToken>' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Write a hello world in Python","maxSteps":10}'
+
+# List runs
+curl http://localhost:3000/api/v1/agents/default-agent/runs \
+  -H 'Authorization: Bearer <accessToken>'
+
+# Get run details
+curl http://localhost:3000/api/v1/agents/default-agent/runs/<runId> \
+  -H 'Authorization: Bearer <accessToken>'
+```
+
+### Tools
+
+```bash
+# Execute a tool directly
+curl -X POST http://localhost:3000/api/v1/tools/execute \
+  -H 'Authorization: Bearer <accessToken>' \
+  -H 'Content-Type: application/json' \
+  -d '{"tool":"execute_bash","params":{"command":"echo hello"}}'
+```
+
+### Multi-Agent Swarm
+
+```bash
+# Launch a swarm of collaborating agents
+curl -X POST http://localhost:3000/api/v1/swarm/run \
+  -H 'Authorization: Bearer <accessToken>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "description": "Build a weather app",
+    "prompt": "Create a weather forecasting web app",
+    "agents": [
+      {"id":"researcher-1","role":"researcher","name":"Researcher","description":"Research APIs","maxSteps":5,"priority":1},
+      {"id":"coder-1","role":"coder","name":"Coder","description":"Write code","maxSteps":10,"priority":2}
+    ]
+  }'
 ```
 
 ## WebSocket (JSON-RPC 2.0)
@@ -215,13 +274,34 @@ npm run dev --workspace=apps/core
 
 ## Architecture Decisions
 
-- **No LangChain / CrewAI / AutoGen** — agent logic implemented from scratch in Phase 2
-- **Vanilla Node.js** — no framework abstractions
-- **Stateless services** — all state in PostgreSQL or Redis
+- **No LangChain / CrewAI / AutoGen** — agent logic implemented from scratch
+- **Vanilla Node.js + TypeScript** — no framework abstractions
+- **Stateless services** — all state in PostgreSQL or Redis; horizontal scaling ready
 - **API-first** — every service is HTTP/WS addressable
 - **Queue-first async** — no blocking calls in HTTP handlers
+- **Provider-agnostic LLM** — OpenAI-compatible base URL + any provider (Groq, Together, Claude, Ollama)
+- **Docker sandbox isolation** — bash/tools execute in pre-warmed Alpine containers
+- **RAG Memory** — semantic search via pgvector, injected into agent context
+- **Multi-Agent Swarm** — task decomposition with dependency-aware parallel execution
 - **Audit log is append-only** — DB-level enforcement via trigger
+- **Prometheus metrics** — agent runs, LLM latency, sandbox usage, queue depth
+
+## Environment Variables (Key)
+
+```bash
+# LLM Provider (any OpenAI-compatible or Anthropic)
+LLM_PROVIDER_TYPE=openai-compatible  # or 'anthropic'
+LLM_API_KEY=sk-...
+LLM_MODEL=gpt-4o
+LLM_BASE_URL=https://api.openai.com/v1
+
+# Optional: Sandbox for tool execution
+SANDBOX_ENABLED=true
+SANDBOX_IMAGE=alpine:latest
+SANDBOX_MIN_POOL=2
+SANDBOX_MAX_POOL=8
+```
 
 ## License
 
-TBD
+MIT — See [LICENSE](./LICENSE)

@@ -103,6 +103,61 @@ services:
     networks:
       - titan-net
 
+  # ============================================================================
+  # Titan Core API
+  # ============================================================================
+  core:
+    build:
+      context: .
+      dockerfile: apps/core/Dockerfile
+    container_name: titan-core
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+      - HTTP_HOST=0.0.0.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - titan-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ============================================================================
+  # Titan Worker (queue processor)
+  # ============================================================================
+  worker:
+    build:
+      context: .
+      dockerfile: apps/core/Dockerfile
+    container_name: titan-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+      - SERVICE_NAME=titan-worker
+    command: ["node", "apps/core/dist/queue-bootstrap.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - titan-net
+
 volumes:
   postgres_data:
     driver: local
