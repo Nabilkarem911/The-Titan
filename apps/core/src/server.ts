@@ -162,27 +162,6 @@ export async function buildServer(): Promise<FastifyInstance> {
     });
   });
 
-  app.setNotFoundHandler((req, reply) => {
-    const url = req.url ?? '';
-    if (url.startsWith('/api/') || url.startsWith('/health') || url.startsWith('/metrics') || url === '/ws') {
-      return reply.status(404).send({
-        type: 'https://titan.local/problems/not-found',
-        title: 'Not found',
-        status: 404,
-        code: 'E3001',
-        requestId: req.requestId,
-        details: { method: req.method, url: req.url },
-      });
-    }
-    return reply.status(404).send({
-      type: 'https://titan.local/problems/not-found',
-      title: 'Not found',
-      status: 404,
-      code: 'E3001',
-      requestId: req.requestId,
-      details: { method: req.method, url: req.url },
-    });
-  });
 
   await app.register(healthRoutes);
   await app.register(metricsRoutes);
@@ -206,8 +185,19 @@ export async function buildServer(): Promise<FastifyInstance> {
       index: 'index.html',
     });
     const indexHtml = readFileSync(join(dashboardDist, 'index.html'), 'utf-8');
-    app.setNotFoundHandler((_req, reply) => {
-      reply.type('text/html').send(indexHtml);
+    app.setNotFoundHandler((req, reply) => {
+      const url = req.url ?? '';
+      if (url.startsWith('/api/') || url.startsWith('/health') || url.startsWith('/metrics') || url === '/ws') {
+        return reply.status(404).send({
+          type: 'https://titan.local/problems/not-found',
+          title: 'Not found',
+          status: 404,
+          code: 'E3001',
+          requestId: req.requestId,
+          details: { method: req.method, url },
+        });
+      }
+      return reply.type('text/html').send(indexHtml);
     });
     log.info({ dashboardDist }, 'serving dashboard static files');
   } else {
@@ -223,6 +213,16 @@ export async function buildServer(): Promise<FastifyInstance> {
       },
       timestamp: new Date().toISOString(),
     }));
+    app.setNotFoundHandler((req, reply) => {
+      reply.status(404).send({
+        type: 'https://titan.local/problems/not-found',
+        title: 'Not found',
+        status: 404,
+        code: 'E3001',
+        requestId: req.requestId,
+        details: { method: req.method, url: req.url },
+      });
+    });
   }
 
   return app;
