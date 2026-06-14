@@ -4,3 +4,4 @@ export * from './runner.js';
 export * from './providers/openai.js';
 export * from './providers/anthropic.js';
 export * from './providers/factory.js';
+export * from './swarm/index.js';
