@@ -1,4 +1,4 @@
-import type { LlmProvider, LlmMessage, LlmCompletion, ToolCall } from './types.js';
+import type { LlmProvider, LlmMessage, LlmCompletion } from './types.js';
 
 /**
  * Mock LLM provider for testing the ReAct loop without real API costs.

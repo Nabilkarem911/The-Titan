@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { AgentRunner } from './runner.js';
 import { MockLlmProvider, MockEchoProvider } from './mockLlmProvider.js';
-import type { AgentRunInput, ToolCall, ToolResult } from './types.js';
+import type { ToolCall, ToolResult } from './types.js';
 
 describe('AgentRunner', () => {
   it('completes a simple echo run (no tools)', async () => {

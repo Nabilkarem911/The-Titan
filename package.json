@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/dockerode": "^4.0.1",
     "@types/node": "22.10.1",
     "@typescript-eslint/eslint-plugin": "^8.61.0",
     "@typescript-eslint/parser": "^8.61.0",
@@ -59,6 +60,7 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
+    "dockerode": "^5.0.0",
     "fastify": "5.8.5",
     "ws": "8.21.0"
   }
