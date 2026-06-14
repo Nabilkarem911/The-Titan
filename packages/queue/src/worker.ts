@@ -39,7 +39,6 @@ export function createWorker<TData, TResult>(
     port: c.REDIS_PORT,
     password: c.REDIS_PASSWORD || undefined,
     db: c.REDIS_DB,
-    keyPrefix: c.REDIS_KEY_PREFIX,
     tls: c.REDIS_TLS ? {} : undefined,
     maxRetriesPerRequest: null,
     enableReadyCheck: true,
