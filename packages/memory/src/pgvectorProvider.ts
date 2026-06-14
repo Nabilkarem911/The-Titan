@@ -1,11 +1,12 @@
-import { Pool } from 'pg';
+import pg from 'pg';
+const { Pool } = pg;
 import { getLogger } from '@titan/logging';
 import type { MemoryConfig, MemoryProvider, HealthStatus, MemoryMessage, MemoryItem, SearchOpts, SearchResult, CollectionInfo } from './index.js';
 
 const log = getLogger().child({ component: 'memory-pgvector' });
 
 export class PgVectorMemoryProvider implements MemoryProvider {
-  private pool: Pool | null = null;
+  private pool: InstanceType<typeof Pool> | null = null;
   private initialized = false;
 
   async initialize(config: MemoryConfig): Promise<void> {
@@ -20,7 +21,7 @@ export class PgVectorMemoryProvider implements MemoryProvider {
     log.info({ provider: 'pgvector', host, database }, 'PgVector memory provider initialized');
   }
 
-  private get db(): Pool {
+  private get db(): InstanceType<typeof Pool> {
     if (!this.pool || !this.initialized) throw new Error('Memory provider not initialized');
     return this.pool;
   }
@@ -56,7 +57,7 @@ export class PgVectorMemoryProvider implements MemoryProvider {
        LIMIT $2`,
       [sessionId, limit],
     );
-    return rows.map((r) => ({
+    return rows.map((r: { id: string; session_id: string; role: string; content: string; metadata: Record<string, unknown>; created_at: Date }) => ({
       id: r.id,
       sessionId: r.session_id,
       role: r.role as MemoryMessage['role'],
@@ -112,13 +113,13 @@ export class PgVectorMemoryProvider implements MemoryProvider {
          LIMIT $3`,
         [collId, `%${query}%`, limit],
       );
-      return rows.map((r, i) => ({ id: r.external_id, content: r.content, score: 1 - i * 0.05, metadata: r.metadata }));
+      return rows.map((r: { id: string; external_id: string; content: string; metadata: Record<string, unknown> }, i: number) => ({ id: r.external_id, content: r.content, score: 1 - i * 0.05, metadata: r.metadata }));
     }
     const { rows } = await this.db.query<{ external_id: string; content: string; metadata: Record<string, unknown> }>(
       `SELECT external_id, content, metadata FROM memory_items WHERE collection_id = $1 LIMIT $2`,
       [collId, limit],
     );
-    return rows.map((r, i) => ({ id: r.external_id, content: r.content, score: 1 - i * 0.05, metadata: r.metadata }));
+    return rows.map((r: { external_id: string; content: string; metadata: Record<string, unknown> }, i: number) => ({ id: r.external_id, content: r.content, score: 1 - i * 0.05, metadata: r.metadata }));
   }
 
   async delete(collection: string, ids: string[]): Promise<void> {
@@ -148,7 +149,7 @@ export class PgVectorMemoryProvider implements MemoryProvider {
       `SELECT name, item_count, created_at, updated_at FROM memory_collections WHERE workspace_id = $1 ORDER BY name`,
       [workspaceId],
     );
-    return rows.map((r) => ({ name: r.name, itemCount: r.item_count, createdAt: r.created_at, updatedAt: r.updated_at }));
+    return rows.map((r: { name: string; item_count: number; created_at: Date; updated_at: Date }) => ({ name: r.name, itemCount: r.item_count, createdAt: r.created_at, updatedAt: r.updated_at }));
   }
 
   async compact(_collection: string): Promise<void> {
