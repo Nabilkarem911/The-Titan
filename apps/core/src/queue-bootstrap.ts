@@ -21,7 +21,7 @@ registry.register({
   description: 'Execute a bash command',
   handler: async (params: unknown) => {
     const { command, cwd, timeoutMs } = params as { command: string; cwd?: string; timeoutMs?: number };
-    return executeBash({ command, cwd, timeoutMs });
+    return executeBash({ command, cwd, timeoutMs: timeoutMs ?? 10_000 });
   },
   tags: ['system', 'execution'],
 });
@@ -51,7 +51,7 @@ registry.register({
   description: 'Fetch a URL and return its plain text content',
   handler: async (params: unknown) => {
     const { url, timeoutMs } = params as { url: string; timeoutMs?: number };
-    return firecrawlScrape({ url, timeoutMs });
+    return firecrawlScrape({ url, timeoutMs: timeoutMs ?? 10_000 });
   },
   tags: ['network', 'web'],
 });
