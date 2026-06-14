@@ -138,7 +138,7 @@ export function registerAllQueueSchemas(): void {
 // Processor implementations
 const processors: Record<QueueName, (job: any) => Promise<any>> = {
   [QUEUE_NAMES.AGENT_EXECUTE]: async (job) => {
-    const { prompt, runId, agentId, workspaceId, userId, apiKeyId, maxSteps, tokenBudget, forbiddenTools } = job;
+    const { prompt, runId, agentId, workspaceId, userId, apiKeyId, maxSteps, tokenBudget, forbiddenTools } = job.data;
     log.info({ jobId: job.id, runId, agentId, prompt: prompt?.substring(0, 100) }, 'executing agent');
 
     const memory = new MemoryClient();
