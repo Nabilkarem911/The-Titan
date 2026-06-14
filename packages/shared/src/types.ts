@@ -115,3 +115,22 @@ export interface PluginVersion {
   status: 'draft' | 'published' | 'deprecated';
   createdAt: Date;
 }
+
+export interface PluginRating {
+  id: string;
+  pluginId: PluginId;
+  userId: UserId | null;
+  rating: number;
+  review: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PluginInstall {
+  id: string;
+  pluginId: PluginId;
+  workspaceId: WorkspaceId | null;
+  version: string | null;
+  installedAt: Date;
+  updatedAt: Date;
+}

@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { plugins, pluginVersions } from '@titan/database';
+import { plugins, pluginVersions, pluginRatings, pluginSearch } from '@titan/database';
 import { getLogger } from '@titan/logging';
 import { getGlobalPluginRunner, getGlobalToolRegistry } from '@titan/agent-engine';
 
@@ -161,6 +161,101 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       }
       log.error({ err, id }, 'failed to execute plugin tool');
       return reply.status(500).send({ error: 'Failed to execute plugin tool' });
+    }
+  });
+
+  app.get('/api/v1/plugins/search', async (req, reply) => {
+    try {
+      const queryStr = (req.query as Record<string, unknown>).q as string | undefined;
+      const tag = (req.query as Record<string, unknown>).tag as string | undefined;
+      const capability = (req.query as Record<string, unknown>).capability as string | undefined;
+      const source = (req.query as Record<string, unknown>).source as string | undefined;
+      const status = (req.query as Record<string, unknown>).status as string | undefined;
+      const sortBy = (req.query as Record<string, unknown>).sortBy as string | undefined;
+      const limit = Number((req.query as Record<string, unknown>).limit ?? 100);
+      const offset = Number((req.query as Record<string, unknown>).offset ?? 0);
+
+      const result = await pluginSearch.search({
+        query: queryStr,
+        tag,
+        capability,
+        source,
+        status,
+        sortBy: sortBy as 'name' | 'updated_at' | 'created_at' | undefined,
+        limit,
+        offset,
+      });
+      return reply.send({ items: result.items, total: result.total });
+    } catch (err) {
+      log.error({ err }, 'failed to search plugins');
+      return reply.status(500).send({ error: 'Failed to search plugins' });
+    }
+  });
+
+  app.post('/api/v1/plugins/:id/rate', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const schema = z.object({
+      rating: z.number().int().min(1).max(5),
+      review: z.string().max(5000).optional(),
+    });
+    try {
+      const body = schema.parse(req.body);
+      const rating = await pluginRatings.create({
+        pluginId: id,
+        rating: body.rating,
+        review: body.review,
+      });
+      return reply.status(201).send(rating);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return reply.status(400).send({ error: err.errors });
+      }
+      log.error({ err, id }, 'failed to rate plugin');
+      return reply.status(500).send({ error: 'Failed to rate plugin' });
+    }
+  });
+
+  app.get('/api/v1/plugins/:id/ratings', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    try {
+      const [ratings, avg] = await Promise.all([
+        pluginRatings.findByPlugin(id),
+        pluginRatings.averageRating(id),
+      ]);
+      return reply.send({ ratings, average: avg });
+    } catch (err) {
+      log.error({ err, id }, 'failed to get plugin ratings');
+      return reply.status(500).send({ error: 'Failed to get plugin ratings' });
+    }
+  });
+
+  app.patch('/api/v1/plugins/:id/versions/:vid/publish', async (req, reply) => {
+    const { id, vid } = req.params as { id: string; vid: string };
+    try {
+      const plugin = await plugins.findById(id);
+      if (!plugin) return reply.status(404).send({ error: 'Plugin not found' });
+
+      const updated = await pluginVersions.updateStatus(vid, 'published');
+      if (!updated) return reply.status(404).send({ error: 'Version not found' });
+      return reply.send(updated);
+    } catch (err) {
+      log.error({ err, id, vid }, 'failed to publish version');
+      return reply.status(500).send({ error: 'Failed to publish version' });
+    }
+  });
+
+  app.patch('/api/v1/plugins/:id/versions/:vid/deprecate', async (req, reply) => {
+    const { id, vid } = req.params as { id: string; vid: string };
+    try {
+      const plugin = await plugins.findById(id);
+      if (!plugin) return reply.status(404).send({ error: 'Plugin not found' });
+
+      const updated = await pluginVersions.updateStatus(vid, 'deprecated');
+      if (!updated) return reply.status(404).send({ error: 'Version not found' });
+      return reply.send(updated);
+    } catch (err) {
+      log.error({ err, id, vid }, 'failed to deprecate version');
+      return reply.status(500).send({ error: 'Failed to deprecate version' });
     }
   });
 
