@@ -23,7 +23,8 @@ const EnvSchema = z.object({
 
   JWT_SECRET: z
     .string()
-    .min(64, 'JWT_SECRET must be at least 64 characters')
+    .transform((v) => v.trim())
+    .pipe(z.string().min(64, 'JWT_SECRET must be at least 64 characters'))
     .default('dev-only-secret-change-me-in-production-this-must-be-at-least-64-chars'),
   JWT_ACCESS_TTL: z.coerce.number().int().positive().default(900),
   JWT_REFRESH_TTL: z.coerce.number().int().positive().default(604_800),
@@ -32,7 +33,8 @@ const EnvSchema = z.object({
 
   API_KEY_ENCRYPTION_KEY: z
     .string()
-    .regex(/^[0-9a-f]{64}$/i, 'API_KEY_ENCRYPTION_KEY must be 64 hex chars (32 bytes)')
+    .transform((v) => v.trim())
+    .pipe(z.string().regex(/^[0-9a-f]{64}$/i, 'API_KEY_ENCRYPTION_KEY must be 64 hex chars (32 bytes)'))
     .default('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'),
 
   POSTGRES_HOST: z.string().default('localhost'),
