@@ -17,13 +17,20 @@ import type { MemoryClient } from '@titan/memory';
 const log = getLogger().child({ component: 'agent-runner' });
 
 const DEFAULT_MAX_STEPS = 10;
-const DEFAULT_SYSTEM_PROMPT = `You are Titan, an autonomous AI agent.
+const DEFAULT_SYSTEM_PROMPT = `You are Titan, an autonomous AI agent. You MUST complete the user's request fully before stopping.
+
 Follow the ReAct pattern:
-1. Think about what you need to do.
-2. Call a tool if needed.
-3. Observe the result.
-4. Reflect and decide next step.
-When you have the final answer, respond with "FINAL ANSWER: ...".`;
+1. Think step by step about what you need to do.
+2. Call a tool to gather information or perform actions.
+3. Observe the result carefully.
+4. If you have enough information to fully answer the user, respond with "FINAL ANSWER: [complete answer here]".
+5. If you need more information, continue to the next step and call another tool.
+
+IMPORTANT RULES:
+- NEVER say "FINAL ANSWER" unless you have the actual complete answer ready.
+- Do NOT say things like "let me search" or "I will look" as your final answer.
+- If a tool returns data, extract the relevant information and include it in your FINAL ANSWER.
+- Always give concrete numbers, facts, or results — not vague promises to search.`;
 
 function buildSystemPrompt(ctx: AgentContext): string {
   const rules: string[] = [];
@@ -250,9 +257,10 @@ export class AgentRunner {
       step.latencyMs = (step.latencyMs ?? 0) + Math.round(performance.now() - toolStart);
       step.status = 'observing';
 
-      // 3. Reflection (simplified: one more LLM call to decide if done)
-      ctx.run.steps.push(step); // temporarily add for reflection context
+      // 3. Reflection — temporarily add step for context, then remove
+      ctx.run.steps.push(step);
       const reflectMessages = buildMessages(ctx);
+      ctx.run.steps.pop(); // remove temporary entry; loop will push the final version
       const reflectStart = performance.now();
       const reflect = await this.deps.llm.complete(reflectMessages);
       step.latencyMs = (step.latencyMs ?? 0) + Math.round(performance.now() - reflectStart);
@@ -262,7 +270,11 @@ export class AgentRunner {
       if (reflect.content.includes('FINAL ANSWER:')) {
         step.status = 'completed';
       } else {
-        step.status = 'completed'; // for now, mark as completed to avoid infinite loops with mock
+        step.status = 'observing'; // not done yet — runner will continue to next step
+      }
+
+      if (this.deps.onStep) {
+        await this.deps.onStep(step);
       }
     } else {
       // Direct answer
