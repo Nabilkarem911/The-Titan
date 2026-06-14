@@ -192,6 +192,7 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
     });
 
     const result = await runner.run({
+      runId,
       agentId: agentId ?? 'default-agent',
       prompt: prompt ?? '',
       userId,

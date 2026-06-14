@@ -85,7 +85,7 @@ export class AgentRunner {
 
   async run(input: AgentRunInput): Promise<AgentRun> {
     const run: AgentRun = {
-      id: randomUUID(),
+      id: input.runId ?? randomUUID(),
       agentId: input.agentId,
       userId: input.userId,
       workspaceId: input.workspaceId,

@@ -57,6 +57,7 @@ export interface AgentRun {
 }
 
 export interface AgentRunInput {
+  runId?: string;
   agentId: string;
   prompt: string;
   userId?: string;
