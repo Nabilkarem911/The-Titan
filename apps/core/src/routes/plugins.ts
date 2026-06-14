@@ -2,8 +2,11 @@ import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { plugins, pluginVersions } from '@titan/database';
 import { getLogger } from '@titan/logging';
+import { getGlobalPluginRunner, getGlobalToolRegistry } from '@titan/agent-engine';
 
 const log = getLogger().child({ component: 'plugin-routes' });
+const runner = getGlobalPluginRunner();
+const toolRegistry = getGlobalToolRegistry();
 
 const installSchema = z.object({
   name: z.string().min(1).max(200),
@@ -87,8 +90,45 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
     const schema = z.object({ status: z.enum(['enabled', 'disabled', 'error']) });
     try {
       const { status } = schema.parse(req.body);
+      const plugin = await plugins.findById(id);
+      if (!plugin) return reply.status(404).send({ error: 'Plugin not found' });
+
       const updated = await plugins.updateStatus(id, status);
       if (!updated) return reply.status(404).send({ error: 'Plugin not found' });
+
+      if (status === 'enabled') {
+        const versions = await pluginVersions.findByPlugin(id);
+        const published = versions.find((v) => v.status === 'published') ?? versions[0];
+        if (published) {
+          const manifestTools = (published.manifest.tools as Array<{ name: string; description: string; tags?: string[] }> | undefined) ?? [];
+          await runner.load({
+            name: plugin.name,
+            version: published.version,
+            description: plugin.description ?? undefined,
+            tools: manifestTools,
+          });
+          // Register placeholder handlers for each plugin tool
+          for (const tool of manifestTools) {
+            toolRegistry.register({
+              name: tool.name,
+              description: `${tool.description} (from ${plugin.name})`,
+              handler: async () => ({ note: `Plugin tool ${tool.name} executed via ${plugin.name}` }),
+              tags: [...(tool.tags ?? []), 'plugin', plugin.name],
+            });
+          }
+          log.info({ plugin: plugin.name }, 'plugin tools registered');
+        }
+      } else if (status === 'disabled') {
+        runner.unload(plugin.name);
+        const registered = toolRegistry.list();
+        for (const t of registered) {
+          if (t.tags?.includes(plugin.name)) {
+            toolRegistry.unregister(t.name);
+          }
+        }
+        log.info({ plugin: plugin.name }, 'plugin tools unregistered');
+      }
+
       return reply.send(updated);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -96,6 +136,31 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       }
       log.error({ err, id }, 'failed to update plugin status');
       return reply.status(500).send({ error: 'Failed to update plugin status' });
+    }
+  });
+
+  app.post('/api/v1/plugins/:id/execute', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const schema = z.object({
+      tool: z.string().min(1),
+      params: z.record(z.unknown()).default({}),
+    });
+    try {
+      const { tool, params } = schema.parse(req.body);
+      const plugin = await plugins.findById(id);
+      if (!plugin) return reply.status(404).send({ error: 'Plugin not found' });
+      if (plugin.status !== 'enabled') {
+        return reply.status(409).send({ error: 'Plugin is not enabled' });
+      }
+
+      const result = await toolRegistry.execute(tool, params);
+      return reply.send({ tool, result });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return reply.status(400).send({ error: err.errors });
+      }
+      log.error({ err, id }, 'failed to execute plugin tool');
+      return reply.status(500).send({ error: 'Failed to execute plugin tool' });
     }
   });
 
