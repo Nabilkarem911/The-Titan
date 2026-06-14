@@ -3,6 +3,8 @@ export type WorkspaceId = string;
 export type SessionId = string;
 export type ApiKeyId = string;
 export type WorkspaceMemberId = string;
+export type PluginId = string;
+export type PluginVersionId = string;
 
 export interface User {
   id: UserId;
@@ -87,4 +89,29 @@ export interface PaginatedResult<T> {
   items: T[];
   nextCursor: string | null;
   total: number;
+}
+
+export interface Plugin {
+  id: PluginId;
+  name: string;
+  description: string | null;
+  author: string | null;
+  source: 'registry' | 'local' | 'marketplace';
+  status: 'enabled' | 'disabled' | 'error';
+  tags: string[];
+  capabilities: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PluginVersion {
+  id: PluginVersionId;
+  pluginId: PluginId;
+  version: string;
+  manifest: Record<string, unknown>;
+  entrypoint: string | null;
+  checksum: string;
+  signature: string | null;
+  status: 'draft' | 'published' | 'deprecated';
+  createdAt: Date;
 }
