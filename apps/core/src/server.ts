@@ -56,10 +56,15 @@ export async function buildServer(): Promise<FastifyInstance> {
       contentSecurityPolicy: {
         useDefaults: false,
         directives: {
-          defaultSrc: ["'none'"],
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'blob:'],
+          fontSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'", 'wss:', 'ws:'],
           frameAncestors: ["'none'"],
           baseUri: ["'none'"],
-          formAction: ["'none'"],
+          formAction: ["'self'"],
         },
       },
     });
