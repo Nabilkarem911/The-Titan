@@ -19,7 +19,8 @@ export class OpenAiProvider implements LlmProvider {
     opts?: { maxTokens?: number; temperature?: number },
   ): Promise<LlmCompletion> {
     const start = performance.now();
-    const url = `${this.config.baseUrl.replace(/\/$/, '')}/v1/chat/completions`;
+    const base = this.config.baseUrl.replace(/\/$/, '');
+    const url = `${base.endsWith('/v1') ? base : `${base}/v1`}/chat/completions`;
     const body = {
       model: this.config.model,
       messages: messages.map((m) => ({
