@@ -33,9 +33,9 @@ const EnvSchema = z.object({
 
   API_KEY_ENCRYPTION_KEY: z
     .string()
-    .transform((v) => v.trim())
-    .pipe(z.string().regex(/^[0-9a-f]{64}$/i, 'API_KEY_ENCRYPTION_KEY must be 64 hex chars (32 bytes)'))
-    .default('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'),
+    .transform((v) => v.trim().toLowerCase())
+    .pipe(z.string().regex(/^[0-9a-f]{64}$/, 'API_KEY_ENCRYPTION_KEY must be 64 hex chars (32 bytes)'))
+    .default('deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'),
 
   POSTGRES_HOST: z.string().default('localhost'),
   POSTGRES_PORT: z.coerce.number().int().positive().default(5432),
@@ -207,7 +207,10 @@ function enforceInvariants(cfg: Env): void {
     if (cfg.JWT_SECRET.startsWith('dev-only-')) {
       throw new Error('JWT_SECRET must be replaced from default in production');
     }
-    if (cfg.API_KEY_ENCRYPTION_KEY === '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef') {
+    if (
+      cfg.API_KEY_ENCRYPTION_KEY === '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' ||
+      cfg.API_KEY_ENCRYPTION_KEY === 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+    ) {
       throw new Error('API_KEY_ENCRYPTION_KEY must be replaced from default in production');
     }
     if (cfg.POSTGRES_PASSWORD === 'titan_dev_password_change_in_production') {
