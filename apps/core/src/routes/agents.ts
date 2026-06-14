@@ -12,13 +12,14 @@ const RunAgentInputSchema = z.object({
   forbiddenTools: z.array(z.string()).optional(),
 });
 
-const RATE_LIMIT_AGENT = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
+const RATE_LIMIT_AGENT_WRITE = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
+const RATE_LIMIT_AGENT_READ = { config: { rateLimit: { max: 200, timeWindow: '1 minute' } } };
 
 export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // POST /api/v1/agents/:agentId/run
   app.post<{ Params: { agentId: string } }>(
     '/api/v1/agents/:agentId/run',
-    { preHandler: requireAuth, ...RATE_LIMIT_AGENT },
+    { preHandler: requireAuth, ...RATE_LIMIT_AGENT_WRITE },
     async (req, reply) => {
       if (!req.auth) throw new ValidationError('Authentication required');
       const { agentId } = req.params;
@@ -61,7 +62,7 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // GET /api/v1/agents/:agentId/runs
   app.get<{ Params: { agentId: string }; Querystring: { limit?: string; offset?: string } }>(
     '/api/v1/agents/:agentId/runs',
-    { preHandler: requireAuth, ...RATE_LIMIT_AGENT },
+    { preHandler: requireAuth, ...RATE_LIMIT_AGENT_READ },
     async (req) => {
       if (!req.auth) throw new ValidationError('Authentication required');
       const { agentId } = req.params;
@@ -90,7 +91,7 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // GET /api/v1/agents/:agentId/runs/:runId
   app.get<{ Params: { agentId: string; runId: string } }>(
     '/api/v1/agents/:agentId/runs/:runId',
-    { preHandler: requireAuth, ...RATE_LIMIT_AGENT },
+    { preHandler: requireAuth, ...RATE_LIMIT_AGENT_READ },
     async (req) => {
       if (!req.auth) throw new ValidationError('Authentication required');
       const { runId } = req.params;
@@ -118,7 +119,7 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // GET /api/v1/agents/:agentId/runs/:runId/steps
   app.get<{ Params: { agentId: string; runId: string } }>(
     '/api/v1/agents/:agentId/runs/:runId/steps',
-    { preHandler: requireAuth, ...RATE_LIMIT_AGENT },
+    { preHandler: requireAuth, ...RATE_LIMIT_AGENT_READ },
     async (req) => {
       if (!req.auth) throw new ValidationError('Authentication required');
       const { runId } = req.params;
