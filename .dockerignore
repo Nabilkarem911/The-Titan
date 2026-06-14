@@ -48,5 +48,6 @@ run.err
 .windsurf/
 .devin/
 
-# ── Dashboard (not needed by core/worker image) ──────────────
-apps/dashboard/
+# ── Dashboard build output excluded (built inside Docker) ────
+apps/dashboard/dist/
+apps/dashboard/node_modules/

@@ -3,6 +3,10 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import sensible from '@fastify/sensible';
+import staticFiles from '@fastify/static';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve, dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { loadConfig } from '@titan/config';
 import { getLogger } from '@titan/logging';
@@ -159,7 +163,18 @@ export async function buildServer(): Promise<FastifyInstance> {
   });
 
   app.setNotFoundHandler((req, reply) => {
-    reply.status(404).send({
+    const url = req.url ?? '';
+    if (url.startsWith('/api/') || url.startsWith('/health') || url.startsWith('/metrics') || url === '/ws') {
+      return reply.status(404).send({
+        type: 'https://titan.local/problems/not-found',
+        title: 'Not found',
+        status: 404,
+        code: 'E3001',
+        requestId: req.requestId,
+        details: { method: req.method, url: req.url },
+      });
+    }
+    return reply.status(404).send({
       type: 'https://titan.local/problems/not-found',
       title: 'Not found',
       status: 404,
@@ -179,18 +194,36 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(pluginRoutes);
   await app.register(complianceRoutes);
 
-  app.get('/', async () => ({
-    name: cfg.SERVICE_NAME,
-    version: cfg.SERVICE_VERSION,
-    env: cfg.NODE_ENV,
-    endpoints: {
-      health: '/health/live',
-      ready: '/health/ready',
-      api: '/api/v1',
-      ws: cfg.WS_PATH,
-    },
-    timestamp: new Date().toISOString(),
-  }));
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const dashboardDist = resolve(__dirname, '..', '..', '..', 'apps', 'dashboard', 'dist');
+  const dashboardExists = existsSync(dashboardDist);
+
+  if (dashboardExists) {
+    await app.register(staticFiles, {
+      root: dashboardDist,
+      prefix: '/',
+      decorateReply: false,
+      index: 'index.html',
+    });
+    const indexHtml = readFileSync(join(dashboardDist, 'index.html'), 'utf-8');
+    app.setNotFoundHandler((_req, reply) => {
+      reply.type('text/html').send(indexHtml);
+    });
+    log.info({ dashboardDist }, 'serving dashboard static files');
+  } else {
+    app.get('/', async () => ({
+      name: cfg.SERVICE_NAME,
+      version: cfg.SERVICE_VERSION,
+      env: cfg.NODE_ENV,
+      endpoints: {
+        health: '/health/live',
+        ready: '/health/ready',
+        api: '/api/v1',
+        ws: cfg.WS_PATH,
+      },
+      timestamp: new Date().toISOString(),
+    }));
+  }
 
   return app;
 }

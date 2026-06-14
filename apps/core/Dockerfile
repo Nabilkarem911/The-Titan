@@ -21,6 +21,7 @@ COPY packages/observability/package.json packages/observability/package.json
 COPY packages/telemetry/package.json   packages/telemetry/package.json
 COPY packages/agent-engine/package.json packages/agent-engine/package.json
 COPY apps/core/package.json            apps/core/package.json
+COPY apps/dashboard/package.json       apps/dashboard/package.json
 RUN npm ci --legacy-peer-deps
 
 # ── Stage 2: Build ──────────────────────────────────────────
@@ -28,7 +29,9 @@ FROM deps AS builder
 COPY tsconfig.base.json tsconfig.json ./
 COPY packages/ ./packages/
 COPY apps/core/ ./apps/core/
+COPY apps/dashboard/ ./apps/dashboard/
 RUN npm run build
+RUN npm run build:dashboard 2>/dev/null || (cd apps/dashboard && npm run build)
 
 # ── Stage 3: Production runtime ─────────────────────────────
 FROM node:22-alpine AS runner
@@ -40,6 +43,7 @@ RUN apk add --no-cache dumb-init curl
 COPY package.json package-lock.json ./
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/core ./apps/core
+COPY --from=builder /app/apps/dashboard/dist ./apps/dashboard/dist
 RUN npm ci --omit=dev --legacy-peer-deps && rm -rf /tmp/* ~/.npm
 
 # Non-root user
