@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ChevronRight, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { api, type ApiRun, type ApiStep } from '../api/client';
 
@@ -9,8 +9,11 @@ export default function Runs() {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [steps, setSteps] = useState<ApiStep[]>([]);
   const [stepsLoading, setStepsLoading] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const selectedRunIdRef = useRef<string | null>(null);
+  selectedRunIdRef.current = selectedRunId;
 
-  const fetchRuns = async () => {
+  const fetchRuns = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.listRuns(agentId);
@@ -20,9 +23,9 @@ export default function Runs() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [agentId]);
 
-  const fetchSteps = async (runId: string) => {
+  const fetchSteps = useCallback(async (runId: string) => {
     setStepsLoading(true);
     setSelectedRunId(runId);
     try {
@@ -33,27 +36,61 @@ export default function Runs() {
     } finally {
       setStepsLoading(false);
     }
-  };
+  }, [agentId]);
 
   useEffect(() => {
     fetchRuns();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentId]);
+  }, [fetchRuns]);
 
-  // Auto-poll while any run is active
+  // WebSocket live updates
   useEffect(() => {
-    const hasRunning = runs.some((r) => r.status === 'running');
-    if (!hasRunning) return;
-    const interval = setInterval(() => {
-      fetchRuns();
-      if (selectedRunId) {
-        const sel = runs.find((r) => r.id === selectedRunId);
-        if (sel?.status === 'running') fetchSteps(selectedRunId);
-      }
-    }, 2000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runs, selectedRunId]);
+    const token = localStorage.getItem('titan_access_token');
+    if (!token) return;
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${window.location.host}/ws`);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'auth', params: { token } }));
+    };
+
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data as string);
+        // New step arrived
+        if (msg.method === 'agent.step') {
+          const { runId, step } = msg.params as { runId: string; step: ApiStep };
+          if (runId === selectedRunIdRef.current) {
+            setSteps((prev) => {
+              const exists = prev.some((s) => s.stepIndex === step.stepIndex);
+              if (exists) return prev.map((s) => s.stepIndex === step.stepIndex ? { ...s, ...step } : s);
+              return [...prev, step as unknown as ApiStep];
+            });
+          }
+          // refresh run list to update tokens/steps count
+          fetchRuns();
+        }
+        // Run status updated
+        if (msg.method === 'agent.run.updated') {
+          const { runId, status, currentStep, tokensUsed, finalAnswer } = msg.params as {
+            runId: string; status: string; currentStep: number; tokensUsed: number; finalAnswer: string | null;
+          };
+          setRuns((prev) => prev.map((r) => r.id === runId
+            ? { ...r, status, currentStep, tokensUsed, finalAnswer }
+            : r));
+        }
+      } catch {}
+    };
+
+    ws.onerror = () => {};
+    ws.onclose = () => {};
+
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const statusIcon = (status: string) => {
     if (status === 'completed') return <CheckCircle className="h-4 w-4 text-emerald-400" />;

@@ -10,6 +10,7 @@ import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegis
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps } from '@titan/database';
 import { executeBash, patchFile, readFileAst, firecrawlScrape } from '@titan/tools';
+import { getWsServer } from './ws-instance.js';
 
 const log = getLogger().child({ component: 'queue-bootstrap' });
 
@@ -165,6 +166,14 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
         } catch (err) {
           log.warn({ err, runId }, 'failed to persist run status');
         }
+        getWsServer()?.broadcast('agent.run.updated', {
+          runId,
+          agentId,
+          status: run.status,
+          currentStep: run.currentStep,
+          tokensUsed: run.tokensUsed,
+          finalAnswer: run.finalAnswer ?? null,
+        });
       },
       onStep: async (step: AgentStep) => {
         try {
@@ -185,6 +194,23 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
         } catch (err) {
           log.warn({ err, runId }, 'failed to persist step');
         }
+        getWsServer()?.broadcast('agent.step', {
+          runId,
+          agentId,
+          step: {
+            index: step.index,
+            status: step.status,
+            thought: step.thought,
+            actionName: step.action?.name,
+            actionParams: step.action?.params,
+            observationSuccess: step.observation?.success,
+            observationData: step.observation?.data,
+            observationError: step.observation?.error,
+            reflection: step.reflection,
+            tokensUsed: step.tokensUsed,
+            latencyMs: step.latencyMs,
+          },
+        });
       },
     });
 

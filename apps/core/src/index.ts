@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { buildServer } from './server.js';
 import { registerAllQueueSchemas, registerAllWorkers, closeAllWorkers } from './queue-bootstrap.js';
 import { startAuditSchedulers, stopAuditSchedulers } from './audit-scheduler.js';
+import { setWsServer } from './ws-instance.js';
 
 async function main(): Promise<void> {
   const cfg = loadConfig();
@@ -58,6 +59,7 @@ async function main(): Promise<void> {
   const app = await buildServer();
   const wsServer = new TitanWebSocketServer({ router, path: cfg.WS_PATH });
   wsServer.attach(app.server);
+  setWsServer(wsServer);
 
   await app.listen({ host: cfg.HTTP_HOST, port: cfg.HTTP_PORT });
   log.info({ host: cfg.HTTP_HOST, port: cfg.HTTP_PORT, ws: cfg.WS_PATH }, 'http+ws server listening');
