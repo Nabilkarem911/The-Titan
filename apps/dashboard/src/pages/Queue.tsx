@@ -22,7 +22,7 @@ export default function Queue() {
       const results: QueueInfo[] = [];
       for (const name of QUEUE_NAMES) {
         try {
-          const res = await fetch(`/api/admin/queues/${name}/stats`);
+          const res = await fetch(`/api/v1/admin/queues/${name}/stats`);
           if (res.ok) {
             const data = await res.json();
             results.push({ name, ...data });
