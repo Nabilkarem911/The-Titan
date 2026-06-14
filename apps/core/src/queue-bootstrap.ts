@@ -6,7 +6,7 @@ import {
   type TitanWorker,
   createWorker,
 } from '@titan/queue';
-import { AgentRunner, MockLlmProvider, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
+import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps } from '@titan/database';
 
@@ -148,7 +148,7 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
     await memory.initialize();
 
     const runner = new AgentRunner({
-      llm: new MockLlmProvider(),
+      llm: createProviderFromEnv() ?? new MockLlmProvider(),
       executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
         try {
           const data = await executeTool(call.name, call.params);
