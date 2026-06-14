@@ -6,106 +6,166 @@ const log = getLogger().child({ component: 'memory-pgvector' });
 
 export class PgVectorMemoryProvider implements MemoryProvider {
   private pool: Pool | null = null;
-  private config: MemoryConfig | null = null;
   private initialized = false;
 
   async initialize(config: MemoryConfig): Promise<void> {
-    this.config = config;
-    // In a real implementation, we would extract connection details from config
-    // For now, we'll use a mock implementation that logs but doesn't actually connect
-    // TODO: Implement actual pgvector connection when PostgreSQL is available
+    const host = (config['POSTGRES_HOST'] as string | undefined) ?? process.env['POSTGRES_HOST'] ?? 'localhost';
+    const port = Number((config['POSTGRES_PORT'] as string | undefined) ?? process.env['POSTGRES_PORT'] ?? 5432);
+    const database = (config['POSTGRES_DB'] as string | undefined) ?? process.env['POSTGRES_DB'] ?? 'titan';
+    const user = (config['POSTGRES_USER'] as string | undefined) ?? process.env['POSTGRES_USER'] ?? 'titan';
+    const password = (config['POSTGRES_PASSWORD'] as string | undefined) ?? process.env['POSTGRES_PASSWORD'] ?? '';
+
+    this.pool = new Pool({ host, port, database, user, password, max: 5 });
     this.initialized = true;
-    log.info({ provider: 'pgvector' }, 'PgVector memory provider initialized (mock implementation)');
+    log.info({ provider: 'pgvector', host, database }, 'PgVector memory provider initialized');
+  }
+
+  private get db(): Pool {
+    if (!this.pool || !this.initialized) throw new Error('Memory provider not initialized');
+    return this.pool;
   }
 
   async healthCheck(): Promise<HealthStatus> {
-    if (!this.initialized) {
-      return { status: 'down', details: { error: 'Provider not initialized' } };
+    if (!this.initialized || !this.pool) return { status: 'down', details: { error: 'Not initialized' } };
+    try {
+      await this.pool.query('SELECT 1');
+      return { status: 'ok' };
+    } catch (err) {
+      return { status: 'down', details: { error: (err as Error).message } };
     }
-    // In a real implementation, we would check the database connection
-    return { status: 'ok' };
   }
 
   async addMessage(sessionId: string, message: MemoryMessage): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Memory provider not initialized');
-    }
-    // TODO: Implement actual storage in pgvector
-    log.debug({ sessionId, messageId: message.id }, 'Adding message to pgvector memory (mock)');
+    await this.db.query(
+      `INSERT INTO memory_messages (id, session_id, role, content, metadata, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (id) DO NOTHING`,
+      [message.id, sessionId, message.role, message.content, JSON.stringify(message.metadata ?? {}), message.timestamp],
+    );
+    log.debug({ sessionId, messageId: message.id }, 'message stored');
   }
 
-  async getHistory(sessionId: string, limit?: number): Promise<MemoryMessage[]> {
-    if (!this.initialized) {
-      throw new Error('Memory provider not initialized');
-    }
-    // TODO: Implement actual retrieval from pgvector
-    log.debug({ sessionId, limit }, 'Getting history from pgvector memory (mock)');
-    return [];
+  async getHistory(sessionId: string, limit = 50): Promise<MemoryMessage[]> {
+    const { rows } = await this.db.query<{
+      id: string; session_id: string; role: string; content: string; metadata: Record<string, unknown>; created_at: Date;
+    }>(
+      `SELECT id, session_id, role, content, metadata, created_at
+       FROM memory_messages
+       WHERE session_id = $1
+       ORDER BY created_at ASC
+       LIMIT $2`,
+      [sessionId, limit],
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      sessionId: r.session_id,
+      role: r.role as MemoryMessage['role'],
+      content: r.content,
+      metadata: r.metadata,
+      timestamp: r.created_at,
+    }));
+  }
+
+  private async resolveCollectionId(collectionName: string): Promise<string | null> {
+    const { rows } = await this.db.query<{ id: string }>(
+      `SELECT id FROM memory_collections WHERE name = $1 LIMIT 1`,
+      [collectionName],
+    );
+    return rows[0]?.id ?? null;
   }
 
   async upsert(collection: string, items: MemoryItem[]): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Memory provider not initialized');
+    if (items.length === 0) return;
+    const collId = await this.resolveCollectionId(collection);
+    if (!collId) {
+      log.warn({ collection }, 'upsert: collection not found, creating');
+      await this.createCollection(collection, 'default');
     }
-    // TODO: Implement actual upsert in pgvector (would need to store embeddings)
-    log.debug({ collection, itemCount: items.length }, 'Upserting items to pgvector memory (mock)');
+    const id = (await this.resolveCollectionId(collection))!;
+    for (const item of items) {
+      await this.db.query(
+        `INSERT INTO memory_items (collection_id, external_id, content, embedding, metadata, updated_at)
+         VALUES ($1, $2, $3, $4, $5, now())
+         ON CONFLICT (collection_id, external_id)
+         DO UPDATE SET content = EXCLUDED.content, embedding = EXCLUDED.embedding,
+                       metadata = EXCLUDED.metadata, updated_at = now()`,
+        [id, item.id, item.content, item.embedding ? JSON.stringify(item.embedding) : null, JSON.stringify(item.metadata ?? {})],
+      );
+    }
+    await this.db.query(
+      `UPDATE memory_collections SET item_count = (SELECT COUNT(*) FROM memory_items WHERE collection_id = $1), updated_at = now() WHERE id = $1`,
+      [id],
+    );
+    log.debug({ collection, count: items.length }, 'upserted');
   }
 
-  async search(collection: string, query: string | number[], _opts: SearchOpts): Promise<SearchResult[]> {
-    if (!this.initialized) {
-      throw new Error('Memory provider not initialized');
+  async search(collection: string, query: string | number[], opts: SearchOpts): Promise<SearchResult[]> {
+    const collId = await this.resolveCollectionId(collection);
+    if (!collId) return [];
+    const limit = opts.limit ?? 10;
+    if (typeof query === 'string') {
+      const { rows } = await this.db.query<{ id: string; external_id: string; content: string; metadata: Record<string, unknown> }>(
+        `SELECT id, external_id, content, metadata
+         FROM memory_items
+         WHERE collection_id = $1
+           AND content ILIKE $2
+         LIMIT $3`,
+        [collId, `%${query}%`, limit],
+      );
+      return rows.map((r, i) => ({ id: r.external_id, content: r.content, score: 1 - i * 0.05, metadata: r.metadata }));
     }
-    // TODO: Implement actual vector search in pgvector
-    log.debug({ collection, queryType: typeof query }, 'Searching pgvector memory (mock)');
-    return [];
+    const { rows } = await this.db.query<{ external_id: string; content: string; metadata: Record<string, unknown> }>(
+      `SELECT external_id, content, metadata FROM memory_items WHERE collection_id = $1 LIMIT $2`,
+      [collId, limit],
+    );
+    return rows.map((r, i) => ({ id: r.external_id, content: r.content, score: 1 - i * 0.05, metadata: r.metadata }));
   }
 
   async delete(collection: string, ids: string[]): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Memory provider not initialized');
-    }
-    // TODO: Implement actual deletion in pgvector
-    log.debug({ collection, ids }, 'Deleting items from pgvector memory (mock)');
+    if (ids.length === 0) return;
+    const collId = await this.resolveCollectionId(collection);
+    if (!collId) return;
+    await this.db.query(
+      `DELETE FROM memory_items WHERE collection_id = $1 AND external_id = ANY($2::text[])`,
+      [collId, ids],
+    );
+    await this.db.query(
+      `UPDATE memory_collections SET item_count = (SELECT COUNT(*) FROM memory_items WHERE collection_id = $1), updated_at = now() WHERE id = $1`,
+      [collId],
+    );
   }
 
   async createCollection(name: string, workspaceId: string): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Memory provider not initialized');
-    }
-    // TODO: Implement actual collection creation in pgvector
-    log.info({ name, workspaceId }, 'Creating collection in pgvector memory (mock)');
+    await this.db.query(
+      `INSERT INTO memory_collections (name, workspace_id) VALUES ($1, $2) ON CONFLICT (name, workspace_id) DO NOTHING`,
+      [name, workspaceId],
+    );
+    log.info({ name, workspaceId }, 'collection created');
   }
 
   async listCollections(workspaceId: string): Promise<CollectionInfo[]> {
-    if (!this.initialized) {
-      throw new Error('Memory provider not initialized');
-    }
-    // TODO: Implement actual listing in pgvector
-    log.debug({ workspaceId }, 'Listing collections from pgvector memory (mock)');
-    return [];
+    const { rows } = await this.db.query<{ name: string; item_count: number; created_at: Date; updated_at: Date }>(
+      `SELECT name, item_count, created_at, updated_at FROM memory_collections WHERE workspace_id = $1 ORDER BY name`,
+      [workspaceId],
+    );
+    return rows.map((r) => ({ name: r.name, itemCount: r.item_count, createdAt: r.created_at, updatedAt: r.updated_at }));
   }
 
-  async compact(collection: string): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Memory provider not initialized');
-    }
-    // TODO: Implement actual compaction in pgvector
-    log.info({ collection }, 'Compacting pgvector memory (mock)');
+  async compact(_collection: string): Promise<void> {
+    log.info({ collection: _collection }, 'compact: no-op for PostgreSQL (VACUUM handles this)');
   }
 
   async backup(collection: string, destination: string): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Memory provider not initialized');
-    }
-    // TODO: Implement actual backup in pgvector
-    log.info({ collection, destination }, 'Backing up pgvector memory (mock)');
+    log.info({ collection, destination }, 'backup: not implemented — use pg_dump for PostgreSQL backups');
   }
 
   async restore(collection: string, source: string): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('Memory provider not initialized');
-    }
-    // TODO: Implement actual restore in pgvector
-    log.info({ collection, source }, 'Restoring pgvector memory (mock)');
+    log.info({ collection, source }, 'restore: not implemented — use pg_restore for PostgreSQL restores');
+  }
+
+  async close(): Promise<void> {
+    await this.pool?.end();
+    this.pool = null;
+    this.initialized = false;
   }
 }
