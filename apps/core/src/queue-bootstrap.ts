@@ -6,41 +6,60 @@ import {
   type TitanWorker,
   createWorker,
 } from '@titan/queue';
-import { AgentRunner, MockLlmProvider, type ToolCall, type ToolResult } from '@titan/agent-engine';
+import { AgentRunner, MockLlmProvider, getGlobalToolRegistry, type ToolCall, type ToolResult } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 
 const log = getLogger().child({ component: 'queue-bootstrap' });
 
-// === Tool Registry (Phase 3) ===
-type ToolName = 'execute_bash' | 'patch_file' | 'read_file_ast' | 'firecrawl_scrape';
+// === Tool Registry (Phase 9-lite) ===
+const registry = getGlobalToolRegistry();
 
-const tools: Record<ToolName, (params: unknown) => Promise<unknown>> = {
-  execute_bash: async (params: any) => {
-    const { command } = params;
+registry.register({
+  name: 'execute_bash',
+  description: 'Execute a bash command in a sandboxed container',
+  handler: async (params: unknown) => {
+    const { command } = params as { command: string };
     log.info({ command }, 'tool:execute_bash');
     return { stdout: `mock: ${command}`, stderr: '', exitCode: 0 };
   },
-  patch_file: async (params: any) => {
-    const { filePath, patch } = params;
+  tags: ['system', 'execution'],
+});
+
+registry.register({
+  name: 'patch_file',
+  description: 'Apply a unified diff patch to a file',
+  handler: async (params: unknown) => {
+    const { filePath, patch } = params as { filePath: string; patch: string };
     log.info({ filePath, patch }, 'tool:patch_file');
     return { success: true, filePath };
   },
-  read_file_ast: async (params: any) => {
-    const { filePath } = params;
+  tags: ['filesystem', 'code'],
+});
+
+registry.register({
+  name: 'read_file_ast',
+  description: 'Read a file and return its AST',
+  handler: async (params: unknown) => {
+    const { filePath } = params as { filePath: string };
     log.info({ filePath }, 'tool:read_file_ast');
     return { type: 'Program', filePath, body: [] };
   },
-  firecrawl_scrape: async (params: any) => {
-    const { url } = params;
+  tags: ['filesystem', 'code'],
+});
+
+registry.register({
+  name: 'firecrawl_scrape',
+  description: 'Scrape a URL and return plain text',
+  handler: async (params: unknown) => {
+    const { url } = params as { url: string };
     log.info({ url }, 'tool:firecrawl_scrape');
     return { url, title: `Title of ${url}`, content: `Mock content from ${url}` };
   },
-};
+  tags: ['network', 'web'],
+});
 
-async function executeTool(name: string, params: unknown): Promise<unknown> {
-  const handler = tools[name as ToolName];
-  if (!handler) throw new Error(`Unknown tool: ${name}`);
-  return handler(params);
+async function executeTool(name: string, params: unknown): Promise<ToolResult> {
+  return registry.execute(name, params);
 }
 
 const agentExecuteSchema = z.object({
