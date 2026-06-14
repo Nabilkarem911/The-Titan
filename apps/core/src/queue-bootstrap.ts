@@ -6,8 +6,9 @@ import {
   type TitanWorker,
   createWorker,
 } from '@titan/queue';
-import { AgentRunner, MockLlmProvider, getGlobalToolRegistry, type ToolCall, type ToolResult } from '@titan/agent-engine';
+import { AgentRunner, MockLlmProvider, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
+import { agentRuns, agentSteps } from '@titan/database';
 
 const log = getLogger().child({ component: 'queue-bootstrap' });
 
@@ -157,6 +158,37 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
         }
       },
       memory,
+      persistRun: async (run: AgentRun) => {
+        try {
+          await agentRuns.updateStatus(runId, run.status, {
+            currentStep: run.currentStep,
+            tokensUsed: run.tokensUsed,
+            finalAnswer: run.finalAnswer ?? undefined,
+          });
+        } catch (err) {
+          log.warn({ err, runId }, 'failed to persist run status');
+        }
+      },
+      onStep: async (step: AgentStep) => {
+        try {
+          await agentSteps.create({
+            runId,
+            stepIndex: step.index,
+            status: step.status,
+            thought: step.thought,
+            actionName: step.action?.name,
+            actionParams: step.action?.params,
+            observationSuccess: step.observation?.success,
+            observationData: step.observation?.data as Record<string, unknown> | undefined,
+            observationError: step.observation?.error,
+            reflection: step.reflection,
+            tokensUsed: step.tokensUsed,
+            latencyMs: step.latencyMs,
+          });
+        } catch (err) {
+          log.warn({ err, runId }, 'failed to persist step');
+        }
+      },
     });
 
     const result = await runner.run({
