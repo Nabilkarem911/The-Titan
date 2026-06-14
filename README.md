@@ -4,22 +4,32 @@ Universal Autonomous Agent Framework — **Production-Ready AI Operating System*
 
 This monorepo provides a complete, open-source autonomous AI agent framework. No LangChain. No CrewAI. No AutoGen. Only vanilla Node.js + TypeScript.
 
+> **Live Demo:** [titan.orcanox.xyz](https://titan.orcanox.xyz)
+
 ## Status
 
-**All Phases Complete** — Titan is production-ready for local development and single-node deployment.
+**Production Deployed & Operational** — Titan is live and executing real agent runs with real tools.
 
 | Phase | Feature | Status |
 |-------|---------|--------|
 | 1 | Foundation (DB, Queue, Auth, Gateway) | ✅ |
-| 2 | Agent Engine (ReAct loop, streaming, rules) | ✅ |
-| 3 | Tool Arsenal (bash, patch, read, scrape, docker) | ✅ |
+| 2 | Agent Engine (ReAct loop, multi-step, rules) | ✅ |
+| 3 | Tool Arsenal — real implementations (bash, patch, read, scrape) | ✅ |
 | 4 | Agent REST API | ✅ |
-| 5 | Dashboard (React + Tailwind) | ✅ |
+| 5 | Dashboard (React + Tailwind + auto-refresh) | ✅ |
 | 6 | Execution Sandbox (Docker container pool) | ✅ |
 | 7 | Memory / RAG Integration | ✅ |
-| 8 | LLM Providers (OpenAI, Claude, any compatible) | ✅ |
+| 8 | LLM Providers (OpenAI, Claude, any OpenAI-compatible) | ✅ |
 | — | Multi-Agent Swarm | ✅ |
 | — | Infrastructure Monitoring (Prometheus metrics) | ✅ |
+
+### What Works Right Now
+
+- **Real multi-step ReAct loop** — agent thinks → calls tools → observes → reflects → continues until `FINAL ANSWER`
+- **Real tool execution** — `execute_bash` runs actual shell commands on the server, `firecrawl_scrape` fetches live web pages
+- **Live Dashboard** — run history with step-by-step timeline, auto-refreshes every 2 seconds while a run is active
+- **Full audit trail** — every step (thought, action, observation, reflection, tokens, latency) persisted in PostgreSQL
+- **BullMQ workers** — 8 concurrent queues, jobs survive restarts via Redis
 
 ## Repository Layout
 
