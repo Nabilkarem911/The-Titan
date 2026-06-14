@@ -124,11 +124,11 @@ export async function buildServer(): Promise<FastifyInstance> {
         ...(err.details !== undefined ? { details: err.details } : {}),
       });
     }
-    const fastifyErr = err as { validation?: unknown; statusCode?: number };
+    const fastifyErr = err as { validation?: unknown; statusCode?: number; message?: string };
     if (fastifyErr.validation) {
       return reply.status(400).send({
         type: 'https://titan.local/problems/validation',
-        title: err.message,
+        title: fastifyErr.message ?? 'Validation error',
         status: 400,
         code: 'E2001',
         requestId,

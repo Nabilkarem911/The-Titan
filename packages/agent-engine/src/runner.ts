@@ -1,0 +1,230 @@
+import { getLogger } from '@titan/logging';
+import { randomUUID } from 'node:crypto';
+import type {
+  AgentRun,
+  AgentRunInput,
+  AgentStep,
+  AgentContext,
+  LlmProvider,
+  LlmMessage,
+  ToolCall,
+  ToolResult,
+  AgentRule,
+} from './types.js';
+
+const log = getLogger().child({ component: 'agent-runner' });
+
+const DEFAULT_MAX_STEPS = 10;
+const DEFAULT_SYSTEM_PROMPT = `You are Titan, an autonomous AI agent.
+Follow the ReAct pattern:
+1. Think about what you need to do.
+2. Call a tool if needed.
+3. Observe the result.
+4. Reflect and decide next step.
+When you have the final answer, respond with "FINAL ANSWER: ...".`;
+
+function buildSystemPrompt(ctx: AgentContext): string {
+  const rules: string[] = [];
+  for (const r of ctx.rules) {
+    if (r.type === 'max_steps') rules.push(`Max steps: ${r.value}`);
+    if (r.type === 'token_budget') rules.push(`Token budget: ${r.value}`);
+    if (r.type === 'forbidden_tools') rules.push(`Forbidden tools: ${(r.value as string[]).join(', ')}`);
+  }
+  if (ctx.memoryItems && ctx.memoryItems.length > 0) {
+    rules.push(`Relevant memory:\n${ctx.memoryItems.join('\n')}`);
+  }
+  return rules.length > 0 ? `${ctx.systemPrompt}\n\n--- Rules & Memory ---\n${rules.join('\n')}` : ctx.systemPrompt;
+}
+
+function buildMessages(ctx: AgentContext): LlmMessage[] {
+  const msgs: LlmMessage[] = [{ role: 'system', content: buildSystemPrompt(ctx) }];
+  msgs.push({ role: 'user', content: ctx.run.prompt });
+
+  for (const step of ctx.run.steps) {
+    if (step.thought) {
+      msgs.push({ role: 'assistant', content: step.thought });
+    }
+    if (step.action) {
+      msgs.push({
+        role: 'assistant',
+        content: '',
+        toolCalls: [step.action],
+      });
+    }
+    if (step.observation) {
+      msgs.push({
+        role: 'tool',
+        content: step.observation.success ? JSON.stringify(step.observation.data) : `Error: ${step.observation.error}`,
+        toolResult: step.observation,
+      });
+    }
+    if (step.reflection) {
+      msgs.push({ role: 'assistant', content: step.reflection });
+    }
+  }
+  return msgs;
+}
+
+function isToolCallAllowed(call: ToolCall, rules: AgentRule[]): boolean {
+  const forbidden = rules.filter((r) => r.type === 'forbidden_tools').flatMap((r) => r.value as string[]);
+  return !forbidden.includes(call.name);
+}
+
+export interface AgentRunnerDeps {
+  llm: LlmProvider;
+  executeTool: (call: ToolCall, runId: string) => Promise<ToolResult>;
+  persistRun?: (run: AgentRun) => Promise<void>;
+  onStep?: (step: AgentStep) => Promise<void>;
+}
+
+export class AgentRunner {
+  constructor(private deps: AgentRunnerDeps) {}
+
+  async run(input: AgentRunInput): Promise<AgentRun> {
+    const run: AgentRun = {
+      id: randomUUID(),
+      agentId: input.agentId,
+      userId: input.userId,
+      workspaceId: input.workspaceId,
+      apiKeyId: input.apiKeyId,
+      prompt: input.prompt,
+      status: 'running',
+      maxSteps: input.maxSteps ?? DEFAULT_MAX_STEPS,
+      currentStep: 0,
+      tokenBudget: input.tokenBudget,
+      tokensUsed: 0,
+      forbiddenTools: input.forbiddenTools,
+      steps: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    log.info({ runId: run.id, prompt: input.prompt.substring(0, 100) }, 'agent run started');
+
+    const rules: AgentRule[] = [];
+    if (run.maxSteps) rules.push({ type: 'max_steps', value: run.maxSteps });
+    if (run.tokenBudget) rules.push({ type: 'token_budget', value: run.tokenBudget });
+    if (run.forbiddenTools) rules.push({ type: 'forbidden_tools', value: run.forbiddenTools });
+
+    const ctx: AgentContext = {
+      run,
+      systemPrompt: DEFAULT_SYSTEM_PROMPT,
+      rules,
+    };
+
+    try {
+      while (run.currentStep < run.maxSteps) {
+        if (run.tokenBudget && run.tokensUsed >= run.tokenBudget) {
+          run.status = 'completed';
+          run.finalAnswer = 'Token budget exhausted.';
+          break;
+        }
+
+        run.currentStep++;
+        const step = await this.executeStep(ctx, run.currentStep);
+        run.steps.push(step);
+        run.tokensUsed += step.tokensUsed ?? 0;
+        run.updatedAt = new Date();
+
+        if (this.deps.persistRun) {
+          await this.deps.persistRun(run);
+        }
+
+        if (run.tokenBudget && run.tokensUsed >= run.tokenBudget) {
+          run.status = 'completed';
+          run.finalAnswer = 'Token budget exhausted.';
+          break;
+        }
+
+        if (step.status === 'completed') {
+          run.status = 'completed';
+          run.finalAnswer = step.reflection ?? step.observation?.data?.toString() ?? 'Done';
+          break;
+        }
+      }
+
+      if (run.status === 'running') {
+        run.status = 'completed';
+        run.finalAnswer = 'Max steps reached without explicit completion.';
+      }
+    } catch (err) {
+      run.status = 'failed';
+      run.finalAnswer = err instanceof Error ? err.message : 'Unknown error';
+      log.error({ runId: run.id, err }, 'agent run failed');
+    }
+
+    if (this.deps.persistRun) {
+      await this.deps.persistRun(run);
+    }
+
+    log.info({ runId: run.id, status: run.status, steps: run.steps.length }, 'agent run finished');
+    return run;
+  }
+
+  private async executeStep(ctx: AgentContext, index: number): Promise<AgentStep> {
+    const runId = ctx.run.id;
+    const stepId = randomUUID();
+    const step: AgentStep = {
+      id: stepId,
+      runId,
+      index,
+      status: 'planning',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // 1. Planning / LLM call
+    const messages = buildMessages(ctx);
+    const start = performance.now();
+    const completion = await this.deps.llm.complete(messages);
+    step.latencyMs = Math.round(performance.now() - start);
+    step.tokensUsed = completion.tokensUsed;
+
+    // 2. If tool calls requested → execute
+    if (completion.toolCalls && completion.toolCalls.length > 0) {
+      const call = completion.toolCalls[0];
+      step.thought = completion.content || `Using tool: ${call.name}`;
+
+      if (!isToolCallAllowed(call, ctx.rules)) {
+        step.status = 'failed';
+        step.observation = { success: false, error: `Tool "${call.name}" is forbidden by rules.` };
+        return step;
+      }
+
+      step.action = call;
+      step.status = 'executing';
+
+      if (this.deps.onStep) {
+        await this.deps.onStep(step);
+      }
+
+      const toolStart = performance.now();
+      const result = await this.deps.executeTool(call, runId);
+      step.observation = result;
+      step.latencyMs = (step.latencyMs ?? 0) + Math.round(performance.now() - toolStart);
+      step.status = 'observing';
+
+      // 3. Reflection (simplified: one more LLM call to decide if done)
+      ctx.run.steps.push(step); // temporarily add for reflection context
+      const reflectMessages = buildMessages(ctx);
+      const reflectStart = performance.now();
+      const reflect = await this.deps.llm.complete(reflectMessages);
+      step.latencyMs = (step.latencyMs ?? 0) + Math.round(performance.now() - reflectStart);
+      step.tokensUsed = (step.tokensUsed ?? 0) + reflect.tokensUsed;
+      step.reflection = reflect.content;
+
+      if (reflect.content.includes('FINAL ANSWER:')) {
+        step.status = 'completed';
+      } else {
+        step.status = 'completed'; // for now, mark as completed to avoid infinite loops with mock
+      }
+    } else {
+      // Direct answer
+      step.reflection = completion.content;
+      step.status = 'completed';
+    }
+
+    step.updatedAt = new Date();
+    return step;
+  }
+}

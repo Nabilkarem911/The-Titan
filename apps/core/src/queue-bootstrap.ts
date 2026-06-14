@@ -6,6 +6,7 @@ import {
   type TitanWorker,
   createWorker,
 } from '@titan/queue';
+import { AgentRunner, MockLlmProvider, type ToolCall, type ToolResult } from '@titan/agent-engine';
 
 const log = getLogger().child({ component: 'queue-bootstrap' });
 
@@ -119,14 +120,38 @@ export function registerAllQueueSchemas(): void {
 // Processor implementations
 const processors: Record<QueueName, (job: any) => Promise<any>> = {
   [QUEUE_NAMES.AGENT_EXECUTE]: async (job) => {
-    const { prompt, runId, agentId } = job;
+    const { prompt, runId, agentId, workspaceId, userId, apiKeyId, maxSteps, tokenBudget, forbiddenTools } = job;
     log.info({ jobId: job.id, runId, agentId, prompt: prompt?.substring(0, 100) }, 'executing agent');
-    // Mock: return a fake completion
+
+    const runner = new AgentRunner({
+      llm: new MockLlmProvider(),
+      executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
+        try {
+          const data = await executeTool(call.name, call.params);
+          return { success: true, data };
+        } catch (err) {
+          return { success: false, error: err instanceof Error ? err.message : 'Tool execution failed' };
+        }
+      },
+    });
+
+    const result = await runner.run({
+      agentId: agentId ?? 'default-agent',
+      prompt: prompt ?? '',
+      userId,
+      workspaceId,
+      apiKeyId,
+      maxSteps,
+      tokenBudget,
+      forbiddenTools,
+    });
+
     return {
-      output: `This is a mock response to the prompt: "${prompt?.substring(0, 50)}..."`,
-      tokensUsed: 100,
-      agentId,
-      runId,
+      runId: result.id,
+      status: result.status,
+      finalAnswer: result.finalAnswer,
+      steps: result.steps.length,
+      tokensUsed: result.tokensUsed,
     };
   },
   [QUEUE_NAMES.TOOL_EXECUTE]: async (job) => {

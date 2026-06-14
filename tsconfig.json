@@ -12,7 +12,9 @@
       "@titan/queue": ["./packages/queue/src/index.ts"],
       "@titan/auth": ["./packages/auth/src/index.ts"],
       "@titan/websocket": ["./packages/websocket/src/index.ts"],
-      "@titan/telemetry": ["./packages/telemetry/src/index.ts"]
+      "@titan/telemetry": ["./packages/telemetry/src/index.ts"],
+      "@titan/agent-engine": ["./packages/agent-engine/src/index.ts"],
+      "@titan/agent-engine/*": ["./packages/agent-engine/src/*"]
     }
   },
   "include": [

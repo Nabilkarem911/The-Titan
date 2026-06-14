@@ -16,12 +16,13 @@
     "build:memory": "tsc -p packages/memory",
     "build:tools": "tsc -p packages/tools",
     "build:queue": "tsc -p packages/queue",
+    "build:agent-engine": "tsc -p packages/agent-engine",
     "build:auth": "tsc -p packages/auth",
     "build:websocket": "tsc -p packages/websocket",
     "build:observability": "tsc -p packages/observability",
     "build:telemetry": "tsc -p packages/telemetry",
     "build:core": "tsc -p apps/core",
-    "build": "npm run build:shared && npm run build:config && npm run build:logging && npm run build:database && npm run build:memory && npm run build:tools && npm run build:queue && npm run build:auth && npm run build:websocket && npm run build:observability && npm run build:telemetry && npm run build:core",
+    "build": "npm run build:shared && npm run build:config && npm run build:logging && npm run build:database && npm run build:memory && npm run build:tools && npm run build:queue && npm run build:agent-engine && npm run build:auth && npm run build:websocket && npm run build:observability && npm run build:telemetry && npm run build:core",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -52,9 +53,13 @@
     "eslint": "^10.5.0",
     "globals": "^17.6.0",
     "prettier": "3.4.2",
-    "tsx": "4.19.2",
+    "tsx": "^4.22.4",
     "typescript": "5.6.3",
     "typescript-eslint": "^8.61.0",
     "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "fastify": "5.8.5",
+    "ws": "8.21.0"
   }
 }

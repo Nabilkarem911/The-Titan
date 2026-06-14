@@ -38,6 +38,7 @@ export default defineConfig({
       '@titan/websocket': path.resolve(__dirname, 'packages/websocket/src/index.ts'),
       '@titan/observability': path.resolve(__dirname, 'packages/observability/src/index.ts'),
       '@titan/telemetry': path.resolve(__dirname, 'packages/telemetry/src/index.ts'),
+      '@titan/agent-engine': path.resolve(__dirname, 'packages/agent-engine/src/index.ts'),
       '@titan/tools': path.resolve(__dirname, 'packages/tools/src/index.ts'),
     },
   },
