@@ -9,7 +9,7 @@ import { requireAuth } from '../plugins/auth.js';
 const RATE_LIMIT_API = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
 
 export const apiKeyRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
-  app.post('/api-keys', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
+  app.post('/api/v1/api-keys', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const input = CreateApiKeyInputSchema.parse(req.body);
     const created = await createApiKey({
@@ -36,7 +36,7 @@ export const apiKeyRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
     };
   });
 
-  app.get('/api-keys', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
+  app.get('/api/v1/api-keys', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const list = await apiKeys.listForUser(req.auth.userId);
     return {
@@ -54,7 +54,7 @@ export const apiKeyRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
     };
   });
 
-  app.delete<{ Params: { id: string } }>('/api-keys/:id', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/api/v1/api-keys/:id', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req, reply) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     await revokeApiKey(req.auth.userId, req.params.id);
     await audit.write({

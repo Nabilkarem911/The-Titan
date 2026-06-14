@@ -36,13 +36,13 @@ async function resolveCtxWithAbuse(userId: string, workspaceId: string, auth: { 
 const RATE_LIMIT_API = { config: { rateLimit: { max: 100, timeWindow: '1 minute' } } };
 
 export const workspaceRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
-  app.get('/workspaces', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
+  app.get('/api/v1/workspaces', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const list = await workspaces.listForUser(req.auth.userId);
     return { items: list, total: list.length };
   });
 
-  app.post('/workspaces', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req, reply) => {
+  app.post('/api/v1/workspaces', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req, reply) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const input = CreateWorkspaceInputSchema.parse(req.body);
     const existing = await workspaces.findBySlug(input.slug);
@@ -56,7 +56,7 @@ export const workspaceRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     return reply.status(201).send(created);
   });
 
-  app.get<{ Params: { id: string } }>('/workspaces/:id', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
+  app.get<{ Params: { id: string } }>('/api/v1/workspaces/:id', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const ctx = await resolveCtxWithAbuse(req.auth.userId, req.params.id, req.auth, req.url);
     requirePermission(ctx, PERMISSIONS.WORKSPACE_READ);
@@ -65,7 +65,7 @@ export const workspaceRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     return { ...ws, role: ctx.role };
   });
 
-  app.patch<{ Params: { id: string } }>('/workspaces/:id', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
+  app.patch<{ Params: { id: string } }>('/api/v1/workspaces/:id', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const ctx = await resolveCtxWithAbuse(req.auth.userId, req.params.id, req.auth, req.url);
     requirePermission(ctx, PERMISSIONS.WORKSPACE_WRITE);
@@ -75,7 +75,7 @@ export const workspaceRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     return updated;
   });
 
-  app.delete<{ Params: { id: string } }>('/workspaces/:id', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/api/v1/workspaces/:id', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req, reply) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const ctx = await resolveCtxWithAbuse(req.auth.userId, req.params.id, req.auth, req.url);
     requirePermission(ctx, PERMISSIONS.WORKSPACE_DELETE);
@@ -83,7 +83,7 @@ export const workspaceRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     return reply.status(204).send();
   });
 
-  app.get<{ Params: { id: string } }>('/workspaces/:id/members', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
+  app.get<{ Params: { id: string } }>('/api/v1/workspaces/:id/members', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const ctx = await resolveCtxWithAbuse(req.auth.userId, req.params.id, req.auth, req.url);
     requirePermission(ctx, PERMISSIONS.WORKSPACE_READ);
@@ -91,7 +91,7 @@ export const workspaceRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     return { items: list, total: list.length };
   });
 
-  app.post<{ Params: { id: string } }>('/workspaces/:id/members', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
+  app.post<{ Params: { id: string } }>('/api/v1/workspaces/:id/members', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const ctx = await resolveCtxWithAbuse(req.auth.userId, req.params.id, req.auth, req.url);
     requirePermission(ctx, PERMISSIONS.WORKSPACE_ADMIN);
@@ -108,7 +108,7 @@ export const workspaceRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     return added;
   });
 
-  app.delete<{ Params: { id: string; userId: string } }>('/workspaces/:id/members/:userId', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req, reply) => {
+  app.delete<{ Params: { id: string; userId: string } }>('/api/v1/workspaces/:id/members/:userId', { preHandler: requireAuth, ...RATE_LIMIT_API }, async (req, reply) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const ctx = await resolveCtxWithAbuse(req.auth.userId, req.params.id, req.auth, req.url);
     requirePermission(ctx, PERMISSIONS.WORKSPACE_ADMIN);

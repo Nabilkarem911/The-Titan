@@ -78,7 +78,7 @@ setInterval(() => {
 }, 60_000).unref();
 
 export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
-  app.post('/auth/register', RATE_LIMIT_AUTH(app), async (req, reply) => {
+  app.post('/api/v1/auth/register', RATE_LIMIT_AUTH(app), async (req, reply) => {
     const input = RegisterInputSchema.parse(req.body);
     const result = await registerUser(input);
     const userAgentHeader = req.headers['user-agent'];
@@ -102,7 +102,7 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     return reply.status(201).send(result);
   });
 
-  app.post('/auth/login', RATE_LIMIT_AUTH(app), async (req, reply) => {
+  app.post('/api/v1/auth/login', RATE_LIMIT_AUTH(app), async (req, reply) => {
     const input = LoginInputSchema.parse(req.body);
     const userAgentHeader = req.headers['user-agent'];
     try {
@@ -143,7 +143,7 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     }
   });
 
-  app.post('/auth/refresh', RATE_LIMIT_REFRESH(app), async (req, reply) => {
+  app.post('/api/v1/auth/refresh', RATE_LIMIT_REFRESH(app), async (req, reply) => {
     const input = RefreshInputSchema.parse(req.body);
     const cfg = loadConfig();
     const userAgentHeader = req.headers['user-agent'];
@@ -157,7 +157,7 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     });
   });
 
-  app.post('/auth/logout', { preHandler: requireAuth }, async (req, reply) => {
+  app.post('/api/v1/auth/logout', { preHandler: requireAuth }, async (req, reply) => {
     if (!req.auth?.sessionId) {
       return reply.status(400).send({ code: 'E2001', message: 'No session' });
     }
@@ -165,7 +165,7 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     return reply.status(204).send();
   });
 
-  app.post('/auth/logout-all', { preHandler: requireAuth }, async (req, reply) => {
+  app.post('/api/v1/auth/logout-all', { preHandler: requireAuth }, async (req, reply) => {
     if (!req.auth?.userId) {
       return reply.status(400).send({ code: 'E2001', message: 'No session' });
     }
@@ -173,7 +173,7 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     return reply.status(204).send();
   });
 
-  app.get('/auth/me', { preHandler: requireAuth }, async (req) => {
+  app.get('/api/v1/auth/me', { preHandler: requireAuth }, async (req) => {
     return {
       userId: req.auth!.userId,
       sessionId: req.auth?.sessionId ?? null,
