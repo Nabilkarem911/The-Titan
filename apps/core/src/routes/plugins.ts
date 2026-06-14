@@ -201,8 +201,10 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
     });
     try {
       const body = schema.parse(req.body);
+      const auth = (req as { auth?: { userId: string } }).auth;
       const rating = await pluginRatings.create({
         pluginId: id,
+        userId: auth?.userId,
         rating: body.rating,
         review: body.review,
       });
