@@ -40,6 +40,21 @@ export default function Runs() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
 
+  // Auto-poll while any run is active
+  useEffect(() => {
+    const hasRunning = runs.some((r) => r.status === 'running');
+    if (!hasRunning) return;
+    const interval = setInterval(() => {
+      fetchRuns();
+      if (selectedRunId) {
+        const sel = runs.find((r) => r.id === selectedRunId);
+        if (sel?.status === 'running') fetchSteps(selectedRunId);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runs, selectedRunId]);
+
   const statusIcon = (status: string) => {
     if (status === 'completed') return <CheckCircle className="h-4 w-4 text-emerald-400" />;
     if (status === 'failed') return <AlertCircle className="h-4 w-4 text-red-400" />;

@@ -247,10 +247,6 @@ export class AgentRunner {
       step.action = call;
       step.status = 'executing';
 
-      if (this.deps.onStep) {
-        await this.deps.onStep(step);
-      }
-
       const toolStart = performance.now();
       const result = await this.deps.executeTool(call, runId);
       step.observation = result;
