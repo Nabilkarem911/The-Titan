@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Terminal, History, Gauge, Cpu } from 'lucide-react';
+import { Terminal, History, Gauge, Cpu, BarChart3 } from 'lucide-react';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,6 +23,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <NavLink to="/queue" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <Gauge className="h-4 w-4" />
             Queue Monitor
+          </NavLink>
+          <NavLink to="/metrics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <BarChart3 className="h-4 w-4" />
+            Metrics
           </NavLink>
         </nav>
 

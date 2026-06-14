@@ -1,4 +1,5 @@
 import { getLogger } from '@titan/logging';
+import { observeHistogram, incCounter } from '@titan/observability';
 import type { LlmProvider, LlmMessage, LlmCompletion, ToolCall } from '../types.js';
 
 const log = getLogger().child({ component: 'llm-openai' });
@@ -17,6 +18,7 @@ export class OpenAiProvider implements LlmProvider {
     messages: LlmMessage[],
     opts?: { maxTokens?: number; temperature?: number },
   ): Promise<LlmCompletion> {
+    const start = performance.now();
     const url = `${this.config.baseUrl.replace(/\/$/, '')}/v1/chat/completions`;
     const body = {
       model: this.config.model,
@@ -125,6 +127,11 @@ export class OpenAiProvider implements LlmProvider {
       name: tc.function.name,
       params: parseJsonSafe(tc.function.arguments),
     }));
+
+    const latency = Math.round(performance.now() - start);
+    observeHistogram('llm_request_duration_ms', 'LLM request latency', latency, [100, 250, 500, 1000, 2500, 5000, 10000, 30000]);
+    incCounter('llm_requests_total', 'Total LLM requests', 1, { provider: 'openai', model: this.config.model });
+    incCounter('llm_tokens_total', 'Total LLM tokens used', data.usage?.total_tokens ?? 0, { provider: 'openai', model: this.config.model });
 
     return {
       content: choice.message.content ?? '',

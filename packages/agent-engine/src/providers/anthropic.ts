@@ -1,4 +1,5 @@
 import { getLogger } from '@titan/logging';
+import { observeHistogram, incCounter } from '@titan/observability';
 import type { LlmProvider, LlmMessage, LlmCompletion, ToolCall } from '../types.js';
 
 const log = getLogger().child({ component: 'llm-anthropic' });
@@ -16,6 +17,7 @@ export class AnthropicProvider implements LlmProvider {
     messages: LlmMessage[],
     opts?: { maxTokens?: number; temperature?: number },
   ): Promise<LlmCompletion> {
+    const start = performance.now();
     const url = `${(this.config.baseUrl ?? 'https://api.anthropic.com').replace(/\/$/, '')}/v1/messages`;
 
     const systemMsg = messages.find((m) => m.role === 'system')?.content ?? '';
@@ -117,10 +119,16 @@ export class AnthropicProvider implements LlmProvider {
       }
     }
 
+    const latency = Math.round(performance.now() - start);
+    const tokens = data.usage.input_tokens + data.usage.output_tokens;
+    observeHistogram('llm_request_duration_ms', 'LLM request latency', latency, [100, 250, 500, 1000, 2500, 5000, 10000, 30000]);
+    incCounter('llm_requests_total', 'Total LLM requests', 1, { provider: 'anthropic', model: this.config.model });
+    incCounter('llm_tokens_total', 'Total LLM tokens used', tokens, { provider: 'anthropic', model: this.config.model });
+
     return {
       content,
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-      tokensUsed: data.usage.input_tokens + data.usage.output_tokens,
+      tokensUsed: tokens,
       finishReason: mapFinishReason(data.stop_reason),
     };
   }

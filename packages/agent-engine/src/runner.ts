@@ -1,5 +1,6 @@
 import { getLogger } from '@titan/logging';
 import { randomUUID } from 'node:crypto';
+import { observeHistogram, incCounter } from '@titan/observability';
 import type {
   AgentRun,
   AgentRunInput,
@@ -196,7 +197,13 @@ export class AgentRunner {
       }
     }
 
-    log.info({ runId: run.id, status: run.status, steps: run.steps.length }, 'agent run finished');
+    const runDuration = Date.now() - run.createdAt.getTime();
+    observeHistogram('agent_run_duration_ms', 'Agent run total duration', runDuration, [100, 500, 1000, 5000, 10000, 30000, 60000]);
+    observeHistogram('agent_run_steps', 'Agent run steps count', run.steps.length, [1, 2, 5, 10, 20, 50]);
+    observeHistogram('agent_run_tokens', 'Agent run tokens used', run.tokensUsed, [100, 500, 1000, 5000, 10000, 50000]);
+    incCounter('agent_runs_total', 'Total agent runs', 1, { status: run.status });
+
+    log.info({ runId: run.id, status: run.status, steps: run.steps.length, durationMs: runDuration }, 'agent run finished');
     return run;
   }
 
