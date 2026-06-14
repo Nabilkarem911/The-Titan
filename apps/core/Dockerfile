@@ -47,7 +47,7 @@ RUN addgroup -S titan -g 1001 && adduser -S titan -G titan -u 1001
 USER titan
 
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
   CMD curl -f http://localhost:3000/health/live || exit 1
 
 CMD ["dumb-init", "node", "apps/core/dist/index.js"]
