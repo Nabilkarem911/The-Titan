@@ -18,6 +18,7 @@ import { metricsRoutes } from './routes/metrics.js';
 import { agentRoutes } from './routes/agents.js';
 import { swarmRoutes } from './routes/swarm.js';
 import { pluginRoutes } from './routes/plugins.js';
+import { complianceRoutes } from './routes/compliance.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 
@@ -176,6 +177,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(agentRoutes);
   await app.register(swarmRoutes);
   await app.register(pluginRoutes);
+  await app.register(complianceRoutes);
 
   app.get('/', async () => ({
     name: cfg.SERVICE_NAME,

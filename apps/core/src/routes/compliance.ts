@@ -1,0 +1,46 @@
+import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
+import { verifyHashChain, getRetentionInfo, archiveOlderThan } from '@titan/database';
+import { getLogger } from '@titan/logging';
+
+const log = getLogger().child({ component: 'compliance-routes' });
+
+export const complianceRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
+  app.get('/api/v1/compliance/audit/verify', async (_req, reply) => {
+    try {
+      const result = await verifyHashChain();
+      return reply.send(result);
+    } catch (err) {
+      log.error({ err }, 'failed to verify audit hash chain');
+      return reply.status(500).send({ error: 'Failed to verify audit hash chain' });
+    }
+  });
+
+  app.get('/api/v1/compliance/audit/retention', async (_req, reply) => {
+    try {
+      const info = await getRetentionInfo();
+      return reply.send(info);
+    } catch (err) {
+      log.error({ err }, 'failed to get retention info');
+      return reply.status(500).send({ error: 'Failed to get retention info' });
+    }
+  });
+
+  app.post('/api/v1/compliance/audit/archive', async (req, reply) => {
+    const schema = z.object({
+      daysOld: z.number().int().min(1).max(3650).default(365),
+      batchSize: z.number().int().min(1).max(10000).default(1000),
+    });
+    try {
+      const body = schema.parse(req.body);
+      const result = await archiveOlderThan(body.daysOld, body.batchSize);
+      return reply.send(result);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return reply.status(400).send({ error: err.errors });
+      }
+      log.error({ err }, 'failed to archive audit logs');
+      return reply.status(500).send({ error: 'Failed to archive audit logs' });
+    }
+  });
+};
