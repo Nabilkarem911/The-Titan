@@ -9,6 +9,7 @@ import {
 import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps } from '@titan/database';
+import { executeBash, patchFile, readFileAst, firecrawlScrape } from '@titan/tools';
 
 const log = getLogger().child({ component: 'queue-bootstrap' });
 
@@ -17,11 +18,10 @@ const registry = getGlobalToolRegistry();
 
 registry.register({
   name: 'execute_bash',
-  description: 'Execute a bash command in a sandboxed container',
+  description: 'Execute a bash command',
   handler: async (params: unknown) => {
-    const { command } = params as { command: string };
-    log.info({ command }, 'tool:execute_bash');
-    return { stdout: `mock: ${command}`, stderr: '', exitCode: 0 };
+    const { command, cwd, timeoutMs } = params as { command: string; cwd?: string; timeoutMs?: number };
+    return executeBash({ command, cwd, timeoutMs });
   },
   tags: ['system', 'execution'],
 });
@@ -31,30 +31,27 @@ registry.register({
   description: 'Apply a unified diff patch to a file',
   handler: async (params: unknown) => {
     const { filePath, patch } = params as { filePath: string; patch: string };
-    log.info({ filePath, patch }, 'tool:patch_file');
-    return { success: true, filePath };
+    return patchFile({ filePath, patch });
   },
   tags: ['filesystem', 'code'],
 });
 
 registry.register({
   name: 'read_file_ast',
-  description: 'Read a file and return its AST',
+  description: 'Read a file and return its structural outline',
   handler: async (params: unknown) => {
     const { filePath } = params as { filePath: string };
-    log.info({ filePath }, 'tool:read_file_ast');
-    return { type: 'Program', filePath, body: [] };
+    return readFileAst({ filePath });
   },
   tags: ['filesystem', 'code'],
 });
 
 registry.register({
   name: 'firecrawl_scrape',
-  description: 'Scrape a URL and return plain text',
+  description: 'Fetch a URL and return its plain text content',
   handler: async (params: unknown) => {
-    const { url } = params as { url: string };
-    log.info({ url }, 'tool:firecrawl_scrape');
-    return { url, title: `Title of ${url}`, content: `Mock content from ${url}` };
+    const { url, timeoutMs } = params as { url: string; timeoutMs?: number };
+    return firecrawlScrape({ url, timeoutMs });
   },
   tags: ['network', 'web'],
 });
