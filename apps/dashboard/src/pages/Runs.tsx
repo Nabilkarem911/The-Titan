@@ -198,21 +198,38 @@ export default function Runs() {
                     {step.actionName && (
                       <div className="mb-2">
                         <span className="text-xs text-slate-500 uppercase tracking-wider">Action</span>
-                        <div className="mt-1 rounded bg-slate-950 px-3 py-2 font-mono text-xs text-emerald-400">
-                          {step.actionName}({JSON.stringify(step.actionParams)})
+                        <div className="mt-1 rounded bg-slate-950 px-3 py-2 font-mono text-xs text-emerald-400 flex flex-wrap gap-1 items-baseline">
+                          <span className="text-indigo-400">{step.actionName}</span>
+                          {step.actionParams && (() => {
+                            const p = step.actionParams as Record<string, unknown>;
+                            const main = p.url ?? p.command ?? p.path ?? p.query;
+                            return main
+                              ? <span className="text-slate-400 break-all">→ {String(main)}</span>
+                              : <span className="text-slate-500">{JSON.stringify(p).slice(0, 120)}</span>;
+                          })()}
                         </div>
                       </div>
                     )}
 
                     {(step.observationData !== null && step.observationData !== undefined) && (
                       <div className="mb-2">
-                        <span className="text-xs text-slate-500 uppercase tracking-wider">Observation</span>
-                        <div className="mt-1 rounded bg-slate-950 px-3 py-2 font-mono text-xs text-slate-300 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                        <span className="text-xs text-slate-500 uppercase tracking-wider">
+                          {step.observationSuccess ? 'Result' : 'Error'}
+                        </span>
+                        <div className="mt-1 rounded bg-slate-950 px-3 py-2 text-xs text-slate-300 whitespace-pre-wrap max-h-40 overflow-y-auto">
                           {step.observationSuccess
-                            ? (typeof step.observationData === 'object'
-                                ? JSON.stringify(step.observationData, null, 2)
-                                : String(step.observationData))
-                            : step.observationError}
+                            ? (() => {
+                                const d = step.observationData;
+                                if (typeof d === 'object' && d !== null) {
+                                  const obj = d as Record<string, unknown>;
+                                  if (obj.text) return String(obj.text).slice(0, 600) + (String(obj.text).length > 600 ? '…' : '');
+                                  if (obj.content) return String(obj.content).slice(0, 600) + (String(obj.content).length > 600 ? '…' : '');
+                                  if (obj.stdout) return String(obj.stdout).slice(0, 600);
+                                  return JSON.stringify(d).slice(0, 400) + '…';
+                                }
+                                return String(d).slice(0, 600);
+                              })()
+                            : <span className="text-red-400">{step.observationError}</span>}
                         </div>
                       </div>
                     )}
