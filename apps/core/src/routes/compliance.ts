@@ -1,12 +1,13 @@
-import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import type { FastifyInstance, FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { verifyHashChain, getRetentionInfo, archiveOlderThan } from '@titan/database';
 import { getLogger } from '@titan/logging';
+import { requireAuth } from '../plugins/auth.js';
 
 const log = getLogger().child({ component: 'compliance-routes' });
 
 export const complianceRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
-  app.get('/api/v1/compliance/audit/verify', async (_req, reply) => {
+  app.get('/api/v1/compliance/audit/verify', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (_req, reply) => {
     try {
       const result = await verifyHashChain();
       return reply.send(result);
@@ -16,7 +17,7 @@ export const complianceRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     }
   });
 
-  app.get('/api/v1/compliance/audit/retention', async (_req, reply) => {
+  app.get('/api/v1/compliance/audit/retention', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (_req, reply) => {
     try {
       const info = await getRetentionInfo();
       return reply.send(info);
@@ -26,7 +27,7 @@ export const complianceRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     }
   });
 
-  app.post('/api/v1/compliance/audit/archive', async (req, reply) => {
+  app.post('/api/v1/compliance/audit/archive', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
     const schema = z.object({
       daysOld: z.number().int().min(1).max(3650).default(365),
       batchSize: z.number().int().min(1).max(10000).default(1000),

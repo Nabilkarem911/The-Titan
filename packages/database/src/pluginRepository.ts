@@ -263,7 +263,8 @@ export const pluginSearch = {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const sort = opts?.sortBy ?? 'updated_at';
+    const allowedSort: readonly string[] = ['name', 'updated_at', 'created_at'];
+    const sort = allowedSort.includes(opts?.sortBy ?? '') ? opts?.sortBy : 'updated_at';
     const limit = opts?.limit ?? 100;
     const offset = opts?.offset ?? 0;
 

@@ -1,5 +1,4 @@
 import { getLogger } from '@titan/logging';
-import { loadConfig } from '@titan/config';
 import type { MemoryConfig, MemoryProvider, HealthStatus, MemoryMessage, MemoryItem, SearchOpts, SearchResult, CollectionInfo } from './index.js';
 import { PgVectorMemoryProvider } from './pgvectorProvider.js';
 
@@ -120,13 +119,10 @@ export class MemoryClient {
   private config: MemoryConfig;
 
   constructor() {
-    const _cfg = loadConfig();
-    void _cfg;
-    // Default to mock provider, but check for pgvector in config
-    // In the future, we'll read provider from env/config
-    this.config = {
-      provider: 'mock' // TODO: Read from env/config: process.env.MEMORY_PROVIDER || 'mock'
-    };
+    const envProvider = process.env['MEMORY_PROVIDER'];
+    const validProviders: MemoryConfig['provider'][] = ['mock', 'chromadb', 'pgvector', 'weaviate', 'pinecone'];
+    const provider = validProviders.includes(envProvider as MemoryConfig['provider']) ? (envProvider as MemoryConfig['provider']) : 'mock';
+    this.config = { provider };
   }
 
   async initialize(): Promise<void> {

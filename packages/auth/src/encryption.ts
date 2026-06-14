@@ -1,7 +1,4 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'encryption' });
 
 const ALGO = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -10,8 +7,7 @@ const SALT_LENGTH = 32;
 function getKey(salt: Buffer): Buffer {
   const secret = process.env['ENCRYPTION_KEY'];
   if (!secret) {
-    log.warn('ENCRYPTION_KEY not set; using fallback (NOT FOR PRODUCTION)');
-    return scryptSync('titan-fallback-secret', salt, 32);
+    throw new Error('ENCRYPTION_KEY environment variable is required for encryption operations');
   }
   return scryptSync(secret, salt, 32);
 }

@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { encrypt, decrypt, encryptToJson, decryptFromJson } from './encryption.js';
+
+beforeAll(() => {
+  process.env['ENCRYPTION_KEY'] = 'test-encryption-key-32-bytes-long!!';
+});
 
 describe('Encryption', () => {
   it('encrypts and decrypts a string', () => {
