@@ -18,7 +18,8 @@
     "@titan/shared": "0.1.0",
     "@titan/database": "0.1.0",
     "@titan/queue": "0.1.0",
-    "@titan/logging": "0.1.0"
+    "@titan/logging": "0.1.0",
+    "@titan/sandbox": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

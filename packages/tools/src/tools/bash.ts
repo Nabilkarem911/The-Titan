@@ -7,16 +7,46 @@ import type { ExecuteBashInput } from '../schemas.js';
 const log = getLogger().child({ component: 'tool-bash' });
 const execAsync = promisify(exec);
 
+let sandboxPool: import('@titan/sandbox').SandboxPool | null = null;
+
+export async function getOrCreateSandboxPool(): Promise<import('@titan/sandbox').SandboxPool | null> {
+  if (sandboxPool) return sandboxPool;
+  try {
+    const { SandboxPool } = await import('@titan/sandbox');
+    sandboxPool = new SandboxPool();
+    await sandboxPool.initialize();
+    return sandboxPool;
+  } catch {
+    return null;
+  }
+}
+
 export async function executeBash(input: ExecuteBashInput): Promise<{
   stdout: string;
   stderr: string;
   exitCode: number;
   truncated: boolean;
 }> {
-  const { command, cwd, timeoutMs, env } = input;
+  const { command, cwd, timeoutMs, env, useSandbox } = input;
 
   validateCommand(command);
   const resolvedCwd = cwd ? validateCwd(cwd) : process.cwd();
+
+  // If sandbox requested and available, use isolated container execution
+  if (useSandbox) {
+    const pool = await getOrCreateSandboxPool();
+    if (pool) {
+      log.info({ command: command.substring(0, 100) }, 'executing bash command in sandbox');
+      const result = await pool.execute(command, { timeoutMs: timeoutMs ?? 10_000 });
+      return {
+        stdout: truncateOutput(result.stdout, 512_000),
+        stderr: truncateOutput(result.stderr, 256_000),
+        exitCode: result.exitCode,
+        truncated: false,
+      };
+    }
+    log.warn('sandbox requested but unavailable; falling back to host execution');
+  }
 
   log.info({ command: command.substring(0, 100), cwd: resolvedCwd }, 'executing bash command');
 

@@ -14,7 +14,8 @@
       "@titan/websocket": ["./packages/websocket/src/index.ts"],
       "@titan/telemetry": ["./packages/telemetry/src/index.ts"],
       "@titan/agent-engine": ["./packages/agent-engine/src/index.ts"],
-      "@titan/agent-engine/*": ["./packages/agent-engine/src/*"]
+      "@titan/agent-engine/*": ["./packages/agent-engine/src/*"],
+      "@titan/sandbox": ["./packages/sandbox/src/index.ts"]
     }
   },
   "include": [

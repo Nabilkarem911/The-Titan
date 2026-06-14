@@ -40,6 +40,7 @@ export default defineConfig({
       '@titan/telemetry': path.resolve(__dirname, 'packages/telemetry/src/index.ts'),
       '@titan/agent-engine': path.resolve(__dirname, 'packages/agent-engine/src/index.ts'),
       '@titan/tools': path.resolve(__dirname, 'packages/tools/src/index.ts'),
+      '@titan/sandbox': path.resolve(__dirname, 'packages/sandbox/src/index.ts'),
     },
   },
 });

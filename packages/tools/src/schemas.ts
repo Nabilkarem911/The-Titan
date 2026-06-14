@@ -5,6 +5,7 @@ export const ExecuteBashInputSchema = z.object({
   cwd: z.string().max(500).optional(),
   timeoutMs: z.number().int().min(100).max(60_000).optional().default(10_000),
   env: z.record(z.string()).optional(),
+  useSandbox: z.boolean().optional(),
 });
 
 export type ExecuteBashInput = z.infer<typeof ExecuteBashInputSchema>;

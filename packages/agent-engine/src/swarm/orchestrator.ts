@@ -4,7 +4,6 @@ import type {
   SwarmTask,
   SwarmTaskInput,
   SwarmSubTask,
-  SwarmAgent,
   SwarmResult,
   SwarmOrchestratorDeps,
   AgentRole,
@@ -58,7 +57,7 @@ export class SwarmOrchestrator {
       const completion = await llmPlanner.complete(messages);
       const plan = this.parsePlan(completion.content);
 
-      task.subTasks = plan.map((p, i) => ({
+      task.subTasks = plan.map((p) => ({
         id: randomUUID(),
         agentRole: p.role,
         prompt: p.prompt,
