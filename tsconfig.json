@@ -20,5 +20,8 @@
   "include": [
     "apps/*/src/**/*",
     "packages/*/src/**/*"
+  ],
+  "exclude": [
+    "apps/dashboard/**/*"
   ]
 }
