@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { plugins, pluginVersions, pluginRatings, pluginSearch } from '@titan/database';
 import { getLogger } from '@titan/logging';
 import { getGlobalPluginRunner, getGlobalToolRegistry } from '@titan/agent-engine';
-import { requireAuth } from '../plugins/auth.js';
+import { requireAuth, requirePermission } from '../plugins/auth.js';
+import { PERMISSIONS } from '@titan/shared';
 
 const log = getLogger().child({ component: 'plugin-routes' });
 const runner = getGlobalPluginRunner();
@@ -49,6 +50,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
   });
 
   app.post('/api/v1/plugins', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
     try {
       const body = installSchema.parse(req.body);
       log.info({ name: body.name }, 'installing plugin');
@@ -87,6 +89,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
   });
 
   app.patch('/api/v1/plugins/:id/status', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
     const { id } = req.params as { id: string };
     const schema = z.object({ status: z.enum(['enabled', 'disabled', 'error']) });
     try {
@@ -141,6 +144,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
   });
 
   app.post('/api/v1/plugins/:id/execute', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
     const { id } = req.params as { id: string };
     const schema = z.object({
       tool: z.string().min(1),
@@ -233,6 +237,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
   });
 
   app.patch('/api/v1/plugins/:id/versions/:vid/publish', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.WORKSPACE_ADMIN);
     const { id, vid } = req.params as { id: string; vid: string };
     try {
       const plugin = await plugins.findById(id);
@@ -248,6 +253,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
   });
 
   app.patch('/api/v1/plugins/:id/versions/:vid/deprecate', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.WORKSPACE_ADMIN);
     const { id, vid } = req.params as { id: string; vid: string };
     try {
       const plugin = await plugins.findById(id);
@@ -263,6 +269,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
   });
 
   app.delete('/api/v1/plugins/:id', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.WORKSPACE_ADMIN);
     const { id } = req.params as { id: string };
     try {
       const removed = await plugins.deleteById(id);

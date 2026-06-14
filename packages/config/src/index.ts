@@ -131,6 +131,7 @@ const EnvSchema = z.object({
     .transform((v) => v === 'true')
     .default('true'),
   AUDIT_ARCHIVE_BATCH_SIZE: z.coerce.number().int().positive().default(1000),
+  AUDIT_VERIFY_INTERVAL_MS: z.coerce.number().int().positive().default(3_600_000),
 
   ABUSE_WINDOW_MS: z.coerce.number().int().positive().default(300_000),
   ABUSE_THRESHOLD_HIGH: z.coerce.number().int().positive().default(20),
@@ -140,6 +141,11 @@ const EnvSchema = z.object({
     .union([z.literal('true'), z.literal('false')])
     .transform((v) => v === 'true')
     .default('true'),
+
+  LLM_PROVIDER_TYPE: z.enum(['openai', 'openai-compatible', 'anthropic']).default('openai-compatible'),
+  LLM_API_KEY: z.string().default(''),
+  LLM_MODEL: z.string().default('gpt-4o'),
+  LLM_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -222,6 +228,9 @@ function enforceInvariants(cfg: Env): void {
     }
     if (cfg.HTTP_TRUST_PROXY === true) {
       throw new Error('HTTP_TRUST_PROXY=true is unsafe; use a specific subnet or false in production');
+    }
+    if (!cfg.LLM_API_KEY) {
+      throw new Error('LLM_API_KEY must be set in production');
     }
   }
 }

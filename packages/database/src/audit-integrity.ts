@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { query, withTransaction } from '@titan/database';
+import { query, withTransaction } from './client.js';
 import { loadConfig } from '@titan/config';
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';

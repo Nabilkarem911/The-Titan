@@ -43,6 +43,7 @@ function readConfig(): DbConfig {
 
 let pool: Pool | null = null;
 let tlsVerified = false;
+let poolMetricsTimer: ReturnType<typeof setInterval> | null = null;
 
 export function getPool(): Pool {
   if (pool) return pool;
@@ -74,13 +75,14 @@ export function getPool(): Pool {
   if (cfg.logQueries) {
     pool.on('connect', () => log.debug('new database client connected'));
   }
-  setInterval(() => {
+  poolMetricsTimer = setInterval(() => {
     if (pool) {
       setGauge('db_pool_total', 'Postgres pool total count', pool.totalCount);
       setGauge('db_pool_idle', 'Postgres pool idle count', pool.idleCount);
       setGauge('db_pool_waiting', 'Postgres pool waiting count', pool.waitingCount);
     }
-  }, 10_000).unref();
+  }, 10_000);
+  poolMetricsTimer.unref();
   return pool;
 }
 
@@ -170,6 +172,10 @@ export async function ping(): Promise<boolean> {
 }
 
 export async function closePool(): Promise<void> {
+  if (poolMetricsTimer) {
+    clearInterval(poolMetricsTimer);
+    poolMetricsTimer = null;
+  }
   if (pool) {
     await pool.end();
     pool = null;

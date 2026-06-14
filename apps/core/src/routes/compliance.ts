@@ -2,12 +2,14 @@ import type { FastifyInstance, FastifyPluginAsync, FastifyRequest } from 'fastif
 import { z } from 'zod';
 import { verifyHashChain, getRetentionInfo, archiveOlderThan } from '@titan/database';
 import { getLogger } from '@titan/logging';
-import { requireAuth } from '../plugins/auth.js';
+import { requireAuth, requirePermission } from '../plugins/auth.js';
+import { PERMISSIONS } from '@titan/shared';
 
 const log = getLogger().child({ component: 'compliance-routes' });
 
 export const complianceRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
-  app.get('/api/v1/compliance/audit/verify', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (_req, reply) => {
+  app.get('/api/v1/compliance/audit/verify', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.AUDIT_READ);
     try {
       const result = await verifyHashChain();
       return reply.send(result);
@@ -17,7 +19,8 @@ export const complianceRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     }
   });
 
-  app.get('/api/v1/compliance/audit/retention', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (_req, reply) => {
+  app.get('/api/v1/compliance/audit/retention', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.AUDIT_READ);
     try {
       const info = await getRetentionInfo();
       return reply.send(info);
@@ -28,6 +31,7 @@ export const complianceRoutes: FastifyPluginAsync = async (app: FastifyInstance)
   });
 
   app.post('/api/v1/compliance/audit/archive', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.AUDIT_READ);
     const schema = z.object({
       daysOld: z.number().int().min(1).max(3650).default(365),
       batchSize: z.number().int().min(1).max(10000).default(1000),

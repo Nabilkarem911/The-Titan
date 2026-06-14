@@ -10,6 +10,7 @@ export class SandboxPool {
   private initialized = false;
   private healthTimer: ReturnType<typeof setInterval> | null = null;
   private docker: unknown; // lazy-loaded dockerode
+  private acquireLock: Promise<void> = Promise.resolve();
 
   constructor(config: Partial<SandboxPoolConfig> = {}) {
     this.config = {
@@ -177,22 +178,28 @@ export class SandboxPool {
 
   private async acquire(): Promise<SandboxContainer | null> {
     if (!this.docker) return null;
-
-    // Find a warm container
-    for (const c of this.containers.values()) {
-      if (c.status === 'warm') {
-        c.status = 'active';
-        return c;
+    // Serialize acquire calls to prevent double-acquisition race
+    let release!: () => void;
+    const prev = this.acquireLock;
+    this.acquireLock = new Promise<void>((res) => { release = res; });
+    await prev;
+    try {
+      // Find a warm container
+      for (const c of this.containers.values()) {
+        if (c.status === 'warm') {
+          c.status = 'active';
+          return c;
+        }
       }
+      // Create one if below max
+      if (this.containers.size < this.config.maxSize) {
+        return await this.createContainer();
+      }
+      log.warn('sandbox pool exhausted');
+      return null;
+    } finally {
+      release();
     }
-
-    // Create one if below max
-    if (this.containers.size < this.config.maxSize) {
-      return await this.createContainer();
-    }
-
-    log.warn('sandbox pool exhausted');
-    return null;
   }
 
   private async release(container: SandboxContainer): Promise<void> {
@@ -277,8 +284,8 @@ export class SandboxPool {
       const stderr = Buffer.concat(errChunks).toString('utf-8');
       const durationMs = Math.round(performance.now() - execStart);
 
-      // Check exec result
-      const execInfo = (await (docker.getContainer(container.dockerId) as unknown as { exec: { inspect: (id: string) => Promise<{ ExitCode: number; OOMKilled?: boolean }> } }).exec.inspect(exec.id)) as { ExitCode: number; OOMKilled?: boolean };
+      // Check exec result — call inspect() on the exec object itself
+      const execInfo = await (exec as unknown as { inspect: () => Promise<{ ExitCode: number; OOMKilled?: boolean }> }).inspect();
 
       return {
         exitCode: execInfo.ExitCode ?? 0,

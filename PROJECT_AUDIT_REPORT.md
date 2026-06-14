@@ -189,13 +189,13 @@ apps/core (HTTP API + WS)          apps/dashboard (React UI)
 
 ### 🔴 P0 — Blockers (Must fix before any production deployment)
 
-- [ ] **Verify `.gitignore` excludes `.env`** — add `.env` to `.gitignore` immediately; rotate any credentials that may have been committed.
-- [ ] **Fix `SandboxPool.execInContainer` Dockerode exec inspect call** — correct the cast chain at `pool.ts:281` to use the exec object's own `.inspect()` method.
-- [ ] **Sanitize/allowlist sandbox commands** — `execute_bash` must not pass raw user input to `sh -c`. Implement a command allowlist or structured argument array (never shell string interpolation).
-- [ ] **Implement `PgVectorMemoryProvider`** — replace all 8 `// TODO` stubs with real pgvector `INSERT`/`SELECT` using vector embeddings. Until done, memory is silently non-functional.
-- [ ] **Add RBAC permission checks to plugin routes** — install (`plugin:write`), delete (`plugin:write`), execute (`tool:execute`), publish/deprecate (`plugin:admin`).
-- [ ] **Add RBAC permission checks to compliance routes** — require `AUDIT_READ` permission.
-- [ ] **Fix `SandboxPool.acquire()` race condition** — guard the acquire/release cycle with an async mutex (e.g., `async-mutex` package) to prevent double-acquisition.
+- [x] ~~**Verify `.gitignore` excludes `.env`**~~ — ✅ CONFIRMED: `.env` is in `.gitignore` at line 12. No action needed.
+- [x] ~~**Fix `SandboxPool.execInContainer` Dockerode exec inspect call**~~ — ✅ FIXED: `exec.inspect()` now called on the exec object directly.
+- [ ] **Sanitize/allowlist sandbox commands** — `execute_bash` must not pass raw user input to `sh -c`. Implement a command allowlist or structured argument array (never shell string interpolation). _(P0 — still pending)_
+- [ ] **Implement `PgVectorMemoryProvider`** — replace all 8 `// TODO` stubs with real pgvector `INSERT`/`SELECT` using vector embeddings. Until done, memory is silently non-functional. _(P0 — still pending)_
+- [x] ~~**Add RBAC permission checks to plugin routes**~~ — ✅ FIXED: `requirePermission` added (TOOL_EXECUTE for install/enable/execute; WORKSPACE_ADMIN for publish/deprecate/delete).
+- [x] ~~**Add RBAC permission checks to compliance routes**~~ — ✅ FIXED: `requirePermission(AUDIT_READ)` added to all 3 compliance endpoints.
+- [x] ~~**Fix `SandboxPool.acquire()` race condition**~~ — ✅ FIXED: Promise-chaining mutex (`acquireLock`) serializes all `acquire()` calls without external dependencies.
 
 ### 🟠 P1 — High Priority (Within next 2 weeks)
 
@@ -203,11 +203,11 @@ apps/core (HTTP API + WS)          apps/dashboard (React UI)
 - [ ] **Add plugin manifest Zod schema validation** — define and enforce a strict schema for `manifest` on `POST /plugins/:id/versions` before storing to DB.
 - [ ] **Add plugin execution sandbox wiring** — `POST /plugins/:id/execute` must dispatch to a real sandboxed handler, not return `{ result: 'ok' }`.
 - [ ] **Add WebSocket auth timeout** — disconnect clients still in `authenticating` state after a configurable timeout (e.g., 30s).
-- [ ] **Add `LLM_API_KEY` to `EnvSchema`** with a production invariant — prevent silent fallback to mock LLM in production.
-- [ ] **Fix `audit-integrity.ts` self-import** — change `import ... from '@titan/database'` to `import ... from './client.js'`.
-- [ ] **Fix audit scheduler interval** — introduce `AUDIT_VERIFY_INTERVAL_MS` config key; decouple from `ABUSE_WINDOW_MS`.
-- [ ] **Clear DB pool metrics interval in `closePool()`** — prevent dangling timer on graceful shutdown.
-- [ ] **Fix `SwarmOrchestrator` `dependsOn` serialization** — handle array-of-indices correctly to build proper task dependency graph.
+- [x] ~~**Add `LLM_API_KEY` to `EnvSchema`**~~ — ✅ FIXED: `LLM_PROVIDER_TYPE`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_BASE_URL` added to Zod schema; `LLM_API_KEY` throws in production if empty.
+- [x] ~~**Fix `audit-integrity.ts` self-import**~~ — ✅ FIXED: Import changed to `'./client.js'` to eliminate circular dependency risk.
+- [x] ~~**Fix audit scheduler interval**~~ — ✅ FIXED: `AUDIT_VERIFY_INTERVAL_MS` config key added (default 1 hour); scheduler no longer uses `ABUSE_WINDOW_MS`.
+- [x] ~~**Clear DB pool metrics interval in `closePool()`**~~ — ✅ FIXED: `poolMetricsTimer` stored and cleared in `closePool()`.
+- [x] ~~**Fix `SwarmOrchestrator` `dependsOn` serialization**~~ — ✅ FIXED: `parsePlan` now returns `number[]`; `parentId` stored as JSON array; `dependenciesMet` + `buildContext` updated to handle multi-dependency.
 - [ ] **Validate `X-Request-Id` length** — cap at 128 characters to prevent log inflation.
 
 ### 🟡 P2 — Medium Priority (Within next month)

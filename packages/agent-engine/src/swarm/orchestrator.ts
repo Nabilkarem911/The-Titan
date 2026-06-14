@@ -65,7 +65,7 @@ export class SwarmOrchestrator {
         status: 'pending',
         createdAt: new Date(),
         updatedAt: new Date(),
-        ...(p.dependsOn !== undefined ? { parentId: String(p.dependsOn) } : {}),
+        ...(p.dependsOn !== undefined && p.dependsOn.length > 0 ? { parentId: JSON.stringify(p.dependsOn) } : {}),
       }));
 
       log.info({ taskId: task.id, subTasks: task.subTasks.length }, 'plan generated');
@@ -206,40 +206,59 @@ export class SwarmOrchestrator {
     };
   }
 
-  private parsePlan(content: string): Array<{ role: AgentRole; prompt: string; dependsOn?: number }> {
+  private parsePlan(content: string): Array<{ role: AgentRole; prompt: string; dependsOn: number[] }> {
     // Extract JSON array from LLM response
     const match = content.match(/\[[\s\S]*\]/);
     if (!match) {
       // Fallback: single sub-task
-      return [{ role: 'executor', prompt: content }];
+      return [{ role: 'executor', prompt: content, dependsOn: [] }];
     }
     try {
       const parsed = JSON.parse(match[0]) as Array<unknown>;
-      return parsed.map((item) => ({
-        role: String((item as Record<string, unknown>).role ?? 'executor') as AgentRole,
-        prompt: String((item as Record<string, unknown>).prompt ?? ''),
-        dependsOn: (item as Record<string, unknown>).dependsOn !== undefined ? Number((item as Record<string, unknown>).dependsOn) : undefined,
-      }));
+      return parsed.map((item) => {
+        const raw = (item as Record<string, unknown>).dependsOn;
+        const deps: number[] = Array.isArray(raw)
+          ? raw.map(Number)
+          : raw !== undefined
+          ? [Number(raw)]
+          : [];
+        return {
+          role: String((item as Record<string, unknown>).role ?? 'executor') as AgentRole,
+          prompt: String((item as Record<string, unknown>).prompt ?? ''),
+          dependsOn: deps,
+        };
+      });
     } catch {
-      return [{ role: 'executor', prompt: content }];
+      return [{ role: 'executor', prompt: content, dependsOn: [] }];
     }
   }
 
   private dependenciesMet(subTask: SwarmSubTask, allSubTasks: SwarmSubTask[], completed: Set<string>): boolean {
     if (!subTask.parentId) return true;
-    // parentId stores the index of dependency
-    const depIndex = parseInt(subTask.parentId, 10);
-    if (isNaN(depIndex)) return true;
-    const depTask = allSubTasks[depIndex];
-    return depTask ? completed.has(depTask.id) : true;
+    let depIndices: number[];
+    try {
+      depIndices = JSON.parse(subTask.parentId) as number[];
+    } catch {
+      return true;
+    }
+    return depIndices.every((idx) => {
+      const depTask = allSubTasks[idx];
+      return depTask ? completed.has(depTask.id) : true;
+    });
   }
 
   private buildContext(subTask: SwarmSubTask, allSubTasks: SwarmSubTask[], completed: Set<string>): string {
     if (!subTask.parentId) return '';
-    const depIndex = parseInt(subTask.parentId, 10);
-    if (isNaN(depIndex)) return '';
-    const depTask = allSubTasks[depIndex];
-    if (!depTask || !completed.has(depTask.id)) return '';
-    return depTask.result ?? '';
+    let depIndices: number[];
+    try {
+      depIndices = JSON.parse(subTask.parentId) as number[];
+    } catch {
+      return '';
+    }
+    return depIndices
+      .map((idx) => allSubTasks[idx])
+      .filter((t): t is SwarmSubTask => !!t && completed.has(t.id) && !!t.result)
+      .map((t) => t.result as string)
+      .join('\n\n---\n\n');
   }
 }

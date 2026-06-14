@@ -37,7 +37,7 @@ export function startAuditSchedulers(): void {
         incCounter('audit_hash_chain_verify_error_total', 'Hash chain verify errors', 1);
       }
     })();
-  }, cfg.ABUSE_WINDOW_MS);
+  }, cfg.AUDIT_VERIFY_INTERVAL_MS);
   if (verifyTimer.unref) verifyTimer.unref();
 
   archiveTimer = setInterval(() => {
@@ -56,7 +56,7 @@ export function startAuditSchedulers(): void {
   if (archiveTimer.unref) archiveTimer.unref();
 
   log.info(
-    { verifyEveryMs: cfg.ABUSE_WINDOW_MS, archiveEveryMs: 3_600_000, retentionDays: cfg.AUDIT_RETENTION_DAYS },
+    { verifyEveryMs: cfg.AUDIT_VERIFY_INTERVAL_MS, archiveEveryMs: 3_600_000, retentionDays: cfg.AUDIT_RETENTION_DAYS },
     'audit schedulers started',
   );
 }
