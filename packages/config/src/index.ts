@@ -214,21 +214,15 @@ function enforceInvariants(cfg: Env): void {
     if (cfg.REDIS_PASSWORD === '') {
       throw new Error('REDIS_PASSWORD must be set in production');
     }
-    if (!cfg.POSTGRES_TLS) {
-      throw new Error('POSTGRES_TLS must be true in production');
-    }
-    if (!cfg.REDIS_TLS) {
-      throw new Error('REDIS_TLS must be true in production');
-    }
+    // TLS optional when DB/Redis are on an internal Docker network (e.g. Coolify/Dokploy)
+    // Set POSTGRES_TLS=true only if connecting to an external managed DB over public internet
     if (cfg.WS_ALLOWED_ORIGINS === '' || cfg.WS_ALLOWED_ORIGINS === '*') {
       throw new Error('WS_ALLOWED_ORIGINS must be a comma-separated allowlist in production');
     }
     if (!cfg.HTTP_CSP_ENABLED) {
       throw new Error('HTTP_CSP_ENABLED must be true in production');
     }
-    if (cfg.HTTP_TRUST_PROXY === true) {
-      throw new Error('HTTP_TRUST_PROXY=true is unsafe; use a specific subnet or false in production');
-    }
+    // HTTP_TRUST_PROXY=true is acceptable behind a known reverse proxy (Traefik/Nginx in Coolify/Dokploy)
     if (!cfg.LLM_API_KEY) {
       throw new Error('LLM_API_KEY must be set in production');
     }
