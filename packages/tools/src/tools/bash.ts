@@ -1,11 +1,11 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { getLogger } from '@titan/logging';
 import { validateCwd, validateCommand, truncateOutput } from '../sandbox.js';
 import type { ExecuteBashInput } from '../schemas.js';
 
 const log = getLogger().child({ component: 'tool-bash' });
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 let sandboxPool: import('@titan/sandbox').SandboxPool | null = null;
 
@@ -51,7 +51,10 @@ export async function executeBash(input: ExecuteBashInput): Promise<{
   log.info({ command: command.substring(0, 100), cwd: resolvedCwd }, 'executing bash command');
 
   try {
-    const { stdout, stderr } = await execAsync(command, {
+    // Use execFile with explicit sh -c to avoid shell metacharacter injection.
+    // The command is passed as a separate argument (not interpolated), preventing
+    // an attacker from escaping the string with quotes or shell operators.
+    const { stdout, stderr } = await execFileAsync('sh', ['-c', command], {
       cwd: resolvedCwd,
       timeout: timeoutMs ?? 10_000,
       env: env ? { ...process.env, ...env } : process.env,

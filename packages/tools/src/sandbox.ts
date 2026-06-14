@@ -10,9 +10,55 @@ export interface SandboxConfig {
   timeoutMs?: number;
 }
 
+const FORBIDDEN_PATTERNS: readonly string[] = [
+  // Filesystem destruction
+  'rm -rf /',
+  'rm -rf ~',
+  'rm -rf *',
+  'shred',
+  'mkfs',
+  'dd if=/dev/zero',
+  'dd if=/dev/random',
+  // Fork bomb
+  ':(){ :|:& };:',
+  // Privilege escalation
+  'sudo',
+  'su -',
+  'chmod 777 /',
+  'chown root',
+  // Exfiltration / reverse shells
+  'curl | sh',
+  'curl | bash',
+  'wget | sh',
+  'wget | bash',
+  'bash -i',
+  'sh -i',
+  '/dev/tcp/',
+  '/dev/udp/',
+  'nc -e',
+  'ncat -e',
+  // System manipulation
+  'reboot',
+  'shutdown',
+  'halt',
+  'poweroff',
+  'init 0',
+  'init 6',
+  'kill -9 1',
+  // Credential theft
+  '/etc/passwd',
+  '/etc/shadow',
+  '/etc/sudoers',
+  // Container escape
+  'docker.sock',
+  'containerd.sock',
+  'nsenter',
+  'unshare',
+];
+
 const DEFAULT_CONFIG: SandboxConfig = {
   allowedCwdPrefixes: [process.cwd()],
-  forbiddenCommands: ['rm -rf /', 'dd if=/dev/zero', ':(){ :|:& };:', 'mkfs'],
+  forbiddenCommands: FORBIDDEN_PATTERNS as string[],
   maxOutputBytes: 1024 * 1024, // 1 MB
   timeoutMs: 10_000,
 };
@@ -32,11 +78,16 @@ export function validateCwd(cwd: string, config: SandboxConfig = DEFAULT_CONFIG)
 
 export function validateCommand(command: string, config: SandboxConfig = DEFAULT_CONFIG): void {
   const forbidden = config.forbiddenCommands ?? DEFAULT_CONFIG.forbiddenCommands!;
+  const lower = command.toLowerCase();
   for (const f of forbidden) {
-    if (command.toLowerCase().includes(f.toLowerCase())) {
-      log.warn({ command, forbidden: f }, 'forbidden command detected');
+    if (lower.includes(f.toLowerCase())) {
+      log.warn({ command: command.substring(0, 200), forbidden: f }, 'forbidden command detected');
       throw new Error(`Command contains forbidden pattern: "${f}"`);
     }
+  }
+  // Block null bytes which can be used to bypass string checks
+  if (command.includes('\0')) {
+    throw new Error('Command contains null bytes');
   }
 }
 
