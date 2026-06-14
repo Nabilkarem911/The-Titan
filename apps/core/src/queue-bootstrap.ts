@@ -7,6 +7,7 @@ import {
   createWorker,
 } from '@titan/queue';
 import { AgentRunner, MockLlmProvider, type ToolCall, type ToolResult } from '@titan/agent-engine';
+import { MemoryClient } from '@titan/memory';
 
 const log = getLogger().child({ component: 'queue-bootstrap' });
 
@@ -123,6 +124,9 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
     const { prompt, runId, agentId, workspaceId, userId, apiKeyId, maxSteps, tokenBudget, forbiddenTools } = job;
     log.info({ jobId: job.id, runId, agentId, prompt: prompt?.substring(0, 100) }, 'executing agent');
 
+    const memory = new MemoryClient();
+    await memory.initialize();
+
     const runner = new AgentRunner({
       llm: new MockLlmProvider(),
       executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
@@ -133,6 +137,7 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
           return { success: false, error: err instanceof Error ? err.message : 'Tool execution failed' };
         }
       },
+      memory,
     });
 
     const result = await runner.run({

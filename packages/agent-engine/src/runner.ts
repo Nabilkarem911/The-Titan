@@ -11,6 +11,7 @@ import type {
   ToolResult,
   AgentRule,
 } from './types.js';
+import type { MemoryClient } from '@titan/memory';
 
 const log = getLogger().child({ component: 'agent-runner' });
 
@@ -75,6 +76,7 @@ export interface AgentRunnerDeps {
   executeTool: (call: ToolCall, runId: string) => Promise<ToolResult>;
   persistRun?: (run: AgentRun) => Promise<void>;
   onStep?: (step: AgentStep) => Promise<void>;
+  memory?: MemoryClient;
 }
 
 export class AgentRunner {
@@ -106,10 +108,23 @@ export class AgentRunner {
     if (run.tokenBudget) rules.push({ type: 'token_budget', value: run.tokenBudget });
     if (run.forbiddenTools) rules.push({ type: 'forbidden_tools', value: run.forbiddenTools });
 
+    let memoryItems: string[] | undefined;
+    if (this.deps.memory) {
+      try {
+        const collection = input.workspaceId ? `workspace_${input.workspaceId}` : 'global';
+        const results = await this.deps.memory.search(collection, input.prompt, { limit: 5 });
+        memoryItems = results.map((r) => r.content);
+        log.info({ runId: run.id, memories: results.length }, 'memory retrieved');
+      } catch (err) {
+        log.warn({ runId: run.id, err: err instanceof Error ? err.message : 'Unknown' }, 'memory retrieval failed');
+      }
+    }
+
     const ctx: AgentContext = {
       run,
       systemPrompt: DEFAULT_SYSTEM_PROMPT,
       rules,
+      memoryItems,
     };
 
     try {
@@ -155,6 +170,30 @@ export class AgentRunner {
 
     if (this.deps.persistRun) {
       await this.deps.persistRun(run);
+    }
+
+    if (this.deps.memory) {
+      try {
+        const collection = input.workspaceId ? `workspace_${input.workspaceId}` : 'global';
+        await this.deps.memory.upsert(collection, [
+          {
+            id: run.id,
+            content: `Prompt: ${run.prompt}\nAnswer: ${run.finalAnswer ?? 'N/A'}`,
+            metadata: {
+              agentId: run.agentId,
+              status: run.status,
+              steps: run.steps.length,
+              tokensUsed: run.tokensUsed,
+              userId: run.userId,
+              workspaceId: run.workspaceId,
+            },
+            timestamp: new Date(),
+          },
+        ]);
+        log.info({ runId: run.id }, 'memory stored');
+      } catch (err) {
+        log.warn({ runId: run.id, err: err instanceof Error ? err.message : 'Unknown' }, 'memory storage failed');
+      }
     }
 
     log.info({ runId: run.id, status: run.status, steps: run.steps.length }, 'agent run finished');

@@ -140,4 +140,36 @@ describe('AgentRunner', () => {
       expect((firstCall[0] as { action?: { name?: string } }).action?.name).toBe('execute_bash');
     }
   });
+
+  it('retrieves and stores memory when memory client is provided', async () => {
+    const searchSpy = vi.fn(async () => [{ id: 'm1', content: 'Previous context', score: 0.9 }]);
+    const upsertSpy = vi.fn(async () => {});
+
+    const mockMemory = {
+      search: searchSpy,
+      upsert: upsertSpy,
+    } as unknown as import('@titan/memory').MemoryClient;
+
+    const runner = new AgentRunner({
+      llm: new MockEchoProvider(),
+      executeTool: async () => ({ success: false, error: 'should not be called' }),
+      memory: mockMemory,
+    });
+
+    const result = await runner.run({
+      agentId: 'test-agent',
+      prompt: 'What is the weather?',
+      workspaceId: 'ws-1',
+      maxSteps: 3,
+    });
+
+    expect(result.status).toBe('completed');
+    expect(searchSpy).toHaveBeenCalledWith('workspace_ws-1', 'What is the weather?', { limit: 5 });
+    expect(upsertSpy).toHaveBeenCalledTimes(1);
+    const upsertCall = upsertSpy.mock.calls[0] as unknown[] | undefined;
+    if (upsertCall && upsertCall[1]) {
+      const items = upsertCall[1] as Array<{ content: string }>;
+      expect(items[0]!.content).toContain('What is the weather?');
+    }
+  });
 });
