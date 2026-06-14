@@ -121,6 +121,12 @@ export default function Runs() {
             ) : (
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-white mb-4">Steps for Run {selectedRunId.slice(0, 8)}</h3>
+                {(() => { const run = runs.find(r => r.id === selectedRunId); return run?.finalAnswer ? (
+                  <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
+                    <span className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">Final Answer</span>
+                    <p className="text-sm text-emerald-200 mt-1 whitespace-pre-wrap">{run.finalAnswer}</p>
+                  </div>
+                ) : null; })()}
                 {steps.map((step) => (
                   <div key={step.id} className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -146,11 +152,15 @@ export default function Runs() {
                       </div>
                     )}
 
-                    {step.observationData !== null && (
+                    {(step.observationData !== null && step.observationData !== undefined) && (
                       <div className="mb-2">
                         <span className="text-xs text-slate-500 uppercase tracking-wider">Observation</span>
-                        <div className="mt-1 rounded bg-slate-950 px-3 py-2 font-mono text-xs text-slate-300">
-                          {step.observationSuccess ? JSON.stringify(step.observationData).slice(0, 200) : step.observationError}
+                        <div className="mt-1 rounded bg-slate-950 px-3 py-2 font-mono text-xs text-slate-300 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                          {step.observationSuccess
+                            ? (typeof step.observationData === 'object'
+                                ? JSON.stringify(step.observationData, null, 2)
+                                : String(step.observationData))
+                            : step.observationError}
                         </div>
                       </div>
                     )}
