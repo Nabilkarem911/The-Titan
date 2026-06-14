@@ -42,15 +42,50 @@ export interface QueueStats {
   delayed: number;
 }
 
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = localStorage.getItem('titan_refresh_token');
+  if (!refreshToken) return null;
+  try {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { accessToken: string; refreshToken?: string };
+    localStorage.setItem('titan_access_token', data.accessToken);
+    if (data.refreshToken) localStorage.setItem('titan_refresh_token', data.refreshToken);
+    return data.accessToken;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchJson<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(getToken() ? { 'Authorization': `Bearer ${getToken()}` } : {}),
-      ...(opts?.headers ?? {}),
-    },
-    ...opts,
-  });
+  const makeRequest = (token: string) =>
+    fetch(`${API_BASE}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(opts?.headers ?? {}),
+      },
+      ...opts,
+    });
+
+  let res = await makeRequest(getToken());
+
+  if (res.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      res = await makeRequest(newToken);
+    } else {
+      localStorage.removeItem('titan_access_token');
+      localStorage.removeItem('titan_refresh_token');
+      window.location.href = '/login';
+      throw new Error('Session expired. Redirecting to login...');
+    }
+  }
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`API ${res.status}: ${text}`);
