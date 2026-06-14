@@ -4,6 +4,9 @@
 -- Audit schema kept separate from `public` for clearer permission boundary.
 -- UPDATE and DELETE are blocked at the trigger level.
 
+CREATE SCHEMA IF NOT EXISTS audit;
+GRANT USAGE ON SCHEMA audit TO titan;
+
 CREATE TABLE IF NOT EXISTS audit.logs (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   actor_id      UUID,
