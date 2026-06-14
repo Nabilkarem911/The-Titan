@@ -24,6 +24,7 @@ export default function Login() {
       }
       const data = await res.json() as { tokens: { accessToken: string; refreshToken: string } };
       login(data.tokens.accessToken, data.tokens.refreshToken);
+      window.location.href = '/';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
