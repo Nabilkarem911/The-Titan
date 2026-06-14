@@ -1,0 +1,52 @@
+# ── Dependencies ────────────────────────────────────────────
+node_modules/
+**/node_modules/
+
+# ── Build outputs (rebuilt inside Docker) ───────────────────
+dist/
+**/dist/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# ── Dev / test / CI ─────────────────────────────────────────
+coverage/
+.nyc_output/
+**/*.test.ts
+**/*.spec.ts
+**/*.test.js
+**/*.spec.js
+vitest.config.ts
+.github/
+
+# ── Secrets — never send to build context ───────────────────
+.env
+.env.*
+*.pem
+*.key
+
+# ── Editor / OS ─────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+.eslintcache
+.turbo/
+
+# ── Docker volumes ──────────────────────────────────────────
+.docker-data/
+dump.rdb
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+run.log
+run.log.err
+run.err
+
+# ── IDE ──────────────────────────────────────────────────────
+.windsurf/
+.devin/
+
+# ── Dashboard (not needed by core/worker image) ──────────────
+apps/dashboard/

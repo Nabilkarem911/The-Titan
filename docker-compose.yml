@@ -140,7 +140,7 @@ services:
   worker:
     build:
       context: .
-      dockerfile: apps/core/Dockerfile
+      dockerfile: apps/core/Dockerfile.worker
     container_name: titan-worker
     restart: unless-stopped
     env_file:
@@ -149,7 +149,6 @@ services:
       - POSTGRES_HOST=postgres
       - REDIS_HOST=redis
       - SERVICE_NAME=titan-worker
-    command: ["node", "apps/core/dist/queue-bootstrap.js"]
     depends_on:
       postgres:
         condition: service_healthy

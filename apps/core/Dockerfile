@@ -1,46 +1,53 @@
-# Stage 1: Build
-FROM node:22-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-COPY tsconfig.json ./
-COPY tsconfig.base.json ./
-COPY vitest.config.ts ./
-COPY packages/ ./packages/
-COPY apps/ ./apps/
-RUN npm ci --legacy-peer-deps && \
-    npm run build:shared && \
-    npm run build:config && \
-    npm run build:logging && \
-    npm run build:database && \
-    npm run build:memory && \
-    npm run build:tools && \
-    npm run build:queue && \
-    npm run build:agent-engine && \
-    npm run build:auth && \
-    npm run build:websocket && \
-    npm run build:observability && \
-    npm run build:telemetry && \
-    npm run build:core && \
-    npm run build:sandbox
+# ============================================================
+# Titan Core API — Dockerfile
+# Build context must be the monorepo ROOT (docker build -f apps/core/Dockerfile .)
+# ============================================================
 
-# Stage 2: Production runtime
+# ── Stage 1: Dependencies ───────────────────────────────────
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json      packages/shared/package.json
+COPY packages/config/package.json      packages/config/package.json
+COPY packages/logging/package.json     packages/logging/package.json
+COPY packages/database/package.json    packages/database/package.json
+COPY packages/memory/package.json      packages/memory/package.json
+COPY packages/tools/package.json       packages/tools/package.json
+COPY packages/queue/package.json       packages/queue/package.json
+COPY packages/sandbox/package.json     packages/sandbox/package.json
+COPY packages/auth/package.json        packages/auth/package.json
+COPY packages/websocket/package.json   packages/websocket/package.json
+COPY packages/observability/package.json packages/observability/package.json
+COPY packages/telemetry/package.json   packages/telemetry/package.json
+COPY packages/agent-engine/package.json packages/agent-engine/package.json
+COPY apps/core/package.json            apps/core/package.json
+RUN npm ci --legacy-peer-deps
+
+# ── Stage 2: Build ──────────────────────────────────────────
+FROM deps AS builder
+COPY tsconfig.base.json tsconfig.json ./
+COPY packages/ ./packages/
+COPY apps/core/ ./apps/core/
+RUN npm run build
+
+# ── Stage 3: Production runtime ─────────────────────────────
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 RUN apk add --no-cache dumb-init curl
-# Install only production deps
-COPY package*.json ./
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/apps ./apps
-RUN npm ci --omit=dev --legacy-peer-deps && \
-    rm -rf /tmp/* ~/.npm
 
-# Create non-root user
-RUN addgroup -S titan -g 1000 && adduser -S titan -G titan -u 1000
+# Copy only what's needed to run
+COPY package.json package-lock.json ./
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/apps/core ./apps/core
+RUN npm ci --omit=dev --legacy-peer-deps && rm -rf /tmp/* ~/.npm
+
+# Non-root user
+RUN addgroup -S titan -g 1001 && adduser -S titan -G titan -u 1001
 USER titan
 
-EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8080/health/live || exit 1
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:3000/health/live || exit 1
 
 CMD ["dumb-init", "node", "apps/core/dist/index.js"]
