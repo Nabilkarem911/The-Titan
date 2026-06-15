@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { MessageSquare, Terminal, History, Gauge, Cpu, BarChart3, LogOut } from 'lucide-react';
+import { MessageSquare, Users, Terminal, History, Gauge, Cpu, BarChart3, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -24,6 +24,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} end>
             <MessageSquare className="h-4 w-4" />
             Chat
+          </NavLink>
+          <NavLink to="/agents" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <Users className="h-4 w-4" />
+            Agents
           </NavLink>
           <NavLink to="/playground" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <Terminal className="h-4 w-4" />
