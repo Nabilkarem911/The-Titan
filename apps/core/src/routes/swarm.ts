@@ -6,7 +6,6 @@ import { ValidationError } from '@titan/shared';
 import { requireAuth } from '../plugins/auth.js';
 import { storeSwarmTask, getSwarmTask, listSwarmTasks } from '../swarm-store.js';
 import { MemoryClient } from '@titan/memory';
-import { loadConfig } from '@titan/config';
 
 const SwarmInputSchema = z.object({
   description: z.string().min(1).max(500),
@@ -30,7 +29,6 @@ const RATE_LIMIT_SWARM = { config: { rateLimit: { max: 10, timeWindow: '1 minute
 function buildRunAdapter(userId: string, workspaceId?: string, apiKeyId?: string) {
   return {
     createAgentRun: async (runInput: AgentRunInput): Promise<AgentRun> => {
-      const cfg = loadConfig();
       const provider = createProviderFromEnv();
       const registry = getGlobalToolRegistry();
 
@@ -45,17 +43,14 @@ function buildRunAdapter(userId: string, workspaceId?: string, apiKeyId?: string
       });
 
       // Actually execute the agent
-      let memory: MemoryClient | undefined;
-      if (cfg.MEMORY_QDRANT_URL) {
-        memory = new MemoryClient({ url: cfg.MEMORY_QDRANT_URL, apiKey: cfg.MEMORY_QDRANT_API_KEY });
-      }
+      const memory = new MemoryClient();
 
       const runner = new AgentRunner({
         llm: provider ?? { complete: async () => ({ content: 'Mock response', toolCalls: undefined, tokensUsed: 0, finishReason: 'stop' as const }) },
         executeTool: async (call, _runId) => registry.execute(call.name, call.params),
-        memory,
+        memory: memory ?? undefined,
         persistRun: async (run) => {
-          await agentRuns.updateStatus(run.id, run.status, run.finalAnswer ?? undefined, run.tokensUsed);
+          await agentRuns.updateStatus(run.id, run.status, { finalAnswer: run.finalAnswer ?? undefined, tokensUsed: run.tokensUsed });
         },
         onStep: async (step) => {
           await agentSteps.create({
@@ -67,7 +62,7 @@ function buildRunAdapter(userId: string, workspaceId?: string, apiKeyId?: string
             actionName: step.action?.name,
             actionParams: step.action?.params,
             observationSuccess: step.observation?.success,
-            observationData: step.observation?.data,
+            observationData: step.observation?.data as Record<string, unknown> | undefined,
             observationError: step.observation?.error,
             reflection: step.reflection,
             tokensUsed: step.tokensUsed,
@@ -77,13 +72,11 @@ function buildRunAdapter(userId: string, workspaceId?: string, apiKeyId?: string
       });
 
       const completedRun = await runner.run({
-        runId: dbRun.id,
         agentId: runInput.agentId,
         prompt: runInput.prompt,
         userId: runInput.userId ?? userId,
         workspaceId,
         maxSteps: runInput.maxSteps ?? 10,
-        systemPromptExtra: runInput.systemPromptExtra,
       });
 
       return completedRun;
@@ -147,7 +140,7 @@ export const swarmRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       }),
     };
 
-    await orchestrator.plan(task, planner);
+    await orchestrator.plan(task, planner as { complete: (messages: Array<{ role: string; content: string }>) => Promise<{ content: string }> });
     storeSwarmTask(task);
 
     // Execute all agents in parallel (respecting deps)
@@ -167,7 +160,7 @@ export const swarmRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       }),
     };
 
-    const result = await orchestrator.synthesize(task, synthesizer);
+    const result = await orchestrator.synthesize(task, synthesizer as { complete: (messages: Array<{ role: string; content: string }>) => Promise<{ content: string }> });
     storeSwarmTask(task);
 
     return reply.status(200).send({
