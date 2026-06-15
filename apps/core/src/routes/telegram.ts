@@ -31,6 +31,16 @@ async function sendTelegramMessage(token: string, chatId: number, text: string):
     if (!res.ok) {
       const err = await res.text();
       log.warn({ chatId, status: res.status, err }, 'telegram sendMessage failed');
+      // Fallback: if parse_mode caused the failure, retry without it
+      if (res.status === 400) {
+        try {
+          await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text }),
+          });
+        } catch { /* silent fallback */ }
+      }
     }
   } catch (err) {
     log.error({ chatId, err }, 'telegram sendMessage error');
