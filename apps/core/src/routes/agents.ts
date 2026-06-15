@@ -4,6 +4,8 @@ import { agentRuns, agentSteps } from '@titan/database';
 import { enqueue, QUEUE_NAMES } from '@titan/queue';
 import { ValidationError } from '@titan/shared';
 import { requireAuth } from '../plugins/auth.js';
+import { createProviderFromEnv } from '@titan/agent-engine';
+import type { LlmMessage } from '@titan/agent-engine';
 
 const RunAgentInputSchema = z.object({
   prompt: z.string().min(1).max(10_000),
@@ -113,6 +115,52 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         createdAt: run.createdAt.toISOString(),
         updatedAt: run.updatedAt.toISOString(),
       };
+    },
+  );
+
+  // POST /api/v1/agents/:agentId/stream  — SSE streaming chat
+  app.post<{ Params: { agentId: string } }>(
+    '/api/v1/agents/:agentId/stream',
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      if (!req.auth) throw new ValidationError('Authentication required');
+
+      const { prompt, systemPrompt, history } = req.body as {
+        prompt: string;
+        systemPrompt?: string;
+        history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+      };
+
+      if (!prompt) throw new ValidationError('prompt is required');
+
+      const provider = createProviderFromEnv();
+      if (!provider || !provider.stream) {
+        throw new ValidationError('Streaming is not supported by the current LLM provider');
+      }
+
+      const messages: LlmMessage[] = [
+        { role: 'system', content: systemPrompt ?? 'You are Titan, a helpful AI assistant.' },
+        ...(history ?? []).map((h) => ({ role: h.role, content: h.content })),
+        { role: 'user', content: prompt },
+      ];
+
+      reply.raw.setHeader('Content-Type', 'text/event-stream');
+      reply.raw.setHeader('Cache-Control', 'no-cache');
+      reply.raw.setHeader('Connection', 'keep-alive');
+      reply.raw.setHeader('X-Accel-Buffering', 'no');
+      reply.raw.flushHeaders();
+
+      try {
+        for await (const chunk of provider.stream(messages)) {
+          reply.raw.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+        }
+        reply.raw.write('data: [DONE]\n\n');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Stream error';
+        reply.raw.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
+      } finally {
+        reply.raw.end();
+      }
     },
   );
 

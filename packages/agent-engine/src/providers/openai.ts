@@ -88,6 +88,57 @@ export class OpenAiProvider implements LlmProvider {
       finishReason: mapFinishReason(choice.finish_reason),
     };
   }
+
+  async *stream(
+    messages: LlmMessage[],
+    opts?: { maxTokens?: number; temperature?: number },
+  ): AsyncGenerator<string> {
+    const base = this.config.baseUrl.replace(/\/$/, '');
+    const url = `${base.endsWith('/v1') ? base : `${base}/v1`}/chat/completions`;
+    const body = {
+      model: this.config.model,
+      messages: messages.map((m) => ({ role: m.role === 'tool' ? 'assistant' : m.role, content: m.content })),
+      max_tokens: opts?.maxTokens ?? 2048,
+      temperature: opts?.temperature ?? 0.3,
+      stream: true,
+    };
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.config.apiKey}` },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok || !res.body) {
+      const text = await res.text();
+      throw new Error(`OpenAI stream error ${res.status}: ${text}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const data = trimmed.slice(5).trim();
+        if (data === '[DONE]') return;
+        try {
+          const chunk = JSON.parse(data) as { choices: Array<{ delta: { content?: string } }> };
+          const text = chunk.choices[0]?.delta?.content;
+          if (text) yield text;
+        } catch {
+          // skip malformed chunks
+        }
+      }
+    }
+  }
 }
 
 function parseJsonSafe(raw: string): Record<string, unknown> {
