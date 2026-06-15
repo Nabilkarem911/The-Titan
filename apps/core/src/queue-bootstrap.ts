@@ -9,7 +9,7 @@ import {
 import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
-import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi } from '@titan/tools';
+import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { getWsServer } from './ws-instance.js';
 
@@ -167,6 +167,72 @@ if (cfg.GITHUB_TOKEN) {
       return githubApi({ endpoint, method, body, token: cfg.GITHUB_TOKEN });
     },
     tags: ['network', 'api', 'github'],
+  });
+}
+
+registry.register({
+  name: 'docker_manage',
+  description: 'Manage Docker containers: list, run, stop, remove, logs, exec. Action must be one of: list, run, stop, remove, logs, exec.',
+  handler: async (params: unknown) => {
+    return dockerOrchestrate(params as Parameters<typeof dockerOrchestrate>[0]);
+  },
+  tags: ['docker', 'infrastructure'],
+});
+
+registry.register({
+  name: 'send_email',
+  description: 'Send an email via SMTP. Requires smtpHost, smtpUser, smtpPass, from, to, subject, and text or html.',
+  handler: async (params: unknown) => {
+    return sendEmail(params as Parameters<typeof sendEmail>[0]);
+  },
+  tags: ['communication', 'email'],
+});
+
+registry.register({
+  name: 'parse_csv_json',
+  description: 'Parse and query CSV or JSON data. Provide content as string, format (csv/json/auto), optional query string to filter rows, and optional limit.',
+  handler: async (params: unknown) => {
+    return parseCsvJson(params as Parameters<typeof parseCsvJson>[0]);
+  },
+  tags: ['data', 'parsing'],
+});
+
+registry.register({
+  name: 'zip_unzip',
+  description: 'Zip or unzip files/directories, or list contents of a zip archive. Action: zip, unzip, or list.',
+  handler: async (params: unknown) => {
+    return zipUnzip(params as Parameters<typeof zipUnzip>[0]);
+  },
+  tags: ['filesystem', 'archive'],
+});
+
+registry.register({
+  name: 'pdf_read',
+  description: 'Extract text content from a PDF file. Requires pdftotext (poppler-utils) installed on the server.',
+  handler: async (params: unknown) => {
+    return pdfRead(params as Parameters<typeof pdfRead>[0]);
+  },
+  tags: ['filesystem', 'documents'],
+});
+
+registry.register({
+  name: 'database_query',
+  description: 'Run a read-only SELECT query against the Titan PostgreSQL database. Only SELECT is allowed — no mutations.',
+  handler: async (params: unknown) => {
+    return databaseQuery(params as Parameters<typeof databaseQuery>[0]);
+  },
+  tags: ['database', 'data'],
+});
+
+if (cfg.TELEGRAM_BOT_TOKEN) {
+  registry.register({
+    name: 'telegram_send_file',
+    description: 'Send a file or image to a Telegram chat. Provide filePath, chatId, optional caption, and type (document or photo).',
+    handler: async (params: unknown) => {
+      const p = params as { chatId: number | string; filePath: string; caption?: string; type?: 'document' | 'photo' };
+      return telegramSendFile({ ...p, token: cfg.TELEGRAM_BOT_TOKEN });
+    },
+    tags: ['communication', 'telegram'],
   });
 }
 
