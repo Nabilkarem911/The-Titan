@@ -12,6 +12,8 @@ export interface ToolDefinition {
   description: string;
   handler: ToolHandler;
   tags?: string[];
+  schema?: Record<string, { type: string; description?: string; enum?: string[] }>;
+  requiredParams?: string[];
 }
 
 export class ToolRegistry {
@@ -51,11 +53,13 @@ export class ToolRegistry {
     }
   }
 
-  list(): Array<{ name: string; description: string; tags?: string[] }> {
+  list(): Array<{ name: string; description: string; tags?: string[]; schema?: Record<string, { type: string; description?: string; enum?: string[] }>; requiredParams?: string[] }> {
     return Array.from(this.tools.values()).map((t) => ({
       name: t.name,
       description: t.description,
       tags: t.tags,
+      schema: t.schema,
+      requiredParams: t.requiredParams,
     }));
   }
 

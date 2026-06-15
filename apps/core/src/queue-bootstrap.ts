@@ -22,7 +22,13 @@ const registry = getGlobalToolRegistry();
 
 registry.register({
   name: 'execute_bash',
-  description: 'Execute a bash command',
+  description: 'Execute a bash command on the server. Returns stdout/stderr output.',
+  schema: {
+    command: { type: 'string', description: 'The bash command to execute' },
+    cwd: { type: 'string', description: 'Working directory (optional)' },
+    timeoutMs: { type: 'number', description: 'Timeout in milliseconds (optional, default 10000)' },
+  },
+  requiredParams: ['command'],
   handler: async (params: unknown) => {
     const { command, cwd, timeoutMs } = params as { command: string; cwd?: string; timeoutMs?: number };
     return executeBash({ command, cwd, timeoutMs: timeoutMs ?? 10_000 });
@@ -32,7 +38,12 @@ registry.register({
 
 registry.register({
   name: 'patch_file',
-  description: 'Apply a unified diff patch to a file',
+  description: 'Apply a unified diff patch to a file to modify its content.',
+  schema: {
+    filePath: { type: 'string', description: 'Absolute path to the file' },
+    patch: { type: 'string', description: 'Unified diff patch content' },
+  },
+  requiredParams: ['filePath', 'patch'],
   handler: async (params: unknown) => {
     const { filePath, patch } = params as { filePath: string; patch: string };
     return patchFile({ filePath, patch });
@@ -42,7 +53,11 @@ registry.register({
 
 registry.register({
   name: 'read_file_ast',
-  description: 'Read a file and return its structural outline',
+  description: 'Read a code file and return its structural outline (functions, classes, exports).',
+  schema: {
+    filePath: { type: 'string', description: 'Absolute path to the code file' },
+  },
+  requiredParams: ['filePath'],
   handler: async (params: unknown) => {
     const { filePath } = params as { filePath: string };
     return readFileAst({ filePath });
@@ -52,7 +67,12 @@ registry.register({
 
 registry.register({
   name: 'firecrawl_scrape',
-  description: 'Fetch a URL and return its plain text content',
+  description: 'Fetch a webpage URL and return its plain text content (web scraping).',
+  schema: {
+    url: { type: 'string', description: 'The URL to fetch and extract text from' },
+    timeoutMs: { type: 'number', description: 'Timeout in milliseconds (optional, default 10000)' },
+  },
+  requiredParams: ['url'],
   handler: async (params: unknown) => {
     const { url, timeoutMs } = params as { url: string; timeoutMs?: number };
     return firecrawlScrape({ url, timeoutMs: timeoutMs ?? 10_000 });
@@ -62,7 +82,13 @@ registry.register({
 
 registry.register({
   name: 'remember',
-  description: 'Save a fact or preference about the user for future conversations. Use for non-sensitive info like name, language, preferences.',
+  description: 'Save a fact or preference about the user for future conversations.',
+  schema: {
+    ownerId: { type: 'string', description: 'User or chat ID' },
+    key: { type: 'string', description: 'Key name for the fact (e.g. "name", "language")' },
+    value: { type: 'string', description: 'Value to store' },
+  },
+  requiredParams: ['ownerId', 'key', 'value'],
   handler: async (params: unknown) => {
     const { ownerId, key, value } = params as { ownerId: string; key: string; value: string };
     await userContext.set(ownerId, key, value);
@@ -74,6 +100,10 @@ registry.register({
 registry.register({
   name: 'recall',
   description: 'Retrieve all saved facts and preferences about the user.',
+  schema: {
+    ownerId: { type: 'string', description: 'User or chat ID' },
+  },
+  requiredParams: ['ownerId'],
   handler: async (params: unknown) => {
     const { ownerId } = params as { ownerId: string };
     const ctx = await userContext.getAll(ownerId);
@@ -84,7 +114,14 @@ registry.register({
 
 registry.register({
   name: 'set_secret',
-  description: 'Store a sensitive secret (API key, token, password) encrypted. It will NOT be shown to the LLM again.',
+  description: 'Store a sensitive secret (API key, token, password) encrypted.',
+  schema: {
+    ownerId: { type: 'string', description: 'User or chat ID' },
+    key: { type: 'string', description: 'Secret name/key' },
+    value: { type: 'string', description: 'Secret value to encrypt and store' },
+    description: { type: 'string', description: 'Optional description of the secret' },
+  },
+  requiredParams: ['ownerId', 'key', 'value'],
   handler: async (params: unknown) => {
     const { ownerId, key, value, description } = params as { ownerId: string; key: string; value: string; description?: string };
     await userSecrets.set(ownerId, key, value, description);
@@ -96,6 +133,10 @@ registry.register({
 registry.register({
   name: 'list_secrets',
   description: 'List the names of stored secrets (not their values) for the user.',
+  schema: {
+    ownerId: { type: 'string', description: 'User or chat ID' },
+  },
+  requiredParams: ['ownerId'],
   handler: async (params: unknown) => {
     const { ownerId } = params as { ownerId: string };
     const list = await userSecrets.list(ownerId);
@@ -107,6 +148,13 @@ registry.register({
 registry.register({
   name: 'http_request',
   description: 'Make an HTTP request to any URL or API endpoint. Supports GET, POST, PUT, DELETE, PATCH.',
+  schema: {
+    url: { type: 'string', description: 'The full URL to request' },
+    method: { type: 'string', description: 'HTTP method: GET, POST, PUT, DELETE, PATCH (default: GET)' },
+    body: { type: 'string', description: 'Request body as string (optional, for POST/PUT)' },
+    timeoutMs: { type: 'number', description: 'Timeout in ms (optional)' },
+  },
+  requiredParams: ['url'],
   handler: async (params: unknown) => {
     const p = params as { url: string; method?: string; headers?: Record<string, string>; body?: string; timeoutMs?: number };
     return httpRequest(p);
@@ -117,6 +165,11 @@ registry.register({
 registry.register({
   name: 'write_file',
   description: 'Write content to a file on the server filesystem. Creates parent directories automatically.',
+  schema: {
+    filePath: { type: 'string', description: 'Absolute path to write the file to' },
+    content: { type: 'string', description: 'Text content to write into the file' },
+  },
+  requiredParams: ['filePath', 'content'],
   handler: async (params: unknown) => {
     const p = params as { filePath: string; content: string; createDirs?: boolean };
     return writeFile(p);
@@ -126,7 +179,12 @@ registry.register({
 
 registry.register({
   name: 'read_file_content',
-  description: 'Read the full content of a file from the server filesystem.',
+  description: 'Read the full text content of a file from the server filesystem.',
+  schema: {
+    filePath: { type: 'string', description: 'Absolute path to the file to read' },
+    maxBytes: { type: 'number', description: 'Max characters to return (optional, default 200000)' },
+  },
+  requiredParams: ['filePath'],
   handler: async (params: unknown) => {
     const p = params as { filePath: string; maxBytes?: number };
     return readFileRaw(p);
@@ -138,6 +196,11 @@ if (cfg.BRAVE_SEARCH_API_KEY) {
   registry.register({
     name: 'brave_search',
     description: 'Search the web using Brave Search API. Returns titles, URLs, and descriptions.',
+    schema: {
+      query: { type: 'string', description: 'Search query' },
+      count: { type: 'number', description: 'Number of results (optional, default 10)' },
+    },
+    requiredParams: ['query'],
     handler: async (params: unknown) => {
       const { query, count } = params as { query: string; count?: number };
       return braveSearch({ query, count, apiKey: cfg.BRAVE_SEARCH_API_KEY });
@@ -150,6 +213,10 @@ if (cfg.BRAVE_ANSWERS_API_KEY) {
   registry.register({
     name: 'brave_answers',
     description: 'Get an AI-generated summary answer for a query using Brave Answers API.',
+    schema: {
+      query: { type: 'string', description: 'The question or query to get a summarized answer for' },
+    },
+    requiredParams: ['query'],
     handler: async (params: unknown) => {
       const { query } = params as { query: string };
       return braveAnswers({ query, apiKey: cfg.BRAVE_ANSWERS_API_KEY });
@@ -162,6 +229,11 @@ if (cfg.GITHUB_TOKEN) {
   registry.register({
     name: 'github_api',
     description: 'Call the GitHub REST API. Use endpoint like /repos/owner/repo/issues. Supports GET, POST, PATCH, DELETE.',
+    schema: {
+      endpoint: { type: 'string', description: 'GitHub API endpoint, e.g. /repos/owner/repo/issues' },
+      method: { type: 'string', description: 'HTTP method: GET, POST, PATCH, DELETE (default: GET)' },
+    },
+    requiredParams: ['endpoint'],
     handler: async (params: unknown) => {
       const { endpoint, method, body } = params as { endpoint: string; method?: string; body?: Record<string, unknown> };
       return githubApi({ endpoint, method, body, token: cfg.GITHUB_TOKEN });
@@ -172,7 +244,14 @@ if (cfg.GITHUB_TOKEN) {
 
 registry.register({
   name: 'docker_manage',
-  description: 'Manage Docker containers: list, run, stop, remove, logs, exec. Action must be one of: list, run, stop, remove, logs, exec.',
+  description: 'Manage Docker containers: list, run, stop, remove, logs, exec.',
+  schema: {
+    action: { type: 'string', description: 'Action: list, run, stop, remove, logs, exec', enum: ['list', 'run', 'stop', 'remove', 'logs', 'exec'] },
+    containerName: { type: 'string', description: 'Container name or ID (required for stop/remove/logs/exec)' },
+    image: { type: 'string', description: 'Docker image (required for run)' },
+    command: { type: 'string', description: 'Command to run (for run or exec actions)' },
+  },
+  requiredParams: ['action'],
   handler: async (params: unknown) => {
     return dockerOrchestrate(params as Parameters<typeof dockerOrchestrate>[0]);
   },
@@ -181,7 +260,18 @@ registry.register({
 
 registry.register({
   name: 'send_email',
-  description: 'Send an email via SMTP. Requires smtpHost, smtpUser, smtpPass, from, to, subject, and text or html.',
+  description: 'Send an email via SMTP.',
+  schema: {
+    smtpHost: { type: 'string', description: 'SMTP server hostname' },
+    smtpUser: { type: 'string', description: 'SMTP username/email' },
+    smtpPass: { type: 'string', description: 'SMTP password' },
+    from: { type: 'string', description: 'Sender email address' },
+    to: { type: 'string', description: 'Recipient email address (or comma-separated)' },
+    subject: { type: 'string', description: 'Email subject' },
+    text: { type: 'string', description: 'Plain text email body' },
+    html: { type: 'string', description: 'HTML email body (optional)' },
+  },
+  requiredParams: ['smtpHost', 'smtpUser', 'smtpPass', 'from', 'to', 'subject'],
   handler: async (params: unknown) => {
     return sendEmail(params as Parameters<typeof sendEmail>[0]);
   },
@@ -190,7 +280,14 @@ registry.register({
 
 registry.register({
   name: 'parse_csv_json',
-  description: 'Parse and query CSV or JSON data. Provide content as string, format (csv/json/auto), optional query string to filter rows, and optional limit.',
+  description: 'Parse and query CSV or JSON data.',
+  schema: {
+    content: { type: 'string', description: 'Raw CSV or JSON string content' },
+    format: { type: 'string', description: 'Data format: csv, json, or auto', enum: ['csv', 'json', 'auto'] },
+    query: { type: 'string', description: 'Optional text filter to search rows' },
+    limit: { type: 'number', description: 'Max rows to return (optional, default 100)' },
+  },
+  requiredParams: ['content', 'format'],
   handler: async (params: unknown) => {
     return parseCsvJson(params as Parameters<typeof parseCsvJson>[0]);
   },
@@ -199,7 +296,13 @@ registry.register({
 
 registry.register({
   name: 'zip_unzip',
-  description: 'Zip or unzip files/directories, or list contents of a zip archive. Action: zip, unzip, or list.',
+  description: 'Zip or unzip files/directories, or list contents of a zip archive.',
+  schema: {
+    action: { type: 'string', description: 'Action: zip, unzip, or list', enum: ['zip', 'unzip', 'list'] },
+    sourcePath: { type: 'string', description: 'Path to the source file or directory' },
+    destPath: { type: 'string', description: 'Destination path (optional)' },
+  },
+  requiredParams: ['action', 'sourcePath'],
   handler: async (params: unknown) => {
     return zipUnzip(params as Parameters<typeof zipUnzip>[0]);
   },
@@ -208,7 +311,13 @@ registry.register({
 
 registry.register({
   name: 'pdf_read',
-  description: 'Extract text content from a PDF file. Requires pdftotext (poppler-utils) installed on the server.',
+  description: 'Extract text content from a PDF file (requires poppler-utils on server).',
+  schema: {
+    filePath: { type: 'string', description: 'Absolute path to the PDF file' },
+    page: { type: 'number', description: 'Specific page number to extract (optional, extracts all if omitted)' },
+    maxChars: { type: 'number', description: 'Max characters to return (optional, default 100000)' },
+  },
+  requiredParams: ['filePath'],
   handler: async (params: unknown) => {
     return pdfRead(params as Parameters<typeof pdfRead>[0]);
   },
@@ -217,7 +326,12 @@ registry.register({
 
 registry.register({
   name: 'database_query',
-  description: 'Run a read-only SELECT query against the Titan PostgreSQL database. Only SELECT is allowed — no mutations.',
+  description: 'Run a read-only SELECT query against the Titan PostgreSQL database. Only SELECT is allowed.',
+  schema: {
+    sql: { type: 'string', description: 'SQL SELECT query to execute' },
+    limit: { type: 'number', description: 'Max rows to return (optional, default 200)' },
+  },
+  requiredParams: ['sql'],
   handler: async (params: unknown) => {
     return databaseQuery(params as Parameters<typeof databaseQuery>[0]);
   },
@@ -227,7 +341,14 @@ registry.register({
 if (cfg.TELEGRAM_BOT_TOKEN) {
   registry.register({
     name: 'telegram_send_file',
-    description: 'Send a file or image to a Telegram chat. Provide filePath, chatId, optional caption, and type (document or photo).',
+    description: 'Send a file or image to a Telegram chat.',
+    schema: {
+      chatId: { type: 'string', description: 'Telegram chat ID to send to' },
+      filePath: { type: 'string', description: 'Absolute path to the file to send' },
+      caption: { type: 'string', description: 'Optional caption for the file' },
+      type: { type: 'string', description: 'Type: document or photo', enum: ['document', 'photo'] },
+    },
+    requiredParams: ['chatId', 'filePath'],
     handler: async (params: unknown) => {
       const p = params as { chatId: number | string; filePath: string; caption?: string; type?: 'document' | 'photo' };
       return telegramSendFile({ ...p, token: cfg.TELEGRAM_BOT_TOKEN });

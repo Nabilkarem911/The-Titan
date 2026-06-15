@@ -82,8 +82,8 @@ function buildToolsFromRegistry(): LlmToolDefinition[] {
     description: t.description,
     parameters: {
       type: 'object' as const,
-      properties: { params: { type: 'object', description: 'Tool parameters as a JSON object' } },
-      required: [],
+      properties: t.schema ?? {},
+      required: t.requiredParams ?? [],
     },
   }));
 }
