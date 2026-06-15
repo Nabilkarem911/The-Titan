@@ -9,7 +9,7 @@ import {
 import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
-import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile } from '@titan/tools';
+import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { getWsServer } from './ws-instance.js';
 
@@ -356,6 +356,114 @@ if (cfg.TELEGRAM_BOT_TOKEN) {
     tags: ['communication', 'telegram'],
   });
 }
+
+registry.register({
+  name: 'excel_read',
+  description: 'Read and parse an Excel (.xlsx) file. Returns sheet names and data rows.',
+  schema: {
+    path: { type: 'string', description: 'Absolute path to the .xlsx file' },
+    sheet: { type: 'string', description: 'Specific sheet name to read (optional, reads all if omitted)' },
+  },
+  requiredParams: ['path'],
+  handler: async (params: unknown) => excelRead(params as Parameters<typeof excelRead>[0]),
+  tags: ['files', 'data'],
+});
+
+registry.register({
+  name: 'qr_generate',
+  description: 'Generate a QR code for any text or URL. Returns a base64 data URL image.',
+  schema: {
+    text: { type: 'string', description: 'The text or URL to encode in the QR code' },
+    size: { type: 'number', description: 'Image size in pixels (default 300)' },
+  },
+  requiredParams: ['text'],
+  handler: async (params: unknown) => qrGenerate(params as Parameters<typeof qrGenerate>[0]),
+  tags: ['utility', 'image'],
+});
+
+registry.register({
+  name: 'hash_crypto',
+  description: 'Hash a string using MD5, SHA1, SHA256, or SHA512. Optionally use HMAC with a secret.',
+  schema: {
+    text: { type: 'string', description: 'Text to hash' },
+    algorithm: { type: 'string', description: 'Hash algorithm', enum: ['md5', 'sha1', 'sha256', 'sha512'] },
+    hmacSecret: { type: 'string', description: 'Optional HMAC secret key' },
+  },
+  requiredParams: ['text', 'algorithm'],
+  handler: async (params: unknown) => hashCrypto(params as Parameters<typeof hashCrypto>[0]),
+  tags: ['security', 'crypto'],
+});
+
+registry.register({
+  name: 'random_token',
+  description: 'Generate a cryptographically secure random hex token.',
+  schema: {
+    bytes: { type: 'number', description: 'Number of random bytes (default 32, result is 2x hex chars)' },
+  },
+  requiredParams: [],
+  handler: async (params: unknown) => randomToken(params as Parameters<typeof randomToken>[0]),
+  tags: ['security', 'utility'],
+});
+
+registry.register({
+  name: 'base64',
+  description: 'Encode or decode a string using Base64.',
+  schema: {
+    text: { type: 'string', description: 'Text to encode or decode' },
+    operation: { type: 'string', description: 'Operation to perform', enum: ['encode', 'decode'] },
+  },
+  requiredParams: ['text', 'operation'],
+  handler: async (params: unknown) => base64Tool(params as Parameters<typeof base64Tool>[0]),
+  tags: ['utility', 'encoding'],
+});
+
+registry.register({
+  name: 'uuid_generate',
+  description: 'Generate one or more UUIDs (v4).',
+  schema: {
+    count: { type: 'number', description: 'Number of UUIDs to generate (default 1, max 100)' },
+  },
+  requiredParams: [],
+  handler: async (params: unknown) => uuidGenerate(params as Parameters<typeof uuidGenerate>[0]),
+  tags: ['utility'],
+});
+
+registry.register({
+  name: 'json_validate',
+  description: 'Validate and optionally format a JSON string. Returns validity, type info, and top-level keys.',
+  schema: {
+    json: { type: 'string', description: 'The JSON string to validate' },
+    format: { type: 'boolean', description: 'Whether to return a pretty-printed version (default false)' },
+  },
+  requiredParams: ['json'],
+  handler: async (params: unknown) => jsonValidate(params as Parameters<typeof jsonValidate>[0]),
+  tags: ['data', 'utility'],
+});
+
+registry.register({
+  name: 'text_diff',
+  description: 'Compare two texts and show the differences (added/removed lines or words).',
+  schema: {
+    original: { type: 'string', description: 'Original text' },
+    modified: { type: 'string', description: 'Modified text to compare against original' },
+    mode: { type: 'string', description: 'Comparison mode: lines or words (default lines)', enum: ['lines', 'words'] },
+    patch: { type: 'boolean', description: 'Include unified diff patch output (default false)' },
+  },
+  requiredParams: ['original', 'modified'],
+  handler: async (params: unknown) => textDiff(params as Parameters<typeof textDiff>[0]),
+  tags: ['utility', 'text'],
+});
+
+registry.register({
+  name: 'markdown_to_html',
+  description: 'Convert Markdown text to HTML.',
+  schema: {
+    markdown: { type: 'string', description: 'Markdown text to convert' },
+  },
+  requiredParams: ['markdown'],
+  handler: async (params: unknown) => markdownToHtml(params as Parameters<typeof markdownToHtml>[0]),
+  tags: ['utility', 'text'],
+});
 
 async function executeTool(name: string, params: unknown): Promise<ToolResult> {
   return registry.execute(name, params);
