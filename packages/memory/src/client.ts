@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import type { MemoryConfig, MemoryProvider, HealthStatus, MemoryMessage, MemoryItem, SearchOpts, SearchResult, CollectionInfo } from './index.js';
 import { PgVectorMemoryProvider } from './pgvectorProvider.js';
+import { getEmbeddingProvider, type EmbeddingProvider } from './embeddings.js';
 
 const log = getLogger().child({ component: 'memory-client' });
 
@@ -117,6 +118,7 @@ class MockMemoryProvider implements MemoryProvider {
 export class MemoryClient {
   private provider: MemoryProvider | null = null;
   private config: MemoryConfig;
+  private embedder: EmbeddingProvider | null = null;
 
   constructor() {
     const envProvider = process.env['MEMORY_PROVIDER'];
@@ -142,6 +144,12 @@ export class MemoryClient {
     if (this.provider) {
       await this.provider.initialize(this.config);
     }
+
+    // Initialize embedding provider (may be null if no API key configured)
+    this.embedder = getEmbeddingProvider();
+    if (this.embedder) {
+      log.info({ dimensions: this.embedder.dimensions() }, 'Embedding provider available — semantic search enabled');
+    }
   }
 
   async healthCheck(): Promise<HealthStatus> {
@@ -164,11 +172,44 @@ export class MemoryClient {
 
   async upsert(collection: string, items: MemoryItem[]): Promise<void> {
     if (!this.provider) throw new Error('Memory provider not initialized');
+
+    // Auto-generate embeddings for items without them
+    if (this.embedder) {
+      const needsEmbedding = items.filter((i) => !i.embedding || i.embedding.length === 0);
+      if (needsEmbedding.length > 0) {
+        try {
+          const texts = needsEmbedding.map((i) => i.content);
+          const embeddings = await this.embedder.embed(texts);
+          for (let idx = 0; idx < needsEmbedding.length; idx++) {
+            needsEmbedding[idx].embedding = embeddings[idx];
+          }
+          log.debug({ collection, embedded: needsEmbedding.length }, 'auto-embedded items');
+        } catch (err) {
+          log.warn({ err, collection }, 'failed to generate embeddings — upserting without vectors');
+        }
+      }
+    }
+
     return await this.provider.upsert(collection, items);
   }
 
   async search(collection: string, query: string | number[], opts: SearchOpts): Promise<SearchResult[]> {
     if (!this.provider) throw new Error('Memory provider not initialized');
+
+    // If query is a string and we have an embedder, convert to vector for semantic search
+    if (typeof query === 'string' && this.embedder) {
+      try {
+        const [embedding] = await this.embedder.embed([query]);
+        if (embedding && embedding.some((v) => v !== 0)) {
+          // Try vector search first, fall back to text if no results
+          const vectorResults = await this.provider.search(collection, embedding, opts);
+          if (vectorResults.length > 0) return vectorResults;
+        }
+      } catch (err) {
+        log.warn({ err, collection }, 'vector search failed — falling back to text search');
+      }
+    }
+
     return await this.provider.search(collection, query, opts);
   }
 
