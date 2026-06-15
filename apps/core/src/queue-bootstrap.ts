@@ -8,7 +8,7 @@ import {
 } from '@titan/queue';
 import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
-import { agentRuns, agentSteps } from '@titan/database';
+import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
 import { executeBash, patchFile, readFileAst, firecrawlScrape } from '@titan/tools';
 import { getWsServer } from './ws-instance.js';
 
@@ -55,6 +55,50 @@ registry.register({
     return firecrawlScrape({ url, timeoutMs: timeoutMs ?? 10_000 });
   },
   tags: ['network', 'web'],
+});
+
+registry.register({
+  name: 'remember',
+  description: 'Save a fact or preference about the user for future conversations. Use for non-sensitive info like name, language, preferences.',
+  handler: async (params: unknown) => {
+    const { ownerId, key, value } = params as { ownerId: string; key: string; value: string };
+    await userContext.set(ownerId, key, value);
+    return { saved: true, key, value };
+  },
+  tags: ['memory', 'context'],
+});
+
+registry.register({
+  name: 'recall',
+  description: 'Retrieve all saved facts and preferences about the user.',
+  handler: async (params: unknown) => {
+    const { ownerId } = params as { ownerId: string };
+    const ctx = await userContext.getAll(ownerId);
+    return { context: ctx };
+  },
+  tags: ['memory', 'context'],
+});
+
+registry.register({
+  name: 'set_secret',
+  description: 'Store a sensitive secret (API key, token, password) encrypted. It will NOT be shown to the LLM again.',
+  handler: async (params: unknown) => {
+    const { ownerId, key, value, description } = params as { ownerId: string; key: string; value: string; description?: string };
+    await userSecrets.set(ownerId, key, value, description);
+    return { saved: true, key, note: 'Secret stored encrypted. Value will not be displayed.' };
+  },
+  tags: ['memory', 'secrets'],
+});
+
+registry.register({
+  name: 'list_secrets',
+  description: 'List the names of stored secrets (not their values) for the user.',
+  handler: async (params: unknown) => {
+    const { ownerId } = params as { ownerId: string };
+    const list = await userSecrets.list(ownerId);
+    return { secrets: list.map((s) => ({ key: s.key, description: s.description })) };
+  },
+  tags: ['memory', 'secrets'],
 });
 
 async function executeTool(name: string, params: unknown): Promise<ToolResult> {

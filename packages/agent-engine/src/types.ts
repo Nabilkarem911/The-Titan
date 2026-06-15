@@ -66,6 +66,7 @@ export interface AgentRunInput {
   maxSteps?: number;
   tokenBudget?: number;
   forbiddenTools?: readonly string[];
+  systemPromptExtra?: string;
 }
 
 export interface LlmMessage {

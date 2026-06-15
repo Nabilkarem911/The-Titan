@@ -130,7 +130,9 @@ export class AgentRunner {
 
     const ctx: AgentContext = {
       run,
-      systemPrompt: DEFAULT_SYSTEM_PROMPT,
+      systemPrompt: input.systemPromptExtra
+        ? DEFAULT_SYSTEM_PROMPT + input.systemPromptExtra
+        : DEFAULT_SYSTEM_PROMPT,
       rules,
       memoryItems,
     };
