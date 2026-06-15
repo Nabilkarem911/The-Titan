@@ -9,7 +9,7 @@ import {
 import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
-import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert } from '@titan/tools';
+import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { getWsServer } from './ws-instance.js';
 
@@ -475,6 +475,8 @@ registry.register({
   requiredParams: ['location'],
   handler: async (params: unknown) => weatherGet(params as Parameters<typeof weatherGet>[0]),
   tags: ['weather', 'utility'],
+  cacheTtlMs: 10 * 60 * 1000,
+  rateLimit: { maxCalls: 20, windowMs: 60_000 },
 });
 
 registry.register({
@@ -488,6 +490,8 @@ registry.register({
   requiredParams: ['from', 'to'],
   handler: async (params: unknown) => currencyConvert(params as Parameters<typeof currencyConvert>[0]),
   tags: ['finance', 'utility'],
+  cacheTtlMs: 15 * 60 * 1000,
+  rateLimit: { maxCalls: 30, windowMs: 60_000 },
 });
 
 registry.register({
@@ -526,6 +530,8 @@ registry.register({
   requiredParams: ['query'],
   handler: async (params: unknown) => youtubeSearch(params as Parameters<typeof youtubeSearch>[0]),
   tags: ['video', 'search'],
+  cacheTtlMs: 5 * 60 * 1000,
+  rateLimit: { maxCalls: 10, windowMs: 60_000 },
 });
 
 registry.register({
@@ -622,6 +628,8 @@ registry.register({
   requiredParams: [],
   handler: async (params: unknown) => ipLookup(params as Parameters<typeof ipLookup>[0]),
   tags: ['network', 'utility'],
+  cacheTtlMs: 30 * 60 * 1000,
+  rateLimit: { maxCalls: 20, windowMs: 60_000 },
 });
 
 registry.register({
@@ -634,6 +642,8 @@ registry.register({
   requiredParams: ['domain'],
   handler: async (params: unknown) => dnsLookup(params as Parameters<typeof dnsLookup>[0]),
   tags: ['network', 'utility'],
+  cacheTtlMs: 5 * 60 * 1000,
+  rateLimit: { maxCalls: 30, windowMs: 60_000 },
 });
 
 registry.register({
@@ -672,6 +682,18 @@ registry.register({
   requiredParams: ['color'],
   handler: async (params: unknown) => colorConvert(params as Parameters<typeof colorConvert>[0]),
   tags: ['design', 'utility'],
+});
+
+registry.register({
+  name: 'file_watch',
+  description: 'Watch a file or directory for changes. Waits until a change event occurs or timeout is reached.',
+  schema: {
+    path: { type: 'string', description: 'Absolute or relative path to the file or directory to watch' },
+    timeoutMs: { type: 'number', description: 'Maximum time to wait for a change in milliseconds (default 10000)' },
+  },
+  requiredParams: ['path'],
+  handler: async (params: unknown) => fileWatch(params as Parameters<typeof fileWatch>[0]),
+  tags: ['files', 'utility'],
 });
 
 async function executeTool(name: string, params: unknown): Promise<ToolResult> {

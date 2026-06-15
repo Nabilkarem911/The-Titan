@@ -14,10 +14,27 @@ export interface ToolDefinition {
   tags?: string[];
   schema?: Record<string, { type: string; description?: string; enum?: string[] }>;
   requiredParams?: string[];
+  cacheTtlMs?: number;        // 0 = no cache, >0 = cache duration
+  rateLimit?: {
+    maxCalls: number;
+    windowMs: number;
+  };
+}
+
+interface CacheEntry {
+  result: ToolResult;
+  expiresAt: number;
+}
+
+interface RateBucket {
+  calls: number;
+  windowStart: number;
 }
 
 export class ToolRegistry {
   private tools = new Map<string, ToolDefinition>();
+  private cache = new Map<string, CacheEntry>();
+  private rateBuckets = new Map<string, RateBucket>();
 
   register(def: ToolDefinition): void {
     if (this.tools.has(def.name)) {
@@ -33,10 +50,47 @@ export class ToolRegistry {
     return removed;
   }
 
+  private getCacheKey(name: string, params: unknown): string {
+    return `${name}:${JSON.stringify(params)}`;
+  }
+
+  private checkRateLimit(tool: ToolDefinition): boolean {
+    if (!tool.rateLimit) return true;
+    const { maxCalls, windowMs } = tool.rateLimit;
+    const now = Date.now();
+    const bucket = this.rateBuckets.get(tool.name);
+
+    if (!bucket || now - bucket.windowStart > windowMs) {
+      this.rateBuckets.set(tool.name, { calls: 1, windowStart: now });
+      return true;
+    }
+    if (bucket.calls >= maxCalls) return false;
+    bucket.calls++;
+    return true;
+  }
+
   async execute(name: string, params: unknown): Promise<ToolResult> {
     const tool = this.tools.get(name);
     if (!tool) {
       return { success: false, error: `Unknown tool: ${name}` };
+    }
+
+    // Rate limit check
+    if (!this.checkRateLimit(tool)) {
+      const { maxCalls, windowMs } = tool.rateLimit!;
+      const msg = `Tool "${name}" rate limit exceeded (max ${maxCalls} calls per ${windowMs / 1000}s)`;
+      log.warn({ tool: name }, msg);
+      return { success: false, error: msg };
+    }
+
+    // Cache check
+    if (tool.cacheTtlMs && tool.cacheTtlMs > 0) {
+      const key = this.getCacheKey(name, params);
+      const cached = this.cache.get(key);
+      if (cached && Date.now() < cached.expiresAt) {
+        log.info({ tool: name }, 'tool result served from cache');
+        return { ...cached.result, latencyMs: 0 };
+      }
     }
 
     const start = performance.now();
@@ -44,13 +98,36 @@ export class ToolRegistry {
       const data = await tool.handler(params);
       const latencyMs = Math.round(performance.now() - start);
       log.info({ tool: name, latencyMs }, 'tool executed');
-      return { success: true, data, latencyMs };
+      const result: ToolResult = { success: true, data, latencyMs };
+
+      // Store in cache
+      if (tool.cacheTtlMs && tool.cacheTtlMs > 0) {
+        const key = this.getCacheKey(name, params);
+        this.cache.set(key, { result, expiresAt: Date.now() + tool.cacheTtlMs });
+      }
+
+      return result;
     } catch (err) {
       const latencyMs = Math.round(performance.now() - start);
       const error = err instanceof Error ? err.message : String(err);
       log.error({ tool: name, error, latencyMs }, 'tool execution failed');
       return { success: false, error, latencyMs };
     }
+  }
+
+  clearCache(name?: string): void {
+    if (name) {
+      for (const key of this.cache.keys()) {
+        if (key.startsWith(`${name}:`)) this.cache.delete(key);
+      }
+    } else {
+      this.cache.clear();
+    }
+  }
+
+  cacheStats(): { size: number; tools: string[] } {
+    const tools = [...new Set([...this.cache.keys()].map((k) => k.split(':')[0]))];
+    return { size: this.cache.size, tools };
   }
 
   list(): Array<{ name: string; description: string; tags?: string[]; schema?: Record<string, { type: string; description?: string; enum?: string[] }>; requiredParams?: string[] }> {

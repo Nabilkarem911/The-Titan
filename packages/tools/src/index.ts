@@ -40,3 +40,4 @@ export { dnsLookup } from './tools/dnsLookup.js';
 export { textStats } from './tools/textStats.js';
 export { passwordGenerate } from './tools/passwordGenerate.js';
 export { colorConvert } from './tools/colorConvert.js';
+export { fileWatch } from './tools/fileWatch.js';
