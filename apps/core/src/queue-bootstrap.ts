@@ -9,7 +9,7 @@ import {
 import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
-import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten } from '@titan/tools';
+import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { getWsServer } from './ws-instance.js';
 
@@ -563,6 +563,115 @@ registry.register({
   requiredParams: ['url'],
   handler: async (params: unknown) => urlShorten(params as Parameters<typeof urlShorten>[0]),
   tags: ['utility', 'url'],
+});
+
+registry.register({
+  name: 'calculate',
+  description: 'Evaluate a mathematical expression. Supports +, -, *, /, **, sqrt, abs, sin, cos, tan, log, pi, and more.',
+  schema: {
+    expression: { type: 'string', description: 'Math expression to evaluate (e.g. "2 + 2", "sqrt(144)", "pi * 5^2")' },
+  },
+  requiredParams: ['expression'],
+  handler: async (params: unknown) => calculate(params as Parameters<typeof calculate>[0]),
+  tags: ['math', 'utility'],
+});
+
+registry.register({
+  name: 'timezone_convert',
+  description: 'Convert a date/time from one timezone to another.',
+  schema: {
+    time: { type: 'string', description: 'ISO date-time string to convert (default: current time)' },
+    fromTimezone: { type: 'string', description: 'Source timezone (e.g. "America/New_York", "UTC", "Asia/Cairo")' },
+    toTimezone: { type: 'string', description: 'Target timezone (e.g. "Europe/London", "Asia/Tokyo")' },
+  },
+  requiredParams: ['fromTimezone', 'toTimezone'],
+  handler: async (params: unknown) => timezoneConvert(params as Parameters<typeof timezoneConvert>[0]),
+  tags: ['time', 'utility'],
+});
+
+registry.register({
+  name: 'regex_test',
+  description: 'Test a regular expression against a string. Returns matches, groups, and match count.',
+  schema: {
+    pattern: { type: 'string', description: 'Regular expression pattern (without delimiters)' },
+    input: { type: 'string', description: 'String to test the pattern against' },
+    flags: { type: 'string', description: 'Regex flags (e.g. "g" for global, "i" for case-insensitive, "gi" for both)' },
+  },
+  requiredParams: ['pattern', 'input'],
+  handler: async (params: unknown) => regexTest(params as Parameters<typeof regexTest>[0]),
+  tags: ['text', 'utility'],
+});
+
+registry.register({
+  name: 'jwt_decode',
+  description: 'Decode and inspect a JWT token. Returns header, payload, expiry status, issuer, and subject.',
+  schema: {
+    token: { type: 'string', description: 'The JWT token string to decode' },
+  },
+  requiredParams: ['token'],
+  handler: async (params: unknown) => jwtDecode(params as Parameters<typeof jwtDecode>[0]),
+  tags: ['security', 'auth'],
+});
+
+registry.register({
+  name: 'ip_lookup',
+  description: 'Look up geolocation and ISP information for an IP address. Leave ip empty to look up the server IP.',
+  schema: {
+    ip: { type: 'string', description: 'IP address to look up (e.g. "8.8.8.8"). Leave empty for server IP.' },
+  },
+  requiredParams: [],
+  handler: async (params: unknown) => ipLookup(params as Parameters<typeof ipLookup>[0]),
+  tags: ['network', 'utility'],
+});
+
+registry.register({
+  name: 'dns_lookup',
+  description: 'Look up DNS records for a domain. Supports A, AAAA, MX, TXT, NS, CNAME, SOA, or ALL records.',
+  schema: {
+    domain: { type: 'string', description: 'Domain name to look up (e.g. "google.com")' },
+    type: { type: 'string', description: 'DNS record type', enum: ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA', 'ALL'] },
+  },
+  requiredParams: ['domain'],
+  handler: async (params: unknown) => dnsLookup(params as Parameters<typeof dnsLookup>[0]),
+  tags: ['network', 'utility'],
+});
+
+registry.register({
+  name: 'text_stats',
+  description: 'Analyze text and return statistics: word count, sentence count, reading time, most common words, and more.',
+  schema: {
+    text: { type: 'string', description: 'The text to analyze' },
+  },
+  requiredParams: ['text'],
+  handler: async (params: unknown) => textStats(params as Parameters<typeof textStats>[0]),
+  tags: ['text', 'utility'],
+});
+
+registry.register({
+  name: 'password_generate',
+  description: 'Generate cryptographically secure random passwords with configurable length and character sets.',
+  schema: {
+    length: { type: 'number', description: 'Password length (default 16, max 128)' },
+    includeUppercase: { type: 'boolean', description: 'Include uppercase letters (default true)' },
+    includeLowercase: { type: 'boolean', description: 'Include lowercase letters (default true)' },
+    includeNumbers: { type: 'boolean', description: 'Include numbers (default true)' },
+    includeSymbols: { type: 'boolean', description: 'Include symbols (default true)' },
+    count: { type: 'number', description: 'Number of passwords to generate (default 1, max 20)' },
+  },
+  requiredParams: [],
+  handler: async (params: unknown) => passwordGenerate(params as Parameters<typeof passwordGenerate>[0]),
+  tags: ['security', 'utility'],
+});
+
+registry.register({
+  name: 'color_convert',
+  description: 'Convert a color between HEX, RGB, HSL, and HSV formats.',
+  schema: {
+    color: { type: 'string', description: 'Color in any format: HEX (#fff or #ffffff), RGB (rgb(r,g,b)), or HSL (hsl(h,s%,l%))' },
+  },
+  requiredParams: ['color'],
+  handler: async (params: unknown) => colorConvert(params as Parameters<typeof colorConvert>[0]),
+  tags: ['design', 'utility'],
 });
 
 async function executeTool(name: string, params: unknown): Promise<ToolResult> {
