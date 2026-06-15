@@ -1,6 +1,6 @@
 import { getLogger } from '@titan/logging';
 import { observeHistogram, incCounter } from '@titan/observability';
-import type { LlmProvider, LlmMessage, LlmCompletion, ToolCall } from '../types.js';
+import type { LlmProvider, LlmMessage, LlmCompletion, LlmToolDefinition, ToolCall } from '../types.js';
 
 const log = getLogger().child({ component: 'llm-anthropic' });
 
@@ -15,7 +15,7 @@ export class AnthropicProvider implements LlmProvider {
 
   async complete(
     messages: LlmMessage[],
-    opts?: { maxTokens?: number; temperature?: number },
+    opts?: { maxTokens?: number; temperature?: number; tools?: LlmToolDefinition[] },
   ): Promise<LlmCompletion> {
     const start = performance.now();
     const url = `${(this.config.baseUrl ?? 'https://api.anthropic.com').replace(/\/$/, '')}/v1/messages`;
@@ -32,55 +32,11 @@ export class AnthropicProvider implements LlmProvider {
       temperature: opts?.temperature ?? 0.3,
       system: systemMsg || undefined,
       messages: conversation,
-      tools: [
-        {
-          name: 'execute_bash',
-          description: 'Execute a bash command',
-          input_schema: {
-            type: 'object',
-            properties: {
-              command: { type: 'string', description: 'The bash command to execute' },
-            },
-            required: ['command'],
-          },
-        },
-        {
-          name: 'read_file',
-          description: 'Read a file content',
-          input_schema: {
-            type: 'object',
-            properties: {
-              filePath: { type: 'string' },
-              offset: { type: 'number' },
-              limit: { type: 'number' },
-            },
-            required: ['filePath'],
-          },
-        },
-        {
-          name: 'patch_file',
-          description: 'Apply a unified diff patch to a file',
-          input_schema: {
-            type: 'object',
-            properties: {
-              filePath: { type: 'string' },
-              patch: { type: 'string' },
-            },
-            required: ['filePath', 'patch'],
-          },
-        },
-        {
-          name: 'firecrawl_scrape',
-          description: 'Scrape a URL and return plain text',
-          input_schema: {
-            type: 'object',
-            properties: {
-              url: { type: 'string' },
-            },
-            required: ['url'],
-          },
-        },
-      ],
+      tools: (opts?.tools ?? []).map((t) => ({
+        name: t.name,
+        description: t.description,
+        input_schema: t.parameters,
+      })),
     };
 
     const res = await fetch(url, {

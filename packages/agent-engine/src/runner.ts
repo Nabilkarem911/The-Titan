@@ -8,11 +8,13 @@ import type {
   AgentContext,
   LlmProvider,
   LlmMessage,
+  LlmToolDefinition,
   ToolCall,
   ToolResult,
   AgentRule,
 } from './types.js';
 import type { MemoryClient } from '@titan/memory';
+import { getGlobalToolRegistry } from './tool-registry.js';
 
 const log = getLogger().child({ component: 'agent-runner' });
 
@@ -74,6 +76,18 @@ function buildMessages(ctx: AgentContext): LlmMessage[] {
   return msgs;
 }
 
+function buildToolsFromRegistry(): LlmToolDefinition[] {
+  return getGlobalToolRegistry().list().map((t) => ({
+    name: t.name,
+    description: t.description,
+    parameters: {
+      type: 'object' as const,
+      properties: { params: { type: 'object', description: 'Tool parameters as a JSON object' } },
+      required: [],
+    },
+  }));
+}
+
 function isToolCallAllowed(call: ToolCall, rules: AgentRule[]): boolean {
   const forbidden = rules.filter((r) => r.type === 'forbidden_tools').flatMap((r) => r.value as string[]);
   return !forbidden.includes(call.name);
@@ -85,6 +99,7 @@ export interface AgentRunnerDeps {
   persistRun?: (run: AgentRun) => Promise<void>;
   onStep?: (step: AgentStep) => Promise<void>;
   memory?: MemoryClient;
+  tools?: LlmToolDefinition[];
 }
 
 export class AgentRunner {
@@ -233,7 +248,8 @@ export class AgentRunner {
     // 1. Planning / LLM call
     const messages = buildMessages(ctx);
     const start = performance.now();
-    const completion = await this.deps.llm.complete(messages);
+    const tools = this.deps.tools ?? buildToolsFromRegistry();
+    const completion = await this.deps.llm.complete(messages, { tools });
     step.latencyMs = Math.round(performance.now() - start);
     step.tokensUsed = completion.tokensUsed;
 
@@ -262,7 +278,7 @@ export class AgentRunner {
       const reflectMessages = buildMessages(ctx);
       ctx.run.steps.pop(); // remove temporary entry; loop will push the final version
       const reflectStart = performance.now();
-      const reflect = await this.deps.llm.complete(reflectMessages);
+      const reflect = await this.deps.llm.complete(reflectMessages, { tools });
       step.latencyMs = (step.latencyMs ?? 0) + Math.round(performance.now() - reflectStart);
       step.tokensUsed = (step.tokensUsed ?? 0) + reflect.tokensUsed;
       step.reflection = reflect.content;

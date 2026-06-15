@@ -83,11 +83,21 @@ export interface LlmCompletion {
   finishReason: 'stop' | 'tool_calls' | 'length' | 'content_filter';
 }
 
+export interface LlmToolDefinition {
+  name: string;
+  description: string;
+  parameters: {
+    type: 'object';
+    properties: Record<string, { type: string; description?: string; enum?: string[] }>;
+    required?: string[];
+  };
+}
+
 /**
  * Abstraction over any LLM provider (OpenAI, Claude, local, mock).
  */
 export interface LlmProvider {
-  complete(messages: LlmMessage[], opts?: { maxTokens?: number; temperature?: number }): Promise<LlmCompletion>;
+  complete(messages: LlmMessage[], opts?: { maxTokens?: number; temperature?: number; tools?: LlmToolDefinition[] }): Promise<LlmCompletion>;
   stream?(messages: LlmMessage[], opts?: { maxTokens?: number }): AsyncGenerator<string>;
 }
 

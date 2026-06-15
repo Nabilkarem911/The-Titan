@@ -1,6 +1,6 @@
 import { getLogger } from '@titan/logging';
 import { observeHistogram, incCounter } from '@titan/observability';
-import type { LlmProvider, LlmMessage, LlmCompletion, ToolCall } from '../types.js';
+import type { LlmProvider, LlmMessage, LlmCompletion, LlmToolDefinition, ToolCall } from '../types.js';
 
 const log = getLogger().child({ component: 'llm-openai' });
 
@@ -16,7 +16,7 @@ export class OpenAiProvider implements LlmProvider {
 
   async complete(
     messages: LlmMessage[],
-    opts?: { maxTokens?: number; temperature?: number },
+    opts?: { maxTokens?: number; temperature?: number; tools?: LlmToolDefinition[] },
   ): Promise<LlmCompletion> {
     const start = performance.now();
     const base = this.config.baseUrl.replace(/\/$/, '');
@@ -29,68 +29,15 @@ export class OpenAiProvider implements LlmProvider {
       })),
       max_tokens: opts?.maxTokens ?? 2048,
       temperature: opts?.temperature ?? 0.3,
-      tools: [
-        {
-          type: 'function',
-          function: {
-            name: 'execute_bash',
-            description: 'Execute a bash command',
-            parameters: {
-              type: 'object',
-              properties: {
-                command: { type: 'string', description: 'The bash command to execute' },
-              },
-              required: ['command'],
-            },
-          },
+      tools: (opts?.tools ?? []).map((t) => ({
+        type: 'function',
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters,
         },
-        {
-          type: 'function',
-          function: {
-            name: 'read_file',
-            description: 'Read a file content',
-            parameters: {
-              type: 'object',
-              properties: {
-                filePath: { type: 'string' },
-                offset: { type: 'number' },
-                limit: { type: 'number' },
-              },
-              required: ['filePath'],
-            },
-          },
-        },
-        {
-          type: 'function',
-          function: {
-            name: 'patch_file',
-            description: 'Apply a unified diff patch to a file',
-            parameters: {
-              type: 'object',
-              properties: {
-                filePath: { type: 'string' },
-                patch: { type: 'string' },
-              },
-              required: ['filePath', 'patch'],
-            },
-          },
-        },
-        {
-          type: 'function',
-          function: {
-            name: 'firecrawl_scrape',
-            description: 'Scrape a URL and return plain text',
-            parameters: {
-              type: 'object',
-              properties: {
-                url: { type: 'string' },
-              },
-              required: ['url'],
-            },
-          },
-        },
-      ],
-      tool_choice: 'auto',
+      })),
+      tool_choice: (opts?.tools ?? []).length > 0 ? 'auto' : undefined,
     };
 
     const res = await fetch(url, {
