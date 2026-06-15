@@ -9,7 +9,7 @@ import {
 import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
-import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl } from '@titan/tools';
+import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { getWsServer } from './ws-instance.js';
 
@@ -514,6 +514,55 @@ registry.register({
   requiredParams: ['url'],
   handler: async (params: unknown) => screenshotUrl(params as Parameters<typeof screenshotUrl>[0]),
   tags: ['browser', 'utility'],
+});
+
+registry.register({
+  name: 'youtube_search',
+  description: 'Search YouTube for videos. Returns video titles, descriptions, channels, and URLs.',
+  schema: {
+    query: { type: 'string', description: 'Search query' },
+    maxResults: { type: 'number', description: 'Maximum number of results to return (default 5, max 25)' },
+  },
+  requiredParams: ['query'],
+  handler: async (params: unknown) => youtubeSearch(params as Parameters<typeof youtubeSearch>[0]),
+  tags: ['video', 'search'],
+});
+
+registry.register({
+  name: 'maps_geocode',
+  description: 'Convert a text address to coordinates (geocode) or coordinates to address (reverse geocode) using Google Maps.',
+  schema: {
+    address: { type: 'string', description: 'Text address to geocode (e.g. "Cairo, Egypt")' },
+    lat: { type: 'number', description: 'Latitude for reverse geocoding' },
+    lng: { type: 'number', description: 'Longitude for reverse geocoding' },
+  },
+  requiredParams: [],
+  handler: async (params: unknown) => mapsGeocode(params as Parameters<typeof mapsGeocode>[0]),
+  tags: ['maps', 'location'],
+});
+
+registry.register({
+  name: 'translate_text',
+  description: 'Translate text to any language. Works without an API key using MyMemory fallback (5000 chars/day free).',
+  schema: {
+    text: { type: 'string', description: 'Text to translate' },
+    targetLang: { type: 'string', description: 'Target language code (e.g. ar, en, fr, de, es, zh)' },
+    sourceLang: { type: 'string', description: 'Source language code (default: auto-detect)' },
+  },
+  requiredParams: ['text', 'targetLang'],
+  handler: async (params: unknown) => translateText(params as Parameters<typeof translateText>[0]),
+  tags: ['language', 'utility'],
+});
+
+registry.register({
+  name: 'url_shorten',
+  description: 'Shorten any URL using TinyURL. No API key required.',
+  schema: {
+    url: { type: 'string', description: 'The long URL to shorten' },
+  },
+  requiredParams: ['url'],
+  handler: async (params: unknown) => urlShorten(params as Parameters<typeof urlShorten>[0]),
+  tags: ['utility', 'url'],
 });
 
 async function executeTool(name: string, params: unknown): Promise<ToolResult> {

@@ -27,3 +27,7 @@ export { weatherGet } from './tools/weatherGet.js';
 export { currencyConvert } from './tools/currencyConvert.js';
 export { htmlToText } from './tools/htmlToText.js';
 export { screenshotUrl } from './tools/screenshotUrl.js';
+export { youtubeSearch } from './tools/youtubeSearch.js';
+export { mapsGeocode } from './tools/mapsGeocode.js';
+export { translateText } from './tools/translateText.js';
+export { urlShorten } from './tools/urlShorten.js';
