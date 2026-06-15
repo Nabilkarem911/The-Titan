@@ -1,11 +1,15 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { agentRuns, agentSteps } from '@titan/database';
+import { agentRuns, agentSteps, agentProfiles } from '@titan/database';
 import { enqueue, QUEUE_NAMES } from '@titan/queue';
 import { ValidationError } from '@titan/shared';
 import { requireAuth } from '../plugins/auth.js';
-import { createProviderFromEnv } from '@titan/agent-engine';
+import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
+import { MemoryClient } from '@titan/memory';
 import type { LlmMessage } from '@titan/agent-engine';
+import { getLogger } from '@titan/logging';
+
+const log = getLogger().child({ component: 'agents-route' });
 
 const RunAgentInputSchema = z.object({
   prompt: z.string().min(1).max(10_000),
@@ -118,37 +122,162 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     },
   );
 
-  // POST /api/v1/agents/:agentId/stream  — SSE streaming chat
+  // POST /api/v1/agents/:agentId/stream  — SSE streaming chat (supports text-only and agent mode with tools)
   app.post<{ Params: { agentId: string } }>(
     '/api/v1/agents/:agentId/stream',
     { preHandler: requireAuth },
     async (req, reply) => {
       if (!req.auth) throw new ValidationError('Authentication required');
 
-      const { prompt, systemPrompt, history } = req.body as {
+      const { prompt, systemPrompt, history, mode, maxSteps } = req.body as {
         prompt: string;
         systemPrompt?: string;
         history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+        mode?: 'text' | 'agent';
+        maxSteps?: number;
       };
 
       if (!prompt) throw new ValidationError('prompt is required');
-
-      const provider = createProviderFromEnv();
-      if (!provider || !provider.stream) {
-        throw new ValidationError('Streaming is not supported by the current LLM provider');
-      }
-
-      const messages: LlmMessage[] = [
-        { role: 'system', content: systemPrompt ?? 'You are Titan, a helpful AI assistant.' },
-        ...(history ?? []).map((h) => ({ role: h.role, content: h.content })),
-        { role: 'user', content: prompt },
-      ];
 
       reply.raw.setHeader('Content-Type', 'text/event-stream');
       reply.raw.setHeader('Cache-Control', 'no-cache');
       reply.raw.setHeader('Connection', 'keep-alive');
       reply.raw.setHeader('X-Accel-Buffering', 'no');
       reply.raw.flushHeaders();
+
+      const { agentId } = req.params;
+
+      // Load agent profile if it exists (for custom system prompt, tools, etc.)
+      const profile = await agentProfiles.findById(agentId).catch(() => null)
+        ?? await agentProfiles.findBySlug(req.auth.userId, agentId).catch(() => null);
+
+      const resolvedSystemPrompt = systemPrompt ?? profile?.systemPrompt ?? 'You are Titan, a helpful AI assistant.';
+
+      // Agent mode: full ReAct loop with tools and step events
+      if (mode === 'agent') {
+        try {
+          const registry = getGlobalToolRegistry();
+          const memory = new MemoryClient();
+          await memory.initialize();
+
+          const run = await agentRuns.create({
+            agentId,
+            prompt,
+            userId: req.auth.userId,
+            workspaceId: req.auth.workspaceId ?? undefined,
+            maxSteps: maxSteps ?? profile?.maxSteps ?? 10,
+          });
+
+          reply.raw.write(`data: ${JSON.stringify({ type: 'run.started', runId: run.id })}\n\n`);
+
+          const runner = new AgentRunner({
+            llm: createProviderFromEnv() ?? new MockLlmProvider(),
+            executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
+              try {
+                const data = await registry.execute(call.name, call.params);
+                return { success: true, data };
+              } catch (err) {
+                return { success: false, error: err instanceof Error ? err.message : 'Tool failed' };
+              }
+            },
+            memory,
+            persistRun: async (agentRun: AgentRun) => {
+              try {
+                await agentRuns.updateStatus(run.id, agentRun.status, {
+                  currentStep: agentRun.currentStep,
+                  tokensUsed: agentRun.tokensUsed,
+                  finalAnswer: agentRun.finalAnswer ?? undefined,
+                });
+              } catch (err) {
+                log.warn({ err, runId: run.id }, 'failed to persist run');
+              }
+              reply.raw.write(`data: ${JSON.stringify({
+                type: 'run.updated',
+                runId: run.id,
+                status: agentRun.status,
+                currentStep: agentRun.currentStep,
+                tokensUsed: agentRun.tokensUsed,
+              })}\n\n`);
+            },
+            onStep: async (step: AgentStep) => {
+              try {
+                await agentSteps.create({
+                  runId: run.id,
+                  stepIndex: step.index,
+                  status: step.status,
+                  thought: step.thought,
+                  actionName: step.action?.name,
+                  actionParams: step.action?.params,
+                  observationSuccess: step.observation?.success,
+                  observationData: step.observation?.data as Record<string, unknown> | undefined,
+                  observationError: step.observation?.error,
+                  reflection: step.reflection,
+                  tokensUsed: step.tokensUsed,
+                  latencyMs: step.latencyMs,
+                });
+              } catch (err) {
+                log.warn({ err, runId: run.id }, 'failed to persist step');
+              }
+              reply.raw.write(`data: ${JSON.stringify({
+                type: 'step',
+                step: {
+                  index: step.index,
+                  status: step.status,
+                  thought: step.thought,
+                  actionName: step.action?.name,
+                  actionParams: step.action?.params,
+                  observationSuccess: step.observation?.success,
+                  observationError: step.observation?.error,
+                  reflection: step.reflection,
+                  tokensUsed: step.tokensUsed,
+                  latencyMs: step.latencyMs,
+                },
+              })}\n\n`);
+            },
+          });
+
+          const result = await runner.run({
+            runId: run.id,
+            agentId,
+            prompt,
+            userId: req.auth.userId,
+            workspaceId: req.auth.workspaceId ?? undefined,
+            maxSteps: maxSteps ?? profile?.maxSteps ?? 10,
+            forbiddenTools: profile?.forbiddenTools as readonly string[] | undefined,
+            systemPromptExtra: resolvedSystemPrompt !== 'You are Titan, a helpful AI assistant.' ? resolvedSystemPrompt : undefined,
+          });
+
+          reply.raw.write(`data: ${JSON.stringify({
+            type: 'run.completed',
+            runId: run.id,
+            answer: result.finalAnswer ?? 'No answer produced.',
+            tokensUsed: result.tokensUsed,
+            steps: result.steps.length,
+          })}\n\n`);
+          reply.raw.write('data: [DONE]\n\n');
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Agent stream error';
+          log.error({ err, agentId }, 'agent stream failed');
+          reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: msg })}\n\n`);
+        } finally {
+          reply.raw.end();
+        }
+        return;
+      }
+
+      // Default text mode: simple LLM streaming without tools
+      const provider = createProviderFromEnv();
+      if (!provider || !provider.stream) {
+        reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: 'Streaming not supported by current LLM provider' })}\n\n`);
+        reply.raw.end();
+        return;
+      }
+
+      const messages: LlmMessage[] = [
+        { role: 'system', content: resolvedSystemPrompt },
+        ...(history ?? []).map((h) => ({ role: h.role, content: h.content })),
+        { role: 'user', content: prompt },
+      ];
 
       try {
         for await (const chunk of provider.stream(messages)) {
