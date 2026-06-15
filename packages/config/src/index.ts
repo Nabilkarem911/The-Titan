@@ -148,6 +148,10 @@ const EnvSchema = z.object({
   LLM_API_KEY: z.string().default(''),
   LLM_MODEL: z.string().default('gpt-4o'),
   LLM_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
+
+  TELEGRAM_BOT_TOKEN: z.string().default(''),
+  TELEGRAM_ALLOWED_CHAT_IDS: z.string().default(''),
+  TELEGRAM_AGENT_ID: z.string().default('default-agent'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -10,6 +10,7 @@ import { buildServer } from './server.js';
 import { registerAllQueueSchemas, registerAllWorkers, closeAllWorkers } from './queue-bootstrap.js';
 import { startAuditSchedulers, stopAuditSchedulers } from './audit-scheduler.js';
 import { setWsServer } from './ws-instance.js';
+import { registerTelegramWebhook } from './routes/telegram.js';
 
 async function main(): Promise<void> {
   const cfg = loadConfig();
@@ -63,6 +64,12 @@ async function main(): Promise<void> {
 
   await app.listen({ host: cfg.HTTP_HOST, port: cfg.HTTP_PORT });
   log.info({ host: cfg.HTTP_HOST, port: cfg.HTTP_PORT, ws: cfg.WS_PATH }, 'http+ws server listening');
+
+  // Register Telegram webhook if PUBLIC_URL is set
+  const publicUrl = process.env['PUBLIC_URL'];
+  if (publicUrl) {
+    await registerTelegramWebhook(publicUrl);
+  }
 
   let shuttingDown = false;
   const shutdown = async (signal: string, exitCode = 0) => {

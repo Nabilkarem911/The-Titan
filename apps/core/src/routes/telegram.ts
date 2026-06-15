@@ -1,0 +1,214 @@
+import type { FastifyInstance } from 'fastify';
+import { loadConfig } from '@titan/config';
+import { getLogger } from '@titan/logging';
+import { agentRuns, agentSteps } from '@titan/database';
+import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
+import { MemoryClient } from '@titan/memory';
+import { randomUUID } from 'node:crypto';
+import { getWsServer } from '../ws-instance.js';
+
+const log = getLogger().child({ component: 'telegram' });
+
+interface TelegramUpdate {
+  update_id: number;
+  message?: {
+    message_id: number;
+    from?: { id: number; first_name?: string; username?: string };
+    chat: { id: number; type: string };
+    text?: string;
+    date: number;
+  };
+}
+
+async function sendTelegramMessage(token: string, chatId: number, text: string): Promise<void> {
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+  const body = { chat_id: chatId, text, parse_mode: 'Markdown' };
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      log.warn({ chatId, status: res.status, err }, 'telegram sendMessage failed');
+    }
+  } catch (err) {
+    log.error({ chatId, err }, 'telegram sendMessage error');
+  }
+}
+
+export async function registerTelegramRoutes(app: FastifyInstance): Promise<void> {
+  const cfg = loadConfig();
+
+  if (!cfg.TELEGRAM_BOT_TOKEN) {
+    log.info('TELEGRAM_BOT_TOKEN not set — telegram webhook disabled');
+    return;
+  }
+
+  const allowedIds = cfg.TELEGRAM_ALLOWED_CHAT_IDS
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map(Number);
+
+  const registry = getGlobalToolRegistry();
+
+  app.post('/telegram/webhook', {
+    config: { rawBody: true },
+  }, async (req, reply) => {
+    const update = req.body as TelegramUpdate;
+    const msg = update.message;
+
+    if (!msg?.text || !msg.from) {
+      return reply.code(200).send({ ok: true });
+    }
+
+    const chatId = msg.chat.id;
+    const text = msg.text.trim();
+
+    if (allowedIds.length > 0 && !allowedIds.includes(chatId)) {
+      log.warn({ chatId }, 'telegram message from unauthorized chat id');
+      return reply.code(200).send({ ok: true });
+    }
+
+    log.info({ chatId, text: text.substring(0, 100) }, 'telegram message received');
+
+    // Acknowledge immediately — Telegram requires 200 within 5s
+    reply.code(200).send({ ok: true });
+
+    // Send typing indicator
+    fetch(`https://api.telegram.org/bot${cfg.TELEGRAM_BOT_TOKEN}/sendChatAction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
+    }).catch(() => {});
+
+    // Run agent
+    try {
+      const runId = randomUUID();
+      const agentId = cfg.TELEGRAM_AGENT_ID;
+
+      // Persist run in DB
+      await agentRuns.create({
+        id: runId,
+        agentId,
+        prompt: text,
+        maxSteps: 10,
+        status: 'running',
+      });
+
+      const memory = new MemoryClient();
+      await memory.initialize();
+
+      const runner = new AgentRunner({
+        llm: createProviderFromEnv() ?? new MockLlmProvider(),
+        executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
+          try {
+            const data = await registry.execute(call.name, call.params);
+            return { success: true, data };
+          } catch (err) {
+            return { success: false, error: err instanceof Error ? err.message : 'Tool failed' };
+          }
+        },
+        memory,
+        persistRun: async (run: AgentRun) => {
+          try {
+            await agentRuns.updateStatus(runId, run.status, {
+              currentStep: run.currentStep,
+              tokensUsed: run.tokensUsed,
+              finalAnswer: run.finalAnswer ?? undefined,
+            });
+          } catch (err) {
+            log.warn({ err, runId }, 'failed to persist run');
+          }
+          getWsServer()?.broadcast('agent.run.updated', {
+            runId,
+            agentId,
+            status: run.status,
+            currentStep: run.currentStep,
+            tokensUsed: run.tokensUsed,
+            finalAnswer: run.finalAnswer ?? null,
+          });
+        },
+        onStep: async (step: AgentStep) => {
+          try {
+            await agentSteps.create({
+              runId,
+              stepIndex: step.index,
+              status: step.status,
+              thought: step.thought,
+              actionName: step.action?.name,
+              actionParams: step.action?.params,
+              observationSuccess: step.observation?.success,
+              observationData: step.observation?.data as Record<string, unknown> | undefined,
+              observationError: step.observation?.error,
+              reflection: step.reflection,
+              tokensUsed: step.tokensUsed,
+              latencyMs: step.latencyMs,
+            });
+          } catch (err) {
+            log.warn({ err, runId }, 'failed to persist step');
+          }
+          getWsServer()?.broadcast('agent.step', {
+            runId,
+            agentId,
+            step: {
+              index: step.index,
+              status: step.status,
+              thought: step.thought,
+              actionName: step.action?.name,
+              reflection: step.reflection,
+              tokensUsed: step.tokensUsed,
+              latencyMs: step.latencyMs,
+            },
+          });
+        },
+      });
+
+      const result = await runner.run({
+        runId,
+        agentId,
+        prompt: text,
+      });
+
+      const answer = result.finalAnswer ?? 'لم أتمكن من إيجاد إجابة.';
+      await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, answer);
+
+    } catch (err) {
+      log.error({ chatId, err }, 'agent run failed for telegram message');
+      await sendTelegramMessage(
+        cfg.TELEGRAM_BOT_TOKEN,
+        chatId,
+        '❌ حدث خطأ أثناء تنفيذ المهمة. حاول مرة أخرى.',
+      );
+    }
+  });
+
+  log.info({ allowedChatIds: allowedIds }, 'telegram webhook route registered at POST /telegram/webhook');
+}
+
+export async function registerTelegramWebhook(publicUrl: string): Promise<void> {
+  const cfg = loadConfig();
+  if (!cfg.TELEGRAM_BOT_TOKEN) return;
+
+  const webhookUrl = `${publicUrl}/telegram/webhook`;
+  try {
+    const res = await fetch(
+      `https://api.telegram.org/bot${cfg.TELEGRAM_BOT_TOKEN}/setWebhook`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: webhookUrl, drop_pending_updates: true }),
+      },
+    );
+    const data = await res.json() as { ok: boolean; description?: string };
+    if (data.ok) {
+      log.info({ webhookUrl }, 'telegram webhook registered');
+    } else {
+      log.warn({ webhookUrl, description: data.description }, 'telegram webhook registration failed');
+    }
+  } catch (err) {
+    log.error({ err }, 'failed to register telegram webhook');
+  }
+}
