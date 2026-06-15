@@ -207,7 +207,14 @@ export class AgentRunner {
           toolCallCounts.set(callKey, count);
           if (count >= 2) {
             run.status = 'completed';
-            run.finalAnswer = step.reflection?.replace(/^.*?(FINAL ANSWER:\s*)?/is, '') ||
+            // Extract meaningful answer from reflection, observation, or provide a clear fallback
+            const fromReflection = step.reflection?.replace(/^.*?FINAL ANSWER:\s*/is, '').trim();
+            const fromObservation = step.observation?.data
+              ? (typeof step.observation.data === 'string' ? step.observation.data : JSON.stringify(step.observation.data)).slice(0, 2000)
+              : null;
+            run.finalAnswer =
+              (fromReflection && fromReflection.length > 5 ? fromReflection : null) ??
+              (fromObservation && fromObservation.length > 5 ? `بناءً على ما وجدته:\n\n${fromObservation}` : null) ??
               `لم أتمكن من إكمال المهمة: الأداة "${step.action.name}" أعادت نفس النتيجة أكثر من مرة. ${step.observation?.error ?? ''}`.trim();
             log.warn({ runId: run.id, tool: step.action.name, count }, 'repeated tool call detected — stopping loop');
             break;

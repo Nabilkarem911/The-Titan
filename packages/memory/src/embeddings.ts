@@ -20,8 +20,8 @@ export class OpenAiEmbeddingProvider implements EmbeddingProvider {
   constructor(opts?: { baseUrl?: string; apiKey?: string; model?: string; dimensions?: number }) {
     this.baseUrl = opts?.baseUrl ?? process.env['EMBEDDING_BASE_URL'] ?? process.env['LLM_BASE_URL'] ?? 'https://api.openai.com/v1';
     this.apiKey = opts?.apiKey ?? process.env['EMBEDDING_API_KEY'] ?? process.env['LLM_API_KEY'] ?? '';
-    this.model = opts?.model ?? process.env['EMBEDDING_MODEL'] ?? 'text-embedding-3-small';
-    this.dims = opts?.dimensions ?? Number(process.env['EMBEDDING_DIMENSIONS'] ?? 1536);
+    this.model = opts?.model ?? process.env['EMBEDDING_MODEL'] ?? 'jina-embeddings-v3';
+    this.dims = opts?.dimensions ?? Number(process.env['EMBEDDING_DIMENSIONS'] ?? 1024);
   }
 
   dimensions(): number {

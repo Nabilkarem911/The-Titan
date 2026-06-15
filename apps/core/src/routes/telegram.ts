@@ -201,7 +201,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         systemPromptExtra: contextBlock,
       });
 
-      const answer = result.finalAnswer ?? 'لم أتمكن من إيجاد إجابة.';
+      const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
 
       // Save assistant reply to history
       await saveChatMessage(sessionId, 'assistant', answer);
