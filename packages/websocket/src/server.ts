@@ -38,6 +38,7 @@ const log = getLogger().child({ component: 'websocket' });
 interface AliveSocket extends WebSocket {
   isAlive: boolean;
   lastPongAt: number;
+  lastPingSentAt: number;
 }
 
 interface ClientEntry {
@@ -244,6 +245,7 @@ export class TitanWebSocketServer {
     const alive = ws as AliveSocket;
     alive.isAlive = true;
     alive.lastPongAt = Date.now();
+    alive.lastPingSentAt = 0;
 
     const entry: ClientEntry = {
       id: clientId,
@@ -364,6 +366,7 @@ export class TitanWebSocketServer {
       entry.lastPingAt = new Date();
       alive.isAlive = true;
       alive.lastPongAt = Date.now();
+      alive.lastPingSentAt = 0; // reset so we don't false-positive on next interval
     });
 
     ws.on('close', (code, reason) => {
@@ -391,12 +394,15 @@ export class TitanWebSocketServer {
     entry.pingTimer = setInterval(() => {
       if (entry.state === 'closed') return;
       const now = Date.now();
-      if (now - alive.lastPongAt > this.pingTimeoutMs) {
-        log.warn({ clientId, ageMs: now - alive.lastPongAt }, 'ws pong timeout; terminating');
+      // Only terminate if we sent a ping AND pong hasn't come back within timeout
+      if (alive.lastPingSentAt > 0 && now - alive.lastPingSentAt > this.pingTimeoutMs && alive.lastPongAt < alive.lastPingSentAt) {
+        log.warn({ clientId, ageMs: now - alive.lastPingSentAt }, 'ws pong timeout; terminating');
         try { ws.terminate(); } catch {}
         return;
       }
+      // Send ping every pingIntervalMs
       if (now - entry.lastPingAt.getTime() > this.pingIntervalMs) {
+        alive.lastPingSentAt = now;
         alive.isAlive = false;
         try { ws.ping(); } catch {}
       }

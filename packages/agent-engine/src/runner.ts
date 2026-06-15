@@ -161,7 +161,9 @@ export class AgentRunner {
 
         if (step.status === 'completed') {
           run.status = 'completed';
-          run.finalAnswer = step.reflection ?? step.observation?.data?.toString() ?? 'Done';
+          const raw = step.reflection ?? step.observation?.data?.toString() ?? 'Done';
+          const match = raw.match(/FINAL ANSWER:\s*([\s\S]+)/i);
+          run.finalAnswer = match ? match[1].trim() : raw.trim();
           break;
         }
       }
@@ -273,9 +275,12 @@ export class AgentRunner {
         await this.deps.onStep(step);
       }
     } else {
-      // Direct answer
+      // Direct answer — also call onStep so it gets persisted
       step.reflection = completion.content;
       step.status = 'completed';
+      if (this.deps.onStep) {
+        await this.deps.onStep(step);
+      }
     }
 
     step.updatedAt = new Date();

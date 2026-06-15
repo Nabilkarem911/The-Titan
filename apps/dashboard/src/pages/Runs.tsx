@@ -42,51 +42,67 @@ export default function Runs() {
     fetchRuns();
   }, [fetchRuns]);
 
-  // WebSocket live updates
+  // WebSocket live updates with auto-reconnect
   useEffect(() => {
-    const token = localStorage.getItem('titan_access_token');
-    if (!token) return;
-    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(`${proto}://${window.location.host}/ws`);
-    wsRef.current = ws;
+    let destroyed = false;
+    let retryDelay = 2000;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'auth', params: { token } }));
-    };
+    const connect = () => {
+      const token = localStorage.getItem('titan_access_token');
+      if (!token || destroyed) return;
+      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const ws = new WebSocket(`${proto}://${window.location.host}/ws`);
+      wsRef.current = ws;
 
-    ws.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data as string);
-        // New step arrived
-        if (msg.method === 'agent.step') {
-          const { runId, step } = msg.params as { runId: string; step: ApiStep };
-          if (runId === selectedRunIdRef.current) {
-            setSteps((prev) => {
-              const exists = prev.some((s) => s.stepIndex === step.stepIndex);
-              if (exists) return prev.map((s) => s.stepIndex === step.stepIndex ? { ...s, ...step } : s);
-              return [...prev, step as unknown as ApiStep];
-            });
+      ws.onopen = () => {
+        retryDelay = 2000;
+        ws.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'auth', params: { token } }));
+      };
+
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data as string);
+          if (msg.method === 'agent.step') {
+            const { runId, step } = msg.params as { runId: string; step: ApiStep };
+            if (runId === selectedRunIdRef.current) {
+              setSteps((prev) => {
+                const exists = prev.some((s) => s.stepIndex === step.stepIndex);
+                if (exists) return prev.map((s) => s.stepIndex === step.stepIndex ? { ...s, ...step } : s);
+                return [...prev, step as unknown as ApiStep];
+              });
+            }
+            fetchRuns();
           }
-          // refresh run list to update tokens/steps count
-          fetchRuns();
-        }
-        // Run status updated
-        if (msg.method === 'agent.run.updated') {
-          const { runId, status, currentStep, tokensUsed, finalAnswer } = msg.params as {
-            runId: string; status: string; currentStep: number; tokensUsed: number; finalAnswer: string | null;
-          };
-          setRuns((prev) => prev.map((r) => r.id === runId
-            ? { ...r, status, currentStep, tokensUsed, finalAnswer }
-            : r));
-        }
-      } catch {}
+          if (msg.method === 'agent.run.updated') {
+            const { runId, status, currentStep, tokensUsed, finalAnswer } = msg.params as {
+              runId: string; status: string; currentStep: number; tokensUsed: number; finalAnswer: string | null;
+            };
+            setRuns((prev) => prev.map((r) => r.id === runId
+              ? { ...r, status, currentStep, tokensUsed, finalAnswer }
+              : r));
+          }
+        } catch {}
+      };
+
+      ws.onerror = () => {};
+      ws.onclose = (e) => {
+        wsRef.current = null;
+        // 4401 = token expired, don't retry automatically
+        if (destroyed || e.code === 4401) return;
+        retryTimer = setTimeout(() => {
+          retryDelay = Math.min(retryDelay * 1.5, 30_000);
+          connect();
+        }, retryDelay);
+      };
     };
 
-    ws.onerror = () => {};
-    ws.onclose = () => {};
+    connect();
 
     return () => {
-      ws.close();
+      destroyed = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      wsRef.current?.close();
       wsRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
