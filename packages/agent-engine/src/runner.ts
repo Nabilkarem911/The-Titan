@@ -32,7 +32,10 @@ IMPORTANT RULES:
 - NEVER say "FINAL ANSWER" unless you have the actual complete answer ready.
 - Do NOT say things like "let me search" or "I will look" as your final answer.
 - If a tool returns data, extract the relevant information and include it in your FINAL ANSWER.
-- Always give concrete numbers, facts, or results — not vague promises to search.`;
+- Always give concrete numbers, facts, or results — not vague promises to search.
+- If a tool returns an error or fails, DO NOT retry the same tool more than twice. Instead, try a different approach or give a FINAL ANSWER explaining what failed and why.
+- If you cannot complete a task (e.g. endpoint not found, missing credentials, unsupported feature), respond immediately with "FINAL ANSWER: [clear explanation of what was tried and why it failed]". Do NOT keep retrying indefinitely.
+- NEVER call brave_search repeatedly for the same query. If the first search did not help, try a different approach or give a FINAL ANSWER.`;
 
 function buildSystemPrompt(ctx: AgentContext): string {
   const rules: string[] = [];
@@ -152,6 +155,8 @@ export class AgentRunner {
       memoryItems,
     };
 
+    const toolCallCounts = new Map<string, number>();
+
     try {
       while (run.currentStep < run.maxSteps) {
         if (run.tokenBudget && run.tokensUsed >= run.tokenBudget) {
@@ -182,6 +187,20 @@ export class AgentRunner {
           const match = raw.match(/FINAL ANSWER:\s*([\s\S]+)/i);
           run.finalAnswer = match ? match[1].trim() : raw.trim();
           break;
+        }
+
+        // Detect repeated identical tool calls — break loop to avoid infinite retry
+        if (step.action) {
+          const callKey = `${step.action.name}:${JSON.stringify(step.action.params)}`;
+          const count = (toolCallCounts.get(callKey) ?? 0) + 1;
+          toolCallCounts.set(callKey, count);
+          if (count >= 2) {
+            run.status = 'completed';
+            run.finalAnswer = step.reflection?.replace(/^.*?(FINAL ANSWER:\s*)?/is, '') ||
+              `لم أتمكن من إكمال المهمة: الأداة "${step.action.name}" أعادت نفس النتيجة أكثر من مرة. ${step.observation?.error ?? ''}`.trim();
+            log.warn({ runId: run.id, tool: step.action.name, count }, 'repeated tool call detected — stopping loop');
+            break;
+          }
         }
       }
 
