@@ -22,6 +22,8 @@ const installSchema = z.object({
   entrypoint: z.string().max(500).optional(),
   checksum: z.string().min(1).max(128),
   signature: z.string().max(2000).optional(),
+  code: z.string().max(500_000).optional(),
+  codeUrl: z.string().url().max(2000).optional(),
 });
 
 export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
@@ -69,10 +71,15 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
         capabilities: body.capabilities,
       });
 
+      const manifestData = body.manifest ?? {};
       await pluginVersions.create({
         pluginId: plugin.id,
         version: body.version,
-        manifest: body.manifest ?? {},
+        manifest: {
+          ...manifestData,
+          ...(body.code ? { code: body.code } : {}),
+          ...(body.codeUrl ? { codeUrl: body.codeUrl } : {}),
+        },
         entrypoint: body.entrypoint,
         checksum: body.checksum,
         signature: body.signature,
@@ -104,20 +111,29 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
         const versions = await pluginVersions.findByPlugin(id);
         const published = versions.find((v) => v.status === 'published') ?? versions[0];
         if (published) {
-          const manifestTools = (published.manifest.tools as Array<{ name: string; description: string; tags?: string[] }> | undefined) ?? [];
+          const manifestTools = (published.manifest.tools as Array<{ name: string; description: string; tags?: string[]; schema?: Record<string, { type: string; description?: string }>; requiredParams?: string[] }> | undefined) ?? [];
+          const pluginCode = published.manifest.code as string | undefined;
+          const pluginCodeUrl = published.manifest.codeUrl as string | undefined;
           await runner.load({
             name: plugin.name,
             version: published.version,
             description: plugin.description ?? undefined,
             tools: manifestTools,
+            code: pluginCode,
+            codeUrl: pluginCodeUrl,
+            checksum: published.checksum,
           });
-          // Register placeholder handlers for each plugin tool
+          // Register real handlers wired to plugin runner
           for (const tool of manifestTools) {
+            const toolName = tool.name;
+            const pluginName = plugin.name;
             toolRegistry.register({
-              name: tool.name,
-              description: `${tool.description} (from ${plugin.name})`,
-              handler: async () => ({ note: `Plugin tool ${tool.name} executed via ${plugin.name}` }),
-              tags: [...(tool.tags ?? []), 'plugin', plugin.name],
+              name: toolName,
+              description: `${tool.description} (plugin: ${pluginName})`,
+              schema: tool.schema,
+              requiredParams: tool.requiredParams,
+              handler: async (params: unknown) => runner.executeTool(pluginName, toolName, params),
+              tags: [...(tool.tags ?? []), 'plugin', pluginName],
             });
           }
           log.info({ plugin: plugin.name }, 'plugin tools registered');
@@ -266,6 +282,11 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       log.error({ err, id, vid }, 'failed to deprecate version');
       return reply.status(500).send({ error: 'Failed to deprecate version' });
     }
+  });
+
+  // GET /api/v1/plugins/loaded — list actively loaded plugins in memory
+  app.get('/api/v1/plugins/loaded', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (_req, reply) => {
+    return reply.send({ items: runner.getLoaded(), allTools: runner.getAllTools() });
   });
 
   app.delete('/api/v1/plugins/:id', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
