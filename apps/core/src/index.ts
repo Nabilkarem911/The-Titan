@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { buildServer } from './server.js';
 import { registerAllQueueSchemas, registerAllWorkers, closeAllWorkers } from './queue-bootstrap.js';
 import { startAuditSchedulers, stopAuditSchedulers } from './audit-scheduler.js';
+import { startCronScheduler, stopCronScheduler } from './cron-scheduler.js';
 import { setWsServer } from './ws-instance.js';
 import { registerTelegramWebhook } from './routes/telegram.js';
 
@@ -53,6 +54,7 @@ async function main(): Promise<void> {
   log.info({ queueStats }, 'queue topology ready');
 
   startAuditSchedulers();
+  startCronScheduler();
 
   const router = new RpcRouter();
   registerRpcMethods(router);
@@ -80,6 +82,7 @@ async function main(): Promise<void> {
       await wsServer.close();
       await app.close();
       stopAuditSchedulers();
+      stopCronScheduler();
       await closeAllWorkers();
       await closeAllQueues();
       await closeRedis();
