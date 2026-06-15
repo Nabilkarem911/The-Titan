@@ -152,6 +152,11 @@ const EnvSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().default(''),
   TELEGRAM_ALLOWED_CHAT_IDS: z.string().default(''),
   TELEGRAM_AGENT_ID: z.string().default('default-agent'),
+
+  BRAVE_SEARCH_API_KEY: z.string().default(''),
+  BRAVE_ANSWERS_API_KEY: z.string().default(''),
+
+  GITHUB_TOKEN: z.string().default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -9,8 +9,11 @@ import {
 import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
-import { executeBash, patchFile, readFileAst, firecrawlScrape } from '@titan/tools';
+import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi } from '@titan/tools';
+import { loadConfig } from '@titan/config';
 import { getWsServer } from './ws-instance.js';
+
+const cfg = loadConfig();
 
 const log = getLogger().child({ component: 'queue-bootstrap' });
 
@@ -100,6 +103,72 @@ registry.register({
   },
   tags: ['memory', 'secrets'],
 });
+
+registry.register({
+  name: 'http_request',
+  description: 'Make an HTTP request to any URL or API endpoint. Supports GET, POST, PUT, DELETE, PATCH.',
+  handler: async (params: unknown) => {
+    const p = params as { url: string; method?: string; headers?: Record<string, string>; body?: string; timeoutMs?: number };
+    return httpRequest(p);
+  },
+  tags: ['network', 'api'],
+});
+
+registry.register({
+  name: 'write_file',
+  description: 'Write content to a file on the server filesystem. Creates parent directories automatically.',
+  handler: async (params: unknown) => {
+    const p = params as { filePath: string; content: string; createDirs?: boolean };
+    return writeFile(p);
+  },
+  tags: ['filesystem'],
+});
+
+registry.register({
+  name: 'read_file_content',
+  description: 'Read the full content of a file from the server filesystem.',
+  handler: async (params: unknown) => {
+    const p = params as { filePath: string; maxBytes?: number };
+    return readFileRaw(p);
+  },
+  tags: ['filesystem'],
+});
+
+if (cfg.BRAVE_SEARCH_API_KEY) {
+  registry.register({
+    name: 'brave_search',
+    description: 'Search the web using Brave Search API. Returns titles, URLs, and descriptions.',
+    handler: async (params: unknown) => {
+      const { query, count } = params as { query: string; count?: number };
+      return braveSearch({ query, count, apiKey: cfg.BRAVE_SEARCH_API_KEY });
+    },
+    tags: ['network', 'web', 'search'],
+  });
+}
+
+if (cfg.BRAVE_ANSWERS_API_KEY) {
+  registry.register({
+    name: 'brave_answers',
+    description: 'Get an AI-generated summary answer for a query using Brave Answers API.',
+    handler: async (params: unknown) => {
+      const { query } = params as { query: string };
+      return braveAnswers({ query, apiKey: cfg.BRAVE_ANSWERS_API_KEY });
+    },
+    tags: ['network', 'web', 'search'],
+  });
+}
+
+if (cfg.GITHUB_TOKEN) {
+  registry.register({
+    name: 'github_api',
+    description: 'Call the GitHub REST API. Use endpoint like /repos/owner/repo/issues. Supports GET, POST, PATCH, DELETE.',
+    handler: async (params: unknown) => {
+      const { endpoint, method, body } = params as { endpoint: string; method?: string; body?: Record<string, unknown> };
+      return githubApi({ endpoint, method, body, token: cfg.GITHUB_TOKEN });
+    },
+    tags: ['network', 'api', 'github'],
+  });
+}
 
 async function executeTool(name: string, params: unknown): Promise<ToolResult> {
   return registry.execute(name, params);

@@ -3,3 +3,8 @@ export { executeBash } from './tools/bash.js';
 export { patchFile } from './tools/patch.js';
 export { readFileContent, readFileAst } from './tools/readFile.js';
 export { firecrawlScrape } from './tools/scrape.js';
+export { httpRequest } from './tools/httpRequest.js';
+export { writeFile } from './tools/writeFile.js';
+export { readFileRaw } from './tools/readFileContent.js';
+export { braveSearch, braveAnswers } from './tools/braveSearch.js';
+export { githubApi } from './tools/githubApi.js';
