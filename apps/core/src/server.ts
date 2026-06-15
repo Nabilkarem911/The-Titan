@@ -24,6 +24,7 @@ import { swarmRoutes } from './routes/swarm.js';
 import { pluginRoutes } from './routes/plugins.js';
 import { complianceRoutes } from './routes/compliance.js';
 import { cronRoutes } from './routes/cron.js';
+import { webhookRoutes } from './routes/webhooks.js';
 import { registerTelegramRoutes } from './routes/telegram.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
@@ -180,6 +181,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(pluginRoutes);
   await app.register(complianceRoutes);
   await app.register(cronRoutes);
+  await app.register(webhookRoutes);
   await registerTelegramRoutes(app);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));
