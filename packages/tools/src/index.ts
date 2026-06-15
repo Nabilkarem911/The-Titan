@@ -23,3 +23,7 @@ export { uuidGenerate } from './tools/uuidGenerate.js';
 export { jsonValidate } from './tools/jsonValidate.js';
 export { textDiff } from './tools/textDiff.js';
 export { markdownToHtml } from './tools/markdownToHtml.js';
+export { weatherGet } from './tools/weatherGet.js';
+export { currencyConvert } from './tools/currencyConvert.js';
+export { htmlToText } from './tools/htmlToText.js';
+export { screenshotUrl } from './tools/screenshotUrl.js';

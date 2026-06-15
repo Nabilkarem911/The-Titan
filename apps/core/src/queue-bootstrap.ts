@@ -9,7 +9,7 @@ import {
 import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
-import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml } from '@titan/tools';
+import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { getWsServer } from './ws-instance.js';
 
@@ -463,6 +463,57 @@ registry.register({
   requiredParams: ['markdown'],
   handler: async (params: unknown) => markdownToHtml(params as Parameters<typeof markdownToHtml>[0]),
   tags: ['utility', 'text'],
+});
+
+registry.register({
+  name: 'weather_get',
+  description: 'Get current weather for any city or location. Returns temperature, humidity, wind speed, and description.',
+  schema: {
+    location: { type: 'string', description: 'City name or location (e.g. "Cairo", "London, UK")' },
+    units: { type: 'string', description: 'Temperature units: metric (Celsius) or imperial (Fahrenheit)', enum: ['metric', 'imperial'] },
+  },
+  requiredParams: ['location'],
+  handler: async (params: unknown) => weatherGet(params as Parameters<typeof weatherGet>[0]),
+  tags: ['weather', 'utility'],
+});
+
+registry.register({
+  name: 'currency_convert',
+  description: 'Convert an amount from one currency to another. Returns the converted amount and exchange rate.',
+  schema: {
+    from: { type: 'string', description: 'Source currency code (e.g. USD, EUR, EGP)' },
+    to: { type: 'string', description: 'Target currency code (e.g. USD, EUR, EGP)' },
+    amount: { type: 'number', description: 'Amount to convert (default 1)' },
+  },
+  requiredParams: ['from', 'to'],
+  handler: async (params: unknown) => currencyConvert(params as Parameters<typeof currencyConvert>[0]),
+  tags: ['finance', 'utility'],
+});
+
+registry.register({
+  name: 'html_to_text',
+  description: 'Extract plain text from HTML. Removes all tags and decodes HTML entities.',
+  schema: {
+    html: { type: 'string', description: 'HTML content to convert to plain text' },
+    preserveNewlines: { type: 'boolean', description: 'Preserve paragraph/line breaks as newlines (default true)' },
+  },
+  requiredParams: ['html'],
+  handler: async (params: unknown) => htmlToText(params as Parameters<typeof htmlToText>[0]),
+  tags: ['utility', 'text'],
+});
+
+registry.register({
+  name: 'screenshot_url',
+  description: 'Take a screenshot of any webpage and return it as a base64 image.',
+  schema: {
+    url: { type: 'string', description: 'The URL of the webpage to screenshot' },
+    width: { type: 'number', description: 'Viewport width in pixels (default 1280)' },
+    height: { type: 'number', description: 'Viewport height in pixels (default 800)' },
+    fullPage: { type: 'boolean', description: 'Capture the full page height (default false)' },
+  },
+  requiredParams: ['url'],
+  handler: async (params: unknown) => screenshotUrl(params as Parameters<typeof screenshotUrl>[0]),
+  tags: ['browser', 'utility'],
 });
 
 async function executeTool(name: string, params: unknown): Promise<ToolResult> {
