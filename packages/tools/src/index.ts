@@ -41,3 +41,4 @@ export { textStats } from './tools/textStats.js';
 export { passwordGenerate } from './tools/passwordGenerate.js';
 export { colorConvert } from './tools/colorConvert.js';
 export { fileWatch } from './tools/fileWatch.js';
+export { manageAgentProfile } from './tools/manageAgentProfile.js';

@@ -9,7 +9,7 @@ import {
 import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
-import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch } from '@titan/tools';
+import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { getWsServer } from './ws-instance.js';
 
@@ -694,6 +694,52 @@ registry.register({
   requiredParams: ['path'],
   handler: async (params: unknown) => fileWatch(params as Parameters<typeof fileWatch>[0]),
   tags: ['files', 'utility'],
+});
+
+registry.register({
+  name: 'manage_agent_profile',
+  description: 'Create, update, delete, list, or get agent profiles. Use this to create specialized agents with custom system prompts and tool permissions.',
+  schema: {
+    action: { type: 'string', description: 'Action to perform', enum: ['create', 'update', 'delete', 'list', 'get'] },
+    name: { type: 'string', description: 'Name of the agent (for create/update)' },
+    slug: { type: 'string', description: 'URL-friendly identifier (lowercase, dashes only, e.g. "web-researcher")' },
+    description: { type: 'string', description: 'Short description of what the agent does' },
+    systemPrompt: { type: 'string', description: 'System prompt that defines the agent personality and behavior' },
+    allowedTools: { type: 'string', description: 'JSON array of tool names the agent can use (e.g. ["brave_search", "http_request"])' },
+    forbiddenTools: { type: 'string', description: 'JSON array of tool names the agent cannot use' },
+    maxSteps: { type: 'number', description: 'Maximum number of reasoning steps (1-50, default 10)' },
+    id: { type: 'string', description: 'Agent profile ID (for update/delete/get)' },
+  },
+  requiredParams: ['action'],
+  handler: async (params: unknown) => {
+    const p = params as Record<string, unknown>;
+    // Parse JSON arrays if provided as strings
+    let allowedTools = p.allowedTools;
+    let forbiddenTools = p.forbiddenTools;
+    if (typeof allowedTools === 'string') {
+      try { allowedTools = JSON.parse(allowedTools); } catch { allowedTools = []; }
+    }
+    if (typeof forbiddenTools === 'string') {
+      try { forbiddenTools = JSON.parse(forbiddenTools); } catch { forbiddenTools = []; }
+    }
+    return manageAgentProfile({
+      action: p.action as 'create' | 'update' | 'delete' | 'list' | 'get',
+      ownerId: (p.ownerId as string) ?? '00000000-0000-0000-0000-000000000001',
+      id: p.id as string | undefined,
+      name: p.name as string | undefined,
+      slug: p.slug as string | undefined,
+      description: p.description as string | undefined,
+      systemPrompt: p.systemPrompt as string | undefined,
+      model: p.model as string | undefined,
+      allowedTools: allowedTools as string[] | undefined,
+      forbiddenTools: forbiddenTools as string[] | undefined,
+      maxSteps: p.maxSteps as number | undefined,
+      temperature: p.temperature as number | undefined,
+      workspaceId: p.workspaceId as string | undefined,
+      isPublic: p.isPublic as boolean | undefined,
+    });
+  },
+  tags: ['agents', 'management'],
 });
 
 async function executeTool(name: string, params: unknown): Promise<ToolResult> {
