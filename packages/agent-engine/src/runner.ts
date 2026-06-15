@@ -103,6 +103,8 @@ export interface AgentRunnerDeps {
   onStep?: (step: AgentStep) => Promise<void>;
   memory?: MemoryClient;
   tools?: LlmToolDefinition[];
+  /** Pre-loaded user context facts to always inject — bypasses vector search */
+  userContextItems?: Record<string, string>;
 }
 
 export class AgentRunner {
@@ -135,11 +137,20 @@ export class AgentRunner {
     if (run.forbiddenTools) rules.push({ type: 'forbidden_tools', value: run.forbiddenTools });
 
     let memoryItems: string[] | undefined;
+
+    // Always inject user context facts first (guaranteed, bypasses vector search)
+    if (this.deps.userContextItems && Object.keys(this.deps.userContextItems).length > 0) {
+      memoryItems = Object.entries(this.deps.userContextItems).map(([k, v]) => `${k}: ${v}`);
+      log.info({ runId: run.id, facts: memoryItems.length }, 'user context facts injected');
+    }
+
     if (this.deps.memory) {
       try {
         const collection = input.workspaceId ? `workspace_${input.workspaceId}` : 'global';
         const results = await this.deps.memory.search(collection, input.prompt, { limit: 5 });
-        memoryItems = results.map((r) => r.content);
+        if (results.length > 0) {
+          memoryItems = [...(memoryItems ?? []), ...results.map((r) => r.content)];
+        }
         log.info({ runId: run.id, memories: results.length }, 'memory retrieved');
       } catch (err) {
         log.warn({ runId: run.id, err: err instanceof Error ? err.message : 'Unknown' }, 'memory retrieval failed');

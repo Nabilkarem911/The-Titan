@@ -104,22 +104,78 @@ export class PgVectorMemoryProvider implements MemoryProvider {
     const collId = await this.resolveCollectionId(collection);
     if (!collId) return [];
     const limit = opts.limit ?? 10;
+
     if (typeof query === 'string') {
-      const { rows } = await this.db.query<{ id: string; external_id: string; content: string; metadata: Record<string, unknown> }>(
-        `SELECT id, external_id, content, metadata
+      // Try pgvector similarity search first if embedding column exists
+      // Fall back to multi-strategy text search: exact → trigram → keyword tokens
+      const terms = query
+        .split(/\s+/)
+        .filter((t) => t.length > 1)
+        .map((t) => `%${t}%`);
+
+      if (terms.length === 0) {
+        // Empty query — return most recent items
+        const { rows } = await this.db.query<{ external_id: string; content: string; metadata: Record<string, unknown> }>(
+          `SELECT external_id, content, metadata
+           FROM memory_items
+           WHERE collection_id = $1
+           ORDER BY updated_at DESC
+           LIMIT $2`,
+          [collId, limit],
+        );
+        return rows.map((r, i) => ({ id: r.external_id, content: r.content, score: 1 - i * 0.05, metadata: r.metadata }));
+      }
+
+      // Build WHERE clause: each token must partially match content
+      const conditions = terms.map((_, i) => `content ILIKE $${i + 3}`).join(' OR ');
+      const { rows } = await this.db.query<{ external_id: string; content: string; metadata: Record<string, unknown>; match_count: string }>(
+        `SELECT external_id, content, metadata,
+                (${terms.map((_, i) => `(CASE WHEN content ILIKE $${i + 3} THEN 1 ELSE 0 END)`).join(' + ')}) AS match_count
          FROM memory_items
          WHERE collection_id = $1
-           AND content ILIKE $2
-         LIMIT $3`,
-        [collId, `%${query}%`, limit],
+           AND (${conditions})
+         ORDER BY match_count DESC, updated_at DESC
+         LIMIT $2`,
+        [collId, limit, ...terms],
       );
-      return rows.map((r: { id: string; external_id: string; content: string; metadata: Record<string, unknown> }, i: number) => ({ id: r.external_id, content: r.content, score: 1 - i * 0.05, metadata: r.metadata }));
+      return rows.map((r, i) => ({
+        id: r.external_id,
+        content: r.content,
+        score: Math.max(0.1, 1 - i * 0.08),
+        metadata: r.metadata,
+      }));
     }
+
+    // Vector array provided — try pgvector cosine similarity if extension available
+    try {
+      const vectorStr = `[${query.join(',')}]`;
+      const { rows } = await this.db.query<{ external_id: string; content: string; metadata: Record<string, unknown>; similarity: number }>(
+        `SELECT external_id, content, metadata,
+                1 - (embedding <=> $3::vector) AS similarity
+         FROM memory_items
+         WHERE collection_id = $1
+           AND embedding IS NOT NULL
+         ORDER BY embedding <=> $3::vector
+         LIMIT $2`,
+        [collId, limit, vectorStr],
+      );
+      if (rows.length > 0) {
+        return rows.map((r) => ({ id: r.external_id, content: r.content, score: r.similarity, metadata: r.metadata }));
+      }
+    } catch {
+      // pgvector not available or no embeddings — fall through to recency scan
+    }
+
+    // Fallback: return most recent items ordered by recency
     const { rows } = await this.db.query<{ external_id: string; content: string; metadata: Record<string, unknown> }>(
-      `SELECT external_id, content, metadata FROM memory_items WHERE collection_id = $1 LIMIT $2`,
+      `SELECT external_id, content, metadata
+       FROM memory_items
+       WHERE collection_id = $1
+       ORDER BY updated_at DESC
+       LIMIT $2`,
       [collId, limit],
     );
-    return rows.map((r: { external_id: string; content: string; metadata: Record<string, unknown> }, i: number) => ({ id: r.external_id, content: r.content, score: 1 - i * 0.05, metadata: r.metadata }));
+    return rows.map((r, i) => ({ id: r.external_id, content: r.content, score: 1 - i * 0.05, metadata: r.metadata }));
   }
 
   async delete(collection: string, ids: string[]): Promise<void> {

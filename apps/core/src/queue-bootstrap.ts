@@ -784,6 +784,18 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
     const memory = new MemoryClient();
     await memory.initialize();
 
+    // Load user context before creating runner
+    let userCtxFacts: Record<string, string> = {};
+    const ownerId = userId ?? agentId ?? 'default';
+    try {
+      userCtxFacts = await userContext.getAll(ownerId);
+      if (Object.keys(userCtxFacts).length > 0) {
+        log.info({ runId, ownerId, facts: Object.keys(userCtxFacts).length }, 'user context loaded for agent');
+      }
+    } catch (err) {
+      log.warn({ err, runId }, 'failed to load user context for agent');
+    }
+
     const runner = new AgentRunner({
       llm: createProviderFromEnv() ?? new MockLlmProvider(),
       executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
@@ -795,6 +807,7 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
         }
       },
       memory,
+      userContextItems: Object.keys(userCtxFacts).length > 0 ? userCtxFacts : undefined,
       persistRun: async (run: AgentRun) => {
         try {
           await agentRuns.updateStatus(runId, run.status, {
