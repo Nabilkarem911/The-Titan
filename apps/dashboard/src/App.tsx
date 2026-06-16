@@ -17,17 +17,20 @@ import Projects from './pages/Projects';
 import Logs from './pages/Logs';
 import Webhooks from './pages/Webhooks';
 import ApiKeys from './pages/ApiKeys';
+import Plugins from './pages/Plugins';
 import Login from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function ProtectedLayout() {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return (
-    <NotificationProvider>
-      <Layout>
-        <Routes>
+    <ThemeProvider>
+      <NotificationProvider>
+        <Layout>
+          <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/agents" element={<Agents />} />
@@ -45,9 +48,11 @@ function ProtectedLayout() {
         <Route path="/logs" element={<Logs />} />
         <Route path="/webhooks" element={<Webhooks />} />
         <Route path="/api-keys" element={<ApiKeys />} />
+        <Route path="/plugins" element={<Plugins />} />
       </Routes>
-      </Layout>
-    </NotificationProvider>
+        </Layout>
+      </NotificationProvider>
+    </ThemeProvider>
   );
 }
 
