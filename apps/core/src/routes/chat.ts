@@ -66,6 +66,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const contextBlock = [
         ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
         historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
+        `\n\nReminder: speak naturally like a friend. Keep it short unless asked for detail. Use bullet points, not long tables, when summarizing.`,
       ].join('');
 
       // Create DB run record
