@@ -14,6 +14,8 @@ import Terminal from './pages/Terminal';
 import Git from './pages/Git';
 import Cron from './pages/Cron';
 import Projects from './pages/Projects';
+import Logs from './pages/Logs';
+import Webhooks from './pages/Webhooks';
 import Login from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 
@@ -37,6 +39,8 @@ function ProtectedLayout() {
         <Route path="/git" element={<Git />} />
         <Route path="/cron" element={<Cron />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/logs" element={<Logs />} />
+        <Route path="/webhooks" element={<Webhooks />} />
       </Routes>
     </Layout>
   );

@@ -20,6 +20,8 @@ import {
   GitBranch,
   Clock,
   LayoutDashboard,
+  ScrollText,
+  Webhook,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -50,6 +52,8 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/queue', icon: <Gauge className="h-4 w-4" />, label: 'Queues' },
       { to: '/metrics', icon: <BarChart3 className="h-4 w-4" />, label: 'Metrics' },
       { to: '/cron', icon: <Clock className="h-4 w-4" />, label: 'Cron Jobs' },
+      { to: '/logs', icon: <ScrollText className="h-4 w-4" />, label: 'Logs' },
+      { to: '/webhooks', icon: <Webhook className="h-4 w-4" />, label: 'Webhooks' },
     ],
   },
   {
