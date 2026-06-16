@@ -50,10 +50,13 @@ Titan is a **complete, open-source autonomous AI agent framework** — a full op
 | **Infrastructure** | Prometheus Metrics | Agent runs, LLM latency, queue depth, sandbox stats |
 | **Infrastructure** | WebSocket | JSON-RPC 2.0 with live run streaming |
 | **Infrastructure** | Docker Sandbox | Resource-isolated container pool for tool execution |
-| **Dashboard** | React UI | Agent management, run history, queue monitor, metrics |
+| **Dashboard** | React UI | 27+ pages: agents, chat (voice), editor, terminal, files, git, swarm, memory, health, API docs, and more |
+| **Dashboard** | Voice Interface | Speech-to-text input + text-to-speech for agent replies |
+| **Dashboard** | System Health | Real-time DB pool, queue stats, audit integrity viewer |
+| **Dashboard** | API Docs | Interactive endpoint explorer with 55+ documented routes |
 | **Deployment** | Dokploy | One-click cloud deployment |
 | **Deployment** | Docker Compose | Full stack with single command |
-| **Deployment** | Telegram Bot | Agent interaction via Telegram |
+| **Deployment** | Telegram Bot | Agent interaction via Telegram with Arabic Companion profile |
 
 ---
 
@@ -411,6 +414,28 @@ curl -X POST http://localhost:3000/api/v1/tools/execute \
   -d '{"tool":"execute_bash","params":{"command":"echo hello world"}}'
 ```
 
+### Compliance & Audit
+
+```bash
+# List audit logs (paginated, filterable)
+curl http://localhost:3000/api/v1/compliance/audit/logs \
+  -H 'Authorization: Bearer <token>'
+
+# Verify audit hash chain integrity
+curl http://localhost:3000/api/v1/compliance/audit/verify \
+  -H 'Authorization: Bearer <token>'
+
+# Get retention info
+curl http://localhost:3000/api/v1/compliance/audit/retention \
+  -H 'Authorization: Bearer <token>'
+
+# Archive old logs
+curl -X POST http://localhost:3000/api/v1/compliance/audit/archive \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"daysOld":365,"batchSize":1000}'
+```
+
 ### API Keys
 
 ```bash
@@ -560,7 +585,7 @@ curl -X POST https://titan.orcanox.xyz/api/v1/agents/default-agent/run \
 - **API:** `GET /api/v1/agents/<agentId>/runs/<runId>/steps` returns all generated content
 - **Chat:** The streaming response includes all code and files inline
 
-> **Note:** Currently, file delivery is via the response content. File upload/download management is on the roadmap.
+> **Note:** Files can be managed directly via the Files page in the dashboard or through the `/api/v1/files` endpoints.
 
 ### 3. Research & Analysis
 
@@ -649,14 +674,56 @@ As owner, you can:
 
 ## Dashboard
 
-The built-in React dashboard provides:
+The built-in React dashboard is a full-featured control center with **27+ pages** across 5 sections:
 
-- **Agent Management** — Create, edit, delete agent profiles
-- **Chat Interface** — Real-time streaming conversations with agents
-- **Run History** — Step-by-step execution timeline with live WebSocket updates
-- **Queue Monitor** — Real-time BullMQ queue statistics
-- **Metrics** — Database pool, Redis, LLM providers, sandbox stats
-- **Playground** — Quick agent run trigger with parameter tuning
+### Workspace
+| Page | Description |
+|------|-------------|
+| **Dashboard** | Project overview, quick stats, recent activity |
+| **Projects** | Workspace project management |
+| **Chat** | Real-time streaming conversations with agents, voice input (mic icon), text-to-speech |
+| **Agents** | Browse and manage agent profiles |
+| **Playground** | Quick agent run trigger with parameter tuning |
+| **Files** | File manager — browse, upload, download, delete files and folders |
+| **Editor** | Monaco code editor with syntax highlighting |
+| **Terminal** | xterm.js terminal with WebSocket shell execution |
+| **Git Push** | Git operations directly from the dashboard |
+| **Teams** | Workspace members management (invite, roles, remove) |
+| **Templates** | Agent profile templates — create, edit, share |
+| **Swarm** | Launch and monitor multi-agent tasks |
+| **Memory** | Chat history sessions viewer |
+| **Getting Started** | Onboarding guide for new users |
+
+### Operations
+| Page | Description |
+|------|-------------|
+| **Run History** | Step-by-step execution timeline with live WebSocket updates |
+| **Queues** | Real-time BullMQ queue statistics |
+| **Metrics** | Database pool, Redis, LLM latency, sandbox stats |
+| **Cron Jobs** | Scheduled task management |
+| **Logs** | Live log stream via WebSocket |
+| **Webhooks** | Webhook management with delivery logs |
+| **Audit Logs** | Tamper-evident audit trail viewer |
+
+### System
+| Page | Description |
+|------|-------------|
+| **Settings** | Profile, LLM keys, theme, dark mode |
+| **API Keys** | Create and revoke scoped API keys |
+| **Plugins** | Plugin marketplace — install and manage community tools |
+| **API Docs** | Interactive API endpoint explorer (55+ endpoints) |
+
+### Admin
+| Page | Description |
+|------|-------------|
+| **System Health** | Real-time DB pool, queue stats, audit integrity, archival status |
+
+### Features
+- **Dark Mode** — Toggle between light/dark themes
+- **Global Search** — `Ctrl+K` quick navigation across all pages
+- **Notifications Bell** — Real-time WebSocket notifications for agent runs
+- **Voice Interface** — Speech-to-text input + text-to-speech read-aloud in Chat
+- **Responsive Design** — Works on desktop and mobile
 
 Access at your deployment URL after login.
 
@@ -666,16 +733,20 @@ Access at your deployment URL after login.
 
 Planned features for upcoming releases:
 
-| Feature | Priority | Description |
-|---------|----------|-------------|
-| **File Manager** | High | Upload/download files to/from agents, browse generated outputs |
-| **Advanced Dashboard** | High | Full project management UI with file tree, terminal, and live preview |
-| **Workspace Teams** | Medium | Invite members to shared workspaces with granular permissions |
-| **Plugin Marketplace** | Medium | Install community tools with one click |
-| **Scheduled Runs** | Medium | Cron-based agent execution (e.g., daily reports) |
-| **Agent Templates** | Low | Pre-built agent profiles for common tasks |
-| **Voice Interface** | Low | Talk to agents via speech-to-text |
-| **Mobile App** | Low | iOS/Android companion app |
+| Feature | Priority | Status | Description |
+|---------|----------|--------|-------------|
+| **File Manager** | High | **Done** | Upload/download files to/from agents, browse generated outputs |
+| **Advanced Dashboard** | High | **Done** | Full project management UI with file tree, terminal, editor, and git |
+| **Workspace Teams** | Medium | **Done** | Invite members to shared workspaces with granular permissions |
+| **Plugin Marketplace** | Medium | **Done** | Install community tools with one click |
+| **Scheduled Runs** | Medium | **Done** | Cron-based agent execution (e.g., daily reports) |
+| **Agent Templates** | Low | **Done** | Pre-built agent profiles for common tasks |
+| **Voice Interface** | Low | **Done** | Speech-to-text input + text-to-speech read-aloud in Chat |
+| **System Health** | High | **Done** | Real-time DB pool, queue stats, audit integrity viewer |
+| **API Documentation** | Medium | **Done** | Interactive endpoint explorer with 55+ documented routes |
+| **Onboarding** | Medium | **Done** | Getting Started welcome page for new users |
+| **Memory Page** | Medium | **Done** | Chat history sessions viewer |
+| **Mobile App** | Low | Pending | iOS/Android companion app |
 
 ---
 
@@ -704,10 +775,14 @@ npm run dev:core
 | Script | Description |
 |--------|-------------|
 | `npm run build` | Build all packages in dependency order |
-| `npm test` | Run full test suite (Vitest) |
+| `npm test` | Run full test suite (Vitest) — 169 tests |
 | `npm run dev:core` | Start core with hot reload |
+| `npm run dev:dashboard` | Start dashboard dev server (Vite) |
 | `npm run db:migrate` | Run database migrations |
-| `npm run build:dashboard` | Build React dashboard |
+| `npm run build:dashboard` | Build React dashboard for production |
+| `npm run build:database` | Build database package |
+
+> **Production Note:** When deployed over HTTPS, WebSockets automatically use `wss://`. The dashboard detects `window.location.protocol` and switches between `ws://` (dev) and `wss://` (production).
 
 ---
 
@@ -723,6 +798,9 @@ npm run dev:core
 - **Docker sandbox isolation** — tools execute in ephemeral Alpine containers
 - **Append-only audit** — DB-level enforcement via trigger, hash chain integrity
 - **Multi-agent orchestration** — plan → execute → synthesize with dependency-aware parallelism
+- **Personality-first system prompts** — agent tone and formatting instructions prioritized over technical ReAct boilerplate
+- **Auto-detect WebSocket protocol** — `wss://` for HTTPS, `ws://` for HTTP, zero config needed
+- **Context block enrichment** — formatting reminders injected on every interaction for consistent output quality
 
 ---
 
@@ -735,7 +813,10 @@ npm run dev:core
 | WebSocket | ws + JSON-RPC 2.0 |
 | Database | PostgreSQL 16 + pgvector |
 | Cache/Queue | Redis 7.4 + BullMQ |
-| Frontend | React 18 + Vite + Tailwind CSS |
+| Frontend | React 18 + Vite + Tailwind CSS + shadcn/ui patterns |
+| Editor | Monaco Editor (@monaco-editor/react) |
+| Terminal | xterm.js with WebSocket shell |
+| Icons | Lucide React |
 | Embeddings | Python 3.11 + FastAPI + sentence-transformers |
 | Validation | Zod |
 | Logging | Pino (structured JSON) |
