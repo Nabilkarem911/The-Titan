@@ -1,184 +1,404 @@
-# Titan
+<div align="center">
 
-Universal Autonomous Agent Framework — **Production-Ready AI Operating System**
+# TITAN
 
-This monorepo provides a complete, open-source autonomous AI agent framework. No LangChain. No CrewAI. No AutoGen. Only vanilla Node.js + TypeScript.
+### Universal Autonomous Agent Framework
+
+**Production-Ready AI Operating System — Built From Scratch**
+
+[![Live](https://img.shields.io/badge/Live-titan.orcanox.xyz-blue?style=for-the-badge)](https://titan.orcanox.xyz)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](./LICENSE)
+
+*No LangChain. No CrewAI. No AutoGen. Pure vanilla Node.js + TypeScript.*
+
+---
+
+</div>
+
+## Overview
+
+Titan is a **complete, open-source autonomous AI agent framework** — a full operating system for AI agents that think, plan, use tools, collaborate in swarms, and learn from memory. Every line of code is hand-crafted with zero dependency on agent frameworks.
 
 > **Live Demo:** [titan.orcanox.xyz](https://titan.orcanox.xyz)
 
-## Status
+---
 
-**Production Deployed & Operational** — Titan is live and executing real agent runs with real tools.
+## Capabilities
 
-| Phase | Feature | Status |
-|-------|---------|--------|
-| 1 | Foundation (DB, Queue, Auth, Gateway) | ✅ |
-| 2 | Agent Engine (ReAct loop, multi-step, rules) | ✅ |
-| 3 | Tool Arsenal — real implementations (bash, patch, read, scrape) | ✅ |
-| 4 | Agent REST API | ✅ |
-| 5 | Dashboard (React + Tailwind + auto-refresh) | ✅ |
-| 6 | Execution Sandbox (Docker container pool) | ✅ |
-| 7 | Memory / RAG Integration | ✅ |
-| 8 | LLM Providers (OpenAI, Claude, any OpenAI-compatible) | ✅ |
-| — | Multi-Agent Swarm | ✅ |
-| — | Infrastructure Monitoring (Prometheus metrics) | ✅ |
+| Category | Feature | Details |
+|----------|---------|---------|
+| **Agent Engine** | Multi-step ReAct Loop | Think → Act → Observe → Reflect → Repeat |
+| **Agent Engine** | Multi-Agent Swarm | Task decomposition, parallel execution, synthesis |
+| **Agent Engine** | Agent Profiles | Custom system prompts, tool restrictions, step limits |
+| **Tools** | Shell Execution | `execute_bash` — sandboxed command execution |
+| **Tools** | File Operations | `read_file`, `patch_file` — read and modify files |
+| **Tools** | Web Scraping | `firecrawl_scrape` — extract content from any URL |
+| **Tools** | Web Search | Brave Search API integration |
+| **Tools** | Weather | OpenWeather API integration |
+| **Tools** | Plugin System | Hot-loadable tool plugins with manifest files |
+| **Memory** | Semantic Search | pgvector embeddings with cosine similarity |
+| **Memory** | Local Embeddings | Self-hosted BGE-small-en-v1.5 (384-dim, zero cost) |
+| **Memory** | Conversation History | Per-session message persistence |
+| **Security** | JWT + Refresh Tokens | Automatic rotation, brute-force protection |
+| **Security** | RBAC | 16 granular permissions across 4 roles |
+| **Security** | API Keys | Scoped, revocable, with prefix identification |
+| **Security** | HMAC Webhooks | Mandatory signature verification |
+| **Security** | Audit Logging | Append-only with hash chain integrity |
+| **Infrastructure** | 9 BullMQ Queues | Priority-based, persistent across restarts |
+| **Infrastructure** | Prometheus Metrics | Agent runs, LLM latency, queue depth, sandbox stats |
+| **Infrastructure** | WebSocket | JSON-RPC 2.0 with live run streaming |
+| **Infrastructure** | Docker Sandbox | Resource-isolated container pool for tool execution |
+| **Dashboard** | React UI | Agent management, run history, queue monitor, metrics |
+| **Deployment** | Dokploy | One-click cloud deployment |
+| **Deployment** | Docker Compose | Full stack with single command |
+| **Deployment** | Telegram Bot | Agent interaction via Telegram |
 
-### What Works Right Now
+---
 
-- **Real multi-step ReAct loop** — agent thinks → calls tools → observes → reflects → continues until `FINAL ANSWER`
-- **Real tool execution** — `execute_bash` runs actual shell commands on the server, `firecrawl_scrape` fetches live web pages
-- **Live Dashboard** — run history with step-by-step timeline, auto-refreshes every 2 seconds while a run is active
-- **Full audit trail** — every step (thought, action, observation, reflection, tokens, latency) persisted in PostgreSQL
-- **BullMQ workers** — 8 concurrent queues, jobs survive restarts via Redis
+## Architecture
+
+```
+                    ┌─────────────────────────────────────────────────┐
+                    │                   CLIENTS                        │
+                    │  Dashboard (React)  │  API  │  Telegram  │  WS  │
+                    └────────────────────────┬────────────────────────┘
+                                             │
+                    ┌────────────────────────▼────────────────────────┐
+                    │              TITAN CORE (Fastify)                │
+                    │  Auth │ Routes │ Rate Limit │ Error Handler      │
+                    └──┬──────────┬──────────┬──────────┬────────────┘
+                       │          │          │          │
+              ┌────────▼──┐  ┌───▼────┐  ┌──▼───┐  ┌──▼──────────┐
+              │   Agent    │  │ Queue  │  │ Auth │  │  WebSocket   │
+              │   Engine   │  │(BullMQ)│  │(JWT) │  │ (JSON-RPC)   │
+              └────┬───────┘  └───┬────┘  └──────┘  └─────────────┘
+                   │              │
+         ┌─────────▼────┐   ┌────▼─────────┐
+         │ Tool Registry │   │   Workers    │
+         │ (Sandbox)     │   │ (9 queues)   │
+         └───────────────┘   └──────────────┘
+                   │
+    ┌──────────────▼──────────────────────────────────┐
+    │                  DATA LAYER                       │
+    │  PostgreSQL (pgvector)  │  Redis  │  Embed API   │
+    └──────────────────────────────────────────────────┘
+```
+
+---
 
 ## Repository Layout
 
 ```
-.
+titan/
 ├── apps/
-│   ├── core/                # Fastify HTTP + WebSocket gateway
-│   └── dashboard/           # React + Vite + Tailwind UI
+│   ├── core/                  # Fastify HTTP + WebSocket gateway + workers
+│   │   ├── Dockerfile         # Multi-stage production image
+│   │   └── Dockerfile.worker  # Dedicated queue worker image
+│   └── dashboard/             # React + Vite + Tailwind UI
 ├── packages/
-│   ├── agent-engine/        # ReAct loop, AgentRunner, LLM providers
-│   ├── auth/                # JWT, API keys, password hashing, RBAC
-│   ├── config/              # Env loading + Zod validation
-│   ├── database/            # pg client + repositories + migrations
-│   ├── logging/             # Pino logger + async-context
-│   ├── memory/              # Provider interface + pgvector + semantic search
-│   ├── observability/       # Prometheus-compatible metrics
-│   ├── queue/               # BullMQ + ioredis wrapper
-│   ├── sandbox/             # Docker container pool with resource isolation
-│   ├── shared/              # Types, constants, Zod schemas, errors
-│   ├── telemetry/           # OpenTelemetry (opt-in)
-│   ├── tools/               # Tool registry + implementations
-│   └── websocket/           # JSON-RPC 2.0 server + router
+│   ├── agent-engine/          # ReAct loop, AgentRunner, Swarm Orchestrator
+│   ├── auth/                  # JWT, API keys, bcrypt, RBAC
+│   ├── config/                # Env loading + Zod validation
+│   ├── database/              # pg client + repositories + migrations
+│   ├── logging/               # Pino structured JSON logger
+│   ├── memory/                # pgvector provider + semantic search + embeddings
+│   ├── observability/         # Prometheus-compatible metrics collector
+│   ├── queue/                 # BullMQ queues + Redis connection management
+│   ├── sandbox/               # Docker container pool with resource isolation
+│   ├── shared/                # Types, constants, Zod schemas, error classes
+│   ├── telemetry/             # OpenTelemetry (opt-in)
+│   ├── tools/                 # Tool registry + implementations + plugins
+│   └── websocket/             # JSON-RPC 2.0 server + router
+├── services/
+│   └── embed/                 # Self-hosted embedding service (BGE-small-en-v1.5)
+│       ├── Dockerfile         # Python 3.11 + sentence-transformers
+│       ├── main.py            # FastAPI with OpenAI-compatible /v1/embeddings
+│       └── requirements.txt
 ├── docker/
-│   ├── postgres/            # init.sql + postgresql.conf
-│   └── redis/               # redis.conf
-├── docker-compose.yml       # Full stack (Postgres + Redis + Core + Worker)
-├── Dockerfile               # Multi-stage production image
-├── tsconfig.base.json       # Shared TS config
-└── package.json             # npm workspaces root
+│   ├── postgres/              # init.sql + postgresql.conf + pg_hba.conf
+│   └── redis/                 # redis.conf (optimized for queues)
+├── docker-compose.yml         # Full stack orchestration
+├── tsconfig.base.json         # Shared TypeScript config
+└── package.json               # npm workspaces root
 ```
 
-## Quick Start
+---
 
-### Prerequisites
+## Deployment
 
-- Node.js >= 22
-- Docker + Docker Compose
-- npm 11+
+### Option 1: Dokploy (Recommended for Production)
 
-### 1. Install dependencies
+Titan runs on [Dokploy](https://dokploy.com) with separate services for maximum control.
+
+#### Services to Create
+
+| Service | Type | Build Config |
+|---------|------|--------------|
+| **titan-postgres** | Database (PostgreSQL) | Dokploy managed |
+| **titan-redis** | Database (Redis) | Dokploy managed |
+| **The-Titan** (core) | Application | Dockerfile: `apps/core/Dockerfile`, Context: `.`, Stage: `runner` |
+| **embed** | Application | Dockerfile: `services/embed/Dockerfile`, Context: `services/embed` |
+
+#### Environment Variables for The-Titan
+
+```env
+NODE_ENV=production
+HTTP_HOST=0.0.0.0
+HTTP_PORT=3000
+
+# Database (use Dokploy Internal Host)
+POSTGRES_HOST=<postgres-internal-host>
+POSTGRES_PORT=5432
+POSTGRES_DB=titan-postgres
+POSTGRES_USER=titan
+POSTGRES_PASSWORD=<strong-password>
+POSTGRES_TLS=false
+
+# Redis (use Dokploy Internal Host)
+REDIS_HOST=<redis-internal-host>
+REDIS_PORT=6379
+REDIS_PASSWORD=<strong-password>
+REDIS_TLS=false
+
+# Security (REQUIRED — generate unique values)
+JWT_SECRET=<64+-char-random-string>
+JWT_REFRESH_SECRET=<64+-char-random-string>
+API_KEY_ENCRYPTION_KEY=<64-hex-chars>
+ENCRYPTION_KEY=<32-char-string>
+
+# LLM Provider
+LLM_PROVIDER_TYPE=openai-compatible
+LLM_API_KEY=<your-llm-api-key>
+LLM_MODEL=auto
+LLM_BASE_URL=https://api.openai.com/v1
+
+# Local Embedding Service
+EMBEDDING_BASE_URL=http://<embed-internal-host>:8000/v1
+EMBEDDING_DIMENSIONS=384
+EMBEDDING_API_KEY=local
+
+# Memory
+MEMORY_PROVIDER=pgvector
+
+# CORS & Security
+CORS_ORIGIN=https://your-domain.com
+CORS_CREDENTIALS=true
+WS_ALLOWED_ORIGINS=https://your-domain.com
+HTTP_CSP_ENABLED=true
+PUBLIC_URL=https://your-domain.com
+
+# Optional: Telegram Bot
+TELEGRAM_BOT_TOKEN=<bot-token>
+TELEGRAM_ALLOWED_CHAT_IDS=<chat-ids>
+
+# Optional: Tool API Keys
+GITHUB_TOKEN=<github-pat>
+BRAVE_SEARCH_API_KEY=<brave-key>
+OPENWEATHER_API_KEY=<openweather-key>
+```
+
+#### Deploy Steps
+
+1. Create PostgreSQL and Redis databases in Dokploy
+2. Create `embed` application (Dockerfile: `services/embed/Dockerfile`, Context: `services/embed`)
+3. Deploy `embed` — wait for it to become healthy (first build ~5 min for model download)
+4. Note the `embed` Internal Host from Dokploy
+5. Create `The-Titan` application (Dockerfile: `apps/core/Dockerfile`, Context: `.`, Stage: `runner`)
+6. Add all env variables (use Internal Hosts from steps 1 & 4)
+7. Deploy The-Titan
+8. Configure domain/SSL in Dokploy's Domains tab
+
+---
+
+### Option 2: Docker Compose (Self-Hosted)
+
+Single command deploys the entire stack:
 
 ```bash
-npm install
+git clone https://github.com/Nabilkarem911/The-Titan.git
+cd The-Titan
+
+# Create .env file (see environment variables above)
+nano .env
+
+# Launch everything
+docker compose up -d
 ```
 
-### 2. Configure environment
+This starts:
+- **PostgreSQL 16** with pgvector extension
+- **Redis 7.4** with optimized config
+- **Titan Core** API server
+- **Titan Worker** queue processor
+- **Embed Service** local embedding model
 
-```bash
-cp .env.example .env
-# Edit .env: set JWT_SECRET to a real 64+ char string, change DB password
-```
-
-### 3. Start infrastructure
-
-```bash
-docker compose up -d postgres redis
-```
-
-Optional tools (pgAdmin, RedisInsight):
-
+Optional dev tools:
 ```bash
 docker compose --profile tools up -d
+# Adds: pgAdmin (port 5050) + Redis Insight (port 5540)
 ```
 
-### 4. Run database migrations
+#### Verify
 
 ```bash
+curl http://localhost:3000/health/live
+# {"status":"ok"}
+
+curl http://localhost:3000/health/ready
+# {"status":"ok","checks":{...}}
+```
+
+---
+
+### Option 3: Local Development
+
+```bash
+# Prerequisites: Node.js 22+, Docker, npm 11+
+
+# 1. Install dependencies
+npm install
+
+# 2. Start infrastructure only
+docker compose up -d postgres redis
+
+# 3. Run database migrations
 npm run db:migrate
-```
 
-### 5. Start the core service
+# 4. Build all packages
+npm run build
 
-```bash
+# 5. Start core in dev mode
 npm run dev:core
 ```
 
-The service will be available at:
-- HTTP: http://localhost:3000
-- Dashboard: http://localhost:3000 (proxied from localhost:3000)
-- WebSocket: ws://localhost:3000/ws
-- Health: http://localhost:3000/health/live
-- Readiness: http://localhost:3000/health/ready
-- Prometheus Metrics: http://localhost:3000/metrics
-- JSON Metrics: http://localhost:3000/metrics.json
+Available at:
+- **API:** http://localhost:3000
+- **Dashboard:** http://localhost:3000
+- **WebSocket:** ws://localhost:3000/ws
+- **Metrics:** http://localhost:3000/metrics
+- **Health:** http://localhost:3000/health/live
 
-## API
+---
+
+## API Reference
 
 ### Authentication
 
 ```bash
 # Register
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"email":"user@example.com","password":"changeme123","name":"User"}'
 
-# Login
-curl -X POST http://localhost:3000/auth/login \
+# Login → returns { accessToken, refreshToken, user }
+curl -X POST http://localhost:3000/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"user@example.com","password":"changeme123"}'
 
-# Use access token
-curl http://localhost:3000/auth/me \
+# Refresh token
+curl -X POST http://localhost:3000/api/v1/auth/refresh \
+  -H 'Content-Type: application/json' \
+  -d '{"refreshToken":"<refreshToken>"}'
+
+# Get current user
+curl http://localhost:3000/api/v1/auth/me \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
-### Workspaces
+### Agent Profiles
 
 ```bash
-# Create
-curl -X POST http://localhost:3000/workspaces \
-  -H 'Authorization: Bearer <accessToken>' \
+# Create agent profile
+curl -X POST http://localhost:3000/api/v1/agent-profiles \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
-  -d '{"name":"My Workspace","slug":"my-ws","description":"..."}'
+  -d '{
+    "name": "Code Assistant",
+    "slug": "code-assistant",
+    "systemPrompt": "You are an expert programmer...",
+    "allowedTools": ["execute_bash", "read_file", "patch_file"],
+    "maxSteps": 15,
+    "isPublic": true
+  }'
 
-# List
-curl http://localhost:3000/workspaces \
-  -H 'Authorization: Bearer <accessToken>'
-```
+# List your profiles
+curl http://localhost:3000/api/v1/agent-profiles \
+  -H 'Authorization: Bearer <token>'
 
-### API Keys
-
-```bash
-# Create (plaintext returned ONCE)
-curl -X POST http://localhost:3000/api-keys \
-  -H 'Authorization: Bearer <accessToken>' \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"ci-cd","scopes":["agent:read","agent:execute"]}'
-
-# Use API key
-curl http://localhost:3000/workspaces \
-  -H 'X-API-Key: tk_<...>'
+# List public profiles
+curl http://localhost:3000/api/v1/agent-profiles/public \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ### Agent Runs
 
 ```bash
-# Trigger an agent run
-curl -X POST http://localhost:3000/api/v1/agents/default-agent/run \
-  -H 'Authorization: Bearer <accessToken>' \
+# Trigger a run
+curl -X POST http://localhost:3000/api/v1/agents/<agentId>/run \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"prompt":"Write a hello world in Python","maxSteps":10}'
 
 # List runs
-curl http://localhost:3000/api/v1/agents/default-agent/runs \
-  -H 'Authorization: Bearer <accessToken>'
+curl http://localhost:3000/api/v1/agents/<agentId>/runs \
+  -H 'Authorization: Bearer <token>'
 
-# Get run details
-curl http://localhost:3000/api/v1/agents/default-agent/runs/<runId> \
-  -H 'Authorization: Bearer <accessToken>'
+# Get run with steps
+curl http://localhost:3000/api/v1/agents/<agentId>/runs/<runId>/steps \
+  -H 'Authorization: Bearer <token>'
+```
+
+### Chat (Streaming)
+
+```bash
+# Send chat message (SSE streaming response)
+curl -N -X POST http://localhost:3000/api/v1/chat \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"agentId":"default-agent","prompt":"Hello, who are you?"}'
+
+# Get chat history
+curl http://localhost:3000/api/v1/chat/history?agentId=default-agent \
+  -H 'Authorization: Bearer <token>'
+```
+
+### Multi-Agent Swarm
+
+```bash
+# Launch a swarm (async — returns task ID immediately)
+curl -X POST http://localhost:3000/api/v1/swarm/run \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "description": "Build a weather dashboard",
+    "prompt": "Create a real-time weather dashboard with charts",
+    "agents": [
+      {"id":"researcher-1","role":"researcher","name":"API Scout","description":"Find weather APIs","maxSteps":5,"priority":1},
+      {"id":"coder-1","role":"coder","name":"Developer","description":"Write the code","maxSteps":15,"priority":2}
+    ]
+  }'
+
+# Check swarm status
+curl http://localhost:3000/api/v1/swarm/<taskId> \
+  -H 'Authorization: Bearer <token>'
+```
+
+### Webhooks
+
+```bash
+# Create webhook
+curl -X POST http://localhost:3000/api/v1/webhooks \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"GitHub Push","url":"https://...","events":["push"],"agentId":"default-agent"}'
+
+# Trigger webhook (HMAC signature REQUIRED)
+curl -X POST http://localhost:3000/api/v1/webhooks/<id>/trigger \
+  -H 'X-Titan-Signature: sha256=<hmac-hex>' \
+  -H 'Content-Type: application/json' \
+  -d '{"event":"push","repo":"my-repo"}'
 ```
 
 ### Tools
@@ -186,38 +406,37 @@ curl http://localhost:3000/api/v1/agents/default-agent/runs/<runId> \
 ```bash
 # Execute a tool directly
 curl -X POST http://localhost:3000/api/v1/tools/execute \
-  -H 'Authorization: Bearer <accessToken>' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
-  -d '{"tool":"execute_bash","params":{"command":"echo hello"}}'
+  -d '{"tool":"execute_bash","params":{"command":"echo hello world"}}'
 ```
 
-### Multi-Agent Swarm
+### API Keys
 
 ```bash
-# Launch a swarm of collaborating agents
-curl -X POST http://localhost:3000/api/v1/swarm/run \
-  -H 'Authorization: Bearer <accessToken>' \
+# Create scoped API key (plaintext returned ONCE)
+curl -X POST http://localhost:3000/api/v1/api-keys \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
-  -d '{
-    "description": "Build a weather app",
-    "prompt": "Create a weather forecasting web app",
-    "agents": [
-      {"id":"researcher-1","role":"researcher","name":"Researcher","description":"Research APIs","maxSteps":5,"priority":1},
-      {"id":"coder-1","role":"coder","name":"Coder","description":"Write code","maxSteps":10,"priority":2}
-    ]
-  }'
+  -d '{"name":"ci-pipeline","scopes":["agent:read","agent:execute"]}'
+
+# Use with X-API-Key header
+curl http://localhost:3000/api/v1/agents/default-agent/runs \
+  -H 'X-API-Key: tk_<prefix>_<secret>'
 ```
+
+---
 
 ## WebSocket (JSON-RPC 2.0)
 
+Real-time streaming of agent runs and system events:
+
 ```javascript
-const ws = new WebSocket('ws://localhost:3000/ws');
+const ws = new WebSocket('wss://titan.orcanox.xyz/ws');
 
 ws.onopen = () => {
-  // Step 1: authenticate
   ws.send(JSON.stringify({
-    jsonrpc: '2.0',
-    id: 1,
+    jsonrpc: '2.0', id: 1,
     method: 'auth',
     params: { token: '<accessToken>' }
   }));
@@ -225,93 +444,187 @@ ws.onopen = () => {
 
 ws.onmessage = (e) => {
   const msg = JSON.parse(e.data);
-  if (msg.id === 1) {
-    // Authenticated — invoke a method
-    ws.send(JSON.stringify({
-      jsonrpc: '2.0',
-      id: 2,
-      method: 'ping',
-      params: {}
-    }));
-  } else if (msg.id === 2) {
-    console.log('Pong:', msg.result);
-  }
+  // Receive live run updates, step completions, etc.
+  console.log(msg);
 };
 ```
 
-### Available RPC methods (Phase 1)
+### RPC Methods
 
-- `auth` — authenticate with JWT or API key
-- `ping` — health check
-- `server.info` — service info + method list
-- `queue.stats` — queue depth and counts
+| Method | Description |
+|--------|-------------|
+| `auth` | Authenticate with JWT or API key |
+| `ping` | Health check (returns `pong`) |
+| `server.info` | Service info + available methods |
+| `queue.stats` | Real-time queue depth and counts |
 
-## Queue Topology
+---
 
-| Queue | Priority | Use |
-|-------|----------|-----|
-| `agent:execute` | High | Agent ReAct loop steps |
-| `tool:execute` | High | Tool invocations |
-| `memory:index` | Medium | Embedding + vector upsert |
-| `memory:retrieve` | Medium | Semantic search |
-| `sandbox:exec` | High | Container execution |
-| `monitoring:check` | Low | Health/metric collection |
-| `audit:write` | Critical | Audit log persistence |
-| `webhook:deliver` | Medium | External callbacks |
+## Queue System
 
-## Configuration
+Titan uses **9 BullMQ queues** backed by Redis for reliable async processing:
 
-All configuration is environment-driven. See `.env.example` for the full list. Required values in production:
+| Queue | Priority | Purpose |
+|-------|----------|---------|
+| `audit-write` | Critical (10) | Append-only audit log persistence |
+| `agent-execute` | High (7) | Agent ReAct loop execution |
+| `tool-execute` | High (7) | Tool invocations |
+| `sandbox-exec` | High (7) | Docker container execution |
+| `swarm-execute` | High (7) | Multi-agent swarm orchestration |
+| `memory-index` | Medium (5) | Embedding generation + vector upsert |
+| `memory-retrieve` | Medium (5) | Semantic search queries |
+| `webhook-deliver` | Medium (5) | External callback delivery (10 retries) |
+| `monitoring-check` | Low (2) | Health/metric collection |
 
-- `JWT_SECRET` — must be at least 64 characters, never the default
-- `POSTGRES_PASSWORD` — strong random value
-- `API_KEY_ENCRYPTION_KEY` — 64 hex chars (32 bytes)
+All queues feature:
+- Exponential backoff on failure
+- Configurable retry attempts
+- Automatic cleanup of completed/failed jobs
+- Persistent across restarts (Redis-backed)
 
-Secrets can also be sourced from HashiCorp Vault by enabling `VAULT_ENABLED=true`.
+---
+
+## Embedding Service
+
+Titan includes a **self-hosted embedding service** — no external API costs:
+
+| Property | Value |
+|----------|-------|
+| Model | `BAAI/bge-small-en-v1.5` |
+| Dimensions | 384 |
+| API | OpenAI-compatible (`/v1/embeddings`) |
+| Runtime | FastAPI + sentence-transformers |
+| Cost | **$0** (runs locally) |
+
+The service provides:
+- `GET /health` — health check
+- `POST /embed` — simple embed endpoint
+- `POST /v1/embeddings` — OpenAI-compatible (drop-in replacement)
+
+Model is downloaded at Docker build time, not runtime — cold starts are instant.
+
+---
+
+## Security
+
+| Feature | Implementation |
+|---------|---------------|
+| **Authentication** | JWT access + refresh token rotation |
+| **Authorization** | 16 permissions, 4 roles (owner, admin, member, viewer) |
+| **API Keys** | Scoped, revocable, SHA-256 hashed storage |
+| **Brute Force** | Login attempt tracking with lockout |
+| **Rate Limiting** | Per-endpoint configurable limits |
+| **Webhook Security** | Mandatory HMAC-SHA256 signature verification |
+| **Chat Isolation** | Session ownership validation |
+| **Audit Trail** | Hash-chained append-only logs |
+| **CORS** | Configurable origin allowlist |
+| **CSP** | Content Security Policy headers |
+| **Input Validation** | Zod schemas on every endpoint |
+| **Error Handling** | RFC 7807 Problem Details (no stack leaks) |
+
+### Permission System
+
+```
+owner  → ALL permissions (16/16)
+admin  → All except audit:write and workspace:delete
+member → Read + write + execute (no admin operations)
+viewer → Read-only access
+```
+
+---
+
+## Dashboard
+
+The built-in React dashboard provides:
+
+- **Agent Management** — Create, edit, delete agent profiles
+- **Chat Interface** — Real-time streaming conversations with agents
+- **Run History** — Step-by-step execution timeline with live WebSocket updates
+- **Queue Monitor** — Real-time BullMQ queue statistics
+- **Metrics** — Database pool, Redis, LLM providers, sandbox stats
+- **Playground** — Quick agent run trigger with parameter tuning
+
+Access at your deployment URL after login.
+
+---
 
 ## Development
 
 ```bash
-# Type-check all workspaces
+# Type-check all packages
 npm run typecheck
 
-# Build all workspaces
+# Build everything
 npm run build
 
-# Run a single workspace
-npm run dev --workspace=apps/core
+# Run tests (169 tests)
+npm test
+
+# Build specific package
+npm run build:shared
+npm run build:core
+
+# Dev mode with hot reload
+npm run dev:core
 ```
+
+### Project Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run build` | Build all packages in dependency order |
+| `npm test` | Run full test suite (Vitest) |
+| `npm run dev:core` | Start core with hot reload |
+| `npm run db:migrate` | Run database migrations |
+| `npm run build:dashboard` | Build React dashboard |
+
+---
 
 ## Architecture Decisions
 
-- **No LangChain / CrewAI / AutoGen** — agent logic implemented from scratch
-- **Vanilla Node.js + TypeScript** — no framework abstractions
-- **Stateless services** — all state in PostgreSQL or Redis; horizontal scaling ready
-- **API-first** — every service is HTTP/WS addressable
-- **Queue-first async** — no blocking calls in HTTP handlers
-- **Provider-agnostic LLM** — OpenAI-compatible base URL + any provider (Groq, Together, Claude, Ollama)
-- **Docker sandbox isolation** — bash/tools execute in pre-warmed Alpine containers
-- **RAG Memory** — semantic search via pgvector, injected into agent context
-- **Multi-Agent Swarm** — task decomposition with dependency-aware parallel execution
-- **Audit log is append-only** — DB-level enforcement via trigger
-- **Prometheus metrics** — agent runs, LLM latency, sandbox usage, queue depth
+- **No LangChain / CrewAI / AutoGen** — agent logic implemented from scratch for full control
+- **Vanilla Node.js + TypeScript** — zero framework abstractions, maximum transparency
+- **Stateless services** — all state in PostgreSQL/Redis; horizontal scaling ready
+- **API-first** — every capability is HTTP/WS addressable
+- **Queue-first async** — no blocking calls in HTTP handlers; swarm runs are enqueued
+- **Provider-agnostic LLM** — any OpenAI-compatible endpoint (OpenAI, Groq, Together, Ollama, vLLM)
+- **Local-first embeddings** — self-hosted model, zero cost, zero rate limits
+- **Docker sandbox isolation** — tools execute in ephemeral Alpine containers
+- **Append-only audit** — DB-level enforcement via trigger, hash chain integrity
+- **Multi-agent orchestration** — plan → execute → synthesize with dependency-aware parallelism
 
-## Environment Variables (Key)
+---
 
-```bash
-# LLM Provider (any OpenAI-compatible or Anthropic)
-LLM_PROVIDER_TYPE=openai-compatible  # or 'anthropic'
-LLM_API_KEY=sk-...
-LLM_MODEL=gpt-4o
-LLM_BASE_URL=https://api.openai.com/v1
+## Tech Stack
 
-# Optional: Sandbox for tool execution
-SANDBOX_ENABLED=true
-SANDBOX_IMAGE=alpine:latest
-SANDBOX_MIN_POOL=2
-SANDBOX_MAX_POOL=8
-```
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Node.js 22, TypeScript 5 (strict) |
+| HTTP | Fastify 5 |
+| WebSocket | ws + JSON-RPC 2.0 |
+| Database | PostgreSQL 16 + pgvector |
+| Cache/Queue | Redis 7.4 + BullMQ |
+| Frontend | React 18 + Vite + Tailwind CSS |
+| Embeddings | Python 3.11 + FastAPI + sentence-transformers |
+| Validation | Zod |
+| Logging | Pino (structured JSON) |
+| Metrics | Prometheus-compatible |
+| Testing | Vitest |
+| Container | Docker multi-stage builds |
+| Deployment | Dokploy / Docker Compose |
+
+---
 
 ## License
 
 MIT — See [LICENSE](./LICENSE)
+
+---
+
+<div align="center">
+
+**Built with determination by [Nabil Karem](https://github.com/Nabilkarem911)**
+
+*Titan — Because AI agents deserve a real operating system.*
+
+</div>
