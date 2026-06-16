@@ -18,7 +18,7 @@ interface LogEntry {
   details?: Record<string, unknown>;
 }
 
-const WS_BASE = (import.meta as unknown as { env: Record<string, string> }).env.VITE_WS_URL ?? `ws://${window.location.host}/ws`;
+const WS_BASE = (import.meta as unknown as { env: Record<string, string> }).env.VITE_WS_URL ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`;
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
