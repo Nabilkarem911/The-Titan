@@ -23,6 +23,7 @@ import Templates from './pages/Templates';
 import AuditLogs from './pages/AuditLogs';
 import Swarm from './pages/Swarm';
 import Memory from './pages/Memory';
+import Health from './pages/Health';
 import Login from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -59,6 +60,7 @@ function ProtectedLayout() {
         <Route path="/audit-logs" element={<AuditLogs />} />
         <Route path="/swarm" element={<Swarm />} />
         <Route path="/memory" element={<Memory />} />
+        <Route path="/health" element={<Health />} />
       </Routes>
         </Layout>
       </NotificationProvider>
