@@ -36,6 +36,7 @@ import {
   Brain,
   HeartPulse,
   BookOpen,
+  Rocket,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -63,6 +64,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/templates', icon: <FileCode className="h-4 w-4" />, label: 'Templates' },
       { to: '/swarm', icon: <Bug className="h-4 w-4" />, label: 'Swarm' },
       { to: '/memory', icon: <Brain className="h-4 w-4" />, label: 'Memory' },
+      { to: '/getting-started', icon: <Rocket className="h-4 w-4" />, label: 'Getting Started' },
     ],
   },
   {
