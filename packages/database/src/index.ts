@@ -7,3 +7,4 @@ export * from './gdpr.js';
 export { runMigrations } from './migrate.js';
 export { userSecrets, userContext, getChatHistory, saveChatMessage } from './userMemory.js';
 export { agentProfiles, type AgentProfile } from './agentProfiles.js';
+export { webhooks, type WebhookRecord } from './webhooks.js';

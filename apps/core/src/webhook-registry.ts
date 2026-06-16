@@ -2,6 +2,7 @@ import { getLogger } from '@titan/logging';
 import { createHmac, randomBytes } from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 import { enqueue, QUEUE_NAMES } from '@titan/queue';
+import { webhooks as webhooksRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'webhook-registry' });
 
@@ -28,7 +29,6 @@ export interface WebhookDelivery {
   error?: string;
 }
 
-const endpoints = new Map<string, WebhookEndpoint>();
 const recentDeliveries: WebhookDelivery[] = [];
 const MAX_DELIVERY_LOG = 100;
 
@@ -47,50 +47,119 @@ export function verifyWebhookSignature(secret: string, rawBody: string, signatur
   return diff === 0;
 }
 
-export function createWebhook(input: Omit<WebhookEndpoint, 'id' | 'secret' | 'createdAt' | 'triggerCount'>): WebhookEndpoint {
+function dbToEndpoint(rec: { id: string; ownerId: string; name: string; url: string; secret: string; events: string[]; isActive: boolean; metadata: Record<string, unknown>; createdAt: Date }): WebhookEndpoint {
+  return {
+    id: rec.id,
+    name: rec.name,
+    agentId: (rec.metadata.agentId as string) ?? '',
+    secret: rec.secret,
+    promptTemplate: (rec.metadata.promptTemplate as string) ?? '{{payload}}',
+    enabled: rec.isActive,
+    events: rec.events,
+    createdAt: rec.createdAt,
+    userId: rec.ownerId,
+    lastTriggeredAt: rec.metadata.lastTriggeredAt ? new Date(rec.metadata.lastTriggeredAt as string) : undefined,
+    triggerCount: (rec.metadata.triggerCount as number) ?? 0,
+  };
+}
+
+export async function createWebhook(input: Omit<WebhookEndpoint, 'id' | 'secret' | 'createdAt' | 'triggerCount'>): Promise<WebhookEndpoint> {
+  const secret = randomBytes(32).toString('hex');
+  const rec = await webhooksRepo.create({
+    ownerId: input.userId ?? 'system',
+    name: input.name,
+    url: `internal://agent/${input.agentId}`,
+    secret,
+    events: input.events,
+  });
+  // Store agent-specific metadata
+  await webhooksRepo.update(rec.id, {});
+  // We need to store promptTemplate and agentId as metadata — update via raw query
+  const { query } = await import('@titan/database');
+  await query(
+    `UPDATE webhooks SET metadata = $1 WHERE id = $2`,
+    [JSON.stringify({ agentId: input.agentId, promptTemplate: input.promptTemplate, triggerCount: 0 }), rec.id],
+  );
   const endpoint: WebhookEndpoint = {
-    ...input,
-    id: randomUUID(),
-    secret: randomBytes(32).toString('hex'),
-    createdAt: new Date(),
+    id: rec.id,
+    name: rec.name,
+    agentId: input.agentId,
+    secret,
+    promptTemplate: input.promptTemplate,
+    enabled: input.enabled,
+    events: input.events,
+    createdAt: rec.createdAt,
+    userId: input.userId,
     triggerCount: 0,
   };
-  endpoints.set(endpoint.id, endpoint);
   log.info({ webhookId: endpoint.id, name: endpoint.name }, 'webhook created');
   return endpoint;
 }
 
-export function updateWebhook(
+export async function updateWebhook(
   id: string,
   patch: Partial<Pick<WebhookEndpoint, 'name' | 'promptTemplate' | 'enabled' | 'events'>>,
-): WebhookEndpoint {
-  const wh = endpoints.get(id);
-  if (!wh) throw new Error(`Webhook not found: ${id}`);
-  Object.assign(wh, patch);
+): Promise<WebhookEndpoint> {
+  const rec = await webhooksRepo.findById(id);
+  if (!rec) throw new Error(`Webhook not found: ${id}`);
+
+  const dbPatch: { name?: string; events?: string[]; isActive?: boolean } = {};
+  if (patch.name !== undefined) dbPatch.name = patch.name;
+  if (patch.events !== undefined) dbPatch.events = patch.events;
+  if (patch.enabled !== undefined) dbPatch.isActive = patch.enabled;
+
+  if (Object.keys(dbPatch).length > 0) {
+    await webhooksRepo.update(id, dbPatch);
+  }
+
+  if (patch.promptTemplate !== undefined) {
+    const { query } = await import('@titan/database');
+    const newMeta = { ...rec.metadata, promptTemplate: patch.promptTemplate };
+    await query('UPDATE webhooks SET metadata = $1, updated_at = now() WHERE id = $2', [JSON.stringify(newMeta), id]);
+  }
+
+  const updated = await webhooksRepo.findById(id);
+  if (!updated) throw new Error(`Webhook not found after update: ${id}`);
   log.info({ webhookId: id }, 'webhook updated');
-  return wh;
+  return dbToEndpoint(updated);
 }
 
-export function rotateWebhookSecret(id: string): WebhookEndpoint {
-  const wh = endpoints.get(id);
-  if (!wh) throw new Error(`Webhook not found: ${id}`);
-  wh.secret = randomBytes(32).toString('hex');
+export async function rotateWebhookSecret(id: string): Promise<WebhookEndpoint> {
+  const newSecret = randomBytes(32).toString('hex');
+  const rec = await webhooksRepo.rotateSecret(id, newSecret);
+  if (!rec) throw new Error(`Webhook not found: ${id}`);
   log.info({ webhookId: id }, 'webhook secret rotated');
-  return wh;
+  return dbToEndpoint(rec);
 }
 
-export function deleteWebhook(id: string): void {
-  endpoints.delete(id);
+export async function deleteWebhook(id: string): Promise<void> {
+  await webhooksRepo.delete(id);
   log.info({ webhookId: id }, 'webhook deleted');
 }
 
-export function listWebhooks(userId?: string): WebhookEndpoint[] {
-  const all = [...endpoints.values()];
-  return userId ? all.filter((w) => w.userId === userId) : all;
+export async function listWebhooks(userId?: string): Promise<WebhookEndpoint[]> {
+  if (!userId) {
+    const { query } = await import('@titan/database');
+    const r = await query<Record<string, unknown>>('SELECT * FROM webhooks ORDER BY created_at DESC LIMIT 100');
+    return r.rows.map((row) => dbToEndpoint({
+      id: row.id as string,
+      ownerId: row.owner_id as string,
+      name: row.name as string,
+      url: row.url as string,
+      secret: row.secret as string,
+      events: (row.events as string[]) ?? ['*'],
+      isActive: row.is_active as boolean,
+      metadata: (row.metadata as Record<string, unknown>) ?? {},
+      createdAt: new Date(row.created_at as string),
+    }));
+  }
+  const recs = await webhooksRepo.listForOwner(userId);
+  return recs.map(dbToEndpoint);
 }
 
-export function getWebhook(id: string): WebhookEndpoint | undefined {
-  return endpoints.get(id);
+export async function getWebhook(id: string): Promise<WebhookEndpoint | undefined> {
+  const rec = await webhooksRepo.findById(id);
+  return rec ? dbToEndpoint(rec) : undefined;
 }
 
 export function getWebhookDeliveries(webhookId: string): WebhookDelivery[] {
@@ -104,7 +173,7 @@ export async function triggerWebhook(
   webhookId: string,
   payload: Record<string, unknown>,
 ): Promise<{ runId: string }> {
-  const wh = endpoints.get(webhookId);
+  const wh = await getWebhook(webhookId);
   if (!wh) throw new Error(`Webhook not found: ${webhookId}`);
   if (!wh.enabled) throw new Error(`Webhook ${webhookId} is disabled`);
 
@@ -134,8 +203,13 @@ export async function triggerWebhook(
       userId: wh.userId,
       maxSteps: 10,
     });
-    wh.lastTriggeredAt = new Date();
-    wh.triggerCount++;
+    // Update trigger count in DB
+    const { query } = await import('@titan/database');
+    const rec = await webhooksRepo.findById(webhookId);
+    if (rec) {
+      const newMeta = { ...rec.metadata, triggerCount: ((rec.metadata.triggerCount as number) ?? 0) + 1, lastTriggeredAt: new Date().toISOString() };
+      await query('UPDATE webhooks SET metadata = $1, updated_at = now() WHERE id = $2', [JSON.stringify(newMeta), webhookId]);
+    }
     log.info({ webhookId, runId, agentId: wh.agentId }, 'webhook triggered');
   } catch (err) {
     delivery.status = 'error';
