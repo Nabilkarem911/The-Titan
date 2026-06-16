@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Bot, User, Loader2, Wrench, Brain, AlertCircle, Paperclip, X, FileCode } from 'lucide-react';
+import { Send, Bot, User, Loader2, Wrench, Brain, AlertCircle, Paperclip, X, FileCode, Mic, Volume2, Square } from 'lucide-react';
 
 interface Attachment {
   name: string;
@@ -42,6 +42,8 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<{ stop(): void } | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,6 +54,58 @@ export default function Chat() {
   }, [messages, currentSteps, streamingText, scrollToBottom]);
 
   const getToken = () => localStorage.getItem('titan_access_token') ?? '';
+
+  const startListening = () => {
+    const w = window as unknown as Record<string, unknown>;
+    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!SR || typeof SR !== 'function') {
+      setError('Speech recognition not supported in this browser');
+      return;
+    }
+    interface SpeechRec {
+      lang: string;
+      continuous: boolean;
+      interimResults: boolean;
+      onresult: ((event: { resultIndex: number; results: Array<Array<{ transcript: string }>> }) => void) | null;
+      onerror: (() => void) | null;
+      onend: (() => void) | null;
+      start(): void;
+      stop(): void;
+    }
+    const rec = new (SR as unknown as new () => SpeechRec)();
+    rec.lang = 'en-US';
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.onresult = (event) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput((prev) => {
+        const base = prev.split(' ').slice(0, -1).join(' ');
+        return base ? base + ' ' + transcript : transcript;
+      });
+    };
+    rec.onerror = () => setIsListening(false);
+    rec.onend = () => setIsListening(false);
+    rec.start();
+    recognitionRef.current = rec as unknown as { stop(): void };
+    setIsListening(true);
+  };
+
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  };
+
+  const speak = (text: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'en-US';
+    utter.rate = 1;
+    window.speechSynthesis.speak(utter);
+  };
 
   const sendMessage = async () => {
     const prompt = input.trim();
@@ -217,7 +271,7 @@ export default function Chat() {
         )}
 
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+          <MessageBubble key={msg.id} message={msg} onSpeak={speak} />
         ))}
 
         {/* Streaming / In-progress indicator */}
@@ -279,6 +333,13 @@ export default function Chat() {
             <Paperclip className="h-4 w-4" />
             <input type="file" className="hidden" onChange={handleFileSelect} multiple disabled={isLoading} />
           </label>
+          <button
+            onClick={isListening ? stopListening : startListening}
+            className={`flex-shrink-0 p-2.5 rounded-lg border transition-colors ${isListening ? 'bg-red-500/10 border-red-500/30 text-red-400 animate-pulse' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10'}`}
+            title={isListening ? 'Stop listening' : 'Voice input'}
+          >
+            {isListening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </button>
           <textarea
             ref={inputRef}
             value={input}
@@ -306,7 +367,7 @@ export default function Chat() {
   );
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({ message, onSpeak }: { message: ChatMessage; onSpeak?: (text: string) => void }) {
   const isUser = message.role === 'user';
   const [showSteps, setShowSteps] = useState(false);
 
@@ -326,6 +387,15 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           }`}
         >
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+          {!isUser && onSpeak && (
+            <button
+              onClick={() => onSpeak(message.content)}
+              className="mt-1.5 text-slate-500 hover:text-indigo-400 transition-colors"
+              title="Read aloud"
+            >
+              <Volume2 className="h-3 w-3" />
+            </button>
+          )}
           {message.attachments && message.attachments.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-slate-700/30">
               {message.attachments.map((att, i) => (
