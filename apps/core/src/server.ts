@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import sensible from '@fastify/sensible';
+import multipart from '@fastify/multipart';
 import staticFiles from '@fastify/static';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
@@ -28,6 +29,8 @@ import { webhookRoutes } from './routes/webhooks.js';
 import { chatRoutes } from './routes/chat.js';
 import { agentProfileRoutes } from './routes/agent-profiles.js';
 import { registerTelegramRoutes } from './routes/telegram.js';
+import { fileRoutes } from './routes/files.js';
+import { userKeyRoutes } from './routes/user-keys.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 
@@ -83,6 +86,7 @@ export async function buildServer(): Promise<FastifyInstance> {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-Id'],
   });
   await app.register(sensible);
+  await app.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } });
 
   const globalHybridKey = hybridKeyGenerator({ bucket: 'global' });
   const authHybridKey = hybridKeyGenerator({ bucket: 'auth' });
@@ -186,6 +190,8 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(webhookRoutes);
   await app.register(chatRoutes);
   await app.register(agentProfileRoutes);
+  await app.register(fileRoutes);
+  await app.register(userKeyRoutes);
   await registerTelegramRoutes(app);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));

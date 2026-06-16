@@ -6,6 +6,8 @@ import Playground from './pages/Playground';
 import Runs from './pages/Runs';
 import Queue from './pages/Queue';
 import Metrics from './pages/Metrics';
+import Files from './pages/Files';
+import Settings from './pages/Settings';
 import Login from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 
@@ -21,6 +23,8 @@ function ProtectedLayout() {
         <Route path="/runs" element={<Runs />} />
         <Route path="/queue" element={<Queue />} />
         <Route path="/metrics" element={<Metrics />} />
+        <Route path="/files" element={<Files />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </Layout>
   );
