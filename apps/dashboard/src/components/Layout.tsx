@@ -18,6 +18,7 @@ import {
   Code,
   Monitor,
   GitBranch,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -45,6 +46,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/runs', icon: <History className="h-4 w-4" />, label: 'Run History' },
       { to: '/queue', icon: <Gauge className="h-4 w-4" />, label: 'Queues' },
       { to: '/metrics', icon: <BarChart3 className="h-4 w-4" />, label: 'Metrics' },
+      { to: '/cron', icon: <Clock className="h-4 w-4" />, label: 'Cron Jobs' },
     ],
   },
   {

@@ -11,6 +11,7 @@ import Settings from './pages/Settings';
 import Editor from './pages/Editor';
 import Terminal from './pages/Terminal';
 import Git from './pages/Git';
+import Cron from './pages/Cron';
 import Login from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 
@@ -31,6 +32,7 @@ function ProtectedLayout() {
         <Route path="/editor" element={<Editor />} />
         <Route path="/terminal" element={<Terminal />} />
         <Route path="/git" element={<Git />} />
+        <Route path="/cron" element={<Cron />} />
       </Routes>
     </Layout>
   );
