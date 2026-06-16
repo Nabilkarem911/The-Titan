@@ -8,6 +8,9 @@ import Queue from './pages/Queue';
 import Metrics from './pages/Metrics';
 import Files from './pages/Files';
 import Settings from './pages/Settings';
+import Editor from './pages/Editor';
+import Terminal from './pages/Terminal';
+import Git from './pages/Git';
 import Login from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 
@@ -25,6 +28,9 @@ function ProtectedLayout() {
         <Route path="/metrics" element={<Metrics />} />
         <Route path="/files" element={<Files />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/editor" element={<Editor />} />
+        <Route path="/terminal" element={<Terminal />} />
+        <Route path="/git" element={<Git />} />
       </Routes>
     </Layout>
   );

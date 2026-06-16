@@ -5,6 +5,7 @@ import { patchFile } from './tools/patch.js';
 import { readFileContent, readFileAst } from './tools/readFile.js';
 import { firecrawlScrape } from './tools/scrape.js';
 import { dockerOrchestrate } from './tools/docker.js';
+import { gitPush } from './tools/gitPush.js';
 import {
   ExecuteBashInputSchema,
   PatchFileInputSchema,
@@ -12,6 +13,7 @@ import {
   ReadFileAstInputSchema,
   FirecrawlScrapeInputSchema,
   DockerOrchestratorInputSchema,
+  GitPushInputSchema,
 } from './schemas.js';
 const log = getLogger().child({ component: 'tool-registry' });
 
@@ -75,6 +77,15 @@ export const toolRegistry = new Map<string, ToolDefinition>([
       description: 'Run, stop, remove, list, log, or exec Docker containers',
       schema: DockerOrchestratorInputSchema,
       handler: (params) => dockerOrchestrate(DockerOrchestratorInputSchema.parse(params)),
+    },
+  ],
+  [
+    'git_push',
+    {
+      name: 'git_push',
+      description: 'Stage, commit, and push changes to a git repository',
+      schema: GitPushInputSchema,
+      handler: (params) => gitPush(GitPushInputSchema.parse(params)),
     },
   ],
 ]);

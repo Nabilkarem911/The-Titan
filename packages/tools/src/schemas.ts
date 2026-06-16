@@ -39,6 +39,20 @@ export const FirecrawlScrapeInputSchema = z.object({
 
 export type FirecrawlScrapeInput = z.infer<typeof FirecrawlScrapeInputSchema>;
 
+export const GitPushInputSchema = z.object({
+  cwd: z.string().min(1).max(500),
+  commitMessage: z.string().min(1).max(1000).optional(),
+  remote: z.string().max(100).optional(),
+  branch: z.string().max(100).optional(),
+  addAll: z.boolean().optional(),
+  files: z.array(z.string().max(500)).optional(),
+  skipCommit: z.boolean().optional(),
+  skipPush: z.boolean().optional(),
+  createTag: z.string().max(200).optional(),
+});
+
+export type GitPushInput = z.infer<typeof GitPushInputSchema>;
+
 export const DockerOrchestratorInputSchema = z.object({
   action: z.enum(['run', 'stop', 'remove', 'list', 'logs', 'exec']),
   containerName: z.string().max(200).optional(),
@@ -58,6 +72,7 @@ export const ToolInputSchema = z.discriminatedUnion('tool', [
   z.object({ tool: z.literal('read_file_ast'), params: ReadFileAstInputSchema }),
   z.object({ tool: z.literal('firecrawl_scrape'), params: FirecrawlScrapeInputSchema }),
   z.object({ tool: z.literal('docker_orchestrator'), params: DockerOrchestratorInputSchema }),
+  z.object({ tool: z.literal('git_push'), params: GitPushInputSchema }),
 ]);
 
 export type ToolInput = z.infer<typeof ToolInputSchema>;

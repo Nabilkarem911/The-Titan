@@ -15,6 +15,9 @@ import {
   Menu,
   X,
   Zap,
+  Code,
+  Monitor,
+  GitBranch,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -31,6 +34,9 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/agents', icon: <Users className="h-4 w-4" />, label: 'Agents' },
       { to: '/playground', icon: <Terminal className="h-4 w-4" />, label: 'Playground' },
       { to: '/files', icon: <FolderOpen className="h-4 w-4" />, label: 'Files' },
+      { to: '/editor', icon: <Code className="h-4 w-4" />, label: 'Editor' },
+      { to: '/terminal', icon: <Monitor className="h-4 w-4" />, label: 'Terminal' },
+      { to: '/git', icon: <GitBranch className="h-4 w-4" />, label: 'Git Push' },
     ],
   },
   {

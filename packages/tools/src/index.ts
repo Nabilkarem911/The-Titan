@@ -9,6 +9,8 @@ export { readFileRaw } from './tools/readFileContent.js';
 export { braveSearch, braveAnswers } from './tools/braveSearch.js';
 export { githubApi } from './tools/githubApi.js';
 export { dockerOrchestrate } from './tools/docker.js';
+export { gitPush } from './tools/gitPush.js';
+export type { GitPushInput } from './schemas.js';
 export { sendEmail } from './tools/sendEmail.js';
 export { parseCsvJson } from './tools/parseCsvJson.js';
 export { zipUnzip } from './tools/zipUnzip.js';
