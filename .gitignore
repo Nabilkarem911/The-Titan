@@ -35,6 +35,10 @@ coverage/
 # Prisma
 packages/database/prisma/migrations/dev.db*
 
+# Redis
+dump.rdb
+*.rdb
+
 # Docker volumes (if mounted locally)
 .docker-data/
 
