@@ -62,3 +62,7 @@ test-*.cjs
 # Windsurf/Cascade IDE artifacts
 .windsurf/
 .devin/
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md
