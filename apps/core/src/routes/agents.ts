@@ -5,7 +5,7 @@ import { enqueue, QUEUE_NAMES } from '@titan/queue';
 import { ValidationError } from '@titan/shared';
 import { requireAuth } from '../plugins/auth.js';
 import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
-import { MemoryClient } from '@titan/memory';
+import { getGlobalMemoryClient } from '@titan/memory';
 import type { LlmMessage } from '@titan/agent-engine';
 import { getLogger } from '@titan/logging';
 
@@ -157,8 +157,7 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       if (mode === 'agent') {
         try {
           const registry = getGlobalToolRegistry();
-          const memory = new MemoryClient();
-          await memory.initialize();
+          const memory = await getGlobalMemoryClient();
 
           const run = await agentRuns.create({
             agentId,

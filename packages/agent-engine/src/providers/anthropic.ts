@@ -21,10 +21,47 @@ export class AnthropicProvider implements LlmProvider {
     const url = `${(this.config.baseUrl ?? 'https://api.anthropic.com').replace(/\/$/, '')}/v1/messages`;
 
     const systemMsg = messages.find((m) => m.role === 'system')?.content ?? '';
-    const conversation = messages.filter((m) => m.role !== 'system').map((m) => ({
-      role: m.role === 'tool' ? 'user' : m.role,
-      content: m.content,
-    }));
+
+    // Build Anthropic-format messages with proper tool_use/tool_result blocks
+    const conversation: Array<{ role: 'user' | 'assistant'; content: string | Array<Record<string, unknown>> }> = [];
+    let toolUseIdCounter = 0;
+    let lastToolUseId = '';
+
+    for (const m of messages) {
+      if (m.role === 'system') continue;
+
+      if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0) {
+        // Assistant message with tool_use blocks
+        const content: Array<Record<string, unknown>> = [];
+        if (m.content) content.push({ type: 'text', text: m.content });
+        for (const tc of m.toolCalls) {
+          const id = `toolu_${toolUseIdCounter++}`;
+          lastToolUseId = id;
+          content.push({ type: 'tool_use', id, name: tc.name, input: tc.params });
+        }
+        conversation.push({ role: 'assistant', content });
+      } else if (m.role === 'tool') {
+        // Tool result must be a user message with tool_result content block
+        const resultContent = m.toolResult
+          ? (m.toolResult.success
+              ? (typeof m.toolResult.data === 'string' ? m.toolResult.data : JSON.stringify(m.toolResult.data))
+              : `Error: ${m.toolResult.error}`)
+          : m.content;
+        conversation.push({
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: lastToolUseId || `toolu_${toolUseIdCounter++}`, content: resultContent.slice(0, 4000) }],
+        });
+      } else {
+        // Plain user or assistant text message
+        const role = m.role === 'user' ? 'user' : 'assistant';
+        // Merge consecutive same-role messages (Anthropic rejects them)
+        if (conversation.length > 0 && conversation[conversation.length - 1].role === role && typeof conversation[conversation.length - 1].content === 'string') {
+          conversation[conversation.length - 1].content += '\n' + m.content;
+        } else {
+          conversation.push({ role, content: m.content });
+        }
+      }
+    }
 
     const body = {
       model: this.config.model,

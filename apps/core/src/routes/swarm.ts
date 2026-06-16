@@ -5,7 +5,7 @@ import { agentRuns, agentSteps } from '@titan/database';
 import { ValidationError } from '@titan/shared';
 import { requireAuth } from '../plugins/auth.js';
 import { storeSwarmTask, getSwarmTask, listSwarmTasks } from '../swarm-store.js';
-import { MemoryClient } from '@titan/memory';
+import { getGlobalMemoryClient } from '@titan/memory';
 
 const SwarmInputSchema = z.object({
   description: z.string().min(1).max(500),
@@ -43,8 +43,7 @@ function buildRunAdapter(userId: string, workspaceId?: string, apiKeyId?: string
       });
 
       // Actually execute the agent
-      const memory = new MemoryClient();
-      await memory.initialize();
+      const memory = await getGlobalMemoryClient();
 
       const runner = new AgentRunner({
         llm: (() => { if (!provider) throw new Error('LLM provider not configured'); return provider; })(),
@@ -127,43 +126,17 @@ export const swarmRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
     storeSwarmTask(task);
 
-    // Plan — use real LLM if available
-    const planner = provider ?? {
-      complete: async () => ({
-        content: JSON.stringify(
-          input.agents.map((a, i) => ({
-            role: a.role,
-            prompt: `${a.description}: ${input.prompt}`,
-            dependsOn: i > 0 ? [i - 1] : [],
-          })),
-        ),
-        toolCalls: undefined,
-        tokensUsed: 0,
-        finishReason: 'stop' as const,
-      }),
-    };
-
-    await orchestrator.plan(task, planner as { complete: (messages: Array<{ role: string; content: string }>) => Promise<{ content: string }> });
+    // Plan — LLM required, no fallback
+    if (!provider) throw new ValidationError('LLM provider not configured — cannot plan swarm task');
+    await orchestrator.plan(task, provider as { complete: (messages: Array<{ role: string; content: string }>) => Promise<{ content: string }> });
     storeSwarmTask(task);
 
     // Execute all agents in parallel (respecting deps)
     await orchestrator.execute(task);
     storeSwarmTask(task);
 
-    // Synthesize final answer — use real LLM if available
-    const synthesizer = provider ?? {
-      complete: async () => ({
-        content: task.subTasks
-          .filter((st) => st.status === 'completed')
-          .map((st) => `[${st.agentRole.toUpperCase()}]: ${st.result ?? ''}`)
-          .join('\n\n'),
-        toolCalls: undefined,
-        tokensUsed: 0,
-        finishReason: 'stop' as const,
-      }),
-    };
-
-    const result = await orchestrator.synthesize(task, synthesizer as { complete: (messages: Array<{ role: string; content: string }>) => Promise<{ content: string }> });
+    // Synthesize final answer — LLM required
+    const result = await orchestrator.synthesize(task, provider as { complete: (messages: Array<{ role: string; content: string }>) => Promise<{ content: string }> });
     storeSwarmTask(task);
 
     return reply.status(200).send({

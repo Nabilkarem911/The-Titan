@@ -3,7 +3,7 @@ import { loadConfig } from '@titan/config';
 import { getLogger } from '@titan/logging';
 import { agentRuns, agentSteps, userContext, getChatHistory, saveChatMessage } from '@titan/database';
 import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
-import { MemoryClient } from '@titan/memory';
+import { getGlobalMemoryClient } from '@titan/memory';
 import { getWsServer } from '../ws-instance.js';
 
 const log = getLogger().child({ component: 'telegram' });
@@ -134,8 +134,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       });
       const runId = createdRun.id;
 
-      const memory = new MemoryClient();
-      await memory.initialize();
+      const memory = await getGlobalMemoryClient();
 
       const runner = new AgentRunner({
         llm: (() => { const p = createProviderFromEnv(); if (!p) throw new Error('LLM provider not configured'); return p; })(),

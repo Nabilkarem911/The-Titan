@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
-import { MemoryClient } from '@titan/memory';
+import { getGlobalMemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userContext, getChatHistory, saveChatMessage } from '@titan/database';
 import { ValidationError } from '@titan/shared';
 import { getLogger } from '@titan/logging';
@@ -62,8 +62,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const runId = dbRun.id;
 
       const registry = getGlobalToolRegistry();
-      const memory = new MemoryClient();
-      await memory.initialize();
+      const memory = await getGlobalMemoryClient();
 
       // Setup SSE headers if streaming
       if (input.stream) {

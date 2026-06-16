@@ -72,5 +72,5 @@ export interface MemoryProvider {
 }
 
 // MemoryClient will be implemented in client.ts
-export { MemoryClient } from './client.js';
+export { MemoryClient, getGlobalMemoryClient } from './client.js';
 export { OpenAiEmbeddingProvider, createEmbeddingProvider, getEmbeddingProvider, type EmbeddingProvider } from './embeddings.js';

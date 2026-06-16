@@ -242,4 +242,25 @@ export class MemoryClient {
     if (!this.provider) throw new Error('Memory provider not initialized');
     return await this.provider.restore(collection, source);
   }
+
+  async close(): Promise<void> {
+    if (this.provider && 'close' in this.provider && typeof (this.provider as { close?: () => Promise<void> }).close === 'function') {
+      await (this.provider as { close: () => Promise<void> }).close();
+    }
+    this.provider = null;
+  }
+}
+
+let _globalMemoryClient: MemoryClient | null = null;
+
+/**
+ * Returns a singleton MemoryClient to avoid creating a new PG pool per request.
+ * Call initialize() once at startup.
+ */
+export async function getGlobalMemoryClient(): Promise<MemoryClient> {
+  if (!_globalMemoryClient) {
+    _globalMemoryClient = new MemoryClient();
+    await _globalMemoryClient.initialize();
+  }
+  return _globalMemoryClient;
 }

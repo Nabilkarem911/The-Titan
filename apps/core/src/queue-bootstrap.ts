@@ -7,7 +7,7 @@ import {
   createWorker,
 } from '@titan/queue';
 import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
-import { MemoryClient } from '@titan/memory';
+import { getGlobalMemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
 import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile } from '@titan/tools';
 import { loadConfig } from '@titan/config';
@@ -827,8 +827,7 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
     const { prompt, runId, agentId, workspaceId, userId, apiKeyId, maxSteps, tokenBudget, forbiddenTools } = job.data;
     log.info({ jobId: job.id, runId, agentId, prompt: prompt?.substring(0, 100) }, 'executing agent');
 
-    const memory = new MemoryClient();
-    await memory.initialize();
+    const memory = await getGlobalMemoryClient();
 
     // Load user context before creating runner
     let userCtxFacts: Record<string, string> = {};
@@ -936,44 +935,126 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
   [QUEUE_NAMES.MEMORY_INDEX]: async (job) => {
     const { sourceId, content, workspaceId } = job.data;
     log.info({ jobId: job.id, sourceId, contentLength: content?.length, workspaceId }, 'indexing memory');
-    // Mock: just acknowledge
-    return { indexed: true, sourceId };
+    const memory = await getGlobalMemoryClient();
+    try {
+      const collection = workspaceId ? `ws:${workspaceId}` : 'default';
+      await memory.upsert(collection, [
+        { id: sourceId, content, metadata: { workspaceId, indexedAt: new Date().toISOString() }, timestamp: new Date() },
+      ]);
+      return { indexed: true, sourceId, collection };
+    } catch (err) {
+      log.error({ err, sourceId }, 'memory indexing failed');
+      throw err;
+    }
   },
   [QUEUE_NAMES.MEMORY_RETRIEVE]: async (job) => {
-    const { query, limit } = job.data;
+    const { query, limit, workspaceId } = job.data;
     log.info({ jobId: job.id, query, limit }, 'retrieving memory');
-    // Mock: return empty results
-    return { results: [], query };
+    const memory = await getGlobalMemoryClient();
+    try {
+      const collection = workspaceId ? `ws:${workspaceId}` : 'default';
+      const results = await memory.search(collection, query, { limit: limit ?? 10 });
+      return { results, query };
+    } catch (err) {
+      log.error({ err, query }, 'memory retrieval failed');
+      throw err;
+    }
   },
   [QUEUE_NAMES.SANDBOX_EXEC]: async (job) => {
     const { sandboxId, command, args } = job.data;
     log.info({ jobId: job.id, sandboxId, command, args }, 'executing in sandbox');
-    // Mock: return fake output
-    return {
-      stdout: `mock output for command: ${command}`,
-      stderr: '',
-      exitCode: 0,
-      sandboxId,
-    };
+    const { SandboxPool } = await import('@titan/sandbox');
+    const pool = new SandboxPool();
+    await pool.initialize();
+    try {
+      const fullCommand = args && args.length > 0 ? `${command} ${args.join(' ')}` : command;
+      const result = await pool.execute(fullCommand);
+      return {
+        stdout: result.stdout,
+        stderr: result.stderr,
+        exitCode: result.exitCode,
+        sandboxId,
+        durationMs: result.durationMs,
+        oomKilled: result.oomKilled,
+      };
+    } finally {
+      await pool.shutdown();
+    }
   },
   [QUEUE_NAMES.MONITORING_CHECK]: async (job) => {
     const { target, checkType } = job.data;
     log.info({ jobId: job.id, target, checkType }, 'running monitoring check');
-    // Mock: always healthy
-    return { status: 'ok', target, checkType, timestamp: new Date().toISOString() };
+    const start = Date.now();
+    try {
+      if (checkType === 'http') {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10_000);
+        try {
+          const res = await fetch(target, { method: 'GET', signal: controller.signal });
+          clearTimeout(timer);
+          return { status: res.ok ? 'ok' : 'degraded', target, checkType, statusCode: res.status, latencyMs: Date.now() - start, timestamp: new Date().toISOString() };
+        } catch (err) {
+          clearTimeout(timer);
+          return { status: 'down', target, checkType, error: (err as Error).message, latencyMs: Date.now() - start, timestamp: new Date().toISOString() };
+        }
+      } else if (checkType === 'tcp') {
+        const net = await import('node:net');
+        const [host, portStr] = target.split(':');
+        const port = parseInt(portStr ?? '80', 10);
+        return new Promise((resolve) => {
+          const socket = net.createConnection({ host, port, timeout: 10_000 });
+          socket.on('connect', () => { socket.destroy(); resolve({ status: 'ok', target, checkType, latencyMs: Date.now() - start, timestamp: new Date().toISOString() }); });
+          socket.on('error', (err) => { socket.destroy(); resolve({ status: 'down', target, checkType, error: err.message, latencyMs: Date.now() - start, timestamp: new Date().toISOString() }); });
+          socket.on('timeout', () => { socket.destroy(); resolve({ status: 'down', target, checkType, error: 'Connection timeout', latencyMs: Date.now() - start, timestamp: new Date().toISOString() }); });
+        });
+      } else if (checkType === 'ping') {
+        // Use execute_bash for ping
+        const result = await executeBash({ command: process.platform === 'win32' ? `ping -n 1 -w 5000 ${target}` : `ping -c 1 -W 5 ${target}`, timeoutMs: 10_000 });
+        return { status: result.exitCode === 0 ? 'ok' : 'down', target, checkType, latencyMs: Date.now() - start, output: result.stdout.slice(0, 500), timestamp: new Date().toISOString() };
+      }
+      return { status: 'ok', target, checkType, latencyMs: Date.now() - start, timestamp: new Date().toISOString() };
+    } catch (err) {
+      return { status: 'down', target, checkType, error: (err as Error).message, latencyMs: Date.now() - start, timestamp: new Date().toISOString() };
+    }
   },
   [QUEUE_NAMES.AUDIT_WRITE]: async (job) => {
-    const { actorId, action } = job.data;
+    const { actorId, action, resource, resourceId, metadata } = job.data;
     log.info({ jobId: job.id, actorId, action }, 'writing audit log');
-    // We could write to audit here, but we already have audit.writeChained in auth routes.
-    // For now, just acknowledge.
-    return { written: true, actorId, action };
+    const { query } = await import('@titan/database');
+    try {
+      await query(
+        `INSERT INTO audit_log (actor_id, action, resource, resource_id, metadata) VALUES ($1, $2, $3, $4, $5)`,
+        [actorId, action, resource ?? null, resourceId ?? null, metadata ? JSON.stringify(metadata) : null],
+      );
+      return { written: true, actorId, action };
+    } catch (err) {
+      log.error({ err, actorId, action }, 'audit write failed');
+      throw err;
+    }
   },
   [QUEUE_NAMES.WEBHOOK_DELIVER]: async (job) => {
-    const { url, method } = job.data;
+    const { url, method, headers, body } = job.data;
     log.info({ jobId: job.id, url, method }, 'delivering webhook');
-    // Mock: just log
-    return { delivered: true, url, method, statusCode: 200 };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(url, {
+        method: method ?? 'POST',
+        headers: { 'Content-Type': 'application/json', ...(headers ?? {}) },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      const responseText = await res.text().catch(() => '');
+      if (!res.ok) {
+        log.warn({ url, statusCode: res.status, responseText: responseText.slice(0, 500) }, 'webhook delivery got non-2xx response');
+      }
+      return { delivered: res.ok, url, method: method ?? 'POST', statusCode: res.status, responseBody: responseText.slice(0, 1000) };
+    } catch (err) {
+      clearTimeout(timer);
+      log.error({ err, url }, 'webhook delivery failed');
+      throw err;
+    }
   },
 };
 
