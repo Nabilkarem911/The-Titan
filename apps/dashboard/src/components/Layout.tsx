@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   MessageSquare,
@@ -22,8 +22,13 @@ import {
   LayoutDashboard,
   ScrollText,
   Webhook,
+  Bell,
+  Check,
+  Trash2 as TrashIcon,
+  KeyRound,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface NavSection {
   title: string;
@@ -60,9 +65,85 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'System',
     items: [
       { to: '/settings', icon: <Settings className="h-4 w-4" />, label: 'Settings' },
+      { to: '/api-keys', icon: <KeyRound className="h-4 w-4" />, label: 'API Keys' },
     ],
   },
 ];
+
+function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, removeNotification } = useNotifications();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div className="relative" ref={panelRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+      >
+        <Bell className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-80 bg-slate-900 border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden z-50">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/50">
+            <span className="text-sm font-medium text-white">Notifications</span>
+            <div className="flex items-center gap-1">
+              <button onClick={markAllAsRead} className="p-1 rounded text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10" title="Mark all read">
+                <Check className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={clearAll} className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10" title="Clear all">
+                <TrashIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+          <div className="max-h-80 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-slate-500">No notifications yet</div>
+            ) : (
+              notifications.map((n) => (
+                <div
+                  key={n.id}
+                  onClick={() => { markAsRead(n.id); if (n.link) window.location.href = n.link; }}
+                  className={`px-4 py-2.5 border-b border-slate-800/20 cursor-pointer hover:bg-slate-800/40 transition-colors ${n.read ? 'opacity-60' : ''}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className={`mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                      n.type === 'error' ? 'bg-red-400' : n.type === 'success' ? 'bg-emerald-400' : n.type === 'warning' ? 'bg-amber-400' : 'bg-indigo-400'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-slate-200">{n.title}</div>
+                      <div className="text-[11px] text-slate-500 truncate">{n.message}</div>
+                      <div className="text-[10px] text-slate-600 mt-0.5">{n.timestamp.toLocaleTimeString()}</div>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeNotification(n.id); }}
+                      className="text-slate-600 hover:text-red-400 flex-shrink-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { logout } = useAuth();
@@ -189,6 +270,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-medium text-emerald-400">Online</span>

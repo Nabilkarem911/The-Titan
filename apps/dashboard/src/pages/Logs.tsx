@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   ScrollText,
-  RefreshCw,
   Trash2,
   AlertCircle,
   CheckCircle,

@@ -16,15 +16,18 @@ import Cron from './pages/Cron';
 import Projects from './pages/Projects';
 import Logs from './pages/Logs';
 import Webhooks from './pages/Webhooks';
+import ApiKeys from './pages/ApiKeys';
 import Login from './pages/Login';
 import { useAuth } from './hooks/useAuth';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 function ProtectedLayout() {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return (
-    <Layout>
-      <Routes>
+    <NotificationProvider>
+      <Layout>
+        <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/agents" element={<Agents />} />
@@ -41,8 +44,10 @@ function ProtectedLayout() {
         <Route path="/projects" element={<Projects />} />
         <Route path="/logs" element={<Logs />} />
         <Route path="/webhooks" element={<Webhooks />} />
+        <Route path="/api-keys" element={<ApiKeys />} />
       </Routes>
-    </Layout>
+      </Layout>
+    </NotificationProvider>
   );
 }
 
