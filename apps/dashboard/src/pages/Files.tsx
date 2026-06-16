@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+// Titan Dashboard — File Manager v1
 import {
   FolderOpen,
   File,
