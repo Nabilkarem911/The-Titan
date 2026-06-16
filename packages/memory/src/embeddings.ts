@@ -30,18 +30,20 @@ export class OpenAiEmbeddingProvider implements EmbeddingProvider {
 
   async embed(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) return [];
-    if (!this.apiKey) {
-      log.warn('No embedding API key configured — returning zero vectors');
+    if (!this.apiKey && !this.baseUrl) {
+      log.warn('No embedding API key or base URL configured — returning zero vectors');
       return texts.map(() => new Array(this.dims).fill(0));
     }
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (this.apiKey && this.apiKey !== 'local') {
+        headers['Authorization'] = `Bearer ${this.apiKey}`;
+      }
+
       const res = await fetch(`${this.baseUrl}/embeddings`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
+        headers,
         body: JSON.stringify({
           model: this.model,
           input: texts,
@@ -80,8 +82,9 @@ export class OpenAiEmbeddingProvider implements EmbeddingProvider {
  */
 export function createEmbeddingProvider(): EmbeddingProvider | null {
   const apiKey = process.env['EMBEDDING_API_KEY'] ?? process.env['LLM_API_KEY'];
-  if (!apiKey) {
-    log.info('No embedding API key configured — semantic search disabled');
+  const baseUrl = process.env['EMBEDDING_BASE_URL'];
+  if (!apiKey && !baseUrl) {
+    log.info('No embedding API key or base URL configured — semantic search disabled');
     return null;
   }
   return new OpenAiEmbeddingProvider();
