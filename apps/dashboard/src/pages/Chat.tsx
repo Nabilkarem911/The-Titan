@@ -1,5 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Bot, User, Loader2, Wrench, Brain, AlertCircle } from 'lucide-react';
+import { Send, Bot, User, Loader2, Wrench, Brain, AlertCircle, Paperclip, X, FileCode } from 'lucide-react';
+
+interface Attachment {
+  name: string;
+  path: string;
+  content: string;
+}
 
 interface ChatMessage {
   id: string;
@@ -8,6 +14,7 @@ interface ChatMessage {
   timestamp: Date;
   steps?: StepInfo[];
   tokensUsed?: number;
+  attachments?: Attachment[];
 }
 
 interface StepInfo {
@@ -28,6 +35,7 @@ const API_BASE = ((import.meta as unknown as { env: Record<string, string> }).en
 export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentSteps, setCurrentSteps] = useState<StepInfo[]>([]);
   const [streamingText, setStreamingText] = useState('');
@@ -50,6 +58,7 @@ export default function Chat() {
     if (!prompt || isLoading) return;
 
     setInput('');
+    setAttachments([]);
     setError(null);
     setCurrentSteps([]);
     setStreamingText('');
@@ -59,6 +68,7 @@ export default function Chat() {
       role: 'user',
       content: prompt,
       timestamp: new Date(),
+      attachments: attachments.length > 0 ? [...attachments] : undefined,
     };
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
@@ -72,6 +82,7 @@ export default function Chat() {
         },
         body: JSON.stringify({
           prompt,
+          files: attachments.map((a) => a.path),
           stream: true,
           maxSteps: 10,
         }),
@@ -144,6 +155,44 @@ export default function Chat() {
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    for (const file of files) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch(`${API_BASE}/files/upload?path=/chat`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${getToken()}` },
+          body: formData,
+        });
+        if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+        const data = await res.json() as { filePath: string };
+
+        // Read file content for preview
+        const contentRes = await fetch(`${API_BASE}/files/content?path=${encodeURIComponent(data.filePath)}`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        let content = '';
+        if (contentRes.ok) {
+          const c = await contentRes.json() as { content: string };
+          content = c.content.slice(0, 5000);
+        }
+
+        setAttachments((prev) => [...prev, { name: file.name, path: data.filePath, content }]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'File upload failed');
+      }
+    }
+    e.target.value = '';
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] max-w-4xl mx-auto">
       {/* Header */}
@@ -211,21 +260,38 @@ export default function Chat() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-slate-800 pt-4">
+      <div className="border-t border-slate-800 pt-4 space-y-2">
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {attachments.map((att, idx) => (
+              <div key={idx} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs text-slate-300">
+                <FileCode className="h-3 w-3 text-indigo-400" />
+                <span className="max-w-[120px] truncate">{att.name}</span>
+                <button onClick={() => removeAttachment(idx)} className="text-slate-500 hover:text-red-400 ml-1">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex gap-2 items-end">
+          <label className="flex-shrink-0 p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 cursor-pointer transition-colors">
+            <Paperclip className="h-4 w-4" />
+            <input type="file" className="hidden" onChange={handleFileSelect} multiple disabled={isLoading} />
+          </label>
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type a message... (Shift+Enter for newline)"
-            className="input resize-none min-h-[44px] max-h-[200px]"
+            className="input resize-none min-h-[44px] max-h-[200px] flex-1"
             rows={1}
             disabled={isLoading}
           />
           <button
             onClick={sendMessage}
-            disabled={!input.trim() || isLoading}
+            disabled={(!input.trim() && attachments.length === 0) || isLoading}
             className="btn-primary h-[44px] px-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
@@ -260,6 +326,16 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           }`}
         >
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+          {message.attachments && message.attachments.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-slate-700/30">
+              {message.attachments.map((att, i) => (
+                <span key={i} className="inline-flex items-center gap-1 text-xs bg-slate-700/50 px-2 py-0.5 rounded text-slate-300">
+                  <FileCode className="h-3 w-3 text-indigo-400" />
+                  {att.name}
+                </span>
+              ))}
+            </div>
+          )}
           {!isUser && message.tokensUsed && (
             <p className="text-xs text-slate-500 mt-2">{message.tokensUsed} tokens</p>
           )}

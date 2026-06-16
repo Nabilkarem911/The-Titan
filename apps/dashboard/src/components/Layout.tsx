@@ -19,6 +19,7 @@ import {
   Monitor,
   GitBranch,
   Clock,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -31,6 +32,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Workspace',
     items: [
+      { to: '/projects', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Projects' },
       { to: '/', icon: <MessageSquare className="h-4 w-4" />, label: 'Chat', end: true },
       { to: '/agents', icon: <Users className="h-4 w-4" />, label: 'Agents' },
       { to: '/playground', icon: <Terminal className="h-4 w-4" />, label: 'Playground' },

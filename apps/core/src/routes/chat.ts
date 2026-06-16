@@ -7,6 +7,7 @@ import { ValidationError } from '@titan/shared';
 import { getLogger } from '@titan/logging';
 import { requireAuth } from '../plugins/auth.js';
 import { getWsServer } from '../ws-instance.js';
+import { readFile } from 'node:fs/promises';
 
 const log = getLogger().child({ component: 'chat' });
 
@@ -16,6 +17,7 @@ const ChatInputSchema = z.object({
   agentId: z.string().min(1).max(200).optional().default('default-agent'),
   maxSteps: z.number().int().min(1).max(50).optional().default(10),
   stream: z.boolean().optional().default(true),
+  files: z.array(z.string().min(1).max(500)).optional().default([]),
 });
 
 const RATE_LIMIT_CHAT = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
@@ -32,6 +34,22 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const userId = req.auth.userId;
       const sessionId = input.sessionId ?? `session:${userId}:${input.agentId}`;
 
+      // Read attached files and inject into prompt
+      let enrichedPrompt = input.prompt;
+      if (input.files.length > 0) {
+        const fileContents: string[] = [];
+        for (const filePath of input.files) {
+          try {
+            const content = await readFile(filePath, 'utf-8');
+            fileContents.push(`--- FILE: ${filePath} ---\n${content.slice(0, 10_000)}\n--- END FILE ---`);
+          } catch (err) {
+            log.warn({ filePath, err }, 'failed to read attached file');
+            fileContents.push(`--- FILE: ${filePath} ---\n[Could not read file]\n--- END FILE ---`);
+          }
+        }
+        enrichedPrompt += `\n\nAttached files:\n${fileContents.join('\n\n')}`;
+      }
+
       // Load user context and recent history
       const [ctx, history] = await Promise.all([
         userContext.getAll(userId),
@@ -39,7 +57,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       ]);
 
       // Save incoming user message
-      await saveChatMessage(sessionId, 'user', input.prompt);
+      await saveChatMessage(sessionId, 'user', enrichedPrompt);
 
       // Build context for system prompt
       const ctxLines = Object.entries(ctx).map(([k, v]) => `- ${k}: ${v}`);
@@ -53,7 +71,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       // Create DB run record
       const dbRun = await agentRuns.create({
         agentId: input.agentId,
-        prompt: input.prompt,
+        prompt: enrichedPrompt,
         userId,
         workspaceId: req.auth.workspaceId ?? undefined,
         apiKeyId: req.auth.apiKeyId ?? undefined,
@@ -165,7 +183,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         const result = await runner.run({
           runId,
           agentId: input.agentId,
-          prompt: input.prompt,
+          prompt: enrichedPrompt,
           userId,
           workspaceId: req.auth.workspaceId ?? undefined,
           apiKeyId: req.auth.apiKeyId ?? undefined,
