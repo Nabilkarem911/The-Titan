@@ -933,25 +933,25 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
     };
   },
   [QUEUE_NAMES.TOOL_EXECUTE]: async (job) => {
-    const { toolName, input } = job;
+    const { toolName, input } = job.data;
     log.info({ jobId: job.id, toolName }, 'tool:execute');
     const result = await executeTool(toolName, input);
     return result;
   },
   [QUEUE_NAMES.MEMORY_INDEX]: async (job) => {
-    const { sourceId, content, workspaceId } = job;
+    const { sourceId, content, workspaceId } = job.data;
     log.info({ jobId: job.id, sourceId, contentLength: content?.length, workspaceId }, 'indexing memory');
     // Mock: just acknowledge
     return { indexed: true, sourceId };
   },
   [QUEUE_NAMES.MEMORY_RETRIEVE]: async (job) => {
-    const { query, limit } = job;
+    const { query, limit } = job.data;
     log.info({ jobId: job.id, query, limit }, 'retrieving memory');
     // Mock: return empty results
     return { results: [], query };
   },
   [QUEUE_NAMES.SANDBOX_EXEC]: async (job) => {
-    const { sandboxId, command, args } = job;
+    const { sandboxId, command, args } = job.data;
     log.info({ jobId: job.id, sandboxId, command, args }, 'executing in sandbox');
     // Mock: return fake output
     return {
@@ -962,20 +962,20 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
     };
   },
   [QUEUE_NAMES.MONITORING_CHECK]: async (job) => {
-    const { target, checkType } = job;
+    const { target, checkType } = job.data;
     log.info({ jobId: job.id, target, checkType }, 'running monitoring check');
     // Mock: always healthy
     return { status: 'ok', target, checkType, timestamp: new Date().toISOString() };
   },
   [QUEUE_NAMES.AUDIT_WRITE]: async (job) => {
-    const { actorId, action } = job;
+    const { actorId, action } = job.data;
     log.info({ jobId: job.id, actorId, action }, 'writing audit log');
     // We could write to audit here, but we already have audit.writeChained in auth routes.
     // For now, just acknowledge.
     return { written: true, actorId, action };
   },
   [QUEUE_NAMES.WEBHOOK_DELIVER]: async (job) => {
-    const { url, method } = job;
+    const { url, method } = job.data;
     log.info({ jobId: job.id, url, method }, 'delivering webhook');
     // Mock: just log
     return { delivered: true, url, method, statusCode: 200 };

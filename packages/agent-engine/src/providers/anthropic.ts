@@ -29,14 +29,14 @@ export class AnthropicProvider implements LlmProvider {
     const body = {
       model: this.config.model,
       max_tokens: opts?.maxTokens ?? 4096,
-      temperature: opts?.temperature ?? 0.3,
+      temperature: opts?.temperature ?? 0.7,
       system: systemMsg || undefined,
       messages: conversation,
-      tools: (opts?.tools ?? []).map((t) => ({
+      tools: (opts?.tools && opts.tools.length > 0) ? opts.tools.map((t) => ({
         name: t.name,
         description: t.description,
         input_schema: t.parameters,
-      })),
+      })) : undefined,
     };
 
     const res = await fetch(url, {

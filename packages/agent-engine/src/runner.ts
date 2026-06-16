@@ -205,7 +205,7 @@ export class AgentRunner {
 
         if (step.status === 'completed') {
           run.status = 'completed';
-          const raw = step.reflection ?? step.observation?.data?.toString() ?? 'Done';
+          const raw = step.reflection ?? (step.observation?.data != null ? (typeof step.observation.data === 'string' ? step.observation.data : JSON.stringify(step.observation.data)) : 'Done');
           const match = raw.match(/FINAL ANSWER:\s*([\s\S]+)/i);
           run.finalAnswer = match ? match[1].trim() : raw.trim();
           break;
