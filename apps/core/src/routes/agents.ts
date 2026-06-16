@@ -250,7 +250,7 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           reply.raw.write(`data: ${JSON.stringify({
             type: 'run.completed',
             runId: run.id,
-            answer: result.finalAnswer ?? 'No answer produced.',
+            answer: result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة.',
             tokensUsed: result.tokensUsed,
             steps: result.steps.length,
           })}\n\n`);

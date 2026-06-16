@@ -44,11 +44,19 @@ function buildRunAdapter(userId: string, workspaceId?: string, apiKeyId?: string
 
       // Actually execute the agent
       const memory = new MemoryClient();
+      await memory.initialize();
 
       const runner = new AgentRunner({
         llm: provider ?? { complete: async () => ({ content: 'Mock response', toolCalls: undefined, tokensUsed: 0, finishReason: 'stop' as const }) },
-        executeTool: async (call, _runId) => registry.execute(call.name, call.params),
-        memory: memory ?? undefined,
+        executeTool: async (call, _runId) => {
+          try {
+            const data = await registry.execute(call.name, call.params);
+            return { success: true, data };
+          } catch (err) {
+            return { success: false, error: err instanceof Error ? err.message : 'Tool failed' };
+          }
+        },
+        memory,
         persistRun: async (run) => {
           await agentRuns.updateStatus(run.id, run.status, { finalAnswer: run.finalAnswer ?? undefined, tokensUsed: run.tokensUsed });
         },

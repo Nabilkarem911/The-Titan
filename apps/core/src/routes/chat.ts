@@ -179,7 +179,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           systemPromptExtra: contextBlock,
         });
 
-        const answer = result.finalAnswer ?? 'No answer produced.';
+        const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
 
         // Save assistant reply to history
         await saveChatMessage(sessionId, 'assistant', answer);

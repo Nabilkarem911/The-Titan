@@ -322,11 +322,13 @@ export class AgentRunner {
       step.status = 'observing';
 
       // 3. Reflection — temporarily add step for context, then remove
+      // NOTE: Do NOT pass tools here — reflection should reason about the observation
+      // and decide whether to provide FINAL ANSWER, not make another tool call.
       ctx.run.steps.push(step);
       const reflectMessages = buildMessages(ctx);
       ctx.run.steps.pop(); // remove temporary entry; loop will push the final version
       const reflectStart = performance.now();
-      const reflect = await this.deps.llm.complete(reflectMessages, { tools });
+      const reflect = await this.deps.llm.complete(reflectMessages);
       step.latencyMs = (step.latencyMs ?? 0) + Math.round(performance.now() - reflectStart);
       step.tokensUsed = (step.tokensUsed ?? 0) + reflect.tokensUsed;
       step.reflection = reflect.content;

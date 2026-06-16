@@ -103,7 +103,7 @@ const EnvSchema = z.object({
   CORS_CREDENTIALS: z
     .union([z.literal('true'), z.literal('false')])
     .transform((v) => v === 'true')
-    .default('true'),
+    .default('false'),
 
   VAULT_ENABLED: z
     .union([z.literal('true'), z.literal('false')])

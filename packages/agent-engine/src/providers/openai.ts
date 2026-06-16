@@ -55,15 +55,15 @@ export class OpenAiProvider implements LlmProvider {
       })(),
       max_tokens: opts?.maxTokens ?? 4096,
       temperature: opts?.temperature ?? 0.7,
-      tools: (opts?.tools ?? []).map((t) => ({
+      tools: (opts?.tools && opts.tools.length > 0) ? opts.tools.map((t) => ({
         type: 'function',
         function: {
           name: t.name,
           description: t.description,
           parameters: t.parameters,
         },
-      })),
-      tool_choice: (opts?.tools ?? []).length > 0 ? 'auto' : undefined,
+      })) : undefined,
+      tool_choice: (opts?.tools && opts.tools.length > 0) ? 'auto' : undefined,
     };
 
     const res = await fetch(url, {
