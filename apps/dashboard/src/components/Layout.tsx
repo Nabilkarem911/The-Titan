@@ -32,6 +32,7 @@ import {
   Search,
   FileCode,
   Shield,
+  Bug,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -57,6 +58,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/git', icon: <GitBranch className="h-4 w-4" />, label: 'Git Push' },
       { to: '/teams', icon: <Users className="h-4 w-4" />, label: 'Teams' },
       { to: '/templates', icon: <FileCode className="h-4 w-4" />, label: 'Templates' },
+      { to: '/swarm', icon: <Bug className="h-4 w-4" />, label: 'Swarm' },
     ],
   },
   {
