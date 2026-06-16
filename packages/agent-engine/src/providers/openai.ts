@@ -23,12 +23,38 @@ export class OpenAiProvider implements LlmProvider {
     const url = `${base.endsWith('/v1') ? base : `${base}/v1`}/chat/completions`;
     const body = {
       model: this.config.model,
-      messages: messages.map((m) => ({
-        role: m.role === 'tool' ? 'assistant' : m.role,
-        content: m.content,
-      })),
-      max_tokens: opts?.maxTokens ?? 2048,
-      temperature: opts?.temperature ?? 0.3,
+      messages: (() => {
+        let toolCallCounter = 0;
+        let lastToolCallId = '';
+        return messages.map((m) => {
+          if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0) {
+            const calls = m.toolCalls.map((tc, idx) => {
+              const id = `call_${toolCallCounter++}_${idx}`;
+              lastToolCallId = id;
+              return {
+                id,
+                type: 'function' as const,
+                function: { name: tc.name, arguments: JSON.stringify(tc.params) },
+              };
+            });
+            return {
+              role: 'assistant' as const,
+              content: m.content || null,
+              tool_calls: calls,
+            };
+          }
+          if (m.role === 'tool') {
+            return {
+              role: 'tool' as const,
+              content: m.content,
+              tool_call_id: lastToolCallId || `call_${toolCallCounter++}_0`,
+            };
+          }
+          return { role: m.role, content: m.content };
+        });
+      })(),
+      max_tokens: opts?.maxTokens ?? 4096,
+      temperature: opts?.temperature ?? 0.7,
       tools: (opts?.tools ?? []).map((t) => ({
         type: 'function',
         function: {
@@ -97,9 +123,38 @@ export class OpenAiProvider implements LlmProvider {
     const url = `${base.endsWith('/v1') ? base : `${base}/v1`}/chat/completions`;
     const body = {
       model: this.config.model,
-      messages: messages.map((m) => ({ role: m.role === 'tool' ? 'assistant' : m.role, content: m.content })),
-      max_tokens: opts?.maxTokens ?? 2048,
-      temperature: opts?.temperature ?? 0.3,
+      messages: (() => {
+        let toolCallCounter = 0;
+        let lastToolCallId = '';
+        return messages.map((m) => {
+          if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0) {
+            const calls = m.toolCalls.map((tc, idx) => {
+              const id = `call_${toolCallCounter++}_${idx}`;
+              lastToolCallId = id;
+              return {
+                id,
+                type: 'function' as const,
+                function: { name: tc.name, arguments: JSON.stringify(tc.params) },
+              };
+            });
+            return {
+              role: 'assistant' as const,
+              content: m.content || null,
+              tool_calls: calls,
+            };
+          }
+          if (m.role === 'tool') {
+            return {
+              role: 'tool' as const,
+              content: m.content,
+              tool_call_id: lastToolCallId || `call_${toolCallCounter++}_0`,
+            };
+          }
+          return { role: m.role, content: m.content };
+        });
+      })(),
+      max_tokens: opts?.maxTokens ?? 4096,
+      temperature: opts?.temperature ?? 0.7,
       stream: true,
     };
 

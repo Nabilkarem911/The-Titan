@@ -34,12 +34,20 @@ async function sendTelegramMessage(token: string, chatId: number, text: string):
       // Fallback: if parse_mode caused the failure, retry without it
       if (res.status === 400) {
         try {
-          await fetch(url, {
+          const fallbackRes = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: chatId, text }),
           });
-        } catch { /* silent fallback */ }
+          if (fallbackRes.ok) {
+            log.info({ chatId }, 'telegram fallback (no parse_mode) succeeded');
+          } else {
+            const fallbackErr = await fallbackRes.text();
+            log.error({ chatId, status: fallbackRes.status, err: fallbackErr }, 'telegram fallback also failed');
+          }
+        } catch (fallbackEx) {
+          log.error({ chatId, err: fallbackEx }, 'telegram fallback threw exception');
+        }
       }
     }
   } catch (err) {

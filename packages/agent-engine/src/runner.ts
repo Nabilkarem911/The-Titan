@@ -20,6 +20,7 @@ const log = getLogger().child({ component: 'agent-runner' });
 
 const DEFAULT_MAX_STEPS = 10;
 const DEFAULT_SYSTEM_PROMPT = `You are Titan, an autonomous AI agent. You MUST complete the user's request fully before stopping.
+You are multilingual — respond in the same language the user uses. If the user writes in Arabic, respond in Arabic. If in English, respond in English.
 
 Follow the ReAct pattern:
 1. Think step by step about what you need to do.
@@ -33,9 +34,10 @@ IMPORTANT RULES:
 - Do NOT say things like "let me search" or "I will look" as your final answer.
 - If a tool returns data, extract the relevant information and include it in your FINAL ANSWER.
 - Always give concrete numbers, facts, or results — not vague promises to search.
-- If a tool returns an error or fails, DO NOT retry the same tool more than twice. Instead, try a different approach or give a FINAL ANSWER explaining what failed and why.
+- If a tool returns an error or fails, DO NOT retry the same tool with the same parameters. Try a different approach or tool, or give a FINAL ANSWER explaining what failed and why.
 - If you cannot complete a task (e.g. endpoint not found, missing credentials, unsupported feature), respond immediately with "FINAL ANSWER: [clear explanation of what was tried and why it failed]". Do NOT keep retrying indefinitely.
-- NEVER call brave_search repeatedly for the same query. If the first search did not help, try a different approach or give a FINAL ANSWER.`;
+- NEVER call the same tool with the same parameters twice. If the first call did not help, try different parameters or a different tool.
+- When you have gathered enough data from tools, IMMEDIATELY write your FINAL ANSWER with the collected information. Do not call more tools unnecessarily.`;
 
 function buildSystemPrompt(ctx: AgentContext): string {
   const rules: string[] = [];
@@ -55,25 +57,34 @@ function buildMessages(ctx: AgentContext): LlmMessage[] {
   msgs.push({ role: 'user', content: ctx.run.prompt });
 
   for (const step of ctx.run.steps) {
-    if (step.thought) {
-      msgs.push({ role: 'assistant', content: step.thought });
-    }
+    // Combine thought + tool call into a single assistant message (as OpenAI expects)
     if (step.action) {
       msgs.push({
         role: 'assistant',
-        content: '',
+        content: step.thought || '',
         toolCalls: [step.action],
       });
-    }
-    if (step.observation) {
-      msgs.push({
-        role: 'tool',
-        content: step.observation.success ? JSON.stringify(step.observation.data) : `Error: ${step.observation.error}`,
-        toolResult: step.observation,
-      });
-    }
-    if (step.reflection) {
-      msgs.push({ role: 'assistant', content: step.reflection });
+      // Tool result must follow immediately after assistant tool_call
+      if (step.observation) {
+        const content = step.observation.success
+          ? (typeof step.observation.data === 'string' ? step.observation.data : JSON.stringify(step.observation.data))
+          : `Error: ${step.observation.error}`;
+        msgs.push({
+          role: 'tool',
+          content: content.slice(0, 4000),
+          toolResult: step.observation,
+        });
+      }
+      // Reflection as separate assistant message
+      if (step.reflection) {
+        msgs.push({ role: 'assistant', content: step.reflection });
+      }
+    } else {
+      // No tool call — just thought/reflection as assistant response
+      const content = step.reflection || step.thought || '';
+      if (content) {
+        msgs.push({ role: 'assistant', content });
+      }
     }
   }
   return msgs;
@@ -205,7 +216,7 @@ export class AgentRunner {
           const callKey = `${step.action.name}:${JSON.stringify(step.action.params)}`;
           const count = (toolCallCounts.get(callKey) ?? 0) + 1;
           toolCallCounts.set(callKey, count);
-          if (count >= 2) {
+          if (count >= 3) {
             run.status = 'completed';
             // Extract meaningful answer from reflection, observation, or provide a clear fallback
             const fromReflection = step.reflection?.replace(/^.*?FINAL ANSWER:\s*/is, '').trim();
