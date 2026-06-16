@@ -16,13 +16,17 @@ export default function Queue() {
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  const getToken = () => localStorage.getItem('titan_access_token') ?? '';
+
   const fetchStats = async () => {
     setLoading(true);
     try {
       const results: QueueInfo[] = [];
       for (const name of QUEUE_NAMES) {
         try {
-          const res = await fetch(`/api/v1/admin/queues/${name}/stats`);
+          const res = await fetch(`/api/v1/admin/queues/${name}/stats`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` },
+          });
           if (res.ok) {
             const data = await res.json();
             results.push({ name, ...data });

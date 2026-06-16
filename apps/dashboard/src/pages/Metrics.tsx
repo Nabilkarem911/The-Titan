@@ -20,11 +20,15 @@ export default function Metrics() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  const getToken = () => localStorage.getItem('titan_access_token') ?? '';
+
   const fetchMetrics = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/metrics.json');
+      const res = await fetch('/metrics.json', {
+        headers: { 'Authorization': `Bearer ${getToken()}` },
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = (await res.json()) as MetricsJson;
       setData(json);

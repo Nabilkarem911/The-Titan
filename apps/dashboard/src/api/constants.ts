@@ -7,4 +7,5 @@ export const QUEUE_NAMES = [
   'monitoring-check',
   'audit-write',
   'webhook-deliver',
+  'swarm-execute',
 ] as const;
