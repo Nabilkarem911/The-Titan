@@ -35,6 +35,7 @@ import {
   Bug,
   Brain,
   HeartPulse,
+  BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -88,6 +89,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/settings', icon: <Settings className="h-4 w-4" />, label: 'Settings' },
       { to: '/api-keys', icon: <KeyRound className="h-4 w-4" />, label: 'API Keys' },
       { to: '/plugins', icon: <Puzzle className="h-4 w-4" />, label: 'Plugins' },
+      { to: '/api-docs', icon: <BookOpen className="h-4 w-4" />, label: 'API Docs' },
     ],
   },
 ];

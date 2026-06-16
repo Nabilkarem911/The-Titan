@@ -24,6 +24,7 @@ import AuditLogs from './pages/AuditLogs';
 import Swarm from './pages/Swarm';
 import Memory from './pages/Memory';
 import Health from './pages/Health';
+import ApiDocs from './pages/ApiDocs';
 import Login from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -61,6 +62,7 @@ function ProtectedLayout() {
         <Route path="/swarm" element={<Swarm />} />
         <Route path="/memory" element={<Memory />} />
         <Route path="/health" element={<Health />} />
+        <Route path="/api-docs" element={<ApiDocs />} />
       </Routes>
         </Layout>
       </NotificationProvider>
