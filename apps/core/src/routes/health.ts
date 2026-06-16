@@ -3,6 +3,7 @@ import { getPool, ping, verifyTlsOnStartup, isTlsVerified, getRetentionInfo } fr
 import { pingRedis, verifyAuthOnStartup, isAuthVerified, getQueueStats } from '@titan/queue';
 import { QUEUE_NAMES, type QueueName } from '@titan/shared';
 import { getLastVerifyResult, getLastArchiveResult } from '../audit-scheduler.js';
+import { requireAuth } from '../plugins/auth.js';
 
 export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   app.get('/health/live', async () => ({ status: 'live', timestamp: new Date().toISOString() }));
@@ -50,7 +51,7 @@ export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
     };
   });
 
-  app.get('/health/dashboard', async () => {
+  app.get('/health/dashboard', { preHandler: requireAuth }, async () => {
     const dbPool = (() => {
       try {
         const p = getPool();

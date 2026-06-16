@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { snapshot, renderPrometheus } from '@titan/observability';
 import { getPool } from '@titan/database';
 import { getRedis, getQueueStats } from '@titan/queue';
+import { requireAuth } from '../plugins/auth.js';
 
 export const metricsRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   app.get('/metrics', async (_req, reply) => {
@@ -9,7 +10,7 @@ export const metricsRoutes: FastifyPluginAsync = async (app: FastifyInstance) =>
     return reply.type('text/plain; version=0.0.4').send(body);
   });
 
-  app.get('/metrics.json', async () => {
+  app.get('/metrics.json', { preHandler: requireAuth }, async () => {
     const snap = snapshot();
     let dbPool: { total: number; idle: number; waiting: number } | null = null;
     try {
@@ -36,7 +37,7 @@ export const metricsRoutes: FastifyPluginAsync = async (app: FastifyInstance) =>
     };
   });
 
-  app.get<{ Params: { name: string } }>('/api/v1/admin/queues/:name/stats', async (req, reply) => {
+  app.get<{ Params: { name: string } }>('/api/v1/admin/queues/:name/stats', { preHandler: requireAuth }, async (req, reply) => {
     try {
       const stats = await getQueueStats(req.params.name as Parameters<typeof getQueueStats>[0]);
       return reply.send(stats);

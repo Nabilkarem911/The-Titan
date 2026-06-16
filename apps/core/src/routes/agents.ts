@@ -105,6 +105,9 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       if (!run) {
         throw new ValidationError('Run not found');
       }
+      if (run.userId && run.userId !== req.auth.userId) {
+        throw new ValidationError('Run not found');
+      }
       return {
         id: run.id,
         agentId: run.agentId,
@@ -294,6 +297,9 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     async (req) => {
       if (!req.auth) throw new ValidationError('Authentication required');
       const { runId } = req.params;
+      const run = await agentRuns.findById(runId);
+      if (!run) throw new ValidationError('Run not found');
+      if (run.userId && run.userId !== req.auth.userId) throw new ValidationError('Run not found');
       const steps = await agentSteps.listForRun(runId);
       return {
         items: steps.map((s: Awaited<ReturnType<typeof agentSteps.listForRun>>[number]) => ({
