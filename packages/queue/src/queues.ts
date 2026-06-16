@@ -40,6 +40,7 @@ const PER_QUEUE_DEFAULTS: Record<QueueName, Partial<JobsOptions>> = {
   [QUEUE_NAMES.MONITORING_CHECK]: { priority: 2, attempts: 5 },
   [QUEUE_NAMES.AUDIT_WRITE]: { priority: 10, attempts: 5, removeOnComplete: true },
   [QUEUE_NAMES.WEBHOOK_DELIVER]: { priority: 5, attempts: 10, backoff: { type: 'exponential', delay: 5_000 } },
+  [QUEUE_NAMES.SWARM_EXECUTE]: { priority: 7, attempts: 3 },
 };
 
 function buildOptions(queueName: QueueName) {
