@@ -93,6 +93,20 @@ async function fetchJson<T>(path: string, opts?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export interface AgentProfile {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  systemPrompt: string;
+  allowedTools: string[];
+  forbiddenTools: string[];
+  maxSteps: number;
+  isPublic: boolean;
+  ownerId: string;
+  createdAt: string;
+}
+
 export const api = {
   triggerRun: (agentId: string, body: { prompt: string; maxSteps?: number; tokenBudget?: number; forbiddenTools?: string[] }) =>
     fetchJson<{ runId: string; jobId: string; status: string; createdAt: string }>(`/agents/${agentId}/run`, {
@@ -113,4 +127,19 @@ export const api = {
     fetchJson<QueueStats>(`/admin/queues/${queueName}/stats`).catch(() => ({
       waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0,
     })),
+
+  listAgentProfiles: () =>
+    fetchJson<{ items: AgentProfile[] }>('/agent-profiles'),
+
+  listPublicAgentProfiles: () =>
+    fetchJson<{ items: AgentProfile[] }>('/agent-profiles/public'),
+
+  createAgentProfile: (body: Record<string, unknown>) =>
+    fetchJson<AgentProfile>('/agent-profiles', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateAgentProfile: (id: string, body: Record<string, unknown>) =>
+    fetchJson<AgentProfile>(`/agent-profiles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  deleteAgentProfile: (id: string) =>
+    fetchJson<Record<string, never>>(`/agent-profiles/${id}`, { method: 'DELETE' }),
 };

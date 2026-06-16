@@ -31,7 +31,7 @@ export const complianceRoutes: FastifyPluginAsync = async (app: FastifyInstance)
   });
 
   app.post('/api/v1/compliance/audit/archive', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
-    requirePermission(req.auth, PERMISSIONS.AUDIT_READ);
+    requirePermission(req.auth, PERMISSIONS.AUDIT_WRITE);
     const schema = z.object({
       daysOld: z.number().int().min(1).max(3650).default(365),
       batchSize: z.number().int().min(1).max(10000).default(1000),

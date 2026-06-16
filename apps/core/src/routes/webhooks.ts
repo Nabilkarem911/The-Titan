@@ -126,14 +126,15 @@ export const webhookRoutes: FastifyPluginAsync = async (app: FastifyInstance) =>
         return reply.status(404).send({ error: 'Webhook not found or disabled' });
       }
 
-      // Verify HMAC signature if provided
+      // Verify HMAC signature (mandatory)
       const signature = req.headers['x-titan-signature'] ?? req.headers['x-hub-signature-256'];
-      if (signature) {
-        const rawBody = JSON.stringify(req.body);
-        const valid = verifyWebhookSignature(wh.secret, rawBody, String(signature));
-        if (!valid) {
-          return reply.status(401).send({ error: 'Invalid webhook signature' });
-        }
+      if (!signature) {
+        return reply.status(401).send({ error: 'Missing webhook signature header (X-Titan-Signature or X-Hub-Signature-256)' });
+      }
+      const rawBody = JSON.stringify(req.body);
+      const valid = verifyWebhookSignature(wh.secret, rawBody, String(signature));
+      if (!valid) {
+        return reply.status(401).send({ error: 'Invalid webhook signature' });
       }
 
       const payload = (req.body ?? {}) as Record<string, unknown>;

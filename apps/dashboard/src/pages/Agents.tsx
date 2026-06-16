@@ -1,36 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bot, Plus, Trash2, Edit3, Globe, Lock, Loader2, X } from 'lucide-react';
-
-interface AgentProfile {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  systemPrompt: string;
-  allowedTools: string[];
-  forbiddenTools: string[];
-  maxSteps: number;
-  isPublic: boolean;
-  ownerId: string;
-  createdAt: string;
-}
-
-const API_BASE = ((import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE_URL) ?? '/api/v1';
-const getToken = () => localStorage.getItem('titan_access_token') ?? '';
-
-async function fetchApi<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`,
-      ...(opts?.headers ?? {}),
-    },
-    ...opts,
-  });
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  if (res.status === 204) return {} as T;
-  return res.json() as Promise<T>;
-}
+import { api, type AgentProfile } from '../api/client';
 
 export default function Agents() {
   const [agents, setAgents] = useState<AgentProfile[]>([]);
@@ -42,8 +12,8 @@ export default function Agents() {
     try {
       setLoading(true);
       const [mine, pub] = await Promise.all([
-        fetchApi<{ items: AgentProfile[] }>('/agent-profiles'),
-        fetchApi<{ items: AgentProfile[] }>('/agent-profiles/public'),
+        api.listAgentProfiles(),
+        api.listPublicAgentProfiles(),
       ]);
       // Merge and deduplicate
       const map = new Map<string, AgentProfile>();
@@ -63,7 +33,7 @@ export default function Agents() {
   const deleteAgent = async (id: string) => {
     if (!confirm('Delete this agent?')) return;
     try {
-      await fetchApi(`/agent-profiles/${id}`, { method: 'DELETE' });
+      await api.deleteAgentProfile(id);
       setAgents((prev) => prev.filter((a) => a.id !== id));
     } catch { /* silent */ }
   };
@@ -193,9 +163,9 @@ function AgentFormModal({ agent, onClose, onSaved }: { agent: AgentProfile | nul
 
     try {
       if (agent) {
-        await fetchApi(`/agent-profiles/${agent.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+        await api.updateAgentProfile(agent.id, body);
       } else {
-        await fetchApi('/agent-profiles', { method: 'POST', body: JSON.stringify(body) });
+        await api.createAgentProfile(body);
       }
       onSaved();
     } catch (err) {

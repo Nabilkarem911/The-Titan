@@ -69,12 +69,13 @@ export const PERMISSIONS = {
   SANDBOX_EXECUTE: 'sandbox:execute',
   MONITORING_READ: 'monitoring:read',
   AUDIT_READ: 'audit:read',
+  AUDIT_WRITE: 'audit:write',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
-  [ROLES.OWNER]: Object.values(PERMISSIONS),
+  [ROLES.OWNER]: Object.values(PERMISSIONS),  // owner gets all permissions including audit:write
   [ROLES.ADMIN]: [
     PERMISSIONS.WORKSPACE_READ,
     PERMISSIONS.WORKSPACE_WRITE,

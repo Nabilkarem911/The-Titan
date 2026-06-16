@@ -62,8 +62,8 @@ describe('ROLES and ROLE_HIERARCHY', () => {
 });
 
 describe('PERMISSIONS', () => {
-  it('has 15 permissions', () => {
-    expect(Object.values(PERMISSIONS)).toHaveLength(15);
+  it('has 16 permissions', () => {
+    expect(Object.values(PERMISSIONS)).toHaveLength(16);
   });
 
   it('permissions are namespaced with colon', () => {

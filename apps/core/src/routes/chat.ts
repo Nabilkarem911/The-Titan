@@ -221,6 +221,12 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const userId = req.auth.userId;
       const agentId = req.query.agentId ?? 'default-agent';
       const sessionId = req.query.sessionId ?? `session:${userId}:${agentId}`;
+
+      // Ownership check: sessionId must belong to the authenticated user
+      if (!sessionId.includes(userId)) {
+        throw new ValidationError('Access denied: session does not belong to you');
+      }
+
       const limit = Math.min(parseInt(req.query.limit ?? '50', 10), 200);
 
       const messages = await getChatHistory(sessionId, limit);
