@@ -77,7 +77,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // WebSocket listener for real-time notifications
   useEffect(() => {
-    const token = localStorage.getItem('titan_access_token') ?? '';
+    const token = localStorage.getItem('titan_access_token');
+    if (!token) return;
     const ws = new WebSocket(`${WS_BASE}?token=${encodeURIComponent(token)}`);
 
     ws.onmessage = (event) => {
