@@ -533,6 +533,120 @@ viewer → Read-only access
 
 ---
 
+## Use Cases
+
+### 1. Coding Assistant
+
+Ask the agent to write, debug, or refactor code. It can execute commands, read files, and iterate until the solution works.
+
+```bash
+# "Build me a REST API with Express.js for product management"
+# Agent will: think → write code → test it → fix errors → deliver final result
+```
+
+### 2. Full Website/App Generation
+
+The agent can build complete projects — frontend, backend, database schema — using its tools:
+
+```bash
+curl -X POST https://titan.orcanox.xyz/api/v1/agents/default-agent/run \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Build a complete todo app with React frontend and Express backend with PostgreSQL","maxSteps":20}'
+```
+
+**How to get the output:**
+- **Dashboard:** Go to Runs → click the run → view each step's output (code blocks, file contents)
+- **API:** `GET /api/v1/agents/<agentId>/runs/<runId>/steps` returns all generated content
+- **Chat:** The streaming response includes all code and files inline
+
+> **Note:** Currently, file delivery is via the response content. File upload/download management is on the roadmap.
+
+### 3. Research & Analysis
+
+```bash
+# "Research the top 5 cloud hosting providers, compare pricing, and recommend one for a Node.js app"
+# Agent uses: Brave Search → Firecrawl Scrape → Analysis → Structured report
+```
+
+### 4. DevOps Automation via Webhooks
+
+```bash
+# GitHub push → Titan automatically runs code review
+# Error alert → Titan investigates logs and suggests fix
+# New issue → Titan researches and drafts a solution
+```
+
+### 5. Multi-Agent Swarm for Complex Tasks
+
+For large projects, launch a team of specialized agents:
+
+```bash
+# "Build a weather dashboard" →
+#   Agent 1 (Researcher): finds weather APIs
+#   Agent 2 (Designer): plans the UI
+#   Agent 3 (Developer): writes the code
+#   Agent 4 (Reviewer): checks quality
+# → Final synthesized result
+```
+
+### 6. Telegram Bot
+
+Send any message to the configured Telegram bot — the agent processes it and replies directly.
+
+### 7. Knowledge Base / Semantic Memory
+
+Store documents, project docs, or any text. Later, ask questions and the agent searches semantically (understands meaning, not just keywords).
+
+---
+
+## User Management
+
+### Creating Users
+
+Users self-register via the API or dashboard:
+
+```bash
+# Register a new user
+curl -X POST https://titan.orcanox.xyz/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"teammate@example.com","password":"SecurePass123","name":"Ahmed"}'
+```
+
+After registration, the user can log in at your dashboard URL.
+
+### Roles & Isolation
+
+| Role | Can Do | Sees Others' Data? |
+|------|--------|-------------------|
+| **owner** | Everything (all 16 permissions) | Yes |
+| **admin** | Manage users, agents, view all runs | Yes |
+| **member** | Create agents, run tasks, chat | **No** — only their own runs |
+| **viewer** | Read-only access | **No** — only their own data |
+
+**Key isolation rules:**
+- Each user's **chat sessions** are private (ownership check enforced)
+- Each user's **agent runs** are private (IDOR protection)
+- **Agent profiles** can be private or public (creator controls visibility)
+- **Audit logs** require special `AUDIT_READ` / `AUDIT_WRITE` permissions
+
+### Inviting Someone to Use the Dashboard
+
+1. Share your Titan URL (e.g., `https://titan.orcanox.xyz`)
+2. They register with their email
+3. They log in → see the dashboard with their own workspace
+4. They can create agents, chat, run tasks — all isolated from your data
+
+### Admin Controls
+
+As owner, you can:
+- View all users via admin endpoints
+- Assign roles
+- Revoke API keys
+- View audit logs of all actions
+
+---
+
 ## Dashboard
 
 The built-in React dashboard provides:
@@ -545,6 +659,23 @@ The built-in React dashboard provides:
 - **Playground** — Quick agent run trigger with parameter tuning
 
 Access at your deployment URL after login.
+
+---
+
+## Roadmap
+
+Planned features for upcoming releases:
+
+| Feature | Priority | Description |
+|---------|----------|-------------|
+| **File Manager** | High | Upload/download files to/from agents, browse generated outputs |
+| **Advanced Dashboard** | High | Full project management UI with file tree, terminal, and live preview |
+| **Workspace Teams** | Medium | Invite members to shared workspaces with granular permissions |
+| **Plugin Marketplace** | Medium | Install community tools with one click |
+| **Scheduled Runs** | Medium | Cron-based agent execution (e.g., daily reports) |
+| **Agent Templates** | Low | Pre-built agent profiles for common tasks |
+| **Voice Interface** | Low | Talk to agents via speech-to-text |
+| **Mobile App** | Low | iOS/Android companion app |
 
 ---
 
