@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
+import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userContext, getChatHistory, saveChatMessage } from '@titan/database';
 import { ValidationError } from '@titan/shared';
@@ -78,14 +78,9 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       }
 
       const runner = new AgentRunner({
-        llm: createProviderFromEnv() ?? new MockLlmProvider(),
+        llm: (() => { const p = createProviderFromEnv(); if (!p) throw new Error('LLM provider not configured'); return p; })(),
         executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
-          try {
-            const data = await registry.execute(call.name, call.params);
-            return { success: true, data };
-          } catch (err) {
-            return { success: false, error: err instanceof Error ? err.message : 'Tool failed' };
-          }
+          return registry.execute(call.name, call.params);
         },
         memory,
         userContextItems: Object.keys(ctx).length > 0 ? ctx : undefined,

@@ -24,7 +24,8 @@ describe('executeBash', () => {
   });
 
   it('allows custom cwd', async () => {
-    const result = await executeBash({ command: 'node -e "console.log(process.cwd())"', cwd: process.cwd(), timeoutMs: 5000 });
+    const command = process.platform === 'win32' ? 'cd' : 'pwd';
+    const result = await executeBash({ command, cwd: process.cwd(), timeoutMs: 5000 });
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim().toLowerCase()).toBe(process.cwd().toLowerCase());
   });

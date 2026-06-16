@@ -51,10 +51,11 @@ export async function executeBash(input: ExecuteBashInput): Promise<{
   log.info({ command: command.substring(0, 100), cwd: resolvedCwd }, 'executing bash command');
 
   try {
-    // Use execFile with explicit sh -c to avoid shell metacharacter injection.
-    // The command is passed as a separate argument (not interpolated), preventing
-    // an attacker from escaping the string with quotes or shell operators.
-    const { stdout, stderr } = await execFileAsync('sh', ['-c', command], {
+    // Use platform-appropriate shell to execute command safely.
+    const isWindows = process.platform === 'win32';
+    const shell = isWindows ? 'cmd' : 'sh';
+    const shellArgs = isWindows ? ['/c', command] : ['-c', command];
+    const { stdout, stderr } = await execFileAsync(shell, shellArgs, {
       cwd: resolvedCwd,
       timeout: timeoutMs ?? 10_000,
       env: env ? { ...process.env, ...env } : process.env,
@@ -73,12 +74,13 @@ export async function executeBash(input: ExecuteBashInput): Promise<{
       truncated,
     };
   } catch (err) {
-    const e = err as { stdout?: string; stderr?: string; killed?: boolean; code?: number | null };
-    log.warn({ command: command.substring(0, 100), exitCode: e.code, killed: e.killed }, 'bash command failed');
+    const e = err as { stdout?: string; stderr?: string; killed?: boolean; code?: number | string | null; status?: number | null };
+    const exitCode = typeof e.code === 'number' ? e.code : (e.status ?? 1);
+    log.warn({ command: command.substring(0, 100), exitCode, killed: e.killed }, 'bash command failed');
     return {
       stdout: truncateOutput(e.stdout ?? '', 512_000),
-      stderr: truncateOutput(e.stderr ?? '', 256_000),
-      exitCode: e.code ?? 1,
+      stderr: truncateOutput(e.stderr ?? (typeof e.code === 'string' ? `Error: ${e.code}` : ''), 256_000),
+      exitCode,
       truncated: false,
     };
   }

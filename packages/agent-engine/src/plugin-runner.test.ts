@@ -25,7 +25,11 @@ describe('PluginRunner', () => {
     });
 
     expect(runner.isLoaded('math-plugin')).toBe(true);
-    expect(runner.getLoaded()).toEqual(['math-plugin']);
+    const loaded = runner.getLoaded();
+    expect(loaded).toHaveLength(1);
+    expect(loaded[0].name).toBe('math-plugin');
+    expect(loaded[0].version).toBe('1.0.0');
+    expect(loaded[0].toolCount).toBe(1);
   });
 
   it('unloads a plugin', async () => {

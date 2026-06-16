@@ -4,7 +4,7 @@ import { agentRuns, agentSteps, agentProfiles } from '@titan/database';
 import { enqueue, QUEUE_NAMES } from '@titan/queue';
 import { ValidationError } from '@titan/shared';
 import { requireAuth } from '../plugins/auth.js';
-import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
+import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import type { LlmMessage } from '@titan/agent-engine';
 import { getLogger } from '@titan/logging';
@@ -151,7 +151,7 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const profile = await agentProfiles.findById(agentId).catch(() => null)
         ?? await agentProfiles.findBySlug(req.auth.userId, agentId).catch(() => null);
 
-      const resolvedSystemPrompt = systemPrompt ?? profile?.systemPrompt ?? 'You are Titan, a helpful AI assistant.';
+      const resolvedSystemPrompt = systemPrompt ?? profile?.systemPrompt ?? 'أنت تايتن — شريك ذكي وصديق حقيقي. بتتكلم بطريقة طبيعية وبتفهم اللي قدامك من نص كلمة. رد بنفس لغة اللي بيكلمك.';
 
       // Agent mode: full ReAct loop with tools and step events
       if (mode === 'agent') {
@@ -171,14 +171,9 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           reply.raw.write(`data: ${JSON.stringify({ type: 'run.started', runId: run.id })}\n\n`);
 
           const runner = new AgentRunner({
-            llm: createProviderFromEnv() ?? new MockLlmProvider(),
+            llm: (() => { const p = createProviderFromEnv(); if (!p) throw new Error('LLM provider not configured'); return p; })(),
             executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
-              try {
-                const data = await registry.execute(call.name, call.params);
-                return { success: true, data };
-              } catch (err) {
-                return { success: false, error: err instanceof Error ? err.message : 'Tool failed' };
-              }
+              return registry.execute(call.name, call.params);
             },
             memory,
             persistRun: async (agentRun: AgentRun) => {
@@ -244,7 +239,7 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
             workspaceId: req.auth.workspaceId ?? undefined,
             maxSteps: maxSteps ?? profile?.maxSteps ?? 10,
             forbiddenTools: profile?.forbiddenTools as readonly string[] | undefined,
-            systemPromptExtra: resolvedSystemPrompt !== 'You are Titan, a helpful AI assistant.' ? resolvedSystemPrompt : undefined,
+            systemPromptExtra: (systemPrompt || profile?.systemPrompt) ? `\n\n${resolvedSystemPrompt}` : undefined,
           });
 
           reply.raw.write(`data: ${JSON.stringify({

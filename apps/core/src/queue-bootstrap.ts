@@ -6,7 +6,7 @@ import {
   type TitanWorker,
   createWorker,
 } from '@titan/queue';
-import { AgentRunner, MockLlmProvider, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
+import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
 import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile } from '@titan/tools';
@@ -843,14 +843,9 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
     }
 
     const runner = new AgentRunner({
-      llm: createProviderFromEnv() ?? new MockLlmProvider(),
+      llm: (() => { const p = createProviderFromEnv(); if (!p) throw new Error('LLM provider not configured — set LLM_PROVIDER_TYPE, LLM_API_KEY, LLM_MODEL'); return p; })(),
       executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
-        try {
-          const data = await executeTool(call.name, call.params);
-          return { success: true, data };
-        } catch (err) {
-          return { success: false, error: err instanceof Error ? err.message : 'Tool execution failed' };
-        }
+        return executeTool(call.name, call.params);
       },
       memory,
       userContextItems: Object.keys(userCtxFacts).length > 0 ? userCtxFacts : undefined,

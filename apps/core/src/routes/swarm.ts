@@ -47,14 +47,9 @@ function buildRunAdapter(userId: string, workspaceId?: string, apiKeyId?: string
       await memory.initialize();
 
       const runner = new AgentRunner({
-        llm: provider ?? { complete: async () => ({ content: 'Mock response', toolCalls: undefined, tokensUsed: 0, finishReason: 'stop' as const }) },
+        llm: (() => { if (!provider) throw new Error('LLM provider not configured'); return provider; })(),
         executeTool: async (call, _runId) => {
-          try {
-            const data = await registry.execute(call.name, call.params);
-            return { success: true, data };
-          } catch (err) {
-            return { success: false, error: err instanceof Error ? err.message : 'Tool failed' };
-          }
+          return registry.execute(call.name, call.params);
         },
         memory,
         persistRun: async (run) => {

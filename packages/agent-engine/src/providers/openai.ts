@@ -66,14 +66,25 @@ export class OpenAiProvider implements LlmProvider {
       tool_choice: (opts?.tools && opts.tools.length > 0) ? 'auto' : undefined,
     };
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.config.apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60_000);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.config.apiKey}`,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      if ((err as Error).name === 'AbortError') throw new Error('LLM request timed out after 60s');
+      throw err;
+    }
+    clearTimeout(timeout);
 
     if (!res.ok) {
       const text = await res.text();
@@ -158,11 +169,22 @@ export class OpenAiProvider implements LlmProvider {
       stream: true,
     };
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.config.apiKey}` },
-      body: JSON.stringify(body),
-    });
+    const streamController = new AbortController();
+    const streamTimeout = setTimeout(() => streamController.abort(), 90_000);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.config.apiKey}` },
+        body: JSON.stringify(body),
+        signal: streamController.signal,
+      });
+    } catch (err) {
+      clearTimeout(streamTimeout);
+      if ((err as Error).name === 'AbortError') throw new Error('LLM stream request timed out after 90s');
+      throw err;
+    }
+    clearTimeout(streamTimeout);
 
     if (!res.ok || !res.body) {
       const text = await res.text();

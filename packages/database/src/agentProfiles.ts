@@ -102,7 +102,7 @@ export const agentProfiles = {
         input.name,
         input.slug,
         input.description ?? null,
-        input.systemPrompt ?? 'You are a helpful AI assistant.',
+        input.systemPrompt ?? 'أنت تايتن — شريك ذكي وصديق حقيقي. بتتكلم بطريقة طبيعية وبتفهم اللي قدامك من نص كلمة.',
         input.model ?? null,
         input.allowedTools ?? [],
         input.forbiddenTools ?? [],

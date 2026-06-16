@@ -43,7 +43,7 @@ export function createProviderFromEnv(): LlmProvider | null {
   const baseUrl = process.env['LLM_BASE_URL'];
 
   if (!type || !apiKey || !model) {
-    log.warn('LLM environment variables not set; using mock provider');
+    log.error('LLM_PROVIDER_TYPE, LLM_API_KEY, and LLM_MODEL must all be set. Agent will not function without a real LLM provider.');
     return null;
   }
 

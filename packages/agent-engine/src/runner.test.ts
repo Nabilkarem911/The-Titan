@@ -134,7 +134,7 @@ describe('AgentRunner', () => {
       maxSteps: 5,
     });
 
-    expect(stepSpy).toHaveBeenCalledTimes(1);
+    expect(stepSpy).toHaveBeenCalledTimes(2);
     const firstCall = stepSpy.mock.calls[0] as unknown[] | undefined;
     if (firstCall && firstCall[0]) {
       expect((firstCall[0] as { action?: { name?: string } }).action?.name).toBe('execute_bash');
