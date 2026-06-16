@@ -30,6 +30,8 @@ import {
   Sun,
   Moon,
   Search,
+  FileCode,
+  Shield,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -53,6 +55,8 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/editor', icon: <Code className="h-4 w-4" />, label: 'Editor' },
       { to: '/terminal', icon: <Monitor className="h-4 w-4" />, label: 'Terminal' },
       { to: '/git', icon: <GitBranch className="h-4 w-4" />, label: 'Git Push' },
+      { to: '/teams', icon: <Users className="h-4 w-4" />, label: 'Teams' },
+      { to: '/templates', icon: <FileCode className="h-4 w-4" />, label: 'Templates' },
     ],
   },
   {
@@ -64,6 +68,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/cron', icon: <Clock className="h-4 w-4" />, label: 'Cron Jobs' },
       { to: '/logs', icon: <ScrollText className="h-4 w-4" />, label: 'Logs' },
       { to: '/webhooks', icon: <Webhook className="h-4 w-4" />, label: 'Webhooks' },
+      { to: '/audit-logs', icon: <Shield className="h-4 w-4" />, label: 'Audit Logs' },
     ],
   },
   {

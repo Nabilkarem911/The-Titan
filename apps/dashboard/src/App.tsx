@@ -18,6 +18,9 @@ import Logs from './pages/Logs';
 import Webhooks from './pages/Webhooks';
 import ApiKeys from './pages/ApiKeys';
 import Plugins from './pages/Plugins';
+import Teams from './pages/Teams';
+import Templates from './pages/Templates';
+import AuditLogs from './pages/AuditLogs';
 import Login from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -49,6 +52,9 @@ function ProtectedLayout() {
         <Route path="/webhooks" element={<Webhooks />} />
         <Route path="/api-keys" element={<ApiKeys />} />
         <Route path="/plugins" element={<Plugins />} />
+        <Route path="/teams" element={<Teams />} />
+        <Route path="/templates" element={<Templates />} />
+        <Route path="/audit-logs" element={<AuditLogs />} />
       </Routes>
         </Layout>
       </NotificationProvider>

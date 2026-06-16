@@ -135,6 +135,75 @@ export async function archiveOlderThan(daysOld: number, batchSize: number): Prom
   return { archived: total };
 }
 
+export async function listAuditLogs(options: {
+  limit?: number;
+  offset?: number;
+  action?: string;
+  resource?: string;
+  workspaceId?: string;
+  actorId?: string;
+} = {}): Promise<Array<{
+  id: string;
+  actorId: string | null;
+  workspaceId: string | null;
+  action: string;
+  resource: string | null;
+  resourceId: string | null;
+  metadata: Record<string, unknown>;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}>> {
+  const limit = Math.min(options.limit ?? 100, 1000);
+  const offset = options.offset ?? 0;
+  const conditions: string[] = [];
+  const params: (string | number)[] = [];
+  let paramIndex = 1;
+
+  if (options.action) {
+    conditions.push(`action = $${paramIndex++}`);
+    params.push(options.action);
+  }
+  if (options.resource) {
+    conditions.push(`resource = $${paramIndex++}`);
+    params.push(options.resource);
+  }
+  if (options.workspaceId) {
+    conditions.push(`workspace_id = $${paramIndex++}`);
+    params.push(options.workspaceId);
+  }
+  if (options.actorId) {
+    conditions.push(`actor_id = $${paramIndex++}`);
+    params.push(options.actorId);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const q = `SELECT id, actor_id, workspace_id, action, resource, resource_id, metadata, ip_address, user_agent, created_at
+    FROM audit.logs ${where}
+    ORDER BY created_at DESC
+    LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+  params.push(limit, offset);
+
+  const r = await query<{
+    id: string; actor_id: string | null; workspace_id: string | null; action: string;
+    resource: string | null; resource_id: string | null; metadata: Record<string, unknown>;
+    ip_address: string | null; user_agent: string | null; created_at: string;
+  }>(q, params);
+
+  return r.rows.map((row) => ({
+    id: row.id,
+    actorId: row.actor_id,
+    workspaceId: row.workspace_id,
+    action: row.action,
+    resource: row.resource,
+    resourceId: row.resource_id,
+    metadata: row.metadata,
+    ipAddress: row.ip_address,
+    userAgent: row.user_agent,
+    createdAt: row.created_at,
+  }));
+}
+
 export async function getRetentionInfo(): Promise<{ count: number; oldest: string | null; newest: string | null; archiveCount: number }> {
   const r = await query<{ count: string; oldest: string | null; newest: string | null }>(
     `SELECT count(*)::text AS count, min(created_at) AS oldest, max(created_at) AS newest FROM audit.logs`,

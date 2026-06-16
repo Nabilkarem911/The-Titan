@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { verifyHashChain, getRetentionInfo, archiveOlderThan } from '@titan/database';
+import { verifyHashChain, getRetentionInfo, archiveOlderThan, listAuditLogs } from '@titan/database';
 import { getLogger } from '@titan/logging';
 import { requireAuth, requirePermission } from '../plugins/auth.js';
 import { PERMISSIONS } from '@titan/shared';
@@ -46,6 +46,25 @@ export const complianceRoutes: FastifyPluginAsync = async (app: FastifyInstance)
       }
       log.error({ err }, 'failed to archive audit logs');
       return reply.status(500).send({ error: 'Failed to archive audit logs' });
+    }
+  });
+
+  app.get('/api/v1/compliance/audit/logs', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.AUDIT_READ);
+    try {
+      const qs = req.query as Record<string, string>;
+      const result = await listAuditLogs({
+        limit: qs.limit ? parseInt(qs.limit, 10) : undefined,
+        offset: qs.offset ? parseInt(qs.offset, 10) : undefined,
+        action: qs.action,
+        resource: qs.resource,
+        workspaceId: qs.workspaceId,
+        actorId: qs.actorId,
+      });
+      return reply.send({ items: result, total: result.length });
+    } catch (err) {
+      log.error({ err }, 'failed to list audit logs');
+      return reply.status(500).send({ error: 'Failed to list audit logs' });
     }
   });
 };
