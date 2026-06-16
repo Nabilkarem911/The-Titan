@@ -22,6 +22,7 @@ import Teams from './pages/Teams';
 import Templates from './pages/Templates';
 import AuditLogs from './pages/AuditLogs';
 import Swarm from './pages/Swarm';
+import Memory from './pages/Memory';
 import Login from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -57,6 +58,7 @@ function ProtectedLayout() {
         <Route path="/templates" element={<Templates />} />
         <Route path="/audit-logs" element={<AuditLogs />} />
         <Route path="/swarm" element={<Swarm />} />
+        <Route path="/memory" element={<Memory />} />
       </Routes>
         </Layout>
       </NotificationProvider>
