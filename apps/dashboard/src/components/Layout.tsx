@@ -32,8 +32,9 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Workspace',
     items: [
-      { to: '/projects', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Projects' },
-      { to: '/', icon: <MessageSquare className="h-4 w-4" />, label: 'Chat', end: true },
+      { to: '/', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Dashboard', end: true },
+      { to: '/projects', icon: <FolderOpen className="h-4 w-4" />, label: 'Projects' },
+      { to: '/chat', icon: <MessageSquare className="h-4 w-4" />, label: 'Chat' },
       { to: '/agents', icon: <Users className="h-4 w-4" />, label: 'Agents' },
       { to: '/playground', icon: <Terminal className="h-4 w-4" />, label: 'Playground' },
       { to: '/files', icon: <FolderOpen className="h-4 w-4" />, label: 'Files' },
@@ -73,7 +74,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const pageTitle = (() => {
     const path = location.pathname;
-    if (path === '/') return 'Chat';
+    if (path === '/') return 'Dashboard';
     const segment = path.slice(1).replace(/-/g, ' ');
     return segment.charAt(0).toUpperCase() + segment.slice(1);
   })();

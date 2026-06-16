@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
 import Chat from './pages/Chat';
 import Agents from './pages/Agents';
 import Playground from './pages/Playground';
@@ -22,7 +23,8 @@ function ProtectedLayout() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<Chat />} />
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/chat" element={<Chat />} />
         <Route path="/agents" element={<Agents />} />
         <Route path="/playground" element={<Playground />} />
         <Route path="/runs" element={<Runs />} />
