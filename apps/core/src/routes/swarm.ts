@@ -1,11 +1,10 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { SwarmOrchestrator, createProviderFromEnv, AgentRunner, getGlobalToolRegistry, type AgentRunInput, type AgentRun } from '@titan/agent-engine';
-import { agentRuns, agentSteps } from '@titan/database';
-import { ValidationError } from '@titan/shared';
+import { createProviderFromEnv } from '@titan/agent-engine';
+import { ValidationError, QUEUE_NAMES } from '@titan/shared';
+import { enqueue } from '@titan/queue';
 import { requireAuth } from '../plugins/auth.js';
 import { storeSwarmTask, getSwarmTask, listSwarmTasks } from '../swarm-store.js';
-import { getGlobalMemoryClient } from '@titan/memory';
 
 const SwarmInputSchema = z.object({
   description: z.string().min(1).max(500),
@@ -26,96 +25,35 @@ const SwarmInputSchema = z.object({
 
 const RATE_LIMIT_SWARM = { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } };
 
-function buildRunAdapter(userId: string, workspaceId?: string, apiKeyId?: string) {
-  return {
-    createAgentRun: async (runInput: AgentRunInput): Promise<AgentRun> => {
-      const provider = createProviderFromEnv();
-      const registry = getGlobalToolRegistry();
-
-      // Create DB record
-      const dbRun = await agentRuns.create({
-        agentId: runInput.agentId,
-        prompt: runInput.prompt,
-        userId: runInput.userId ?? userId,
-        workspaceId: workspaceId,
-        apiKeyId: apiKeyId,
-        maxSteps: runInput.maxSteps ?? 10,
-      });
-
-      // Actually execute the agent
-      const memory = await getGlobalMemoryClient();
-
-      const runner = new AgentRunner({
-        llm: (() => { if (!provider) throw new Error('LLM provider not configured'); return provider; })(),
-        executeTool: async (call, _runId) => {
-          return registry.execute(call.name, call.params);
-        },
-        memory,
-        persistRun: async (run) => {
-          await agentRuns.updateStatus(run.id, run.status, { finalAnswer: run.finalAnswer ?? undefined, tokensUsed: run.tokensUsed });
-        },
-        onStep: async (step) => {
-          await agentSteps.create({
-            runId: step.runId,
-            stepIndex: step.index,
-            status: step.status,
-            thought: step.thought,
-            plan: step.plan,
-            actionName: step.action?.name,
-            actionParams: step.action?.params,
-            observationSuccess: step.observation?.success,
-            observationData: step.observation?.data as Record<string, unknown> | undefined,
-            observationError: step.observation?.error,
-            reflection: step.reflection,
-            tokensUsed: step.tokensUsed,
-            latencyMs: step.latencyMs,
-          });
-        },
-      });
-
-      const completedRun = await runner.run({
-        agentId: runInput.agentId,
-        prompt: runInput.prompt,
-        userId: runInput.userId ?? userId,
-        workspaceId,
-        maxSteps: runInput.maxSteps ?? 10,
-      });
-
-      return completedRun;
-    },
-
-    getAgentRun: async (runId: string): Promise<AgentRun | null> => {
-      const run = await agentRuns.findById(runId);
-      if (!run) return null;
-      return {
-        id: run.id,
-        agentId: run.agentId,
-        prompt: run.prompt,
-        status: run.status as AgentRun['status'],
-        maxSteps: run.maxSteps,
-        currentStep: run.currentStep,
-        tokensUsed: run.tokensUsed,
-        forbiddenTools: undefined,
-        steps: [],
-        createdAt: run.createdAt,
-        updatedAt: run.updatedAt,
-      };
-    },
-  };
-}
-
 export const swarmRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
-  // POST /api/v1/swarm/run — launch a multi-agent swarm task
+  // POST /api/v1/swarm/run — launch a multi-agent swarm task (async, queue-based)
   app.post('/api/v1/swarm/run', { preHandler: requireAuth, ...RATE_LIMIT_SWARM }, async (req, reply) => {
     if (!req.auth) throw new ValidationError('Authentication required');
     const input = SwarmInputSchema.parse(req.body);
+
+    // Validate LLM provider is configured before enqueuing
     const provider = createProviderFromEnv();
+    if (!provider) throw new ValidationError('LLM provider not configured — cannot plan swarm task');
 
-    const deps = buildRunAdapter(req.auth.userId, req.auth.workspaceId ?? undefined, req.auth.apiKeyId ?? undefined);
-    const orchestrator = new SwarmOrchestrator(deps);
+    const taskId = crypto.randomUUID();
 
-    const task = await orchestrator.createTask({
+    // Store initial task shell so GET /tasks/:taskId works immediately
+    storeSwarmTask({
+      id: taskId,
+      description: input.description,
+      originalPrompt: input.prompt,
+      status: 'queued',
+      agents: input.agents.map((a) => ({ ...a, systemPrompt: a.systemPrompt ?? '', allowedTools: a.allowedTools ?? [] })),
+      subTasks: [],
+      finalAnswer: undefined,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Parameters<typeof storeSwarmTask>[0]);
+
+    // Enqueue the heavy work (plan → execute → synthesize) to the SWARM_EXECUTE queue
+    await enqueue(QUEUE_NAMES.SWARM_EXECUTE, 'swarm.run', {
+      taskId,
       description: input.description,
       prompt: input.prompt,
       agents: input.agents,
@@ -124,28 +62,10 @@ export const swarmRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       apiKeyId: req.auth.apiKeyId ?? undefined,
     });
 
-    storeSwarmTask(task);
-
-    // Plan — LLM required, no fallback
-    if (!provider) throw new ValidationError('LLM provider not configured — cannot plan swarm task');
-    await orchestrator.plan(task, provider as { complete: (messages: Array<{ role: string; content: string }>) => Promise<{ content: string }> });
-    storeSwarmTask(task);
-
-    // Execute all agents in parallel (respecting deps)
-    await orchestrator.execute(task);
-    storeSwarmTask(task);
-
-    // Synthesize final answer — LLM required
-    const result = await orchestrator.synthesize(task, provider as { complete: (messages: Array<{ role: string; content: string }>) => Promise<{ content: string }> });
-    storeSwarmTask(task);
-
-    return reply.status(200).send({
-      taskId: result.taskId,
-      status: result.status,
-      finalAnswer: result.finalAnswer,
-      subTasks: result.subTaskResults,
-      agentsUsed: input.agents.length,
-      completedAt: result.completedAt.toISOString(),
+    return reply.status(202).send({
+      taskId,
+      status: 'queued',
+      message: 'Swarm task queued for execution. Poll GET /api/v1/swarm/tasks/:taskId for results.',
     });
   });
 

@@ -18,8 +18,8 @@ import {
 } from './constants.js';
 
 describe('QUEUE_NAMES', () => {
-  it('has 8 queues', () => {
-    expect(ALL_QUEUES).toHaveLength(8);
+  it('has 9 queues', () => {
+    expect(ALL_QUEUES).toHaveLength(9);
   });
 
   it('does not contain colons (BullMQ requirement)', () => {

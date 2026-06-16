@@ -6,7 +6,8 @@ import {
   type TitanWorker,
   createWorker,
 } from '@titan/queue';
-import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
+import { AgentRunner, SwarmOrchestrator, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep, type AgentRunInput } from '@titan/agent-engine';
+import { storeSwarmTask, getSwarmTask } from './swarm-store.js';
 import { getGlobalMemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
 import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile } from '@titan/tools';
@@ -803,6 +804,25 @@ const webhookDeliverSchema = z.object({
   workspaceId: z.string().uuid().optional(),
 }).passthrough();
 
+const swarmExecuteSchema = z.object({
+  taskId: z.string().uuid(),
+  description: z.string().min(1).max(500),
+  prompt: z.string().min(1).max(10_000),
+  agents: z.array(z.object({
+    id: z.string(),
+    role: z.string(),
+    name: z.string(),
+    description: z.string(),
+    systemPrompt: z.string().optional(),
+    allowedTools: z.array(z.string()).optional(),
+    maxSteps: z.number().int().optional(),
+    priority: z.number().int().optional(),
+  })).min(1).max(10),
+  userId: z.string(),
+  workspaceId: z.string().uuid().optional(),
+  apiKeyId: z.string().uuid().optional(),
+}).passthrough();
+
 const SCHEMAS: Array<[QueueName, z.ZodType<unknown>]> = [
   [QUEUE_NAMES.AGENT_EXECUTE, agentExecuteSchema],
   [QUEUE_NAMES.TOOL_EXECUTE, toolExecuteSchema],
@@ -812,6 +832,7 @@ const SCHEMAS: Array<[QueueName, z.ZodType<unknown>]> = [
   [QUEUE_NAMES.MONITORING_CHECK, monitoringCheckSchema],
   [QUEUE_NAMES.AUDIT_WRITE, auditWriteSchema],
   [QUEUE_NAMES.WEBHOOK_DELIVER, webhookDeliverSchema],
+  [QUEUE_NAMES.SWARM_EXECUTE, swarmExecuteSchema],
 ];
 
 export function registerAllQueueSchemas(): void {
@@ -1029,6 +1050,71 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
       return { written: true, actorId, action };
     } catch (err) {
       log.error({ err, actorId, action }, 'audit write failed');
+      throw err;
+    }
+  },
+  [QUEUE_NAMES.SWARM_EXECUTE]: async (job) => {
+    const { taskId, description, prompt, agents, userId, workspaceId, apiKeyId } = job.data;
+    log.info({ jobId: job.id, taskId, agentsCount: agents.length }, 'swarm:execute');
+
+    const provider = createProviderFromEnv();
+    if (!provider) throw new Error('LLM provider not configured for swarm execution');
+    const registry = getGlobalToolRegistry();
+
+    const deps = {
+      createAgentRun: async (runInput: AgentRunInput): Promise<AgentRun> => {
+        const dbRun = await agentRuns.create({
+          agentId: runInput.agentId,
+          prompt: runInput.prompt,
+          userId: runInput.userId ?? userId,
+          workspaceId,
+          apiKeyId,
+          maxSteps: runInput.maxSteps ?? 10,
+        });
+        const memory = await getGlobalMemoryClient();
+        const runner = new AgentRunner({
+          llm: provider,
+          executeTool: async (call) => registry.execute(call.name, call.params),
+          memory,
+          persistRun: async (run) => {
+            await agentRuns.updateStatus(run.id, run.status, { finalAnswer: run.finalAnswer ?? undefined, tokensUsed: run.tokensUsed });
+          },
+          onStep: async (step) => {
+            await agentSteps.create({
+              runId: step.runId, stepIndex: step.index, status: step.status,
+              thought: step.thought, plan: step.plan,
+              actionName: step.action?.name, actionParams: step.action?.params,
+              observationSuccess: step.observation?.success,
+              observationData: step.observation?.data as Record<string, unknown> | undefined,
+              observationError: step.observation?.error,
+              reflection: step.reflection, tokensUsed: step.tokensUsed, latencyMs: step.latencyMs,
+            });
+          },
+        });
+        return runner.run({ agentId: runInput.agentId, prompt: runInput.prompt, userId: runInput.userId ?? userId, workspaceId, maxSteps: runInput.maxSteps ?? 10 });
+      },
+      getAgentRun: async (runId: string): Promise<AgentRun | null> => {
+        const run = await agentRuns.findById(runId);
+        if (!run) return null;
+        return { id: run.id, agentId: run.agentId, prompt: run.prompt, status: run.status as AgentRun['status'], maxSteps: run.maxSteps, currentStep: run.currentStep, tokensUsed: run.tokensUsed, forbiddenTools: undefined, steps: [], createdAt: run.createdAt, updatedAt: run.updatedAt };
+      },
+    };
+
+    const orchestrator = new SwarmOrchestrator(deps);
+    const task = await orchestrator.createTask({ description, prompt, agents: agents.map((a: Record<string, unknown>) => ({ ...a, maxSteps: (a.maxSteps as number) ?? 10, priority: (a.priority as number) ?? 0 })) });
+    storeSwarmTask(task);
+
+    try {
+      await orchestrator.plan(task, provider as { complete: (messages: Array<{ role: string; content: string }>) => Promise<{ content: string }> });
+      storeSwarmTask(task);
+      await orchestrator.execute(task);
+      storeSwarmTask(task);
+      const result = await orchestrator.synthesize(task, provider as { complete: (messages: Array<{ role: string; content: string }>) => Promise<{ content: string }> });
+      storeSwarmTask(task);
+      return { taskId: result.taskId, status: result.status, finalAnswer: result.finalAnswer, subTasks: result.subTaskResults, completedAt: result.completedAt.toISOString() };
+    } catch (err) {
+      task.status = 'failed';
+      storeSwarmTask(task);
       throw err;
     }
   },

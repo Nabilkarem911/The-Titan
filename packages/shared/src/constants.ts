@@ -14,6 +14,7 @@ export const QUEUE_NAMES = {
   MONITORING_CHECK: 'monitoring-check',
   AUDIT_WRITE: 'audit-write',
   WEBHOOK_DELIVER: 'webhook-deliver',
+  SWARM_EXECUTE: 'swarm-execute',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

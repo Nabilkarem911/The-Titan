@@ -36,7 +36,7 @@ export interface SwarmTask {
   id: string;
   description: string;
   originalPrompt: string;
-  status: 'pending' | 'planning' | 'executing' | 'synthesizing' | 'completed' | 'failed';
+  status: 'queued' | 'pending' | 'planning' | 'executing' | 'synthesizing' | 'completed' | 'failed';
   subTasks: SwarmSubTask[];
   agents: SwarmAgent[];
   finalAnswer?: string;
