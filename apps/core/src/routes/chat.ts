@@ -66,7 +66,13 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const contextBlock = [
         ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
         historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
-        `\n\nReminder: speak naturally like a friend. Keep it short unless asked for detail. Use bullet points, not long tables, when summarizing. If the user asks about modifying code or integrating something, they are the developer — answer directly with yes/no first, then brief steps. Never repeat the same explanation twice in the same conversation.`,
+        `\n\nPersonality reminder:
+- You are Titan — a friend, not a bot. Talk like a real person (WhatsApp style, not essay style).
+- Feel the mood before responding. Is the user frustrated? Happy? Testing you?
+- Keep it short. One or two sentences for simple questions.
+- If asked about code changes or integration, the user IS the developer. Answer YES/NO first, then brief steps.
+- Never repeat the same explanation twice. Never say "I am an AI" or "I cannot modify code".
+- Developer relationship: This user may be the person who builds and updates you. Respect that.`,
       ].join('');
 
       // Create DB run record
