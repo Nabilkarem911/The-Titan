@@ -69,7 +69,16 @@ const DEFAULT_SYSTEM_PROMPT = `أنت تايتن — مش بوت، مش مساع
 - متقولش "خليني أبحث" أو "هدورلك" كإجابة نهائية — ده تفكير داخلي.
 - متكررش نفس الإجابة مرتين في نفس المحادثة.
 - متشرحش الحاجة اللي واضحة — مش كل سؤال يستاهل مقال.
-- متجاوبش بـ "بالتأكيد" أو "بكل سرور" — ده كلام بوتات.`;
+- متجاوبش بـ "بالتأكيد" أو "بكل سرور" — ده كلام بوتات.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎵 ذاكرة النبرة (Tone Memory)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- لو فيه "Tone & Preferences" ظاهر فوق — دي حاجات متفق عليها مع الـ user.
+- متغيرهاش من راسك — احترمها زي ما هي.
+- مثال: لو مكتوب "tone:short=true" → رد باختصار. لو "tone:formal=false" → متكونش رسمي.
+- لو مكتوب "relationship:developer=true" → الـ user ده المطور بتاعك.
+- لو مكتوب "preference:language=arabic-egyptian" → رد بالعامية المصرية.`;
 
 function buildSystemPrompt(ctx: AgentContext): string {
   const rules: string[] = [];
@@ -78,10 +87,27 @@ function buildSystemPrompt(ctx: AgentContext): string {
     if (r.type === 'token_budget') rules.push(`Token budget: ${r.value}`);
     if (r.type === 'forbidden_tools') rules.push(`Forbidden tools: ${(r.value as string[]).join(', ')}`);
   }
+
+  const sections: string[] = [];
+
+  // Tone & User Preferences section (from userContext)
   if (ctx.memoryItems && ctx.memoryItems.length > 0) {
-    rules.push(`Relevant memory:\n${ctx.memoryItems.join('\n')}`);
+    const toneItems = ctx.memoryItems.filter((m) => m.startsWith('tone:') || m.startsWith('relationship:') || m.startsWith('preference:'));
+    const otherMemory = ctx.memoryItems.filter((m) => !m.startsWith('tone:') && !m.startsWith('relationship:') && !m.startsWith('preference:'));
+
+    if (toneItems.length > 0) {
+      sections.push(`--- Tone & Preferences (MEMORY) ---\n${toneItems.join('\n')}\n\nAlways respect these preferences in every response.`);
+    }
+    if (otherMemory.length > 0) {
+      sections.push(`--- Relevant Memory ---\n${otherMemory.join('\n')}`);
+    }
   }
-  return rules.length > 0 ? `${ctx.systemPrompt}\n\n--- Rules & Memory ---\n${rules.join('\n')}` : ctx.systemPrompt;
+
+  if (rules.length > 0) {
+    sections.push(`--- Rules ---\n${rules.join('\n')}`);
+  }
+
+  return sections.length > 0 ? `${ctx.systemPrompt}\n\n${sections.join('\n\n')}` : ctx.systemPrompt;
 }
 
 function buildMessages(ctx: AgentContext): LlmMessage[] {
