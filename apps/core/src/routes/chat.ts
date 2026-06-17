@@ -1,12 +1,12 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
+import { getGlobalToolRegistry } from '@titan/agent-engine';
+import { createRunner } from '../create-runner.js';
 import { getGlobalMemoryClient } from '@titan/memory';
-import { agentRuns, agentSteps, userContext, getChatHistory, saveChatMessage, agentProfiles } from '@titan/database';
+import { agentRuns, userContext, getChatHistory, saveChatMessage, agentProfiles } from '@titan/database';
 import { ValidationError } from '@titan/shared';
 import { getLogger } from '@titan/logging';
 import { requireAuth } from '../plugins/auth.js';
-import { getWsServer } from '../ws-instance.js';
 import { detectLanguage } from '../lang-detect.js';
 import { readFile } from 'node:fs/promises';
 import { join, resolve, relative } from 'node:path';
@@ -137,89 +137,13 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         reply.raw.write(`data: ${JSON.stringify({ type: 'run.started', runId })}\n\n`);
       }
 
-      const runner = new AgentRunner({
-        llm: (() => { const p = createProviderFromEnv(); if (!p) throw new Error('LLM provider not configured'); return p; })(),
-        executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
-          return registry.execute(call.name, call.params);
-        },
+      const runner = createRunner({
+        runId,
+        agentId: input.agentId,
+        executeTool: (name, params) => registry.execute(name, params),
         memory,
         userContextItems: Object.keys(ctx).length > 0 ? ctx : undefined,
-        persistRun: async (run: AgentRun) => {
-          try {
-            await agentRuns.updateStatus(runId, run.status, {
-              currentStep: run.currentStep,
-              tokensUsed: run.tokensUsed,
-              finalAnswer: run.finalAnswer ?? undefined,
-            });
-          } catch (err) {
-            log.warn({ err, runId }, 'failed to persist run');
-          }
-          if (input.stream) {
-            reply.raw.write(`data: ${JSON.stringify({
-              type: 'run.updated',
-              runId,
-              status: run.status,
-              currentStep: run.currentStep,
-              tokensUsed: run.tokensUsed,
-            })}\n\n`);
-          }
-          getWsServer()?.broadcast('agent.run.updated', {
-            runId,
-            agentId: input.agentId,
-            status: run.status,
-            currentStep: run.currentStep,
-            tokensUsed: run.tokensUsed,
-            finalAnswer: run.finalAnswer ?? null,
-          });
-        },
-        onStep: async (step: AgentStep) => {
-          try {
-            await agentSteps.create({
-              runId,
-              stepIndex: step.index,
-              status: step.status,
-              thought: step.thought,
-              actionName: step.action?.name,
-              actionParams: step.action?.params,
-              observationSuccess: step.observation?.success,
-              observationData: step.observation?.data as Record<string, unknown> | undefined,
-              observationError: step.observation?.error,
-              reflection: step.reflection,
-              tokensUsed: step.tokensUsed,
-              latencyMs: step.latencyMs,
-            });
-          } catch (err) {
-            log.warn({ err, runId }, 'failed to persist step');
-          }
-          if (input.stream) {
-            reply.raw.write(`data: ${JSON.stringify({
-              type: 'step',
-              runId,
-              step: {
-                index: step.index,
-                status: step.status,
-                thought: step.thought,
-                actionName: step.action?.name,
-                reflection: step.reflection,
-                tokensUsed: step.tokensUsed,
-                latencyMs: step.latencyMs,
-              },
-            })}\n\n`);
-          }
-          getWsServer()?.broadcast('agent.step', {
-            runId,
-            agentId: input.agentId,
-            step: {
-              index: step.index,
-              status: step.status,
-              thought: step.thought,
-              actionName: step.action?.name,
-              reflection: step.reflection,
-              tokensUsed: step.tokensUsed,
-              latencyMs: step.latencyMs,
-            },
-          });
-        },
+        sse: input.stream ? { write: (d) => reply.raw.write(d) } : undefined,
       });
 
       try {

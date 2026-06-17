@@ -41,6 +41,7 @@ export const swarmRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     // Store initial task shell so GET /tasks/:taskId works immediately
     storeSwarmTask({
       id: taskId,
+      userId: req.auth.userId,
       description: input.description,
       originalPrompt: input.prompt,
       status: 'queued',
@@ -70,8 +71,9 @@ export const swarmRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   });
 
   // GET /api/v1/swarm/tasks — list recent swarm tasks
-  app.get('/api/v1/swarm/tasks', { preHandler: requireAuth }, async (_req, reply) => {
-    const tasks = listSwarmTasks(20);
+  app.get('/api/v1/swarm/tasks', { preHandler: requireAuth }, async (req, reply) => {
+    if (!req.auth) throw new ValidationError('Authentication required');
+    const tasks = listSwarmTasks(20, req.auth.userId);
     return reply.send({
       items: tasks.map((t) => ({
         id: t.id,
@@ -90,8 +92,9 @@ export const swarmRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
   // GET /api/v1/swarm/tasks/:taskId — full task details
   app.get<{ Params: { taskId: string } }>('/api/v1/swarm/tasks/:taskId', { preHandler: requireAuth }, async (req, reply) => {
+    if (!req.auth) throw new ValidationError('Authentication required');
     const task = getSwarmTask(req.params.taskId);
-    if (!task) return reply.status(404).send({ error: 'Swarm task not found' });
+    if (!task || task.userId !== req.auth.userId) return reply.status(404).send({ error: 'Swarm task not found' });
     return reply.send({
       id: task.id,
       description: task.description,

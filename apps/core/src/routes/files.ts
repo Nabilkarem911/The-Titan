@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 import { readdir, stat, mkdir, rm, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve, relative } from 'node:path';
 import { createReadStream } from 'node:fs';
@@ -6,6 +7,15 @@ import { getLogger } from '@titan/logging';
 import { requireAuth } from '../plugins/auth.js';
 
 const log = getLogger().child({ component: 'files-routes' });
+
+/** Dangerous file extensions that must not be uploaded. */
+const BLOCKED_EXTENSIONS = new Set([
+  '.exe', '.bat', '.cmd', '.sh', '.ps1', '.msi',
+  '.dll', '.so', '.com', '.scr', '.vbs', '.wsf', '.jar',
+]);
+
+/** Maximum size per uploaded file (50 MB). */
+const MAX_UPLOAD_FILE_SIZE = 50 * 1024 * 1024;
 
 function getWorkspaceRoot(userId: string): string {
   const base = process.env.WORKSPACE_ROOT ?? join(process.cwd(), 'workspaces');
@@ -26,6 +36,15 @@ function validatePath(workspaceRoot: string, requestedPath: string): string {
   }
   return resolved;
 }
+
+const MkdirInputSchema = z.object({
+  path: z.string().min(1).max(1000),
+});
+
+const WriteFileInputSchema = z.object({
+  path: z.string().min(1).max(1000),
+  content: z.string().max(5 * 1024 * 1024),
+});
 
 export const fileRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', requireAuth);
@@ -76,7 +95,7 @@ export const fileRoutes: FastifyPluginAsync = async (app) => {
   // Create directory
   app.post('/api/v1/files/mkdir', async (req, reply) => {
     const userId = (req as unknown as { auth: { userId: string } }).auth.userId;
-    const { path: dirPath } = req.body as { path: string };
+    const { path: dirPath } = MkdirInputSchema.parse(req.body);
     const workspaceRoot = getWorkspaceRoot(userId);
     const targetDir = validatePath(workspaceRoot, dirPath);
 
@@ -102,10 +121,29 @@ export const fileRoutes: FastifyPluginAsync = async (app) => {
         }
         if (part.type === 'file' && part.filename && part.file) {
           const safeName = part.filename.replace(/[/\\]/g, '_').replace(/\.\./g, '_');
+
+          // Block dangerous file extensions
+          const ext = safeName.includes('.') ? ('.' + safeName.split('.').pop()!.toLowerCase()) : '';
+          if (BLOCKED_EXTENSIONS.has(ext)) {
+            // Drain the stream so the multipart parser doesn't stall
+            for await (const _ of part.file) { /* discard */ }
+            log.warn({ userId, filename: safeName, ext }, 'blocked upload of dangerous file type');
+            continue;
+          }
+
           const filePath = join(targetPath, safeName);
           const chunks: Buffer[] = [];
+          let totalSize = 0;
           for await (const chunk of part.file) {
+            totalSize += chunk.length;
+            if (totalSize > MAX_UPLOAD_FILE_SIZE) {
+              log.warn({ userId, filename: safeName, totalSize }, 'upload exceeded max file size');
+              break;
+            }
             chunks.push(chunk);
+          }
+          if (totalSize > MAX_UPLOAD_FILE_SIZE) {
+            continue; // skip writing oversized file
           }
           await writeFile(filePath, Buffer.concat(chunks));
           log.info({ userId, filePath }, 'file uploaded');
@@ -229,8 +267,7 @@ export const fileRoutes: FastifyPluginAsync = async (app) => {
   // Write file content (for code editor)
   app.put('/api/v1/files/content', async (req, reply) => {
     const userId = (req as unknown as { auth: { userId: string } }).auth.userId;
-    const { path: filePath, content } = req.body as { path: string; content: string };
-    if (!filePath) return reply.status(400).send({ error: 'Path required' });
+    const { path: filePath, content } = WriteFileInputSchema.parse(req.body);
     const workspaceRoot = getWorkspaceRoot(userId);
     const targetFile = validatePath(workspaceRoot, filePath);
 

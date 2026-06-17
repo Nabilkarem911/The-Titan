@@ -4,9 +4,9 @@ import { agentRuns, agentSteps, agentProfiles } from '@titan/database';
 import { enqueue, QUEUE_NAMES } from '@titan/queue';
 import { ValidationError } from '@titan/shared';
 import { requireAuth } from '../plugins/auth.js';
-import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
+import { createProviderFromEnv, getGlobalToolRegistry, type LlmMessage } from '@titan/agent-engine';
 import { getGlobalMemoryClient } from '@titan/memory';
-import type { LlmMessage } from '@titan/agent-engine';
+import { createRunner } from '../create-runner.js';
 import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'agents-route' });
@@ -16,6 +16,17 @@ const RunAgentInputSchema = z.object({
   maxSteps: z.number().int().min(1).max(50).optional().default(10),
   tokenBudget: z.number().int().min(1).optional(),
   forbiddenTools: z.array(z.string()).optional(),
+});
+
+const StreamAgentInputSchema = z.object({
+  prompt: z.string().min(1).max(50_000),
+  systemPrompt: z.string().max(10_000).optional(),
+  history: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().max(50_000),
+  })).max(200).optional(),
+  mode: z.enum(['text', 'agent']).optional(),
+  maxSteps: z.number().int().min(1).max(50).optional(),
 });
 
 const RATE_LIMIT_AGENT_WRITE = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
@@ -132,15 +143,7 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     async (req, reply) => {
       if (!req.auth) throw new ValidationError('Authentication required');
 
-      const { prompt, systemPrompt, history, mode, maxSteps } = req.body as {
-        prompt: string;
-        systemPrompt?: string;
-        history?: Array<{ role: 'user' | 'assistant'; content: string }>;
-        mode?: 'text' | 'agent';
-        maxSteps?: number;
-      };
-
-      if (!prompt) throw new ValidationError('prompt is required');
+      const { prompt, systemPrompt, history, mode, maxSteps } = StreamAgentInputSchema.parse(req.body);
 
       reply.raw.setHeader('Content-Type', 'text/event-stream');
       reply.raw.setHeader('Cache-Control', 'no-cache');
@@ -172,65 +175,13 @@ export const agentRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
           reply.raw.write(`data: ${JSON.stringify({ type: 'run.started', runId: run.id })}\n\n`);
 
-          const runner = new AgentRunner({
-            llm: (() => { const p = createProviderFromEnv(); if (!p) throw new Error('LLM provider not configured'); return p; })(),
-            executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
-              return registry.execute(call.name, call.params);
-            },
+          const runner = createRunner({
+            runId: run.id,
+            agentId,
+            executeTool: (name, params) => registry.execute(name, params),
             memory,
-            persistRun: async (agentRun: AgentRun) => {
-              try {
-                await agentRuns.updateStatus(run.id, agentRun.status, {
-                  currentStep: agentRun.currentStep,
-                  tokensUsed: agentRun.tokensUsed,
-                  finalAnswer: agentRun.finalAnswer ?? undefined,
-                });
-              } catch (err) {
-                log.warn({ err, runId: run.id }, 'failed to persist run');
-              }
-              reply.raw.write(`data: ${JSON.stringify({
-                type: 'run.updated',
-                runId: run.id,
-                status: agentRun.status,
-                currentStep: agentRun.currentStep,
-                tokensUsed: agentRun.tokensUsed,
-              })}\n\n`);
-            },
-            onStep: async (step: AgentStep) => {
-              try {
-                await agentSteps.create({
-                  runId: run.id,
-                  stepIndex: step.index,
-                  status: step.status,
-                  thought: step.thought,
-                  actionName: step.action?.name,
-                  actionParams: step.action?.params,
-                  observationSuccess: step.observation?.success,
-                  observationData: step.observation?.data as Record<string, unknown> | undefined,
-                  observationError: step.observation?.error,
-                  reflection: step.reflection,
-                  tokensUsed: step.tokensUsed,
-                  latencyMs: step.latencyMs,
-                });
-              } catch (err) {
-                log.warn({ err, runId: run.id }, 'failed to persist step');
-              }
-              reply.raw.write(`data: ${JSON.stringify({
-                type: 'step',
-                step: {
-                  index: step.index,
-                  status: step.status,
-                  thought: step.thought,
-                  actionName: step.action?.name,
-                  actionParams: step.action?.params,
-                  observationSuccess: step.observation?.success,
-                  observationError: step.observation?.error,
-                  reflection: step.reflection,
-                  tokensUsed: step.tokensUsed,
-                  latencyMs: step.latencyMs,
-                },
-              })}\n\n`);
-            },
+            sse: { write: (d) => reply.raw.write(d) },
+            broadcastWs: false,
           });
 
           const result = await runner.run({

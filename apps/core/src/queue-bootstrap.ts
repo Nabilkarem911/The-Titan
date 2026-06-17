@@ -6,13 +6,13 @@ import {
   type TitanWorker,
   createWorker,
 } from '@titan/queue';
-import { AgentRunner, SwarmOrchestrator, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep, type AgentRunInput } from '@titan/agent-engine';
+import { SwarmOrchestrator, createProviderFromEnv, getGlobalToolRegistry, type ToolResult, type AgentRun, type AgentRunInput } from '@titan/agent-engine';
+import { createRunner } from './create-runner.js';
 import { storeSwarmTask, getSwarmTask } from './swarm-store.js';
 import { getGlobalMemoryClient } from '@titan/memory';
-import { agentRuns, agentSteps, userSecrets, userContext, userProjects } from '@titan/database';
+import { agentRuns, userSecrets, userContext, userProjects } from '@titan/database';
 import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile } from '@titan/tools';
 import { loadConfig } from '@titan/config';
-import { getWsServer } from './ws-instance.js';
 
 const cfg = loadConfig();
 
@@ -913,69 +913,12 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
       log.warn({ err, runId }, 'failed to load user context for agent');
     }
 
-    const runner = new AgentRunner({
-      llm: (() => { const p = createProviderFromEnv(); if (!p) throw new Error('LLM provider not configured — set LLM_PROVIDER_TYPE, LLM_API_KEY, LLM_MODEL'); return p; })(),
-      executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
-        return executeTool(call.name, call.params);
-      },
+    const runner = createRunner({
+      runId,
+      agentId: agentId ?? 'default-agent',
+      executeTool: (name, params) => executeTool(name, params),
       memory,
       userContextItems: Object.keys(userCtxFacts).length > 0 ? userCtxFacts : undefined,
-      persistRun: async (run: AgentRun) => {
-        try {
-          await agentRuns.updateStatus(runId, run.status, {
-            currentStep: run.currentStep,
-            tokensUsed: run.tokensUsed,
-            finalAnswer: run.finalAnswer ?? undefined,
-          });
-        } catch (err) {
-          log.warn({ err, runId }, 'failed to persist run status');
-        }
-        getWsServer()?.broadcast('agent.run.updated', {
-          runId,
-          agentId,
-          status: run.status,
-          currentStep: run.currentStep,
-          tokensUsed: run.tokensUsed,
-          finalAnswer: run.finalAnswer ?? null,
-        });
-      },
-      onStep: async (step: AgentStep) => {
-        try {
-          await agentSteps.create({
-            runId,
-            stepIndex: step.index,
-            status: step.status,
-            thought: step.thought,
-            actionName: step.action?.name,
-            actionParams: step.action?.params,
-            observationSuccess: step.observation?.success,
-            observationData: step.observation?.data as Record<string, unknown> | undefined,
-            observationError: step.observation?.error,
-            reflection: step.reflection,
-            tokensUsed: step.tokensUsed,
-            latencyMs: step.latencyMs,
-          });
-        } catch (err) {
-          log.warn({ err, runId }, 'failed to persist step');
-        }
-        getWsServer()?.broadcast('agent.step', {
-          runId,
-          agentId,
-          step: {
-            index: step.index,
-            status: step.status,
-            thought: step.thought,
-            actionName: step.action?.name,
-            actionParams: step.action?.params,
-            observationSuccess: step.observation?.success,
-            observationData: step.observation?.data,
-            observationError: step.observation?.error,
-            reflection: step.reflection,
-            tokensUsed: step.tokensUsed,
-            latencyMs: step.latencyMs,
-          },
-        });
-      },
     });
 
     const result = await runner.run({
@@ -1123,26 +1066,15 @@ const processors: Record<QueueName, (job: any) => Promise<any>> = {
           maxSteps: runInput.maxSteps ?? 10,
         });
         const memory = await getGlobalMemoryClient();
-        const runner = new AgentRunner({
-          llm: provider,
-          executeTool: async (call) => registry.execute(call.name, call.params),
+        const runner = createRunner({
+          runId: dbRun.id,
+          agentId: runInput.agentId,
+          executeTool: (name, params) => registry.execute(name, params),
           memory,
-          persistRun: async (run) => {
-            await agentRuns.updateStatus(run.id, run.status, { finalAnswer: run.finalAnswer ?? undefined, tokensUsed: run.tokensUsed });
-          },
-          onStep: async (step) => {
-            await agentSteps.create({
-              runId: step.runId, stepIndex: step.index, status: step.status,
-              thought: step.thought, plan: step.plan,
-              actionName: step.action?.name, actionParams: step.action?.params,
-              observationSuccess: step.observation?.success,
-              observationData: step.observation?.data as Record<string, unknown> | undefined,
-              observationError: step.observation?.error,
-              reflection: step.reflection, tokensUsed: step.tokensUsed, latencyMs: step.latencyMs,
-            });
-          },
+          llm: provider,
+          broadcastWs: false,
         });
-        return runner.run({ agentId: runInput.agentId, prompt: runInput.prompt, userId: runInput.userId ?? userId, workspaceId, maxSteps: runInput.maxSteps ?? 10 });
+        return runner.run({ runId: dbRun.id, agentId: runInput.agentId, prompt: runInput.prompt, userId: runInput.userId ?? userId, workspaceId, maxSteps: runInput.maxSteps ?? 10 });
       },
       getAgentRun: async (runId: string): Promise<AgentRun | null> => {
         const run = await agentRuns.findById(runId);

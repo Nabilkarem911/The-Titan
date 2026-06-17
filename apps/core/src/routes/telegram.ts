@@ -1,10 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { loadConfig } from '@titan/config';
 import { getLogger } from '@titan/logging';
-import { agentRuns, agentSteps, userContext, userProjects, getChatHistory, saveChatMessage, agentProfiles } from '@titan/database';
-import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
+import { agentRuns, userContext, userProjects, getChatHistory, saveChatMessage, agentProfiles } from '@titan/database';
+import { getGlobalToolRegistry } from '@titan/agent-engine';
 import { getGlobalMemoryClient } from '@titan/memory';
-import { getWsServer } from '../ws-instance.js';
+import { createRunner } from '../create-runner.js';
 import { detectLanguage } from '../lang-detect.js';
 
 const log = getLogger().child({ component: 'telegram' });
@@ -264,65 +264,12 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         log.info({ ownerId, project: defaultProject.name }, 'default project injected');
       }
 
-      const runner = new AgentRunner({
-        llm: (() => { const p = createProviderFromEnv(); if (!p) throw new Error('LLM provider not configured'); return p; })(),
-        userContextItems,
-        executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
-          return registry.execute(call.name, call.params);
-        },
+      const runner = createRunner({
+        runId,
+        agentId,
+        executeTool: (name, params) => registry.execute(name, params),
         memory,
-        persistRun: async (run: AgentRun) => {
-          try {
-            await agentRuns.updateStatus(runId, run.status, {
-              currentStep: run.currentStep,
-              tokensUsed: run.tokensUsed,
-              finalAnswer: run.finalAnswer ?? undefined,
-            });
-          } catch (err) {
-            log.warn({ err, runId }, 'failed to persist run');
-          }
-          getWsServer()?.broadcast('agent.run.updated', {
-            runId,
-            agentId,
-            status: run.status,
-            currentStep: run.currentStep,
-            tokensUsed: run.tokensUsed,
-            finalAnswer: run.finalAnswer ?? null,
-          });
-        },
-        onStep: async (step: AgentStep) => {
-          try {
-            await agentSteps.create({
-              runId,
-              stepIndex: step.index,
-              status: step.status,
-              thought: step.thought,
-              actionName: step.action?.name,
-              actionParams: step.action?.params,
-              observationSuccess: step.observation?.success,
-              observationData: step.observation?.data as Record<string, unknown> | undefined,
-              observationError: step.observation?.error,
-              reflection: step.reflection,
-              tokensUsed: step.tokensUsed,
-              latencyMs: step.latencyMs,
-            });
-          } catch (err) {
-            log.warn({ err, runId }, 'failed to persist step');
-          }
-          getWsServer()?.broadcast('agent.step', {
-            runId,
-            agentId,
-            step: {
-              index: step.index,
-              status: step.status,
-              thought: step.thought,
-              actionName: step.action?.name,
-              reflection: step.reflection,
-              tokensUsed: step.tokensUsed,
-              latencyMs: step.latencyMs,
-            },
-          });
-        },
+        userContextItems,
       });
 
       // Start background run — do not await so next messages can be processed concurrently

@@ -34,6 +34,7 @@ export interface SwarmSubTask {
 
 export interface SwarmTask {
   id: string;
+  userId?: string;
   description: string;
   originalPrompt: string;
   status: 'queued' | 'pending' | 'planning' | 'executing' | 'synthesizing' | 'completed' | 'failed';

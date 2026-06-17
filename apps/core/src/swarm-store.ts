@@ -14,8 +14,12 @@ export function getSwarmTask(id: string): SwarmTask | undefined {
   return tasks.get(id);
 }
 
-export function listSwarmTasks(limit = 50): SwarmTask[] {
-  return [...tasks.values()]
+export function listSwarmTasks(limit = 50, userId?: string): SwarmTask[] {
+  let result = [...tasks.values()];
+  if (userId) {
+    result = result.filter((t) => t.userId === userId);
+  }
+  return result
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, limit);
 }

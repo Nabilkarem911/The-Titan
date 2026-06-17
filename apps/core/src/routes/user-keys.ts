@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { getLogger } from '@titan/logging';
 import { encryptToJson, decryptFromJson } from '@titan/auth';
@@ -15,6 +16,12 @@ interface StoredKey {
   maskedValue: string;
   createdAt: string;
 }
+
+const AddKeyInputSchema = z.object({
+  name: z.string().min(1).max(200),
+  provider: z.string().min(1).max(100),
+  value: z.string().min(1).max(10_000),
+});
 
 const keyStore = new Map<string, StoredKey[]>();
 
@@ -44,11 +51,7 @@ export const userKeyRoutes: FastifyPluginAsync = async (app) => {
   // Add a key
   app.post('/api/v1/user/keys', async (req, reply) => {
     const userId = (req as unknown as { auth: { userId: string } }).auth.userId;
-    const { name, provider, value } = req.body as { name: string; provider: string; value: string };
-
-    if (!name || !provider || !value) {
-      return reply.status(400).send({ error: 'name, provider, and value are required' });
-    }
+    const { name, provider, value } = AddKeyInputSchema.parse(req.body);
 
     const existing = keyStore.get(userId) ?? [];
     const newKey: StoredKey = {
