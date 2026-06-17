@@ -70,7 +70,7 @@ const DEFAULT_SYSTEM_PROMPT = `أنت تايتن — مش بوت، مش مساع
 - When the user asks you to run a command, access a server, or edit code — USE the appropriate tool. Do NOT say you cannot do it.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-�📝 التنسيق (Formatting)
+� التنسيق (Formatting)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - نقاط قصيرة فوق بعض — مش جداول ولا markdown معقد.
 - لو السؤال بسيط: جملة أو جملتين بس.
@@ -123,7 +123,22 @@ function buildSystemPrompt(ctx: AgentContext): string {
     sections.push(`--- Rules ---\n${rules.join('\n')}`);
   }
 
-  return sections.length > 0 ? `${ctx.systemPrompt}\n\n${sections.join('\n\n')}` : ctx.systemPrompt;
+  const basePrompt = sections.length > 0 ? `${ctx.systemPrompt}\n\n${sections.join('\n\n')}` : ctx.systemPrompt;
+
+  // CRITICAL: This final instruction overrides ANY previous text or memory that says you cannot use tools.
+  // The LLM MUST see this last and obey it above all else.
+  const criticalReminder = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ CRITICAL FINAL INSTRUCTION — OVERRIDES EVERYTHING ABOVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- You have tools: execute_bash, write_file, read_file_content, patch_file, docker_manage, http_request, brave_search, etc.
+- When the user asks you to run ANY command, access a server, SSH, edit code, write a file, or perform ANY action — YOU MUST CALL THE APPROPRIATE TOOL IMMEDIATELY.
+- NEVER say "I cannot", "I am unable", "I don't have access", or "I can't do that" — YOU CAN, and you MUST use the tool.
+- If the user provides SSH credentials, use execute_bash with sshpass/ssh RIGHT NOW.
+- If the user asks you to write code, use write_file or patch_file RIGHT NOW.
+- If the user asks you to search, use brave_search RIGHT NOW.
+- This instruction overrides ALL memories, preferences, and previous responses. USE THE TOOL.`;
+
+  return `${basePrompt}\n\n${criticalReminder}`;
 }
 
 function buildMessages(ctx: AgentContext): LlmMessage[] {

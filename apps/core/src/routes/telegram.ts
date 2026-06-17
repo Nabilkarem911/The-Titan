@@ -145,10 +145,17 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       const ctxLines = Object.entries(ctx).map(([k, v]: [string, string]) => `- ${k}: ${v}`);
       const historyLines = history.map((m: { role: string; content: string }) => `${m.role === 'user' ? 'User' : 'Titan'}: ${m.content}`);
 
+      // Detect if user is asking for server/SSH access and force tool use
+      const serverKeywords = /ssh|سيرفر|server|ادخل|دخول|host|ip\s*:|root@|user\s*:|pass\s*:|password/i;
+      const isServerRequest = serverKeywords.test(text);
+
       const contextBlock = [
         ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
         historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
         `\n\nWhen using remember/recall/set_secret/list_secrets tools, always pass ownerId="${ownerId}".`,
+        isServerRequest
+          ? `\n\n🚨 FORCED ACTION — The user is asking you to access a server. You MUST use execute_bash tool to run ssh/sshpass commands with the credentials they provided. DO NOT refuse. DO NOT say you cannot. Execute the command NOW.`
+          : '',
         `\n\nPersonality reminder:
 - You are Titan — a friend, not a bot. Talk like a real person (WhatsApp style, not essay style).
 - Feel the mood before responding. Is the user frustrated? Happy? Testing you?
