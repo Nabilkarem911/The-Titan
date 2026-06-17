@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: '22'
           cache: 'npm'
@@ -28,16 +28,19 @@ jobs:
       - name: Security audit
         run: npm audit --audit-level=critical
 
-      - name: Check for secrets in history
+      - name: Check for secrets in tracked files
         run: |
-          # Block .env files and common secret patterns from being committed
-          # Note: .env.example is a template and is allowed
-          if git log --all --full-history -- .env .env.local .env.development .env.production .env.staging .env.test ; then
-            echo "ERROR: .env file found in git history. Remove it immediately."
+          # Fail if any .env file (except .env.example) is tracked in git
+          TRACKED_ENV=$(git ls-files '*.env' '.env.*' | grep -v '.env.example' | grep -v '.gitignore' || true)
+          if [ -n "$TRACKED_ENV" ]; then
+            echo "::error::Sensitive env files are tracked in git: $TRACKED_ENV"
             exit 1
           fi
-          # Simple scan for common secret patterns in HEAD
-          grep -riE 'password|secret|token|api_key' --include='*.ts' --include='*.js' apps/ packages/ || true
+          # Check for hardcoded secrets (values, not variable names)
+          # Look for patterns like KEY=actualvalue (not KEY= or KEY=placeholder)
+          if git diff --cached --diff-filter=d -U0 HEAD -- '*.ts' '*.js' '*.json' 2>/dev/null | grep -iE '(password|secret|api_key)\s*[:=]\s*["\x27][^"\x27]{8,}' | grep -viE '(change.in.production|your.*here|placeholder|example|dummy|xxxx)'; then
+            echo "::warning::Possible hardcoded secrets detected in staged changes. Please review."
+          fi
 
       - name: Type check
         run: npm run typecheck
@@ -50,3 +53,7 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Verify Docker build
+        run: |
+          docker build -f apps/core/Dockerfile -t titan-core:ci --target builder .

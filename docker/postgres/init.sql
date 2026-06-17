@@ -10,15 +10,13 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "vector";
 
--- Use scram-sha-256 for the application role's password. The default password
--- is intended for local development only; production must override
--- POSTGRES_PASSWORD via environment.
+-- The 'titan' role is created automatically by the PostgreSQL Docker image
+-- using POSTGRES_USER and POSTGRES_PASSWORD environment variables.
+-- We only ensure the role exists with proper permissions here.
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'titan') THEN
-        CREATE ROLE titan LOGIN PASSWORD 'titan_dev_password_change_in_production';
-    ELSE
-        ALTER ROLE titan WITH LOGIN PASSWORD 'titan_dev_password_change_in_production';
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = current_user) THEN
+        RAISE NOTICE 'Role % already exists (created by Docker entrypoint)', current_user;
     END IF;
 END $$;
 

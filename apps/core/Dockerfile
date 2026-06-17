@@ -37,8 +37,7 @@ RUN npm run build:dashboard 2>/dev/null || (cd apps/dashboard && npm run build)
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache dumb-init curl openssh-client
-RUN echo 'http://dl-cdn.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories && apk add --no-cache sshpass
+RUN apk add --no-cache dumb-init curl
 
 # Copy only what's needed to run
 COPY package.json package-lock.json ./
