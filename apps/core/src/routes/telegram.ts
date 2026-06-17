@@ -20,9 +20,33 @@ interface TelegramUpdate {
   };
 }
 
+function escapeMarkdown(text: string): string {
+  // Escape characters that Telegram interprets as Markdown formatting
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/_/g, '\\_')
+    .replace(/\*/g, '\\*')
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/~/g, '\\~')
+    .replace(/`/g, '\\`')
+    .replace(/>/g, '\\>')
+    .replace(/#/g, '\\#')
+    .replace(/\+/g, '\\+')
+    .replace(/-/g, '\\-')
+    .replace(/=/g, '\\=')
+    .replace(/\|/g, '\\|')
+    .replace(/{/g, '\\{')
+    .replace(/}/g, '\\}')
+    .replace(/\./g, '\\.')
+    .replace(/!/g, '\\!');
+}
+
 async function sendTelegramMessage(token: string, chatId: number, text: string): Promise<void> {
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
-  const body = { chat_id: chatId, text, parse_mode: 'Markdown' };
+  const body = { chat_id: chatId, text: escapeMarkdown(text), parse_mode: 'MarkdownV2' };
   try {
     const res = await fetch(url, {
       method: 'POST',
