@@ -66,7 +66,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const contextBlock = [
         ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
         historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
-        `\n\nReminder: speak naturally like a friend. Keep it short unless asked for detail. Use bullet points, not long tables, when summarizing.`,
+        `\n\nReminder: speak naturally like a friend. Keep it short unless asked for detail. Use bullet points, not long tables, when summarizing. If the user asks about modifying code or integrating something, they are the developer — answer directly with yes/no first, then brief steps. Never repeat the same explanation twice in the same conversation.`,
       ].join('');
 
       // Create DB run record
