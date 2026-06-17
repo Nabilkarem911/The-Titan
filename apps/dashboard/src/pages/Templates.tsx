@@ -141,31 +141,22 @@ export default function TemplatesPage() {
     }
   };
 
-  const handleEdit = (t: Template) => {
-    setEditing(t);
-    setFormName(t.name);
-    setFormSlug(t.slug);
+  function populateForm(t: Template, mode: 'edit' | 'clone') {
+    const isEdit = mode === 'edit';
+    setEditing(isEdit ? t : null);
+    setFormName(isEdit ? t.name : `${t.name} (copy)`);
+    setFormSlug(isEdit ? t.slug : `${t.slug}-copy`);
     setFormDesc(t.description ?? '');
     setFormPrompt(t.systemPrompt ?? '');
     setFormModel(t.model ?? '');
     setFormMaxSteps(t.maxSteps);
     setFormTemp(t.temperature ?? '');
-    setFormPublic(t.isPublic);
+    setFormPublic(isEdit ? t.isPublic : false);
     setShowForm(true);
-  };
+  }
 
-  const handleClone = (t: Template) => {
-    setEditing(null);
-    setFormName(`${t.name} (copy)`);
-    setFormSlug(`${t.slug}-copy`);
-    setFormDesc(t.description ?? '');
-    setFormPrompt(t.systemPrompt ?? '');
-    setFormModel(t.model ?? '');
-    setFormMaxSteps(t.maxSteps);
-    setFormTemp(t.temperature ?? '');
-    setFormPublic(false);
-    setShowForm(true);
-  };
+  const handleEdit = (t: Template) => populateForm(t, 'edit');
+  const handleClone = (t: Template) => populateForm(t, 'clone');
 
   const source = tab === 'mine' ? templates : publicTemplates;
   const filtered = source.filter((t) =>

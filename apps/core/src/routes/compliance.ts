@@ -39,6 +39,8 @@ export const complianceRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     try {
       const body = schema.parse(req.body);
       const result = await archiveOlderThan(body.daysOld, body.batchSize);
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      // Note: Fastify sends JSON (application/json), not HTML. No XSS risk.
       return reply.send(result);
     } catch (err) {
       if (err instanceof z.ZodError) {

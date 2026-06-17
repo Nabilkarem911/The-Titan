@@ -125,57 +125,69 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(requestContextPlugin);
   await app.register(authPlugin);
 
-  app.setErrorHandler((err, req, reply) => {
-    const requestId = req.requestId;
-    if (err instanceof ZodError) {
-      return reply.status(400).send({
-        type: 'https://titan.local/problems/validation',
-        title: 'Validation failed',
-        status: 400,
-        code: 'E2001',
-        requestId,
-        details: err.issues,
-      });
-    }
-    if (err instanceof TitanError) {
-      log.warn({ err, requestId, code: err.code }, 'titan error');
-      return reply.status(err.statusCode).send({
-        type: `https://titan.local/problems/${err.code.toLowerCase()}`,
-        title: err.message,
-        status: err.statusCode,
-        code: err.code,
-        requestId,
-        ...(err.details !== undefined ? { details: err.details } : {}),
-      });
-    }
-    const fastifyErr = err as { validation?: unknown; statusCode?: number; message?: string };
-    if (fastifyErr.validation) {
-      return reply.status(400).send({
-        type: 'https://titan.local/problems/validation',
-        title: fastifyErr.message ?? 'Validation error',
-        status: 400,
-        code: 'E2001',
-        requestId,
-        details: fastifyErr.validation,
-      });
-    }
-    if (fastifyErr.statusCode === 429) {
-      return reply.status(429).send({
-        type: 'https://titan.local/problems/rate-limit',
-        title: 'Too many requests',
-        status: 429,
-        code: 'E4001',
-        requestId,
-      });
-    }
-    log.error({ err, requestId }, 'unhandled error');
-    return reply.status(fastifyErr.statusCode ?? 500).send({
-      type: 'https://titan.local/problems/internal',
-      title: 'Internal server error',
-      status: fastifyErr.statusCode ?? 500,
-      code: 'E5001',
+  function sendZodError(reply: any, err: ZodError, requestId: string) {
+    return reply.status(400).send({
+      type: 'https://titan.local/problems/validation',
+      title: 'Validation failed',
+      status: 400,
+      code: 'E2001',
+      requestId,
+      details: err.issues,
+    });
+  }
+
+  function sendTitanError(reply: any, err: TitanError, requestId: string) {
+    log.warn({ err, requestId, code: err.code }, 'titan error');
+    return reply.status(err.statusCode).send({
+      type: `https://titan.local/problems/${err.code.toLowerCase()}`,
+      title: err.message,
+      status: err.statusCode,
+      code: err.code,
+      requestId,
+      ...(err.details !== undefined ? { details: err.details } : {}),
+    });
+  }
+
+  function sendValidationError(reply: any, err: { message?: string; validation?: unknown }, requestId: string) {
+    return reply.status(400).send({
+      type: 'https://titan.local/problems/validation',
+      title: err.message ?? 'Validation error',
+      status: 400,
+      code: 'E2001',
+      requestId,
+      details: err.validation,
+    });
+  }
+
+  function sendRateLimitError(reply: any, requestId: string) {
+    return reply.status(429).send({
+      type: 'https://titan.local/problems/rate-limit',
+      title: 'Too many requests',
+      status: 429,
+      code: 'E4001',
       requestId,
     });
+  }
+
+  function sendInternalError(reply: any, err: unknown, requestId: string, statusCode?: number) {
+    log.error({ err, requestId }, 'unhandled error');
+    return reply.status(statusCode ?? 500).send({
+      type: 'https://titan.local/problems/internal',
+      title: 'Internal server error',
+      status: statusCode ?? 500,
+      code: 'E5000',
+      requestId,
+    });
+  }
+
+  app.setErrorHandler((err, req, reply) => {
+    const requestId = req.requestId;
+    if (err instanceof ZodError) return sendZodError(reply, err, requestId);
+    if (err instanceof TitanError) return sendTitanError(reply, err, requestId);
+    const fastifyErr = err as { validation?: unknown; statusCode?: number; message?: string };
+    if (fastifyErr.validation) return sendValidationError(reply, fastifyErr, requestId);
+    if (fastifyErr.statusCode === 429) return sendRateLimitError(reply, requestId);
+    return sendInternalError(reply, err, requestId, fastifyErr.statusCode);
   });
 
 

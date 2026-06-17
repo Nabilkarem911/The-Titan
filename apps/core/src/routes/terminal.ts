@@ -116,22 +116,26 @@ async function handleTerminalConnection(ws: import('ws').WebSocket, userId: stri
   });
 
   // Handle messages from client
-  ws.on('message', (raw: import('ws').RawData) => {
+  function handleTerminalMessage(raw: import('ws').RawData) {
     try {
       const msg = JSON.parse(raw.toString('utf-8'));
       if (msg.type === 'input' && msg.data) {
         proc.stdin.write(msg.data);
-      } else if (msg.type === 'command' && msg.command) {
-        // For command mode, write command + newline
+        return;
+      }
+      if (msg.type === 'command' && msg.command) {
         proc.stdin.write(msg.command + '\n');
-      } else if (msg.type === 'resize' && msg.cols && msg.rows) {
-        // Resize not directly supported without PTY, but we can log it
+        return;
+      }
+      if (msg.type === 'resize' && msg.cols && msg.rows) {
         log.debug({ sessionId, cols: msg.cols, rows: msg.rows }, 'terminal resize');
       }
     } catch (err) {
       log.error({ err, sessionId }, 'invalid terminal message');
     }
-  });
+  }
+
+  ws.on('message', handleTerminalMessage);
 
   ws.on('close', () => {
     log.info({ sessionId }, 'terminal client disconnected');
