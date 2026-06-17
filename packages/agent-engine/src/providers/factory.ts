@@ -39,18 +39,12 @@ export function createLlmProvider(config: ProviderConfig): LlmProvider {
 export function createProviderFromEnv(): LlmProvider | null {
   const type = process.env['LLM_PROVIDER_TYPE'] as 'openai' | 'openai-compatible' | 'anthropic' | undefined;
   const apiKey = process.env['LLM_API_KEY'];
-  let model = process.env['LLM_MODEL'];
+  const model = process.env['LLM_MODEL'];
   const baseUrl = process.env['LLM_BASE_URL'];
 
   if (!type || !apiKey || !model) {
     log.error('LLM_PROVIDER_TYPE, LLM_API_KEY, and LLM_MODEL must all be set. Agent will not function without a real LLM provider.');
     return null;
-  }
-
-  // Auto-routing often picks models without tool support. Force a known tool-capable model.
-  if (model === 'auto') {
-    log.warn('LLM_MODEL is "auto" — this often selects models without tool support. Forcing to qwen2.5 for reliable tool calling.');
-    model = 'qwen2.5';
   }
 
   return createLlmProvider({ type, apiKey, model, baseUrl });
