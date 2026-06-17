@@ -9,7 +9,7 @@ import {
 import { AgentRunner, SwarmOrchestrator, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep, type AgentRunInput } from '@titan/agent-engine';
 import { storeSwarmTask, getSwarmTask } from './swarm-store.js';
 import { getGlobalMemoryClient } from '@titan/memory';
-import { agentRuns, agentSteps, userSecrets, userContext } from '@titan/database';
+import { agentRuns, agentSteps, userSecrets, userContext, userProjects } from '@titan/database';
 import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { getWsServer } from './ws-instance.js';
@@ -144,6 +144,57 @@ registry.register({
     return { secrets: list.map((s) => ({ key: s.key, description: s.description })) };
   },
   tags: ['memory', 'secrets'],
+});
+
+registry.register({
+  name: 'set_project',
+  description: 'Save or update a project for the user. Set isDefault=true to make it the active project.',
+  schema: {
+    ownerId: { type: 'string', description: 'User or chat ID' },
+    name: { type: 'string', description: 'Project name (e.g. "The-Titan", "client-site")' },
+    path: { type: 'string', description: 'Absolute path on server (optional)' },
+    repoUrl: { type: 'string', description: 'Git repository URL (optional)' },
+    branch: { type: 'string', description: 'Git branch (default: main)' },
+    description: { type: 'string', description: 'Short description (optional)' },
+    isDefault: { type: 'boolean', description: 'Make this the active/default project (default: false)' },
+  },
+  requiredParams: ['ownerId', 'name'],
+  handler: async (params: unknown) => {
+    const { ownerId, name, path, repoUrl, branch, description, isDefault } = params as {
+      ownerId: string;
+      name: string;
+      path?: string;
+      repoUrl?: string;
+      branch?: string;
+      description?: string;
+      isDefault?: boolean;
+    };
+    const project = await userProjects.set(ownerId, name, { path, repoUrl, branch, description, isDefault });
+    return { saved: true, project: { name: project.name, path: project.path, repoUrl: project.repoUrl, branch: project.branch, isDefault: project.isDefault } };
+  },
+  tags: ['memory', 'projects'],
+});
+
+registry.register({
+  name: 'get_project',
+  description: 'Retrieve a specific project or the default/active project for the user.',
+  schema: {
+    ownerId: { type: 'string', description: 'User or chat ID' },
+    name: { type: 'string', description: 'Project name (optional — if omitted, returns default project)' },
+  },
+  requiredParams: ['ownerId'],
+  handler: async (params: unknown) => {
+    const { ownerId, name } = params as { ownerId: string; name?: string };
+    if (name) {
+      const project = await userProjects.get(ownerId, name);
+      return project ? { project } : { error: `Project "${name}" not found.` };
+    }
+    const project = await userProjects.getDefault(ownerId);
+    if (project) return { project };
+    const all = await userProjects.list(ownerId);
+    return { projects: all.map((p: { name: string; path: string | null; repoUrl: string | null; isDefault: boolean }) => ({ name: p.name, path: p.path, repoUrl: p.repoUrl, isDefault: p.isDefault })) };
+  },
+  tags: ['memory', 'projects'],
 });
 
 registry.register({

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { loadConfig } from '@titan/config';
 import { getLogger } from '@titan/logging';
-import { agentRuns, agentSteps, userContext, getChatHistory, saveChatMessage, agentProfiles } from '@titan/database';
+import { agentRuns, agentSteps, userContext, userProjects, getChatHistory, saveChatMessage, agentProfiles } from '@titan/database';
 import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { getGlobalMemoryClient } from '@titan/memory';
 import { getWsServer } from '../ws-instance.js';
@@ -193,6 +193,13 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       // Load user's saved context (preferences, facts) — Smart Memory
       const userContextItems = await userContext.getAll(ownerId);
       log.info({ ownerId, contextKeys: Object.keys(userContextItems).length }, 'user context loaded');
+
+      // Load user's default project — Project Context
+      const defaultProject = await userProjects.getDefault(ownerId);
+      if (defaultProject) {
+        userContextItems['active_project'] = `${defaultProject.name} (${defaultProject.path ?? defaultProject.repoUrl ?? 'no path'})`;
+        log.info({ ownerId, project: defaultProject.name }, 'default project injected');
+      }
 
       const runner = new AgentRunner({
         llm: (() => { const p = createProviderFromEnv(); if (!p) throw new Error('LLM provider not configured'); return p; })(),
