@@ -43,17 +43,25 @@ Titan: (يعرف من userContextItems إنه المطور → يرد accordingl
 
 ---
 
-### 1.2 📁 Project Context
+### 1.2 📁 Project Context ✅ DONE (17 يونيو 2026)
 **الهدف:** لما تقول "شوف المشروع الفلاني" Titan يعرف إنت بتتكلم على إيه (مسارات، repo، branch).
 
-**الخطوات:**
-1. Migration: جدول `user_projects` (name, path, repo_url, owner_id)
-2. Tool جديد: `set_project` — يخزن مشروع
-3. Tool جديد: `get_project` — يجيب تفاصيل المشروع
-4. Telegram: لو الـ message فيه اسم مشروع معروف، يضيفه للـ context
+**اللي اتعمل:**
+- ✅ Migration 0019: جدول `user_projects` (name, path, repo_url, branch, is_default)
+- ✅ `userProjects.ts`: CRUD operations (set, get, getDefault, list, delete)
+- ✅ `set_project` tool: يخزن مشروع مع isDefault
+- ✅ `get_project` tool: يجيب default أو specific project
+- ✅ Telegram route: يحقن `active_project` في `userContextItems` تلقائياً
+- ✅ Migration 0020: added tools to `allowed_tools`
 
-**مخاطر:** ⚠️ قليلة — tools جديدة مش هتأثر على القديم
-**Backward Compatible:** ✅ نعم
+**الاستخدام:**
+```
+User: "المشروع بتاعي The-Titan في /app/Titan"
+Titan: (يستخدم set_project tool → isDefault=true)
+
+User (بعد كدا): "شوف الكود"
+Titan: (يعرف active_project = The-Titan → يدور في /app/Titan)
+```
 
 ---
 
