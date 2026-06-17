@@ -16,22 +16,30 @@
 - [x] **Critical Final Instruction** — override للـ memory القديمة
 - [x] **SSH Keyword Detection** — forcing tool usage لما الـ user يطلب سيرفر
 - [x] **Multi-tasking (partial)** — Agent runs في background
+- [x] **Smart Memory** — user preferences auto-injected into every agent run
 
 ---
 
 ## 🔥 Priority 1: الأساسيات (الأسبوع ده)
 
-### 1.1 🧠 Smart Memory
+### 1.1 🧠 Smart Memory ✅ DONE (17 يونيو 2026)
 **الهدف:** Titan يفتكر إنك المطور، يفتكر إنك بتحب الرد القصير، يفتكر المشاريع اللي شغال فيها — من غير ما تقوله في كل مرة.
 
-**الخطوات:**
-1. Migration: جدول `user_preferences` (key-value store per user)
-2. `remember` tool: يخزن preferences زي `tone:short`, `relationship:developer`
-3. `recall` tool: يجيب الـ preferences ويحطها في الـ system prompt
-4. `buildSystemPrompt`: يضيف الـ preferences تلقائياً
+**اللي اتعمل:**
+- ✅ `user_context` table موجود (key-value store per user)
+- ✅ `remember` tool: يخزن preferences زي `tone:short`, `relationship:developer`
+- ✅ `recall` tool: يجيب الـ preferences
+- ✅ Telegram route: يجيب `userContext.getAll(ownerId)` ويحقنها في `AgentRunner.userContextItems`
+- ✅ `buildSystemPrompt` في `runner.ts`: يحول `userContextItems` لـ `memoryItems` تلقائياً
 
-**مخاطر:** ⚠️ قليلة — existing `memoryItems` already working
-**Backward Compatible:** ✅ نعم
+**الاستخدام:**
+```
+User: "تذكر إني المطور"
+Titan: (يستخدم remember tool → key: "relationship", value: "developer")
+
+User (بعد كدا): "عدل الكود"
+Titan: (يعرف من userContextItems إنه المطور → يرد accordingly)
+```
 
 ---
 
