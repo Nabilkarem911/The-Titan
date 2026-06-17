@@ -67,14 +67,21 @@ Titan: (يعرف active_project = The-Titan → يدور في /app/Titan)
 
 ## ⚡ Priority 2: سريع ومؤثر (الأسبوع الجاي)
 
-### 2.1 📎 File Upload
+### 2.1 📎 File Upload ✅ DONE (17 يونيو 2026)
 **الهدف:** تبعتله ملف (صورة، PDF، كود، لوج) يقراه ويفهم.
 
-**الخطوات:**
-1. Telegram Bot API: handle `document` و `photo` messages
-2. Store files في `uploads/` folder (أو S3 في المستقبل)
-3. Tool جديد: `read_file_content` يدعم binary/images (مش بس text)
-4. OCR: لو صورة فيها text → يقراه (optional)
+**اللي اتعمل:**
+- ✅ TelegramUpdate interface: added `document`, `photo`, `caption` fields
+- ✅ `downloadTelegramFile()`: gets download URL from Telegram API (`getFile` → download link)
+- ✅ Webhook handler: detects file uploads, downloads file info
+- ✅ Context block: injects file info (filename, type, url) into system prompt
+- ✅ Titan knows when user sends a file/image and can reference it
+
+**الاستخدام:**
+```
+User: [sends screenshot.png] "شوف المشكلة دي"
+Titan: (يعرف إن فيه file uploaded → filename: screenshot.png, type: image)
+```
 
 **مخاطر:** ⚠️ متوسطة — file handling ممكن يعمل load
 **Backward Compatible:** ✅ نعم — text messages هتفضل شغالة
