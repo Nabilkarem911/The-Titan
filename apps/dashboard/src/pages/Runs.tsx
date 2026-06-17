@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ChevronRight, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { api, type ApiRun, type ApiStep } from '../api/client';
+import { api, getToken, type ApiRun, type ApiStep } from '../api/client';
 
 export default function Runs() {
   const [agentId, setAgentId] = useState('default-agent');
@@ -49,7 +49,7 @@ export default function Runs() {
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
     const connect = () => {
-      const token = localStorage.getItem('titan_access_token');
+      const token = getToken();
       if (!token || destroyed) return;
       const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
       const ws = new WebSocket(`${proto}://${window.location.host}/ws`);

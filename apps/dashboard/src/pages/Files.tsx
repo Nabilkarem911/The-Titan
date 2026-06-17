@@ -22,8 +22,7 @@ interface FileEntry {
   modifiedAt: string;
 }
 
-const API_BASE = (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE_URL ?? '/api/v1';
-const getToken = () => localStorage.getItem('titan_access_token') ?? '';
+import { API_BASE, getToken } from '../api/client';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -189,7 +188,7 @@ export default function Files() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm">
+      <nav className="flex items-center gap-2 text-sm" aria-label="Breadcrumb">
         {breadcrumbs.map((crumb, idx) => (
           <span key={idx} className="flex items-center gap-1">
             {idx > 0 && <span className="text-slate-600">/</span>}
@@ -206,7 +205,7 @@ export default function Files() {
             </button>
           </span>
         ))}
-      </div>
+      </nav>
 
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -229,7 +228,7 @@ export default function Files() {
           <Archive className="h-4 w-4" />
           Download ZIP
         </button>
-        <button onClick={fetchFiles} className="btn-secondary">
+        <button onClick={fetchFiles} className="btn-secondary" aria-label="Refresh file list">
           <RefreshCw className="h-4 w-4" />
         </button>
       </div>
@@ -245,6 +244,7 @@ export default function Files() {
             placeholder="Folder name..."
             className="input flex-1"
             autoFocus
+            aria-label="New folder name"
           />
           <button onClick={handleCreateFolder} className="btn-primary">Create</button>
           <button onClick={() => { setShowNewFolder(false); setNewFolderName(''); }} className="btn-secondary">Cancel</button>
@@ -253,7 +253,7 @@ export default function Files() {
 
       {/* Error */}
       {error && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm" role="alert">
           {error}
         </div>
       )}
@@ -313,6 +313,7 @@ export default function Files() {
                           onClick={() => handleDownload(entry.name, entry.type)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
                           title="Download"
+                          aria-label={`Download ${entry.name}`}
                         >
                           <Download className="h-4 w-4" />
                         </button>
@@ -320,6 +321,7 @@ export default function Files() {
                           onClick={() => handleDelete(entry.name)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                           title="Delete"
+                          aria-label={`Delete ${entry.name}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>

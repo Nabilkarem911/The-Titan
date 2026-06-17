@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, Loader2, List, Activity, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { QUEUE_NAMES } from '../api/constants';
+import { getToken } from '../api/client';
 
 interface QueueInfo {
   name: string;
@@ -15,8 +16,6 @@ export default function Queue() {
   const [queues, setQueues] = useState<QueueInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  const getToken = () => localStorage.getItem('titan_access_token') ?? '';
 
   const fetchStats = async () => {
     setLoading(true);

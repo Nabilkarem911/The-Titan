@@ -8,6 +8,7 @@ import {
   Terminal as TerminalIcon,
   Zap,
 } from 'lucide-react';
+import { getToken } from '../api/client';
 
 interface LogEntry {
   id: string;
@@ -43,7 +44,7 @@ export default function LogsPage() {
   }, [logs, autoScroll]);
 
   useEffect(() => {
-    const token = localStorage.getItem('titan_access_token') ?? '';
+    const token = getToken();
     const ws = new WebSocket(`${WS_BASE}?token=${encodeURIComponent(token)}`);
     wsRef.current = ws;
 

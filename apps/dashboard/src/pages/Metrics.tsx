@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, Loader2, Activity, Clock, Zap, BarChart3 } from 'lucide-react';
+import { getToken } from '../api/client';
 
 interface MetricValue {
   name: string;
@@ -19,8 +20,6 @@ export default function Metrics() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  const getToken = () => localStorage.getItem('titan_access_token') ?? '';
 
   const fetchMetrics = async () => {
     setLoading(true);

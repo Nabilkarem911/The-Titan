@@ -30,7 +30,7 @@ interface StepInfo {
   latencyMs: number | null;
 }
 
-const API_BASE = ((import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE_URL) ?? '/api/v1';
+import { API_BASE, getToken } from '../api/client';
 
 export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -52,8 +52,6 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, currentSteps, streamingText, scrollToBottom]);
-
-  const getToken = () => localStorage.getItem('titan_access_token') ?? '';
 
   const startListening = () => {
     const w = window as unknown as Record<string, unknown>;
@@ -259,7 +257,7 @@ export default function Chat() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto py-4 space-y-4" role="log" aria-live="polite" aria-label="Chat messages">
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Bot className="h-12 w-12 text-slate-700 mb-4" />
@@ -304,7 +302,7 @@ export default function Chat() {
         )}
 
         {error && (
-          <div className="flex gap-2 items-center ml-10 text-red-400">
+          <div className="flex gap-2 items-center ml-10 text-red-400" role="alert">
             <AlertCircle className="h-4 w-4" />
             <span className="text-sm">{error}</span>
           </div>
@@ -321,7 +319,7 @@ export default function Chat() {
               <div key={idx} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs text-slate-300">
                 <FileCode className="h-3 w-3 text-indigo-400" />
                 <span className="max-w-[120px] truncate">{att.name}</span>
-                <button onClick={() => removeAttachment(idx)} className="text-slate-500 hover:text-red-400 ml-1">
+                <button onClick={() => removeAttachment(idx)} className="text-slate-500 hover:text-red-400 ml-1" aria-label={`Remove attachment ${att.name}`}>
                   <X className="h-3 w-3" />
                 </button>
               </div>
@@ -329,14 +327,15 @@ export default function Chat() {
           </div>
         )}
         <div className="flex gap-2 items-end">
-          <label className="flex-shrink-0 p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 cursor-pointer transition-colors">
+          <label className="flex-shrink-0 p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 cursor-pointer transition-colors" aria-label="Attach file">
             <Paperclip className="h-4 w-4" />
-            <input type="file" className="hidden" onChange={handleFileSelect} multiple disabled={isLoading} />
+            <input type="file" className="hidden" onChange={handleFileSelect} multiple disabled={isLoading} aria-label="Select files to attach" />
           </label>
           <button
             onClick={isListening ? stopListening : startListening}
             className={`flex-shrink-0 p-2.5 rounded-lg border transition-colors ${isListening ? 'bg-red-500/10 border-red-500/30 text-red-400 animate-pulse' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10'}`}
             title={isListening ? 'Stop listening' : 'Voice input'}
+            aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
           >
             {isListening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </button>
@@ -349,11 +348,13 @@ export default function Chat() {
             className="input resize-none min-h-[44px] max-h-[200px] flex-1"
             rows={1}
             disabled={isLoading}
+            aria-label="Chat message input"
           />
           <button
             onClick={sendMessage}
             disabled={(!input.trim() && attachments.length === 0) || isLoading}
             className="btn-primary h-[44px] px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Send message"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -392,6 +393,7 @@ function MessageBubble({ message, onSpeak }: { message: ChatMessage; onSpeak?: (
               onClick={() => onSpeak(message.content)}
               className="mt-1.5 text-slate-500 hover:text-indigo-400 transition-colors"
               title="Read aloud"
+              aria-label="Read message aloud"
             >
               <Volume2 className="h-3 w-3" />
             </button>
@@ -423,6 +425,7 @@ function MessageBubble({ message, onSpeak }: { message: ChatMessage; onSpeak?: (
           <button
             onClick={() => setShowSteps(!showSteps)}
             className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1"
+            aria-expanded={showSteps}
           >
             <Brain className="h-3 w-3" />
             {showSteps ? 'Hide' : 'Show'} {message.steps.length} thinking steps

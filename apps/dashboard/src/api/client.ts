@@ -1,6 +1,6 @@
 const _env = (import.meta as unknown as { env: Record<string, string> }).env;
-const API_BASE = _env.VITE_API_BASE_URL ?? '/api/v1';
-const getToken = () => localStorage.getItem('titan_access_token') ?? '';
+export const API_BASE = _env.VITE_API_BASE_URL ?? '/api/v1';
+export const getToken = () => localStorage.getItem('titan_access_token') ?? '';
 
 export interface ApiRun {
   id: string;

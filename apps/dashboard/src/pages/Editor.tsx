@@ -19,8 +19,7 @@ interface FileEntry {
   modifiedAt: string;
 }
 
-const API_BASE = (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE_URL ?? '/api/v1';
-const getToken = () => localStorage.getItem('titan_access_token') ?? '';
+import { API_BASE, getToken } from '../api/client';
 
 function getFileIcon(name: string) {
   const ext = name.split('.').pop()?.toLowerCase() ?? '';

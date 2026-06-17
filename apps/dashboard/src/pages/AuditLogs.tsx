@@ -27,8 +27,7 @@ interface VerifyResult {
   checked: number;
 }
 
-const API_BASE = (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE_URL ?? '/api/v1';
-const getToken = () => localStorage.getItem('titan_access_token') ?? '';
+import { API_BASE, getToken } from '../api/client';
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
