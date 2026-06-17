@@ -27,7 +27,7 @@ export async function calculate(params: { expression: string }): Promise<Calcula
     .replace(/cos\(/g, 'Math.cos(')
     .replace(/tan\(/g, 'Math.tan(')
     .replace(/pi/gi, 'Math.PI')
-    .replace(/e(?!\d)/g, 'Math.E');
+    .replace(/(?<![a-z])e(?![a-z\d])/gi, 'Math.E');
 
   // eslint-disable-next-line no-new-func
   const result = Function(`"use strict"; return (${normalized})`)() as number;

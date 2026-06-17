@@ -361,10 +361,9 @@ describe('Auth routes', () => {
 // METRICS ROUTES
 // ===========================================================================
 describe('Metrics routes', () => {
-  it('GET /metrics returns prometheus text (public)', async () => {
+  it('GET /metrics requires auth', async () => {
     const res = await app.inject({ method: 'GET', url: '/metrics' });
-    expect(res.statusCode).toBe(200);
-    expect(res.headers['content-type']).toContain('text/plain');
+    expect(res.statusCode).toBe(401);
   });
 
   it('GET /metrics.json requires auth', async () => {
