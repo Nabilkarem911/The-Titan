@@ -66,30 +66,56 @@ export class OpenAiProvider implements LlmProvider {
       tool_choice: (opts?.tools && opts.tools.length > 0) ? 'auto' : undefined,
     };
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60_000);
-    let res: Response;
-    try {
-      res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.config.apiKey}`,
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-    } catch (err) {
-      clearTimeout(timeout);
-      if ((err as Error).name === 'AbortError') throw new Error('LLM request timed out after 60s');
-      throw err;
+    // Retry loop with exponential backoff for transient errors
+    const maxRetries = this.config.maxRetries ?? 2;
+    let lastErr: Error | undefined;
+    let res: Response | undefined;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (attempt > 0) {
+        const delayMs = 500 * Math.pow(2, attempt - 1); // 500ms, 1000ms, 2000ms
+        log.info({ attempt, delayMs }, 'retrying LLM request after transient error');
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60_000);
+      try {
+        res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.config.apiKey}`,
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (!res.ok) {
+          const text = await res.text();
+          // Retry on transient HTTP errors (502, 503, 504, 429)
+          if ([502, 503, 504, 429].includes(res.status)) {
+            lastErr = new Error(`OpenAI API error ${res.status}: ${text}`);
+            log.warn({ status: res.status, attempt, maxRetries }, 'transient LLM error, will retry');
+            continue;
+          }
+          log.error({ status: res.status, body: text }, 'OpenAI API error');
+          throw new Error(`OpenAI API error ${res.status}: ${text}`);
+        }
+        break; // success
+      } catch (err) {
+        clearTimeout(timeout);
+        if ((err as Error).name === 'AbortError') {
+          lastErr = new Error('LLM request timed out after 60s');
+          log.warn({ attempt, maxRetries }, 'LLM timeout, will retry');
+          continue;
+        }
+        // Network / fetch errors are retriable
+        lastErr = err as Error;
+        log.warn({ err: (err as Error).message, attempt, maxRetries }, 'LLM fetch error, will retry');
+        continue;
+      }
     }
-    clearTimeout(timeout);
-
-    if (!res.ok) {
-      const text = await res.text();
-      log.error({ status: res.status, body: text }, 'OpenAI API error');
-      throw new Error(`OpenAI API error ${res.status}: ${text}`);
+    if (!res || !res.ok) {
+      throw lastErr ?? new Error('LLM request failed after retries');
     }
 
     const data = (await res.json()) as {
