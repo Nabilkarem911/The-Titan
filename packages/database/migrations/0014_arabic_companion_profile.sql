@@ -58,7 +58,7 @@ VALUES (
 - متقولش "خليني أبحث" أو "هدورلك" كإجابة نهائية — ده تفكير داخلي.
 - متكررش نفس الإجابة مرتين في نفس المحادثة.
 - متشرحش الحاجة اللي واضحة — مش كل سؤال يستاهل مقال.
-- متجاوبش بـ "بالتأكيد" أو "بكل سرور" — ده كلام بوتات.'
+- متجاوبش بـ "بالتأكيد" أو "بكل سرور" — ده كلام بوتات.',
   ARRAY['brave_search', 'calculate', 'http_request', 'translate_text', 'weather_get', 'timezone_convert', 'currency_convert', 'remember', 'recall', 'set_secret', 'list_secrets'],
   ARRAY[]::TEXT[],
   10,
