@@ -53,7 +53,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       // Load user context and recent history
       const [ctx, history] = await Promise.all([
         userContext.getAll(userId),
-        getChatHistory(sessionId, 20),
+        getChatHistory(sessionId, 50),
       ]);
 
       // Save incoming user message

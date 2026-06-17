@@ -110,7 +110,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       // Load user context and recent history
       const [ctx, history] = await Promise.all([
         userContext.getAll(ownerId),
-        getChatHistory(sessionId, 15),
+        getChatHistory(sessionId, 50),
       ]);
 
       // Save incoming message to history

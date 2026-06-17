@@ -107,7 +107,7 @@ export const userContext = {
   },
 };
 
-export async function getChatHistory(sessionId: string, limit = 20): Promise<Array<{ role: string; content: string }>> {
+export async function getChatHistory(sessionId: string, limit = 50): Promise<Array<{ role: string; content: string }>> {
   const r = await query<{ role: string; content: string }>(
     `SELECT role, content FROM memory_messages
      WHERE session_id = $1
