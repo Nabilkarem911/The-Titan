@@ -219,26 +219,38 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         },
       });
 
-      const result = await runner.run({
+      // Start background run — do not await so next messages can be processed concurrently
+      log.info({ runId, chatId }, 'background agent run started');
+      runner.run({
         runId,
         agentId,
         prompt: text,
         systemPromptExtra: (profileSystemPrompt ? profileSystemPrompt + '\n\n' : '') + contextBlock,
+      }).then(async (result) => {
+        const answer = result.finalAnswer?.trim() || 'لم أتمكن من إكمال المهمة.';
+        await saveChatMessage(sessionId, 'assistant', answer);
+        await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, answer);
+        log.info({ runId, chatId }, 'background agent run completed');
+      }).catch(async (err) => {
+        log.error({ chatId, err }, 'background agent run failed');
+        await sendTelegramMessage(
+          cfg.TELEGRAM_BOT_TOKEN,
+          chatId,
+          '❌ حدث خطأ أثناء تنفيذ المهمة. حاول مرة أخرى.',
+        );
       });
 
-      const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
-
-      // Save assistant reply to history
-      await saveChatMessage(sessionId, 'assistant', answer);
-
-      await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, answer);
-
+      // Send immediate acknowledgment so user knows the task was received
+      const ackText = lang === 'ar'
+        ? `🔄 شغال: ${text.length > 40 ? text.substring(0, 40) + '...' : text}`
+        : `🔄 Working: ${text.length > 40 ? text.substring(0, 40) + '...' : text}`;
+      sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, ackText).catch(() => {});
     } catch (err) {
-      log.error({ chatId, err }, 'agent run failed for telegram message');
+      log.error({ chatId, err }, 'telegram handler setup failed');
       await sendTelegramMessage(
         cfg.TELEGRAM_BOT_TOKEN,
         chatId,
-        '❌ حدث خطأ أثناء تنفيذ المهمة. حاول مرة أخرى.',
+        '❌ حدث خطأ. حاول مرة أخرى.',
       );
     }
   });
