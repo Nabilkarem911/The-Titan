@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { getLogger } from '@titan/logging';
+import { encryptToJson, decryptFromJson } from '@titan/auth';
 import { requireAuth } from '../plugins/auth.js';
 
 const log = getLogger().child({ component: 'user-keys-routes' });
@@ -15,32 +16,7 @@ interface StoredKey {
   createdAt: string;
 }
 
-// In-memory store for MVP. In production, store in PostgreSQL with encryption.
 const keyStore = new Map<string, StoredKey[]>();
-
-function getEncryptionKey(): string {
-  return process.env.ENCRYPTION_KEY ?? process.env.API_KEY_ENCRYPTION_KEY?.substring(0, 32) ?? 'titan-default-key-change-me-now!';
-}
-
-function encrypt(value: string): string {
-  // Simple XOR-based obfuscation for MVP. Use AES-256-GCM in production.
-  const key = getEncryptionKey();
-  let result = '';
-  for (let i = 0; i < value.length; i++) {
-    result += String.fromCharCode(value.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return Buffer.from(result, 'binary').toString('base64');
-}
-
-function decrypt(encrypted: string): string {
-  const key = getEncryptionKey();
-  const decoded = Buffer.from(encrypted, 'base64').toString('binary');
-  let result = '';
-  for (let i = 0; i < decoded.length; i++) {
-    result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 function maskValue(value: string): string {
   if (value.length <= 8) return '****';
@@ -80,7 +56,7 @@ export const userKeyRoutes: FastifyPluginAsync = async (app) => {
       userId,
       name,
       provider,
-      encryptedValue: encrypt(value),
+      encryptedValue: encryptToJson(value),
       maskedValue: maskValue(value),
       createdAt: new Date().toISOString(),
     };
@@ -126,6 +102,6 @@ export const userKeyRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(404).send({ error: 'Key not found' });
     }
 
-    return { value: decrypt(key.encryptedValue) };
+    return { value: decryptFromJson(key.encryptedValue) };
   });
 };

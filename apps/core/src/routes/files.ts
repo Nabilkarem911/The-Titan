@@ -101,7 +101,8 @@ export const fileRoutes: FastifyPluginAsync = async (app) => {
           await mkdir(targetPath, { recursive: true });
         }
         if (part.type === 'file' && part.filename && part.file) {
-          const filePath = join(targetPath, part.filename);
+          const safeName = part.filename.replace(/[/\\]/g, '_').replace(/\.\./g, '_');
+          const filePath = join(targetPath, safeName);
           const chunks: Buffer[] = [];
           for await (const chunk of part.file) {
             chunks.push(chunk);
@@ -159,27 +160,27 @@ export const fileRoutes: FastifyPluginAsync = async (app) => {
     // Simple approach: list all files and send as JSON with contents for now
     // In production, use archiver or similar. For MVP, we'll use a simpler approach.
     try {
-      const { execSync } = await import('node:child_process');
+      const { execFile } = await import('node:child_process');
+      const { promisify } = await import('node:util');
+      const execFileAsync = promisify(execFile);
       const isWindows = process.platform === 'win32';
+      const tmpZip = join(process.env.TEMP ?? '/tmp', `titan-${Date.now()}.zip`);
 
       reply.header('Content-Type', 'application/zip');
       reply.header('Content-Disposition', 'attachment; filename="workspace.zip"');
 
       if (isWindows) {
-        // Use PowerShell Compress-Archive
-        const tmpZip = join(process.env.TEMP ?? '/tmp', `titan-${userId}-${Date.now()}.zip`);
-        execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${targetDir}\\*' -DestinationPath '${tmpZip}' -Force"`, { timeout: 30000 });
-        const stream = createReadStream(tmpZip);
-        stream.on('end', () => { rm(tmpZip, { force: true }).catch(() => {}); });
-        return reply.send(stream);
+        await execFileAsync('powershell', [
+          '-NoProfile', '-Command',
+          `Compress-Archive -Path (Join-Path ${JSON.stringify(targetDir)} '*') -DestinationPath ${JSON.stringify(tmpZip)} -Force`,
+        ], { timeout: 30000 });
       } else {
-        // Use zip command on Linux
-        const tmpZip = `/tmp/titan-${userId}-${Date.now()}.zip`;
-        execSync(`cd "${targetDir}" && zip -r "${tmpZip}" .`, { timeout: 30000 });
-        const stream = createReadStream(tmpZip);
-        stream.on('end', () => { rm(tmpZip, { force: true }).catch(() => {}); });
-        return reply.send(stream);
+        await execFileAsync('zip', ['-r', tmpZip, '.'], { cwd: targetDir, timeout: 30000 });
       }
+
+      const stream = createReadStream(tmpZip);
+      stream.on('end', () => { rm(tmpZip, { force: true }).catch(() => {}); });
+      return reply.send(stream);
     } catch (err) {
       log.error({ err }, 'zip creation failed');
       return reply.status(500).send({ error: 'Failed to create zip' });

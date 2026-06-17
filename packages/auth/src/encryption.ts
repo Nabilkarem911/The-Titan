@@ -5,9 +5,9 @@ const IV_LENGTH = 16;
 const SALT_LENGTH = 32;
 
 function getKey(salt: Buffer): Buffer {
-  const secret = process.env['ENCRYPTION_KEY'];
+  const secret = process.env['ENCRYPTION_KEY'] ?? process.env['API_KEY_ENCRYPTION_KEY'];
   if (!secret) {
-    throw new Error('ENCRYPTION_KEY environment variable is required for encryption operations');
+    throw new Error('ENCRYPTION_KEY or API_KEY_ENCRYPTION_KEY environment variable is required for encryption operations');
   }
   return scryptSync(secret, salt, 32);
 }

@@ -5,7 +5,7 @@ import { getRedis, getQueueStats } from '@titan/queue';
 import { requireAuth } from '../plugins/auth.js';
 
 export const metricsRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
-  app.get('/metrics', async (_req, reply) => {
+  app.get('/metrics', { preHandler: requireAuth }, async (_req, reply) => {
     const body = renderPrometheus();
     return reply.type('text/plain; version=0.0.4').send(body);
   });

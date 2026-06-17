@@ -9,8 +9,20 @@ import { requireAuth } from '../plugins/auth.js';
 import { getWsServer } from '../ws-instance.js';
 import { detectLanguage } from '../lang-detect.js';
 import { readFile } from 'node:fs/promises';
+import { join, resolve, relative } from 'node:path';
 
 const log = getLogger().child({ component: 'chat' });
+
+function getWorkspaceRoot(userId: string): string {
+  const base = process.env.WORKSPACE_ROOT ?? join(process.cwd(), 'workspaces');
+  return join(base, userId);
+}
+
+function isPathInsideWorkspace(workspaceRoot: string, filePath: string): boolean {
+  const resolved = resolve(filePath);
+  const rel = relative(workspaceRoot, resolved);
+  return !rel.startsWith('..') && !resolve(rel).startsWith(resolve('/'));
+}
 
 const ChatInputSchema = z.object({
   sessionId: z.string().min(1).max(200).optional(),
@@ -35,11 +47,17 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const userId = req.auth.userId;
       const sessionId = input.sessionId ?? `session:${userId}:${input.agentId}`;
 
-      // Read attached files and inject into prompt
+      // Read attached files and inject into prompt (restricted to user workspace)
       let enrichedPrompt = input.prompt;
       if (input.files.length > 0) {
+        const workspaceRoot = getWorkspaceRoot(userId);
         const fileContents: string[] = [];
         for (const filePath of input.files) {
+          if (!isPathInsideWorkspace(workspaceRoot, filePath)) {
+            log.warn({ filePath, userId }, 'blocked file read outside workspace');
+            fileContents.push(`--- FILE: ${filePath} ---\n[Access denied: path outside workspace]\n--- END FILE ---`);
+            continue;
+          }
           try {
             const content = await readFile(filePath, 'utf-8');
             fileContents.push(`--- FILE: ${filePath} ---\n${content.slice(0, 10_000)}\n--- END FILE ---`);
@@ -265,8 +283,8 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const agentId = req.query.agentId ?? 'default-agent';
       const sessionId = req.query.sessionId ?? `session:${userId}:${agentId}`;
 
-      // Ownership check: sessionId must belong to the authenticated user
-      if (!sessionId.includes(userId)) {
+      // Ownership check: sessionId must start with the user's prefix
+      if (!sessionId.startsWith(`session:${userId}:`) && !sessionId.startsWith(`tg:`) ) {
         throw new ValidationError('Access denied: session does not belong to you');
       }
 

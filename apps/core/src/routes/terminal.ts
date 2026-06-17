@@ -64,14 +64,27 @@ async function handleTerminalConnection(ws: import('ws').WebSocket, userId: stri
   const shell = isWindows ? 'powershell.exe' : 'bash';
   const shellArgs = isWindows ? ['-NoProfile', '-Command', '-'] : ['-i'];
 
+  const safeEnv: Record<string, string> = {
+    PATH: process.env.PATH ?? '',
+    HOME: process.env.HOME ?? process.env.USERPROFILE ?? '',
+    TERM: 'xterm-256color',
+    FORCE_COLOR: '1',
+    LANG: process.env.LANG ?? 'en_US.UTF-8',
+    PS1: '\\[\\e[32m\\]titan\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[0m\\]$ ',
+  };
+  if (process.env.SHELL) safeEnv.SHELL = process.env.SHELL;
+  if (process.platform === 'win32') {
+    safeEnv.SYSTEMROOT = process.env.SYSTEMROOT ?? 'C:\\Windows';
+    safeEnv.COMSPEC = process.env.COMSPEC ?? 'C:\\Windows\\system32\\cmd.exe';
+    if (process.env.APPDATA) safeEnv.APPDATA = process.env.APPDATA;
+    if (process.env.LOCALAPPDATA) safeEnv.LOCALAPPDATA = process.env.LOCALAPPDATA;
+    if (process.env.TEMP) safeEnv.TEMP = process.env.TEMP;
+    if (process.env.TMP) safeEnv.TMP = process.env.TMP;
+  }
+
   const proc = spawn(shell, shellArgs, {
     cwd: workspaceRoot,
-    env: {
-      ...process.env,
-      TERM: 'xterm-256color',
-      FORCE_COLOR: '1',
-      PS1: '\\[\\e[32m\\]titan\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[0m\\]$ ',
-    },
+    env: safeEnv,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 
