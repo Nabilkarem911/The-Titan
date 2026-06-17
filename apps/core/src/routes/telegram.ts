@@ -190,8 +190,13 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
 
       const memory = await getGlobalMemoryClient();
 
+      // Load user's saved context (preferences, facts) — Smart Memory
+      const userContextItems = await userContext.getAll(ownerId);
+      log.info({ ownerId, contextKeys: Object.keys(userContextItems).length }, 'user context loaded');
+
       const runner = new AgentRunner({
         llm: (() => { const p = createProviderFromEnv(); if (!p) throw new Error('LLM provider not configured'); return p; })(),
+        userContextItems,
         executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
           return registry.execute(call.name, call.params);
         },
