@@ -264,11 +264,6 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         );
       });
 
-      // Send immediate acknowledgment so user knows the task was received
-      const ackText = lang === 'ar'
-        ? `🔄 شغال: ${text.length > 40 ? text.substring(0, 40) + '...' : text}`
-        : `🔄 Working: ${text.length > 40 ? text.substring(0, 40) + '...' : text}`;
-      sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, ackText).catch(() => {});
     } catch (err) {
       log.error({ chatId, err }, 'telegram handler setup failed');
       await sendTelegramMessage(
