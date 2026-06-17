@@ -18,12 +18,12 @@
     "test": "echo 'no tests yet'"
   },
   "dependencies": {
-    "@titan/shared": "*",
-    "@titan/config": "*",
-    "@titan/logging": "*",
-    "@titan/queue": "*",
-    "@titan/memory": "*",
-    "@titan/observability": "*",
+    "@titan/shared": "0.1.0",
+    "@titan/config": "0.1.0",
+    "@titan/logging": "0.1.0",
+    "@titan/queue": "0.1.0",
+    "@titan/memory": "0.1.0",
+    "@titan/observability": "0.1.0",
     "zod": "3.23.8"
   },
   "devDependencies": {

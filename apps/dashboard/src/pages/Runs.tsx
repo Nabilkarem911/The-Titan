@@ -11,6 +11,7 @@ export default function Runs() {
   const [stepsLoading, setStepsLoading] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const selectedRunIdRef = useRef<string | null>(null);
+  const fetchRunsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   selectedRunIdRef.current = selectedRunId;
 
   const fetchRuns = useCallback(async () => {
@@ -72,7 +73,8 @@ export default function Runs() {
                 return [...prev, step as unknown as ApiStep];
               });
             }
-            fetchRuns();
+            if (fetchRunsTimerRef.current) clearTimeout(fetchRunsTimerRef.current);
+            fetchRunsTimerRef.current = setTimeout(() => fetchRuns(), 1000);
           }
           if (msg.method === 'agent.run.updated') {
             const { runId, status, currentStep, tokensUsed, finalAnswer } = msg.params as {
@@ -102,6 +104,7 @@ export default function Runs() {
     return () => {
       destroyed = true;
       if (retryTimer) clearTimeout(retryTimer);
+      if (fetchRunsTimerRef.current) clearTimeout(fetchRunsTimerRef.current);
       wsRef.current?.close();
       wsRef.current = null;
     };

@@ -20,14 +20,7 @@ interface FileEntry {
 }
 
 import { API_BASE, getToken } from '../api/client';
-
-function getFileIcon(name: string) {
-  const ext = name.split('.').pop()?.toLowerCase() ?? '';
-  if (['ts', 'tsx', 'js', 'jsx', 'py', 'go', 'rs', 'java', 'cpp', 'c', 'html', 'css', 'json'].includes(ext)) {
-    return <FileCode className="h-4 w-4 text-blue-400" />;
-  }
-  return <FolderOpen className="h-4 w-4 text-slate-400" />;
-}
+import { getFileIcon } from '../utils/format';
 
 export default function CodeEditor() {
   const [currentPath, setCurrentPath] = useState('/');
@@ -233,7 +226,7 @@ export default function CodeEditor() {
                     {entry.type === 'directory' ? (
                       <FolderOpen className="h-4 w-4 text-amber-400" />
                     ) : (
-                      getFileIcon(entry.name)
+                      getFileIcon(entry.name, 'h-4 w-4')
                     )}
                     <span className="truncate">{entry.name}</span>
                   </button>

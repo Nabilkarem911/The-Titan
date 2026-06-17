@@ -17,8 +17,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@titan/logging": "*",
-    "@titan/observability": "*",
+    "@titan/logging": "0.1.0",
+    "@titan/observability": "0.1.0",
     "dockerode": "^5.0.0"
   },
   "devDependencies": {

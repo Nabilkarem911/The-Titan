@@ -8,6 +8,7 @@ export interface AnthropicProviderConfig {
   apiKey: string;
   model: string;
   baseUrl?: string;
+  maxRetries?: number;
 }
 
 export class AnthropicProvider implements LlmProvider {
@@ -76,31 +77,57 @@ export class AnthropicProvider implements LlmProvider {
       })) : undefined,
     };
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60_000);
-    let res: Response;
-    try {
-      res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': this.config.apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-    } catch (err) {
-      clearTimeout(timeout);
-      if ((err as Error).name === 'AbortError') throw new Error('Anthropic request timed out after 60s');
-      throw err;
+    // Retry loop with exponential backoff for transient errors
+    const maxRetries = this.config.maxRetries ?? 2;
+    let lastErr: Error | undefined;
+    let res: Response | undefined;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (attempt > 0) {
+        const delayMs = 500 * Math.pow(2, attempt - 1); // 500ms, 1000ms, 2000ms
+        log.info({ attempt, delayMs }, 'retrying Anthropic request after transient error');
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60_000);
+      try {
+        res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': this.config.apiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (!res.ok) {
+          const text = await res.text();
+          // Retry on transient HTTP errors (502, 503, 504, 429)
+          if ([502, 503, 504, 429].includes(res.status)) {
+            lastErr = new Error(`Anthropic API error ${res.status}: ${text}`);
+            log.warn({ status: res.status, attempt, maxRetries }, 'transient Anthropic error, will retry');
+            continue;
+          }
+          log.error({ status: res.status, body: text }, 'Anthropic API error');
+          throw new Error(`Anthropic API error ${res.status}: ${text}`);
+        }
+        break; // success
+      } catch (err) {
+        clearTimeout(timeout);
+        if ((err as Error).name === 'AbortError') {
+          lastErr = new Error('Anthropic request timed out after 60s');
+          log.warn({ attempt, maxRetries }, 'Anthropic timeout, will retry');
+          continue;
+        }
+        // Network / fetch errors are retriable
+        lastErr = err as Error;
+        log.warn({ err: (err as Error).message, attempt, maxRetries }, 'Anthropic fetch error, will retry');
+        continue;
+      }
     }
-    clearTimeout(timeout);
-
-    if (!res.ok) {
-      const text = await res.text();
-      log.error({ status: res.status, body: text }, 'Anthropic API error');
-      throw new Error(`Anthropic API error ${res.status}: ${text}`);
+    if (!res || !res.ok) {
+      throw lastErr ?? new Error('Anthropic request failed after retries');
     }
 
     const data = (await res.json()) as {

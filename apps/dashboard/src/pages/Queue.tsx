@@ -20,22 +20,26 @@ export default function Queue() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const results: QueueInfo[] = [];
-      for (const name of QUEUE_NAMES) {
+      const promises = QUEUE_NAMES.map(async (name) => {
         try {
           const res = await fetch(`/api/v1/admin/queues/${name}/stats`, {
             headers: { 'Authorization': `Bearer ${getToken()}` },
           });
           if (res.ok) {
             const data = await res.json();
-            results.push({ name, ...data });
-          } else {
-            results.push({ name, waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 });
+            return { name, ...data } as QueueInfo;
           }
+          return { name, waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 } as QueueInfo;
         } catch {
-          results.push({ name, waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 });
+          return { name, waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 } as QueueInfo;
         }
-      }
+      });
+      const settled = await Promise.allSettled(promises);
+      const results = settled.map((r) =>
+        r.status === 'fulfilled'
+          ? r.value
+          : { name: 'unknown', waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 } as QueueInfo,
+      );
       setQueues(results);
       setLastUpdated(new Date());
     } finally {

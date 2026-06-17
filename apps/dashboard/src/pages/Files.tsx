@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 // Titan Dashboard — File Manager v1
 import {
   FolderOpen,
-  File,
   Upload,
   Download,
   Trash2,
@@ -10,9 +9,6 @@ import {
   ArrowLeft,
   Archive,
   RefreshCw,
-  FileText,
-  FileCode,
-  Image as ImageIcon,
 } from 'lucide-react';
 
 interface FileEntry {
@@ -23,28 +19,7 @@ interface FileEntry {
 }
 
 import { API_BASE, getToken } from '../api/client';
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-}
-
-function getFileIcon(name: string) {
-  const ext = name.split('.').pop()?.toLowerCase() ?? '';
-  if (['ts', 'tsx', 'js', 'jsx', 'py', 'go', 'rs', 'java', 'cpp', 'c', 'html', 'css', 'json'].includes(ext)) {
-    return <FileCode className="h-5 w-5 text-blue-400" />;
-  }
-  if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico'].includes(ext)) {
-    return <ImageIcon className="h-5 w-5 text-purple-400" />;
-  }
-  if (['md', 'txt', 'log', 'env', 'yml', 'yaml', 'toml'].includes(ext)) {
-    return <FileText className="h-5 w-5 text-emerald-400" />;
-  }
-  return <File className="h-5 w-5 text-slate-400" />;
-}
+import { formatBytes, getFileIcon } from '../utils/format';
 
 export default function Files() {
   const [currentPath, setCurrentPath] = useState('/');
