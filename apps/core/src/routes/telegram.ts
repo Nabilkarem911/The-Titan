@@ -5,6 +5,7 @@ import { agentRuns, agentSteps, userContext, getChatHistory, saveChatMessage, ag
 import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { getGlobalMemoryClient } from '@titan/memory';
 import { getWsServer } from '../ws-instance.js';
+import { detectLanguage } from '../lang-detect.js';
 
 const log = getLogger().child({ component: 'telegram' });
 
@@ -134,11 +135,13 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
 - Developer relationship: This user may be the person who builds and updates you. Respect that.`,
       ].join('');
 
-      // Try to load Arabic Companion profile for a natural tone
+      // Detect user language and load the matching companion profile
+      const lang = detectLanguage(text);
+      const profileSlug = lang === 'ar' ? 'arabic-companion' : 'english-companion';
       let profileSystemPrompt = '';
       try {
         const systemUserId = '00000000-0000-0000-0000-000000000001';
-        const profile = await agentProfiles.findBySlug(systemUserId, 'arabic-companion');
+        const profile = await agentProfiles.findBySlug(systemUserId, profileSlug);
         if (profile) {
           profileSystemPrompt = profile.systemPrompt;
         }

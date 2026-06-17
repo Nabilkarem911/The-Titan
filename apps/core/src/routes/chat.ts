@@ -2,11 +2,12 @@ import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { AgentRunner, createProviderFromEnv, getGlobalToolRegistry, type ToolCall, type ToolResult, type AgentRun, type AgentStep } from '@titan/agent-engine';
 import { getGlobalMemoryClient } from '@titan/memory';
-import { agentRuns, agentSteps, userContext, getChatHistory, saveChatMessage } from '@titan/database';
+import { agentRuns, agentSteps, userContext, getChatHistory, saveChatMessage, agentProfiles } from '@titan/database';
 import { ValidationError } from '@titan/shared';
 import { getLogger } from '@titan/logging';
 import { requireAuth } from '../plugins/auth.js';
 import { getWsServer } from '../ws-instance.js';
+import { detectLanguage } from '../lang-detect.js';
 import { readFile } from 'node:fs/promises';
 
 const log = getLogger().child({ component: 'chat' });
@@ -63,6 +64,20 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const ctxLines = Object.entries(ctx).map(([k, v]) => `- ${k}: ${v}`);
       const historyLines = history.map((m) => `${m.role === 'user' ? 'User' : 'Titan'}: ${m.content}`);
 
+      // Detect user language and load the matching companion profile
+      const lang = detectLanguage(input.prompt);
+      const profileSlug = lang === 'ar' ? 'arabic-companion' : 'english-companion';
+      let profileSystemPrompt = '';
+      try {
+        const systemUserId = '00000000-0000-0000-0000-000000000001';
+        const profile = await agentProfiles.findBySlug(systemUserId, profileSlug);
+        if (profile) {
+          profileSystemPrompt = profile.systemPrompt;
+        }
+      } catch {
+        /* ignore — fallback to DEFAULT_SYSTEM_PROMPT */
+      }
+
       const contextBlock = [
         ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
         historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
@@ -75,6 +90,8 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 - Never repeat the same explanation twice. Never say "I am an AI" or "I cannot modify code".
 - Developer relationship: This user may be the person who builds and updates you. Respect that.`,
       ].join('');
+
+      const systemPromptExtra = (profileSystemPrompt ? profileSystemPrompt + '\n\n' : '') + contextBlock;
 
       // Create DB run record
       const dbRun = await agentRuns.create({
@@ -196,7 +213,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           workspaceId: req.auth.workspaceId ?? undefined,
           apiKeyId: req.auth.apiKeyId ?? undefined,
           maxSteps: input.maxSteps,
-          systemPromptExtra: contextBlock,
+          systemPromptExtra,
         });
 
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
