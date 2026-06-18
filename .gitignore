@@ -65,3 +65,6 @@ test-*.cjs
 
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
+
+# Telemetry instance ID
+.titan-instance-id

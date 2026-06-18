@@ -2,6 +2,8 @@
   "name": "titan",
   "version": "0.1.0",
   "description": "Universal Autonomous Agent Framework - Foundation Layer",
+  "license": "AGPL-3.0-or-later",
+  "author": "Nabil Elsayed Mohamed Elnahas (Nabil Karem) <nabilkarem@gmail.com>",
   "private": true,
   "type": "module",
   "workspaces": [

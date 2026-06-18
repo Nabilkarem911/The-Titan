@@ -6,3 +6,4 @@ export * from './protocol.js';
 export * from './resilience/index.js';
 export * from './compliance/index.js';
 export * from './security/index.js';
+export * from './telemetry/index.js';
