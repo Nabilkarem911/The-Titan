@@ -23,14 +23,253 @@
 Titan is a **complete AI operating system** — not a chatbot wrapper, not a thin API layer, but a full autonomous agent framework that can understand codebases, execute multi-step tasks, learn from experience, and communicate across channels.
 
 ```bash
-# Talk to Titan from your terminal
 titan chat "deploy the latest version to production"
+titan run "analyze this codebase and fix all bugs"
+titan                # Interactive REPL mode
+```
 
-# Or use the interactive REPL
-titan
-> analyze this codebase and find security issues
-> write tests for the auth module
-> create a PR with the fixes
+---
+
+## Installation
+
+### Prerequisites
+
+| Requirement | Version | Purpose |
+|-------------|---------|---------|
+| **Node.js** | 22+ | Runtime |
+| **Docker** + **Docker Compose** | Latest | PostgreSQL, Redis, Embedding service |
+| **Git** | Latest | Clone + version control |
+
+### Method 1: Docker Compose (Production — Recommended)
+
+Everything runs in containers. No local Node.js needed (except for CLI).
+
+```bash
+# 1. Clone
+git clone https://github.com/Nabilkarem911/The-Titan.git
+cd The-Titan
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your settings:
+#   LLM_API_KEY=sk-your-openai-key        (required)
+#   LLM_MODEL=gpt-4o                       (or claude-sonnet-4-6, etc.)
+#   JWT_SECRET=your-random-secret-here     (min 32 chars)
+#   JWT_REFRESH_SECRET=another-secret      (min 32 chars)
+#   ENCRYPTION_KEY=32-char-hex-key         (for encrypting secrets)
+#   API_KEY_ENCRYPTION_KEY=32-char-key     (for API keys)
+
+# 3. Start all services
+docker compose up -d
+
+# This starts:
+#   - PostgreSQL 16 + pgvector  (port 55432)
+#   - Redis 7.4                 (port 6379)
+#   - Embedding service         (port 8100)
+#   - Titan Core API            (port 3000)
+#   - Titan Worker              (background queue processor)
+
+# 4. Open dashboard
+# http://localhost:3000
+
+# 5. Check health
+curl http://localhost:3000/api/v1/health/live
+
+# 6. View logs
+docker compose logs -f core
+```
+
+**Stopping:**
+```bash
+docker compose down          # Stop all services
+docker compose down -v       # Stop + remove volumes (deletes data!)
+```
+
+---
+
+### Method 2: Local Development
+
+Run infrastructure in Docker, code locally with hot reload.
+
+```bash
+# 1. Clone and install
+git clone https://github.com/Nabilkarem911/The-Titan.git
+cd The-Titan
+npm install --legacy-peer-deps
+
+# 2. Start infrastructure only
+docker compose up -d postgres redis embed
+
+# 3. Configure
+cp .env.example .env
+# Edit .env — same keys as Method 1 above
+# Make sure POSTGRES_HOST=localhost and REDIS_HOST=localhost
+
+# 4. Run database migrations
+npm run db:migrate
+
+# 5. Build all packages
+npm run build
+
+# 6. Start the API server (with hot reload)
+npm run dev:core
+# Server runs on http://localhost:3000
+
+# 7. Start the dashboard (separate terminal)
+npm run dev:dashboard
+# Dashboard runs on http://localhost:5173
+# (proxies API requests to :3000 automatically)
+```
+
+**Useful dev commands:**
+```bash
+npm run test                 # Run all 1090 tests
+npm run test:watch           # Watch mode
+npm run test:coverage        # Coverage report
+npm run lint                 # ESLint
+npm run typecheck            # TypeScript check
+npm run format               # Prettier
+```
+
+---
+
+### Method 3: Titan CLI
+
+Talk to Titan from your terminal — connects to a running server or works locally.
+
+```bash
+# 1. Build the CLI
+cd The-Titan
+npm install --legacy-peer-deps
+npm run build               # Build all packages first
+
+# 2. Link globally (one-time)
+npm link -w apps/cli
+
+# 3. Connect to your server
+titan login --server https://your-titan-server.com --api-key tk_your_key_here
+# OR
+titan login --server http://localhost:3000 --email admin@example.com --password yourpassword
+
+# 4. Start chatting
+titan                        # Interactive REPL
+titan chat "ازيك يا تايتن"   # Quick message
+titan run "build REST API"   # Run agent task
+titan status                 # Check server health
+```
+
+**CLI Commands:**
+```bash
+titan                        # Interactive REPL mode
+titan chat <message>         # Send a message
+titan chat                   # Enter chat mode (same as titan)
+titan run <prompt>           # Run an agent task
+  --agent <id>               #   Use specific agent profile
+  --steps <n>                #   Max steps (default: 15)
+titan status                 # Server health + project info
+titan login                  # Authenticate
+  --server <url>             #   Server URL
+  --api-key <key>            #   API key auth
+  --email <email>            #   Email + password auth
+  --password <pass>
+titan logout                 # Clear credentials
+titan config list            # Show config
+titan config set <key> <val> # Set config value
+```
+
+**REPL Commands (inside interactive mode):**
+```
+/help                        # Show commands
+/status                      # Server health
+/context                     # Current project info
+/clear                       # Clear screen
+/exit                        # Quit
+```
+
+---
+
+### Method 4: Deploy on Dokploy / VPS
+
+For production deployment on your own server.
+
+```bash
+# On your server:
+
+# 1. Install Docker + Docker Compose
+curl -fsSL https://get.docker.com | sh
+
+# 2. Clone
+git clone https://github.com/Nabilkarem911/The-Titan.git
+cd The-Titan
+
+# 3. Configure production .env
+cp .env.example .env
+nano .env
+# Set all required variables:
+#   NODE_ENV=production
+#   LLM_API_KEY=sk-...
+#   JWT_SECRET=<random 64 char string>
+#   JWT_REFRESH_SECRET=<random 64 char string>
+#   ENCRYPTION_KEY=<random 32 char hex>
+#   API_KEY_ENCRYPTION_KEY=<random 32 char hex>
+#   POSTGRES_PASSWORD=<strong password>
+#   REDIS_PASSWORD=<strong password>
+#   CORS_ORIGIN=https://your-domain.com
+
+# 4. Build and start
+docker compose up -d --build
+
+# 5. Set up reverse proxy (Nginx/Caddy/Traefik)
+# Point your domain to port 3000
+
+# For Dokploy specifically:
+# - Create a new application
+# - Set build method: Dockerfile
+# - Set Dockerfile path: apps/core/Dockerfile
+# - Add environment variables in Dokploy UI
+# - Set domain in Dokploy
+# - Deploy
+```
+
+---
+
+### Method 5: Using the SDK (Integrate Titan into your app)
+
+```bash
+npm install @titan/sdk    # Coming soon — for now, use from monorepo
+```
+
+```typescript
+import { TitanClient } from '@titan/sdk';
+
+// Initialize
+const titan = new TitanClient({
+  baseUrl: 'https://your-titan-server.com',
+  apiKey: 'tk_your_api_key',
+});
+
+// Chat
+const response = await titan.chat('What is TypeScript?');
+console.log(response.message);
+
+// Run agent
+const run = await titan.runAgent({
+  prompt: 'Analyze this PR for security issues',
+  agentId: 'security-analyst',
+});
+console.log(run.finalAnswer);
+
+// Stream response
+for await (const event of titan.streamAgent({ prompt: 'Explain Docker' })) {
+  if (event.type === 'token') process.stdout.write(event.data as string);
+}
+
+// Multi-agent swarm
+const swarm = await titan.runSwarm({
+  description: 'Full codebase audit',
+  prompt: 'Audit for bugs, security issues, and performance problems',
+});
+console.log(swarm.finalAnswer);
 ```
 
 ---
@@ -44,6 +283,7 @@ titan
 | **Advanced Planning** | Task decomposition, dependency graph, dynamic re-planning on failure |
 | **Self-Reflection** | Self-critique, confidence scoring (0-100), error analysis |
 | **Smart Retry** | Analyzes failures, switches tools, rephrases, decomposes — automatically |
+| **Sub-Agent Spawning** | Spawn child agents in foreground/background with orchestration engine |
 
 ### Memory Architecture (6 Layers)
 | Layer | Purpose |
@@ -60,7 +300,7 @@ titan
 |---------|-------------|
 | **Codebase Indexing** | Crawls files, extracts symbols, maps imports — 45+ languages |
 | **Semantic Code Search** | "find the rate limiting code" — finds it across the entire project |
-| **Smart Context** | Selects the most relevant code for LLM context — no more "file too large" |
+| **Smart Context** | Selects the most relevant code for LLM context |
 | **Symbol Lookup** | Functions, classes, interfaces, types, enums — with line numbers |
 | **Dependency Graph** | Import mapping — who depends on who |
 
@@ -70,91 +310,40 @@ titan
 | **Plan-Execute-Verify Loop** | Plans task → writes code → runs typecheck → fixes errors → commits |
 | **Auto-Fixer** | LLM-powered error fixing with rollback safety |
 | **Git Operations** | Branch creation, staging, LLM-generated commit messages |
-| **Verification Suite** | TypeScript check, test runner, linter, build verification |
+| **Resource Monitor** | CPU/memory tracking before execution |
 
-### Multi-Agent Teams
-| Template | Roles |
+### 90 Built-in Tools
+| Category | Tools |
 |----------|-------|
-| **Dev Team** | Tech Lead, Developer, Code Reviewer, QA Engineer |
-| **Research Team** | Research Lead, Researcher, Fact Checker, Writer |
-| **Ops Team** | SRE Lead, DevOps Engineer, Security Reviewer |
-| **Content Team** | Strategist, Topic Researcher, Writer, Editor |
+| **Execution** | bash, docker, file read/write/patch |
+| **Web** | brave search, web scraping, HTTP, screenshot, SEO analysis, sitemap crawl, RSS feed, web monitor |
+| **Data** | SQL, CSV transform, Excel, PDF, XML, JSON Schema, YAML convert, data visualization |
+| **Documents** | PDF create, spreadsheet create, slide create, invoice generate, report generate, contract draft, document template |
+| **Images** | image generate (DALL-E), image analyze (Vision), image edit |
+| **Cloud** | AWS S3, Google Cloud Storage, Google Drive, Dropbox |
+| **Project Management** | Notion, Linear, Jira, Trello, Asana |
+| **Communication** | email, Slack, Discord, WhatsApp, SMS (Twilio), Telegram, push notifications |
+| **AI** | text classify, text summarize, entity extract, embeddings generate, code analyze |
+| **System** | system metrics, log search, database backup, cron manage, process manager, network diagnose |
+| **Business** | invoice generate, budget tracker, contract draft, report generate |
+| **Security** | hash, JWT decode, password generate, DNS lookup, IP lookup |
 
-### 48+ Built-in Tools
-**Execution:** bash, docker, file read/write/patch
-**Web:** brave search, web scraping, HTTP requests, screenshot
-**Data:** SQL queries, CSV/Excel/PDF parsing, calculations
-**Communication:** email, Telegram
-**Integrations:** GitHub API, git push, webhooks
-**Utilities:** JWT decode, regex, translation, QR codes, maps, weather, and more
+### Multi-Agent System
+- **Agent Spawner** — spawn foreground/background child agents
+- **Agent Pool** — concurrency-limited execution with priority queue
+- **Dynamic Factory** — LLM designs agents on-the-fly from capability specs
+- **Orchestration Engine** — auto-decompose → parallel execute → aggregate results
+- **Team Templates** — dev, research, ops, content teams with specialized roles
+- **Meeting Protocol** — multi-round agent discussions with synthesis
+- **Peer Review** — structured code/content review with scoring
+- **Voting System** — weighted confidence-based decisions
 
-### MCP Protocol Support
-- **MCP Client** — connect to any external MCP server
-- **MCP Server** — expose Titan tools via Model Context Protocol
-- **Auto-Discovery** — automatically register MCP tools
-- **Tool Adapter** — converts MCP tools to Titan format
-
-### Tool Composition
-- **Pipelines** — chain tools: `search → scrape → summarize`
-- **Parallel Execution** — run multiple tools simultaneously
-- **Conditional Branching** — if-else tool execution
-- **Macros** — save and reuse tool combinations
-
----
-
-## Interfaces
-
-### CLI (Terminal)
-```bash
-titan chat "ازيك يا تايتن"          # Quick message
-titan run "build a REST API"         # Run a task
-titan status                         # Check server health
-titan login --server https://...     # Connect to remote server
-titan config set model gpt-4o        # Configure
-```
-
-### Web Dashboard (28 Pages)
-- **Chat** — real-time streaming with voice I/O
-- **Agents** — browse, create, customize agent profiles
-- **Playground** — quick agent testing
-- **Swarm** — multi-agent task launcher
-- **Workflow** — visual workflow builder
-- **Terminal** — xterm.js shell in browser
-- **Editor** — Monaco code editor
-- **Files** — upload, download, browse
-- **Git** — commit and push from UI
-- **Metrics** — real-time performance monitoring
-- **Queue** — BullMQ job management
-- **Audit Logs** — tamper-evident hash chain
-- **API Docs** — interactive 65+ endpoint explorer
-- **System Health** — DB pool, queue depth, service status
-
-### TypeScript SDK
-```typescript
-import { TitanClient } from '@titan/sdk';
-
-const titan = new TitanClient({ baseUrl: 'https://your-server.com', apiKey: 'tk_...' });
-
-// Simple chat
-const response = await titan.chat('What is TypeScript?');
-
-// Stream agent execution
-for await (const event of titan.streamAgent({ prompt: 'analyze this PR' })) {
-  if (event.type === 'token') process.stdout.write(event.data);
-}
-
-// Multi-agent swarm
-const result = await titan.runSwarm({
-  description: 'Full security audit',
-  prompt: 'Audit the entire codebase for vulnerabilities',
-});
-```
-
-### Channel Integrations
-- **WhatsApp Business** — via Cloud API
-- **Slack** — Events API + Bot
-- **Discord** — Gateway + Bot
-- **Telegram** — Webhook + send files
+### Web Dashboard (43 Pages)
+**Core:** Chat, Agents, Playground, Swarm, Workflow Designer, Terminal, Editor, Files, Git, Projects, Templates, Teams, Settings, Getting Started, Login
+**Operations:** Run History, Queues, Metrics, Cron, Logs, Webhooks, Audit Logs, System Health
+**Analytics:** Analytics, Cost Dashboard, Trace Viewer, Agent Performance, Model Comparison, Tool Stats
+**Advanced:** Knowledge Base, User Profile, Integration Hub, Marketplace, Learning Dashboard, Error Explorer, Notification Center, Workspace Insights
+**Docs:** API Docs, 404 Page
 
 ---
 
@@ -163,50 +352,27 @@ const result = await titan.runSwarm({
 ```
 titan/
 ├── apps/
-│   ├── core/            # Fastify API server (65+ endpoints)
-│   ├── dashboard/       # React 18 + Vite + Tailwind (28 pages)
-│   └── cli/             # Terminal interface (REPL + commands)
+│   ├── core/                # Fastify API server (95+ endpoints)
+│   ├── dashboard/           # React 18 + Vite + Tailwind (43 pages)
+│   └── cli/                 # Terminal interface (REPL + commands)
 ├── packages/
-│   ├── agent-engine/    # The brain
-│   │   ├── planner/         # Task decomposition + dependency graph
-│   │   ├── reflection/      # Self-critique + confidence scoring
-│   │   ├── strategies/      # CoT, ToT, Debate, auto-selection
-│   │   ├── personality/     # Multilingual adaptive personality
-│   │   ├── code-intel/      # Codebase indexing + semantic search
-│   │   ├── autonomous/      # Plan→execute→verify→fix loop
-│   │   ├── swarm/           # Multi-agent orchestration + supervisor
-│   │   ├── workflow/        # Workflow builder + runner + templates
-│   │   ├── integrations/    # WhatsApp, Slack, Discord adapters
-│   │   ├── teams/           # Pre-built agent team templates
-│   │   ├── voice/           # STT/TTS interfaces
-│   │   ├── learning/        # Experience collection + insights
-│   │   └── providers/       # OpenAI, Anthropic, multi-model router
-│   ├── memory/          # The memory
-│   │   ├── layers/          # Working, episodic, semantic, procedural, user
-│   │   ├── consolidation/   # Summarization, merging, forgetting
-│   │   ├── retrieval/       # Hybrid search + context ranking
-│   │   ├── graph/           # Entity extraction + knowledge graph
-│   │   ├── identity/        # User profiles + conversation continuity
-│   │   └── rag/             # Document processing + knowledge base
-│   ├── tools/           # The hands
-│   │   ├── tools/           # 48+ individual tool implementations
-│   │   ├── mcp/             # MCP client + server + adapter
-│   │   ├── composition/     # Pipelines, parallel, conditional, macros
-│   │   └── browser/         # Web browsing + page extraction
-│   ├── sdk/             # TypeScript SDK client
-│   ├── shared/          # Types, errors, resilience patterns
-│   ├── auth/            # JWT, RBAC, API keys, encryption
-│   ├── database/        # PostgreSQL + pgvector + 20 migrations
-│   ├── queue/           # BullMQ (9 priority queues)
-│   ├── websocket/       # JSON-RPC 2.0 real-time
-│   ├── observability/   # Metrics, rate limiting, eval, tracing, cost
-│   ├── logging/         # Pino structured logging
-│   ├── config/          # Zod env validation
-│   ├── sandbox/         # Docker container pool
-│   └── telemetry/       # OpenTelemetry
+│   ├── agent-engine/        # The brain (14 modules)
+│   ├── memory/              # The memory (6 modules)
+│   ├── tools/               # The hands (90 tools + MCP + composition + browser + marketplace)
+│   ├── sdk/                 # TypeScript SDK
+│   ├── shared/              # Types, errors, resilience, security, compliance
+│   ├── auth/                # JWT, RBAC, API keys, encryption, SSO, quotas
+│   ├── database/            # PostgreSQL + pgvector + 25 migrations
+│   ├── queue/               # BullMQ (9 priority queues)
+│   ├── websocket/           # JSON-RPC 2.0 real-time
+│   ├── observability/       # Metrics, rate limiting, eval, tracing, cost
+│   ├── logging/             # Pino structured logging
+│   ├── config/              # Zod env validation (60+ vars)
+│   ├── sandbox/             # Docker container pool
+│   └── telemetry/           # OpenTelemetry
 ├── services/
-│   └── embed/           # Self-hosted embeddings (BGE-small-en-v1.5)
-└── docker/              # PostgreSQL + Redis configs
+│   └── embed/               # Self-hosted embeddings (BGE-small-en-v1.5)
+└── docker/                  # PostgreSQL + Redis configs
 ```
 
 ---
@@ -220,20 +386,15 @@ titan/
 - **Docker Sandbox** — CapDrop ALL, readonly rootfs, no network, PID limit
 - **Rate Limiting** — hybrid per-user + per-IP with abuse detection
 - **Encryption** — AES-256-GCM for secrets, bcrypt for passwords
+- **Input Sanitization** — XSS, SQL injection, command injection, SSRF prevention
+- **PII Detection** — auto-detect and redact emails, phones, SSNs, API keys
+- **Anomaly Detection** — burst requests, failed auth, suspicious patterns
+- **Secret Rotation** — expiry tracking, auto-rotate, key generation
+- **Session Monitor** — concurrent limits, device fingerprinting
 - **Circuit Breaker** — prevents cascade failures
 - **Bulkhead** — isolates concurrent operations
-
----
-
-## Production Features
-
-- **Multi-Model Router** — cheapest/fastest/best/round-robin with auto-fallback
-- **Cost Tracking** — per-run, per-model token and cost estimates
-- **Evaluation Framework** — benchmarks, accuracy scoring, A/B testing
-- **Full Tracing** — every LLM call, tool call, memory access — with nested spans
-- **Health Aggregator** — multi-service health checks (critical/degraded/healthy)
-- **Graceful Shutdown** — drain queues, close connections, flush logs
-- **Self-Learning** — experience collection, pattern detection, strategy tuning
+- **GDPR Toolkit** — data export, deletion requests, consent management
+- **File Validation** — extension, MIME, size, path traversal checks
 
 ---
 
@@ -253,53 +414,36 @@ Titan adapts to whoever is talking to it:
 
 **Auto-detection** — detects language from the first message and adapts.
 **Context-aware** — technical questions get precise answers, casual chat stays natural.
+**Emotion detection** — detects frustration, excitement, confusion and adjusts tone.
 **Safety-first** — destructive operations require confirmation.
-
----
-
-## Quick Start
-
-### Docker Compose (Recommended)
-```bash
-git clone https://github.com/Nabilkarem911/The-Titan.git
-cd The-Titan
-cp .env.example .env  # Configure your LLM API key
-docker compose up -d
-# Dashboard: http://localhost:3000
-```
-
-### Local Development
-```bash
-npm install
-docker compose up -d postgres redis embed  # Infrastructure only
-npm run build
-npm run dev:core       # API server on :3000
-npm run dev:dashboard  # Dashboard on :5173
-```
-
-### CLI
-```bash
-npm run build -w apps/cli
-npx titan chat "hello"
-# Or link globally:
-npm link -w apps/cli
-titan
-```
 
 ---
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `LLM_PROVIDER_TYPE` | `openai-compatible` or `anthropic` | `openai-compatible` |
-| `LLM_API_KEY` | Your LLM API key | — |
-| `LLM_MODEL` | Model name | `gpt-4o` |
-| `LLM_BASE_URL` | API base URL | `https://api.openai.com/v1` |
-| `POSTGRES_HOST` | PostgreSQL host | `localhost` |
-| `REDIS_HOST` | Redis host | `localhost` |
-| `JWT_SECRET` | JWT signing secret | — |
-| `EMBEDDING_BASE_URL` | Embedding service URL | `http://localhost:8100/v1` |
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `LLM_API_KEY` | Your LLM API key | **Yes** | — |
+| `LLM_PROVIDER_TYPE` | `openai-compatible` or `anthropic` | No | `openai-compatible` |
+| `LLM_MODEL` | Model name | No | `gpt-4o` |
+| `LLM_BASE_URL` | API base URL | No | `https://api.openai.com/v1` |
+| `JWT_SECRET` | JWT signing secret (min 32 chars) | **Yes** | — |
+| `JWT_REFRESH_SECRET` | Refresh token secret | **Yes** | — |
+| `ENCRYPTION_KEY` | AES encryption key | **Yes** | — |
+| `API_KEY_ENCRYPTION_KEY` | API key encryption | **Yes** | — |
+| `POSTGRES_HOST` | PostgreSQL host | No | `localhost` |
+| `POSTGRES_PORT` | PostgreSQL port | No | `55432` |
+| `POSTGRES_DB` | Database name | No | `titan` |
+| `POSTGRES_USER` | Database user | No | `titan` |
+| `POSTGRES_PASSWORD` | Database password | **Yes** (prod) | `titan_dev_password...` |
+| `REDIS_HOST` | Redis host | No | `localhost` |
+| `REDIS_PORT` | Redis port | No | `6379` |
+| `REDIS_PASSWORD` | Redis password | **Yes** (prod) | `titan_dev_redis...` |
+| `EMBEDDING_BASE_URL` | Embedding service URL | No | `http://localhost:8100/v1` |
+| `EMBEDDING_DIMENSIONS` | Embedding vector size | No | `384` |
+| `HTTP_PORT` | API server port | No | `3000` |
+| `CORS_ORIGIN` | Allowed CORS origins | No | `*` |
+| `NODE_ENV` | Environment | No | `development` |
 
 See `packages/config/src/index.ts` for all 60+ configurable variables.
 
@@ -309,8 +453,8 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 
 | Metric | Value |
 |--------|-------|
-| Total Source Files | 400+ |
-| Lines of Code | ~55,000 |
+| Total Source Files | 500+ |
+| Lines of Code | ~65,000 |
 | Test Files | 61 |
 | Tests Passing | 1,090 |
 | Packages | 16 |
@@ -326,27 +470,32 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 ## Roadmap
 
 - [x] Agent Intelligence (planning, reflection, multi-strategy)
-- [x] Advanced Memory (5 layers + knowledge graph)
+- [x] Advanced Memory (6 layers + knowledge graph + RAG)
 - [x] Swarm Orchestration + Workflow Engine
-- [x] MCP Protocol Support
+- [x] Sub-Agent Spawner + Dynamic Factory + Orchestration Engine
+- [x] MCP Protocol Support (client + server)
 - [x] Tool Composition (pipelines, parallel, macros)
-- [x] Evaluation Framework + Cost Tracking
-- [x] TypeScript SDK
-- [x] CLI Interface
-- [x] Code Intelligence (indexer, search, smart context)
-- [x] Autonomous Execution (verify→fix→commit loop)
-- [x] Persistent Identity + User Profiles
-- [x] Browser Agent (web browsing, page extraction)
-- [x] Document RAG (chunking, citations, knowledge base)
-- [x] Multi-Agent Teams (dev, research, ops, content)
-- [x] Self-Learning (experience collection, insights)
-- [x] Adaptive Multilingual Personality (7 languages)
-- [x] Channel Integrations (WhatsApp, Slack, Discord)
-- [x] Production Hardening (circuit breaker, bulkhead, health)
+- [x] 90 Built-in Tools (documents, images, cloud, PM, comms, AI, system, business)
+- [x] Evaluation Framework + Cost Tracking + Full Tracing
+- [x] TypeScript SDK + Streaming
+- [x] CLI Interface (REPL + commands + project detection)
+- [x] Code Intelligence (indexer, search, smart context, symbol extraction)
+- [x] Autonomous Execution (plan→execute→verify→fix→commit loop)
+- [x] Persistent Identity + User Profiles + Preference Learning
+- [x] Browser Agent (web browsing, forms, sessions, page analysis)
+- [x] Document RAG (chunking, citations, knowledge base, hybrid pipeline)
+- [x] Multi-Agent Teams (meetings, peer review, voting)
+- [x] Self-Learning (experience collection, prompt optimization, strategy tuning)
+- [x] Adaptive Multilingual Personality (7 languages + emotion detection)
+- [x] Channel Integrations (WhatsApp, Slack, Discord, Telegram, SMS)
+- [x] Production Hardening (circuit breaker, bulkhead, health aggregation)
+- [x] Security (input sanitizer, PII detector, anomaly detector, GDPR, secret rotation)
+- [x] Enterprise (SSO, usage quotas, file validation, session monitoring)
+- [x] Plugin Marketplace (store, validator, version manager)
+- [x] 43-Page Dashboard (analytics, traces, workflows, marketplace, learning, errors)
+- [x] 30 Agent Profiles (PM, UX, Data Scientist, Legal, QA, DBA, Growth, and more)
 - [ ] Full Playwright Browser Automation
-- [ ] Voice Interface (STT + TTS)
-- [ ] Plugin Marketplace
-- [ ] Enterprise SSO + LDAP
+- [ ] Production Voice Interface (STT + TTS)
 - [ ] Mobile App (React Native)
 
 ---
