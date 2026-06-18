@@ -16,6 +16,9 @@ import {
   TrendingUp,
   BarChart3,
 } from 'lucide-react';
+import { API_BASE, getToken } from '../api/client';
+import { formatBytes } from '../utils/format';
+import { ErrorState } from '../components/PageState';
 
 interface HealthStatus {
   dbPool: { total: number; idle: number; waiting: number } | null;
@@ -38,34 +41,36 @@ interface WorkspaceStats {
   totalDirs: number;
 }
 
-import { API_BASE, getToken } from '../api/client';
-import { formatBytes } from '../utils/format';
-
 export default function DashboardPage() {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [metrics, setMetrics] = useState<MetricsSnapshot | null>(null);
   const [workspace, setWorkspace] = useState<WorkspaceStats | null>(null);
   const [cronCount, setCronCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
   const fetchAll = async () => {
     setLoading(true);
+    setError(null);
     try {
+      const headers = { Authorization: `Bearer ${getToken()}` };
       const [healthRes, metricsRes, filesRes, cronRes] = await Promise.all([
-        fetch('/health/dashboard', { headers: { Authorization: `Bearer ${getToken()}` } }).catch(() => null),
-        fetch('/metrics.json', { headers: { Authorization: `Bearer ${getToken()}` } }).catch(() => null),
-        fetch(`${API_BASE}/files?path=/`, { headers: { Authorization: `Bearer ${getToken()}` } }).catch(() => null),
-        fetch(`${API_BASE}/cron`, { headers: { Authorization: `Bearer ${getToken()}` } }).catch(() => null),
+        fetch(`${API_BASE}/health/dashboard`, { headers }).catch(() => null),
+        fetch(`${API_BASE}/metrics`, { headers }).catch(() => null),
+        fetch(`${API_BASE}/files?path=/`, { headers }).catch(() => null),
+        fetch(`${API_BASE}/cron`, { headers }).catch(() => null),
       ]);
 
+      let anySuccess = false;
+
       if (healthRes?.ok) {
-        const h = await healthRes.json() as HealthStatus;
-        setHealth(h);
+        setHealth(await healthRes.json() as HealthStatus);
+        anySuccess = true;
       }
       if (metricsRes?.ok) {
-        const m = await metricsRes.json() as MetricsSnapshot;
-        setMetrics(m);
+        setMetrics(await metricsRes.json() as MetricsSnapshot);
+        anySuccess = true;
       }
       if (filesRes?.ok) {
         const f = await filesRes.json() as { items: Array<{ type: 'file' | 'directory' }> };
@@ -74,12 +79,20 @@ export default function DashboardPage() {
           totalFiles: items.filter((i) => i.type === 'file').length,
           totalDirs: items.filter((i) => i.type === 'directory').length,
         });
+        anySuccess = true;
       }
       if (cronRes?.ok) {
         const c = await cronRes.json() as { total: number };
         setCronCount(c.total ?? 0);
+        anySuccess = true;
       }
-    } catch { /* ignore */ }
+
+      if (!anySuccess && !health && !metrics) {
+        setError('Could not connect to any backend service');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+    }
     setLastRefresh(new Date());
     setLoading(false);
   };
@@ -97,6 +110,10 @@ export default function DashboardPage() {
     (sum, q) => sum + (q.waiting ?? 0) + (q.active ?? 0) + (q.failed ?? 0),
     0,
   );
+
+  if (error && !health && !metrics) {
+    return <ErrorState message={error} onRetry={fetchAll} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -121,6 +138,12 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
+          Some services unavailable: {error}
+        </div>
+      )}
 
       {/* Status Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -179,7 +202,7 @@ export default function DashboardPage() {
           label="Chat"
           value="Live"
           sub="streaming"
-          to="/"
+          to="/chat"
         />
         <QuickStatCard
           icon={<GitBranch className="h-5 w-5 text-orange-400" />}
@@ -240,13 +263,13 @@ export default function DashboardPage() {
           <h4 className="text-sm font-medium text-white">Quick Actions</h4>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          <QuickAction to="/chat" label="Chat" />
+          <QuickAction to="/agents" label="Agents" />
           <QuickAction to="/editor" label="Editor" />
           <QuickAction to="/terminal" label="Terminal" />
           <QuickAction to="/files" label="Files" />
           <QuickAction to="/git" label="Git" />
-          <QuickAction to="/cron" label="Cron" />
-          <QuickAction to="/agents" label="Agents" />
-          <QuickAction to="/runs" label="Runs" />
+          <QuickAction to="/analytics" label="Analytics" />
           <QuickAction to="/settings" label="Settings" />
         </div>
       </div>
@@ -352,4 +375,3 @@ function QuickAction({ to, label }: { to: string; label: string }) {
     </a>
   );
 }
-

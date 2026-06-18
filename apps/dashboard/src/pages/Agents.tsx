@@ -1,28 +1,30 @@
 import { useState, useEffect } from 'react';
 import { Bot, Plus, Trash2, Edit3, Globe, Lock, Loader2, X } from 'lucide-react';
 import { api, type AgentProfile } from '../api/client';
+import { ErrorState } from '../components/PageState';
 
 export default function Agents() {
   const [agents, setAgents] = useState<AgentProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [editingAgent, setEditingAgent] = useState<AgentProfile | null>(null);
 
   const loadAgents = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [mine, pub] = await Promise.all([
         api.listAgentProfiles(),
         api.listPublicAgentProfiles(),
       ]);
-      // Merge and deduplicate
       const map = new Map<string, AgentProfile>();
       for (const a of [...(mine.items ?? []), ...(pub.items ?? [])]) {
         map.set(a.id, a);
       }
       setAgents(Array.from(map.values()));
-    } catch {
-      // silent
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load agents');
     } finally {
       setLoading(false);
     }
@@ -35,7 +37,7 @@ export default function Agents() {
     try {
       await api.deleteAgentProfile(id);
       setAgents((prev) => prev.filter((a) => a.id !== id));
-    } catch { /* silent */ }
+    } catch { /* error toast via global handler */ }
   };
 
   return (
@@ -51,7 +53,9 @@ export default function Agents() {
         </button>
       </div>
 
-      {loading ? (
+      {error ? (
+        <ErrorState message={error} onRetry={loadAgents} />
+      ) : loading ? (
         <div className="flex items-center gap-2 text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading...
         </div>

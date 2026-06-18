@@ -1,51 +1,98 @@
 import { useState } from 'react';
 import { Search, Clock, Zap, AlertCircle, CheckCircle } from 'lucide-react';
 import { API_BASE, getToken } from '../api/client';
+import { ErrorState } from '../components/PageState';
+
+interface Span {
+  name: string;
+  type: string;
+  status: string;
+  durationMs?: number;
+}
+
+interface TraceData {
+  totalDuration?: number;
+  spans?: Span[];
+  [key: string]: unknown;
+}
 
 export default function TraceViewer() {
   const [runId, setRunId] = useState('');
-  const [trace, setTrace] = useState<Record<string, unknown> | null>(null);
-  const [, setLoading] = useState(false);
+  const [trace, setTrace] = useState<TraceData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchTrace = async () => {
     if (!runId.trim()) return;
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`${API_BASE}/analytics/traces/${runId}`, { headers: { Authorization: `Bearer ${getToken()}` } });
-      if (res.ok) setTrace(await res.json() as Record<string, unknown>);
-    } catch { /* ignore */ } finally { setLoading(false); }
+      if (!res.ok) throw new Error(`HTTP ${res.status}: Trace not found`);
+      setTrace(await res.json() as TraceData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load trace');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold flex items-center gap-2"><Zap className="w-6 h-6 text-purple-500" /> Trace Viewer</h1>
-      <div className="flex gap-2">
-        <input value={runId} onChange={(e) => setRunId(e.target.value)} placeholder="Enter Run ID..." className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500" onKeyDown={(e) => e.key === 'Enter' && fetchTrace()} />
-        <button onClick={fetchTrace} className="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"><Search className="w-4 h-4" /> Load Trace</button>
-      </div>
-      {trace ? (
-        <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 space-y-4">
-          <div className="flex items-center gap-4 text-sm text-zinc-400">
-            <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> Duration: {String(trace.totalDuration ?? '—')}ms</span>
-            <span>Spans: {Array.isArray(trace.spans) ? trace.spans.length : 0}</span>
-          </div>
-          <div className="space-y-2">
-            {Array.isArray(trace.spans) && trace.spans.map((span: Record<string, unknown>, i: number) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-3 bg-zinc-800/50 rounded-lg">
-                {span.status === 'completed' ? <CheckCircle className="w-4 h-4 text-green-400" /> : <AlertCircle className="w-4 h-4 text-red-400" />}
-                <span className="text-sm font-medium">{String(span.name)}</span>
-                <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">{String(span.type)}</span>
-                <span className="ml-auto text-xs text-zinc-400">{span.durationMs ? `${span.durationMs}ms` : '—'}</span>
-              </div>
-            ))}
-          </div>
-          <pre className="text-xs text-zinc-500 overflow-auto mt-4 max-h-64">{JSON.stringify(trace, null, 2)}</pre>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-500/20 text-purple-400">
+          <Zap className="h-5 w-5" />
         </div>
-      ) : (
-        <div className="bg-zinc-900 rounded-xl p-12 border border-zinc-800 text-center text-zinc-500">
-          <Zap className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p>Enter a Run ID to view the execution trace</p>
-          <p className="text-xs mt-2">Shows every LLM call, tool execution, and memory access with timing</p>
+        <div>
+          <h3 className="text-sm font-semibold text-white">Trace Viewer</h3>
+          <p className="text-xs text-slate-500">Inspect execution traces for any run</p>
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          value={runId}
+          onChange={(e) => setRunId(e.target.value)}
+          placeholder="Enter Run ID..."
+          className="input flex-1"
+          onKeyDown={(e) => e.key === 'Enter' && fetchTrace()}
+        />
+        <button onClick={fetchTrace} disabled={loading || !runId.trim()} className="btn-primary">
+          <Search className="h-4 w-4" />
+          {loading ? 'Loading...' : 'Load Trace'}
+        </button>
+      </div>
+
+      {error && <ErrorState message={error} onRetry={fetchTrace} />}
+
+      {trace ? (
+        <div className="card space-y-4">
+          <div className="flex items-center gap-4 text-sm text-slate-400">
+            <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> Duration: {trace.totalDuration ?? '—'}ms</span>
+            <span>Spans: {trace.spans?.length ?? 0}</span>
+          </div>
+          {trace.spans && trace.spans.length > 0 && (
+            <div className="space-y-2">
+              {trace.spans.map((span, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-800/50">
+                  {span.status === 'completed' ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : <AlertCircle className="h-4 w-4 text-red-400" />}
+                  <span className="text-sm font-medium text-slate-200">{span.name}</span>
+                  <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded">{span.type}</span>
+                  <span className="ml-auto text-xs text-slate-400">{span.durationMs ? `${span.durationMs}ms` : '—'}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <details className="text-xs">
+            <summary className="text-slate-500 cursor-pointer hover:text-slate-300">Raw JSON</summary>
+            <pre className="text-slate-400 overflow-auto mt-2 max-h-64 p-3 rounded-lg bg-slate-800/30">{JSON.stringify(trace, null, 2)}</pre>
+          </details>
+        </div>
+      ) : !error && (
+        <div className="card flex flex-col items-center justify-center py-16 text-center">
+          <Zap className="h-12 w-12 text-slate-700 mb-4" />
+          <p className="text-sm text-slate-400">Enter a Run ID to view the execution trace</p>
+          <p className="text-xs text-slate-600 mt-1">Shows every LLM call, tool execution, and memory access with timing</p>
         </div>
       )}
     </div>

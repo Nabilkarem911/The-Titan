@@ -1,21 +1,46 @@
 import { useState, useEffect } from 'react';
-import { Bell, Check, Trash2, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
+import { Bell, Check, Trash2, AlertCircle, CheckCircle, Info, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
 import { API_BASE, getToken } from '../api/client';
+import { ErrorState, EmptyState } from '../components/PageState';
 
-interface Notification { id: string; type: 'info' | 'warning' | 'error' | 'success'; title: string; body?: string; read: boolean; createdAt: string }
+interface ServerNotification {
+  id: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  title: string;
+  body?: string;
+  read: boolean;
+  createdAt: string;
+}
 
-const ICON_MAP = { info: <Info className="w-4 h-4 text-blue-400" />, warning: <AlertTriangle className="w-4 h-4 text-yellow-400" />, error: <AlertCircle className="w-4 h-4 text-red-400" />, success: <CheckCircle className="w-4 h-4 text-green-400" /> };
+const ICON_MAP = {
+  info: <Info className="h-4 w-4 text-blue-400" />,
+  warning: <AlertTriangle className="h-4 w-4 text-amber-400" />,
+  error: <AlertCircle className="h-4 w-4 text-red-400" />,
+  success: <CheckCircle className="h-4 w-4 text-emerald-400" />,
+};
 
 export default function NotificationCenter() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<ServerNotification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  useEffect(() => {
-    fetch(`${API_BASE}/user/notifications`, { headers: { Authorization: `Bearer ${getToken()}` } })
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d && (d as Record<string, unknown>).notifications) setNotifications((d as Record<string, unknown>).notifications as Notification[]); })
-      .catch(() => {});
-  }, []);
+  const fetchNotifications = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/user/notifications`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json() as { notifications?: ServerNotification[] };
+      setNotifications(d.notifications ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchNotifications(); }, []);
 
   const filtered = filter === 'unread' ? notifications.filter((n) => !n.read) : notifications;
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -25,31 +50,72 @@ export default function NotificationCenter() {
   const remove = (id: string) => setNotifications(notifications.filter((n) => n.id !== id));
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Bell className="w-6 h-6 text-amber-500" /> Notifications {unreadCount > 0 && <span className="text-sm bg-red-600 px-2 py-0.5 rounded-full">{unreadCount}</span>}</h1>
-        <div className="flex gap-2">
-          <button onClick={() => setFilter(filter === 'all' ? 'unread' : 'all')} className="px-3 py-1.5 bg-zinc-800 rounded-lg text-sm hover:bg-zinc-700">{filter === 'all' ? 'Unread Only' : 'Show All'}</button>
-          {unreadCount > 0 && <button onClick={markAllRead} className="px-3 py-1.5 bg-zinc-800 rounded-lg text-sm hover:bg-zinc-700 flex items-center gap-1"><Check className="w-3 h-3" /> Mark All Read</button>}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-500/20 text-amber-400">
+            <Bell className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white">
+              Notifications
+              {unreadCount > 0 && <span className="ml-2 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">{unreadCount}</span>}
+            </h3>
+            <p className="text-xs text-slate-500">Activity and system notifications</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setFilter(filter === 'all' ? 'unread' : 'all')} className="btn-secondary text-xs">
+            {filter === 'all' ? 'Unread Only' : 'Show All'}
+          </button>
+          {unreadCount > 0 && (
+            <button onClick={markAllRead} className="btn-secondary text-xs">
+              <Check className="h-3 w-3" /> Mark All Read
+            </button>
+          )}
+          <button onClick={fetchNotifications} className="btn-secondary" disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          </button>
         </div>
       </div>
-      {filtered.length === 0 ? (
-        <div className="bg-zinc-900 rounded-xl p-12 border border-zinc-800 text-center text-zinc-500"><Bell className="w-12 h-12 mx-auto mb-4 opacity-20" /><p>No notifications</p></div>
+
+      {error ? (
+        <ErrorState message={error} onRetry={fetchNotifications} />
+      ) : loading ? (
+        <div className="space-y-2 animate-pulse">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="card h-16" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<Bell className="h-6 w-6 text-slate-400" />}
+          title="No notifications"
+          description={filter === 'unread' ? 'No unread notifications' : 'Notifications will appear here'}
+        />
       ) : (
-        <div className="space-y-2">{filtered.map((n) => (
-          <div key={n.id} className={`flex items-start gap-3 p-4 rounded-xl border ${n.read ? 'bg-zinc-900/50 border-zinc-800/50' : 'bg-zinc-900 border-zinc-700'}`}>
-            <div className="mt-0.5">{ICON_MAP[n.type]}</div>
-            <div className="flex-1">
-              <div className="font-medium text-sm">{n.title}</div>
-              {n.body && <p className="text-xs text-zinc-400 mt-1">{n.body}</p>}
-              <p className="text-xs text-zinc-600 mt-1">{n.createdAt}</p>
+        <div className="space-y-2">
+          {filtered.map((n) => (
+            <div key={n.id} className={`card p-4 flex items-start gap-3 ${n.read ? 'opacity-60' : ''}`}>
+              <div className="mt-0.5">{ICON_MAP[n.type]}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-white">{n.title}</div>
+                {n.body && <p className="text-xs text-slate-400 mt-0.5">{n.body}</p>}
+                <p className="text-[10px] text-slate-600 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+              </div>
+              <div className="flex gap-1 shrink-0">
+                {!n.read && (
+                  <button onClick={() => markRead(n.id)} className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-emerald-400" aria-label="Mark as read">
+                    <Check className="h-3 w-3" />
+                  </button>
+                )}
+                <button onClick={() => remove(n.id)} className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-red-400" aria-label="Dismiss">
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
             </div>
-            <div className="flex gap-1">
-              {!n.read && <button onClick={() => markRead(n.id)} className="p-1 hover:bg-zinc-700 rounded"><Check className="w-3 h-3" /></button>}
-              <button onClick={() => remove(n.id)} className="p-1 hover:bg-zinc-700 rounded text-zinc-500 hover:text-red-400"><Trash2 className="w-3 h-3" /></button>
-            </div>
-          </div>
-        ))}</div>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -42,6 +42,24 @@ export interface QueueStats {
   delayed: number;
 }
 
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public statusText: string,
+    public body: string,
+  ) {
+    super(`API ${status}: ${body || statusText}`);
+    this.name = 'ApiError';
+  }
+}
+
+type ErrorHandler = (error: ApiError | Error) => void;
+let globalErrorHandler: ErrorHandler | null = null;
+
+export function onApiError(handler: ErrorHandler) {
+  globalErrorHandler = handler;
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = localStorage.getItem('titan_refresh_token');
   if (!refreshToken) return null;
@@ -61,7 +79,7 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-async function fetchJson<T>(path: string, opts?: RequestInit): Promise<T> {
+async function fetchJson<T>(path: string, opts?: RequestInit & { _retry?: boolean }): Promise<T> {
   const makeRequest = (token: string) =>
     fetch(`${API_BASE}${path}`, {
       headers: {
@@ -72,7 +90,18 @@ async function fetchJson<T>(path: string, opts?: RequestInit): Promise<T> {
       ...opts,
     });
 
-  let res = await makeRequest(getToken());
+  let res: Response;
+  try {
+    res = await makeRequest(getToken());
+  } catch (err) {
+    if (!opts?._retry) {
+      await new Promise((r) => setTimeout(r, 1000));
+      return fetchJson<T>(path, { ...opts, _retry: true });
+    }
+    const netErr = err instanceof Error ? err : new Error('Network error');
+    globalErrorHandler?.(netErr);
+    throw netErr;
+  }
 
   if (res.status === 401) {
     const newToken = await refreshAccessToken();
@@ -88,9 +117,39 @@ async function fetchJson<T>(path: string, opts?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`API ${res.status}: ${text}`);
+    const apiErr = new ApiError(res.status, res.statusText, text);
+    globalErrorHandler?.(apiErr);
+    throw apiErr;
   }
   return res.json() as Promise<T>;
+}
+
+export async function fetchRaw(path: string, opts?: RequestInit): Promise<Response> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(opts?.headers ?? {}),
+    },
+    ...opts,
+  });
+  if (res.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      return fetch(`${API_BASE}${path}`, {
+        headers: {
+          'Authorization': `Bearer ${newToken}`,
+          ...(opts?.headers ?? {}),
+        },
+        ...opts,
+      });
+    }
+    localStorage.removeItem('titan_access_token');
+    localStorage.removeItem('titan_refresh_token');
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+  return res;
 }
 
 export interface AgentProfile {
@@ -108,6 +167,7 @@ export interface AgentProfile {
 }
 
 export const api = {
+  // Agent runs
   triggerRun: (agentId: string, body: { prompt: string; maxSteps?: number; tokenBudget?: number; forbiddenTools?: string[] }) =>
     fetchJson<{ runId: string; jobId: string; status: string; createdAt: string }>(`/agents/${agentId}/run`, {
       method: 'POST',
@@ -123,11 +183,11 @@ export const api = {
   getSteps: (agentId: string, runId: string) =>
     fetchJson<{ items: ApiStep[]; total: number }>(`/agents/${agentId}/runs/${runId}/steps`),
 
+  // Queues
   getQueueStats: (queueName: string) =>
-    fetchJson<QueueStats>(`/admin/queues/${queueName}/stats`).catch(() => ({
-      waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0,
-    })),
+    fetchJson<QueueStats>(`/admin/queues/${queueName}/stats`),
 
+  // Agent profiles
   listAgentProfiles: () =>
     fetchJson<{ items: AgentProfile[] }>('/agent-profiles'),
 
@@ -142,4 +202,141 @@ export const api = {
 
   deleteAgentProfile: (id: string) =>
     fetchJson<Record<string, never>>(`/agent-profiles/${id}`, { method: 'DELETE' }),
+
+  // Health
+  getHealth: () =>
+    fetchJson<Record<string, unknown>>('/health/dashboard'),
+
+  // Metrics
+  getMetrics: () =>
+    fetchJson<Record<string, unknown>>('/metrics'),
+
+  // Files
+  listFiles: (path = '/') =>
+    fetchJson<{ items: Array<{ name: string; type: string; size: number; modified: string }> }>(`/files?path=${encodeURIComponent(path)}`),
+
+  uploadFile: (path: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return fetchRaw(`/files/upload?path=${encodeURIComponent(path)}`, {
+      method: 'POST',
+      body: form,
+    });
+  },
+
+  deleteFile: (path: string) =>
+    fetchJson<Record<string, never>>(`/files?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
+
+  // Cron
+  listCron: () =>
+    fetchJson<{ items: Array<Record<string, unknown>>; total: number }>('/cron'),
+
+  createCron: (body: Record<string, unknown>) =>
+    fetchJson<Record<string, unknown>>('/cron', { method: 'POST', body: JSON.stringify(body) }),
+
+  deleteCron: (id: string) =>
+    fetchJson<Record<string, never>>(`/cron/${id}`, { method: 'DELETE' }),
+
+  // Logs
+  getLogs: (opts?: { limit?: number; offset?: number; level?: string }) =>
+    fetchJson<{ items: Array<Record<string, unknown>>; total: number }>(
+      `/logs?limit=${opts?.limit ?? 50}&offset=${opts?.offset ?? 0}${opts?.level ? `&level=${opts.level}` : ''}`,
+    ),
+
+  // Webhooks
+  listWebhooks: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/webhooks'),
+
+  createWebhook: (body: Record<string, unknown>) =>
+    fetchJson<Record<string, unknown>>('/webhooks', { method: 'POST', body: JSON.stringify(body) }),
+
+  deleteWebhook: (id: string) =>
+    fetchJson<Record<string, never>>(`/webhooks/${id}`, { method: 'DELETE' }),
+
+  // Settings
+  getSettings: () =>
+    fetchJson<Record<string, unknown>>('/settings'),
+
+  updateSettings: (body: Record<string, unknown>) =>
+    fetchJson<Record<string, unknown>>('/settings', { method: 'PATCH', body: JSON.stringify(body) }),
+
+  // API Keys
+  listApiKeys: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/api-keys'),
+
+  createApiKey: (body: Record<string, unknown>) =>
+    fetchJson<Record<string, unknown>>('/api-keys', { method: 'POST', body: JSON.stringify(body) }),
+
+  deleteApiKey: (id: string) =>
+    fetchJson<Record<string, never>>(`/api-keys/${id}`, { method: 'DELETE' }),
+
+  // Audit Logs
+  getAuditLogs: (opts?: { limit?: number; offset?: number }) =>
+    fetchJson<{ items: Array<Record<string, unknown>>; total: number }>(
+      `/audit?limit=${opts?.limit ?? 50}&offset=${opts?.offset ?? 0}`,
+    ),
+
+  // Analytics
+  getAnalytics: (type = 'tokens') =>
+    fetchJson<Record<string, unknown>>(`/analytics/${type}`),
+
+  // Git
+  getGitStatus: () =>
+    fetchJson<Record<string, unknown>>('/git/status'),
+
+  gitPush: (body: Record<string, unknown>) =>
+    fetchJson<Record<string, unknown>>('/git/push', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Search
+  search: (query: string) =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>(`/search?q=${encodeURIComponent(query)}`),
+
+  // Integrations
+  listIntegrations: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/integrations'),
+
+  // Plugins
+  listPlugins: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/plugins'),
+
+  installPlugin: (body: Record<string, unknown>) =>
+    fetchJson<Record<string, unknown>>('/plugins', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Teams
+  listTeams: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/teams'),
+
+  // Templates
+  listTemplates: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/templates'),
+
+  // Projects
+  listProjects: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/projects'),
+
+  createProject: (body: Record<string, unknown>) =>
+    fetchJson<Record<string, unknown>>('/projects', { method: 'POST', body: JSON.stringify(body) }),
+
+  // User Profile
+  getProfile: () =>
+    fetchJson<Record<string, unknown>>('/user/profile'),
+
+  updateProfile: (body: Record<string, unknown>) =>
+    fetchJson<Record<string, unknown>>('/user/profile', { method: 'PATCH', body: JSON.stringify(body) }),
+
+  // Marketplace
+  getMarketplace: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/marketplace'),
+
+  // Notifications
+  listNotifications: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/notifications'),
+
+  // Memory
+  listMemories: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/memory'),
+
+  // Swarm
+  listSwarms: () =>
+    fetchJson<{ items: Array<Record<string, unknown>> }>('/swarm'),
 };

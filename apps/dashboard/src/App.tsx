@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import ErrorToast from './components/ErrorToast';
 import Login from './pages/Login';
 import { useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -36,6 +37,23 @@ const ApiDocs = React.lazy(() => import('./pages/ApiDocs'));
 const GettingStarted = React.lazy(() => import('./pages/GettingStarted'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
+// V3 pages
+const Analytics = React.lazy(() => import('./pages/Analytics'));
+const CostDashboard = React.lazy(() => import('./pages/CostDashboard'));
+const TraceViewer = React.lazy(() => import('./pages/TraceViewer'));
+const WorkflowDesigner = React.lazy(() => import('./pages/WorkflowDesigner'));
+const KnowledgeBase = React.lazy(() => import('./pages/KnowledgeBase'));
+const UserProfile = React.lazy(() => import('./pages/UserProfile'));
+const AgentPerformance = React.lazy(() => import('./pages/AgentPerformance'));
+const ModelComparison = React.lazy(() => import('./pages/ModelComparison'));
+const ToolStats = React.lazy(() => import('./pages/ToolStats'));
+const IntegrationHub = React.lazy(() => import('./pages/IntegrationHub'));
+const MarketplacePage = React.lazy(() => import('./pages/MarketplacePage'));
+const LearningDashboard = React.lazy(() => import('./pages/LearningDashboard'));
+const ErrorExplorer = React.lazy(() => import('./pages/ErrorExplorer'));
+const NotificationCenter = React.lazy(() => import('./pages/NotificationCenter'));
+const WorkspaceInsights = React.lazy(() => import('./pages/WorkspaceInsights'));
+
 function LoadingFallback() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -50,6 +68,7 @@ function ProtectedLayout() {
   return (
     <ThemeProvider>
       <NotificationProvider>
+        <ErrorToast />
         <Layout>
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -80,6 +99,22 @@ function ProtectedLayout() {
                 <Route path="/health" element={<Health />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/getting-started" element={<GettingStarted />} />
+                {/* V3 pages */}
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/cost" element={<CostDashboard />} />
+                <Route path="/traces" element={<TraceViewer />} />
+                <Route path="/workflows" element={<WorkflowDesigner />} />
+                <Route path="/knowledge" element={<KnowledgeBase />} />
+                <Route path="/profile" element={<UserProfile />} />
+                <Route path="/agent-performance" element={<AgentPerformance />} />
+                <Route path="/model-comparison" element={<ModelComparison />} />
+                <Route path="/tool-stats" element={<ToolStats />} />
+                <Route path="/integrations" element={<IntegrationHub />} />
+                <Route path="/marketplace" element={<MarketplacePage />} />
+                <Route path="/learning" element={<LearningDashboard />} />
+                <Route path="/errors" element={<ErrorExplorer />} />
+                <Route path="/notifications" element={<NotificationCenter />} />
+                <Route path="/insights" element={<WorkspaceInsights />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

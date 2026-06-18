@@ -37,6 +37,21 @@ import {
   HeartPulse,
   BookOpen,
   Rocket,
+  TrendingUp,
+  DollarSign,
+  GitCompare,
+  Workflow,
+  Library,
+  User,
+  Activity,
+  Layers,
+  Wrench,
+  Link,
+  Store,
+  GraduationCap,
+  AlertCircle,
+  BellRing,
+  PieChart,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -60,17 +75,23 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/editor', icon: <Code className="h-4 w-4" />, label: 'Editor' },
       { to: '/terminal', icon: <Monitor className="h-4 w-4" />, label: 'Terminal' },
       { to: '/git', icon: <GitBranch className="h-4 w-4" />, label: 'Git Push' },
-      { to: '/teams', icon: <Users className="h-4 w-4" />, label: 'Teams' },
-      { to: '/templates', icon: <FileCode className="h-4 w-4" />, label: 'Templates' },
-      { to: '/swarm', icon: <Bug className="h-4 w-4" />, label: 'Swarm' },
+      { to: '/workflows', icon: <Workflow className="h-4 w-4" />, label: 'Workflows' },
+      { to: '/knowledge', icon: <Library className="h-4 w-4" />, label: 'Knowledge Base' },
       { to: '/memory', icon: <Brain className="h-4 w-4" />, label: 'Memory' },
-      { to: '/getting-started', icon: <Rocket className="h-4 w-4" />, label: 'Getting Started' },
+      { to: '/templates', icon: <FileCode className="h-4 w-4" />, label: 'Templates' },
     ],
   },
   {
-    title: 'Admin',
+    title: 'Intelligence',
     items: [
-      { to: '/health', icon: <HeartPulse className="h-4 w-4" />, label: 'System Health' },
+      { to: '/analytics', icon: <TrendingUp className="h-4 w-4" />, label: 'Analytics' },
+      { to: '/agent-performance', icon: <Activity className="h-4 w-4" />, label: 'Agent Performance' },
+      { to: '/model-comparison', icon: <GitCompare className="h-4 w-4" />, label: 'Model Comparison' },
+      { to: '/tool-stats', icon: <Wrench className="h-4 w-4" />, label: 'Tool Stats' },
+      { to: '/cost', icon: <DollarSign className="h-4 w-4" />, label: 'Cost Dashboard' },
+      { to: '/traces', icon: <Layers className="h-4 w-4" />, label: 'Trace Viewer' },
+      { to: '/errors', icon: <AlertCircle className="h-4 w-4" />, label: 'Error Explorer' },
+      { to: '/insights', icon: <PieChart className="h-4 w-4" />, label: 'Workspace Insights' },
     ],
   },
   {
@@ -83,15 +104,29 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/logs', icon: <ScrollText className="h-4 w-4" />, label: 'Logs' },
       { to: '/webhooks', icon: <Webhook className="h-4 w-4" />, label: 'Webhooks' },
       { to: '/audit-logs', icon: <Shield className="h-4 w-4" />, label: 'Audit Logs' },
+      { to: '/health', icon: <HeartPulse className="h-4 w-4" />, label: 'System Health' },
+    ],
+  },
+  {
+    title: 'Ecosystem',
+    items: [
+      { to: '/integrations', icon: <Link className="h-4 w-4" />, label: 'Integrations' },
+      { to: '/marketplace', icon: <Store className="h-4 w-4" />, label: 'Marketplace' },
+      { to: '/plugins', icon: <Puzzle className="h-4 w-4" />, label: 'Plugins' },
+      { to: '/swarm', icon: <Bug className="h-4 w-4" />, label: 'Swarm' },
+      { to: '/teams', icon: <Users className="h-4 w-4" />, label: 'Teams' },
     ],
   },
   {
     title: 'System',
     items: [
+      { to: '/profile', icon: <User className="h-4 w-4" />, label: 'Profile' },
+      { to: '/notifications', icon: <BellRing className="h-4 w-4" />, label: 'Notifications' },
       { to: '/settings', icon: <Settings className="h-4 w-4" />, label: 'Settings' },
       { to: '/api-keys', icon: <KeyRound className="h-4 w-4" />, label: 'API Keys' },
-      { to: '/plugins', icon: <Puzzle className="h-4 w-4" />, label: 'Plugins' },
+      { to: '/learning', icon: <GraduationCap className="h-4 w-4" />, label: 'Learning' },
       { to: '/api-docs', icon: <BookOpen className="h-4 w-4" />, label: 'API Docs' },
+      { to: '/getting-started', icon: <Rocket className="h-4 w-4" />, label: 'Getting Started' },
     ],
   },
 ];
@@ -205,25 +240,9 @@ function GlobalSearch() {
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const pages = [
-    { label: 'Dashboard', path: '/' },
-    { label: 'Projects', path: '/projects' },
-    { label: 'Chat', path: '/chat' },
-    { label: 'Agents', path: '/agents' },
-    { label: 'Playground', path: '/playground' },
-    { label: 'Run History', path: '/runs' },
-    { label: 'Queues', path: '/queue' },
-    { label: 'Metrics', path: '/metrics' },
-    { label: 'Files', path: '/files' },
-    { label: 'Editor', path: '/editor' },
-    { label: 'Terminal', path: '/terminal' },
-    { label: 'Git Push', path: '/git' },
-    { label: 'Cron Jobs', path: '/cron' },
-    { label: 'Logs', path: '/logs' },
-    { label: 'Webhooks', path: '/webhooks' },
-    { label: 'Settings', path: '/settings' },
-    { label: 'API Keys', path: '/api-keys' },
-  ];
+  const pages = NAV_SECTIONS.flatMap((s) =>
+    s.items.map((item) => ({ label: item.label, path: item.to })),
+  );
 
   const results = query.trim()
     ? pages.filter((p) => p.label.toLowerCase().includes(query.toLowerCase()))

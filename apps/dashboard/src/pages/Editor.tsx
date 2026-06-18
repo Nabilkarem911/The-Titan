@@ -43,7 +43,9 @@ export default function CodeEditor() {
       if (!res.ok) throw new Error('Failed');
       const data = await res.json() as { items: FileEntry[] };
       setEntries(data.items ?? []);
-    } catch { /* ignore */ }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load files');
+    }
   }, [currentPath]);
 
   useEffect(() => {

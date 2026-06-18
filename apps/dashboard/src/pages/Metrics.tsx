@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, Loader2, Activity, Clock, Zap, BarChart3 } from 'lucide-react';
-import { getToken } from '../api/client';
+import { API_BASE, getToken } from '../api/client';
 
 interface MetricValue {
   name: string;
@@ -25,7 +25,7 @@ export default function Metrics() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/metrics.json', {
+      const res = await fetch(`${API_BASE}/metrics`, {
         headers: { 'Authorization': `Bearer ${getToken()}` },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

@@ -70,7 +70,9 @@ export default function AuditLogsPage() {
       if (!res.ok) throw new Error('Failed');
       const data = await res.json() as RetentionInfo;
       setRetention(data);
-    } catch { /* ignore */ }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load retention info');
+    }
   };
 
   const handleVerify = async () => {

@@ -77,7 +77,9 @@ export default function Settings() {
         setProfile(data);
         setName(data.name);
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to load profile');
+    }
   };
 
   const fetchKeys = async () => {
@@ -89,7 +91,9 @@ export default function Settings() {
         const data = await res.json() as { items: UserKey[] };
         setKeys(data.items ?? []);
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to load keys');
+    }
   };
 
   const handleUpdateProfile = async () => {

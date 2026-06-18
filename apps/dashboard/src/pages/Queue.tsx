@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, Loader2, List, Activity, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { QUEUE_NAMES } from '../api/constants';
-import { getToken } from '../api/client';
+import { API_BASE, getToken } from '../api/client';
 
 interface QueueInfo {
   name: string;
@@ -22,7 +22,7 @@ export default function Queue() {
     try {
       const promises = QUEUE_NAMES.map(async (name) => {
         try {
-          const res = await fetch(`/api/v1/admin/queues/${name}/stats`, {
+          const res = await fetch(`${API_BASE}/admin/queues/${name}/stats`, {
             headers: { 'Authorization': `Bearer ${getToken()}` },
           });
           if (res.ok) {
