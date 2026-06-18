@@ -44,3 +44,7 @@ export { passwordGenerate } from './tools/passwordGenerate.js';
 export { colorConvert } from './tools/colorConvert.js';
 export { fileWatch } from './tools/fileWatch.js';
 export { manageAgentProfile } from './tools/manageAgentProfile.js';
+
+// Phase 4: MCP & Tool Composition
+export * from './mcp/index.js';
+export * from './composition/index.js';
