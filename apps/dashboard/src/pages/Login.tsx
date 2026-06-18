@@ -25,8 +25,8 @@ export default function Login() {
         const data = await res.json().catch(() => ({}));
         throw new Error((data as { title?: string }).title ?? `HTTP ${res.status}`);
       }
-      const data = await res.json() as { accessToken: string; refreshToken: string };
-      login(data.accessToken, data.refreshToken);
+      const data = await res.json() as { user: { id: string; email: string; name: string }; tokens: { accessToken: string; refreshToken: string } };
+      login(data.tokens.accessToken, data.tokens.refreshToken);
       navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
