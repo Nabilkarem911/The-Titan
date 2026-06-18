@@ -299,11 +299,17 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
 
       // Start background run — do not await so next messages can be processed concurrently
       log.info({ runId, chatId }, 'background agent run started');
+      const chatHistory = history.map((m: { role: string; content: string }) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      }));
+
       runner.run({
         runId,
         agentId,
         prompt: text,
         systemPromptExtra: (profileSystemPrompt ? profileSystemPrompt + '\n\n' : '') + contextBlock,
+        conversationHistory: chatHistory.slice(-20),
       }).then(async (result) => {
         clearInterval(typingInterval);
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إكمال المهمة.';

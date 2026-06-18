@@ -47,6 +47,13 @@ function buildSystemPrompt(ctx: AgentContext, userMessage?: string): string {
 
 function buildMessages(ctx: AgentContext): LlmMessage[] {
   const msgs: LlmMessage[] = [{ role: 'system', content: buildSystemPrompt(ctx, ctx.run.prompt) }];
+
+  if (ctx.conversationHistory && ctx.conversationHistory.length > 0) {
+    for (const msg of ctx.conversationHistory) {
+      msgs.push({ role: msg.role, content: msg.content });
+    }
+  }
+
   msgs.push({ role: 'user', content: ctx.run.prompt });
 
   for (const step of ctx.run.steps) {
@@ -194,6 +201,7 @@ export class AgentRunner {
       systemPrompt: input.systemPromptExtra ?? '',
       rules,
       memoryItems,
+      conversationHistory: input.conversationHistory,
     };
 
     const toolCallCounts = new Map<string, number>();
@@ -294,7 +302,7 @@ export class AgentRunner {
 
         if (step.status === 'completed') {
           run.status = 'completed';
-          const raw = step.reflection ?? (step.observation?.data != null ? (typeof step.observation.data === 'string' ? step.observation.data : JSON.stringify(step.observation.data)) : 'Done');
+          const raw = step.reflection ?? step.thought ?? '';
           const match = raw.match(/FINAL ANSWER:\s*([\s\S]+)/i);
           run.finalAnswer = match ? match[1].trim() : raw.trim();
           break;
@@ -391,23 +399,11 @@ export class AgentRunner {
       step.latencyMs = (step.latencyMs ?? 0) + Math.round(performance.now() - toolStart);
       step.status = 'observing';
 
-      // 3. Reflection — temporarily add step for context, then remove
-      // NOTE: Do NOT pass tools here — reflection should reason about the observation
-      // and decide whether to provide FINAL ANSWER, not make another tool call.
-      ctx.run.steps.push(step);
-      const reflectMessages = buildMessages(ctx);
-      ctx.run.steps.pop(); // remove temporary entry; loop will push the final version
-      const reflectStart = performance.now();
-      const reflect = await this.deps.llm.complete(reflectMessages);
-      step.latencyMs = (step.latencyMs ?? 0) + Math.round(performance.now() - reflectStart);
-      step.tokensUsed = (step.tokensUsed ?? 0) + reflect.tokensUsed;
-      step.reflection = reflect.content;
-
-      if (reflect.content.includes('FINAL ANSWER:')) {
-        step.status = 'completed';
-      } else {
-        step.status = 'observing'; // not done yet — runner will continue to next step
-      }
+      // 3. After observing tool result, let the loop continue naturally.
+      // The NEXT iteration's planning phase will see the tool result and decide:
+      // use another tool, or provide final answer.
+      // No separate reflection LLM call — saves tokens and avoids forcing premature answers.
+      step.status = 'observing';
 
       if (this.deps.onStep) {
         await this.deps.onStep(step);

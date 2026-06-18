@@ -67,6 +67,7 @@ export interface AgentRunInput {
   tokenBudget?: number;
   forbiddenTools?: readonly string[];
   systemPromptExtra?: string;
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
 
 export interface LlmMessage {
@@ -111,4 +112,5 @@ export interface AgentContext {
   memoryItems?: string[];
   systemPrompt: string;
   rules: AgentRule[];
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
