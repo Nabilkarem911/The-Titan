@@ -157,7 +157,7 @@ describe('JsonRpcNotification structure', () => {
     };
     expect(notif.jsonrpc).toBe('2.0');
     expect(notif.method).toBe('progress.update');
-    expect((notif as Record<string, unknown>).id).toBeUndefined();
+    expect((notif as unknown as Record<string, unknown>).id).toBeUndefined();
   });
 
   it('allows params to be omitted', () => {
@@ -177,7 +177,7 @@ describe('JsonRpcSuccess structure', () => {
       result: 'done',
     };
     expect(res.result).toBe('done');
-    expect((res as Record<string, unknown>).error).toBeUndefined();
+    expect((res as unknown as Record<string, unknown>).error).toBeUndefined();
   });
 });
 

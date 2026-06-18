@@ -55,39 +55,54 @@ function escapeMarkdown(text: string): string {
     .replace(/!/g, '\\!');
 }
 
-async function sendTelegramMessage(token: string, chatId: number, text: string): Promise<void> {
+const TELEGRAM_MSG_LIMIT = 4000;
+
+function splitMessage(text: string): string[] {
+  if (text.length <= TELEGRAM_MSG_LIMIT) return [text];
+  const chunks: string[] = [];
+  let remaining = text;
+  while (remaining.length > 0) {
+    if (remaining.length <= TELEGRAM_MSG_LIMIT) {
+      chunks.push(remaining);
+      break;
+    }
+    let splitAt = remaining.lastIndexOf('\n', TELEGRAM_MSG_LIMIT);
+    if (splitAt < TELEGRAM_MSG_LIMIT * 0.3) splitAt = remaining.lastIndexOf('. ', TELEGRAM_MSG_LIMIT);
+    if (splitAt < TELEGRAM_MSG_LIMIT * 0.3) splitAt = TELEGRAM_MSG_LIMIT;
+    chunks.push(remaining.slice(0, splitAt + 1));
+    remaining = remaining.slice(splitAt + 1);
+  }
+  return chunks;
+}
+
+async function sendTelegramChunk(token: string, chatId: number, text: string): Promise<boolean> {
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
-  const body = { chat_id: chatId, text: escapeMarkdown(text), parse_mode: 'MarkdownV2' };
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ chat_id: chatId, text: escapeMarkdown(text), parse_mode: 'MarkdownV2' }),
     });
-    if (!res.ok) {
-      const err = await res.text();
-      log.warn({ chatId, status: res.status, err }, 'telegram sendMessage failed');
-      // Fallback: if parse_mode caused the failure, retry without it
-      if (res.status === 400) {
-        try {
-          const fallbackRes = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text }),
-          });
-          if (fallbackRes.ok) {
-            log.info({ chatId }, 'telegram fallback (no parse_mode) succeeded');
-          } else {
-            const fallbackErr = await fallbackRes.text();
-            log.error({ chatId, status: fallbackRes.status, err: fallbackErr }, 'telegram fallback also failed');
-          }
-        } catch (fallbackEx) {
-          log.error({ chatId, err: fallbackEx }, 'telegram fallback threw exception');
-        }
-      }
-    }
+    if (res.ok) return true;
+    const fallbackRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+    if (fallbackRes.ok) return true;
+    const err = await fallbackRes.text();
+    log.error({ chatId, status: fallbackRes.status, err }, 'telegram send failed');
+    return false;
   } catch (err) {
     log.error({ chatId, err }, 'telegram sendMessage error');
+    return false;
+  }
+}
+
+async function sendTelegramMessage(token: string, chatId: number, text: string): Promise<void> {
+  const chunks = splitMessage(text);
+  for (const chunk of chunks) {
+    await sendTelegramChunk(token, chatId, chunk);
   }
 }
 
@@ -181,7 +196,16 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
     // Acknowledge immediately — Telegram requires 200 within 5s
     reply.code(200).send({ ok: true });
 
-    // Send typing indicator
+    // Continuous typing indicator while agent thinks
+    const typingInterval = setInterval(() => {
+      fetch(`https://api.telegram.org/bot${cfg.TELEGRAM_BOT_TOKEN}/sendChatAction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
+      }).catch(() => {});
+    }, 4000);
+
+    // Send first typing immediately
     fetch(`https://api.telegram.org/bot${cfg.TELEGRAM_BOT_TOKEN}/sendChatAction`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -270,6 +294,9 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         executeTool: (name, params) => registry.execute(name, params),
         memory,
         userContextItems,
+        enablePlanning: true,
+        enableAutoStrategy: true,
+        enableSelfCritique: true,
       });
 
       // Start background run — do not await so next messages can be processed concurrently
@@ -280,11 +307,13 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         prompt: text,
         systemPromptExtra: (profileSystemPrompt ? profileSystemPrompt + '\n\n' : '') + contextBlock,
       }).then(async (result) => {
+        clearInterval(typingInterval);
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إكمال المهمة.';
         await saveChatMessage(sessionId, 'assistant', answer);
         await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, answer);
-        log.info({ runId, chatId }, 'background agent run completed');
+        log.info({ runId, chatId, steps: result.steps.length, durationMs: Date.now() - Date.now() }, 'background agent run completed');
       }).catch(async (err) => {
+        clearInterval(typingInterval);
         log.error({ chatId, err }, 'background agent run failed');
         await sendTelegramMessage(
           cfg.TELEGRAM_BOT_TOKEN,
@@ -294,6 +323,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       });
 
     } catch (err) {
+      clearInterval(typingInterval);
       log.error({ chatId, err }, 'telegram handler setup failed');
       await sendTelegramMessage(
         cfg.TELEGRAM_BOT_TOKEN,

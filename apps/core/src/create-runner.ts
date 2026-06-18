@@ -63,6 +63,15 @@ export interface CreateRunnerOptions {
    * Defaults to `true`.
    */
   broadcastWs?: boolean;
+
+  /** Enable advanced planning for complex tasks. */
+  enablePlanning?: boolean;
+
+  /** Enable auto strategy selection based on task classification. */
+  enableAutoStrategy?: boolean;
+
+  /** Enable self-critique of final answers. */
+  enableSelfCritique?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -92,6 +101,9 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
     },
     memory,
     userContextItems,
+    enablePlanning: opts.enablePlanning,
+    enableAutoStrategy: opts.enableAutoStrategy,
+    enableSelfCritique: opts.enableSelfCritique,
 
     /* ----- persistRun ------------------------------------------------ */
     persistRun: async (run: AgentRun) => {
