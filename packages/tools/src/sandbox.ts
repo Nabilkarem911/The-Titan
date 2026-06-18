@@ -80,7 +80,17 @@ export function validateCommand(command: string, config: SandboxConfig = DEFAULT
   const forbidden = config.forbiddenCommands ?? DEFAULT_CONFIG.forbiddenCommands!;
   const lower = command.toLowerCase();
   for (const f of forbidden) {
-    if (lower.includes(f.toLowerCase())) {
+    if (f === 'sh -i') {
+      if (/(?<![s])sh\s+-i/.test(lower)) {
+        log.warn({ command: command.substring(0, 200), forbidden: f }, 'forbidden command detected');
+        throw new Error(`Command contains forbidden pattern: "${f}"`);
+      }
+    } else if (f === 'bash -i') {
+      if (/(?<![a-z])bash\s+-i/.test(lower)) {
+        log.warn({ command: command.substring(0, 200), forbidden: f }, 'forbidden command detected');
+        throw new Error(`Command contains forbidden pattern: "${f}"`);
+      }
+    } else if (lower.includes(f.toLowerCase())) {
       log.warn({ command: command.substring(0, 200), forbidden: f }, 'forbidden command detected');
       throw new Error(`Command contains forbidden pattern: "${f}"`);
     }
