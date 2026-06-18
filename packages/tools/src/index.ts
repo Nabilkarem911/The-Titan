@@ -50,3 +50,24 @@ export * from './mcp/index.js';
 export * from './composition/index.js';
 export * from './browser/index.js';
 export * from './marketplace/index.js';
+
+// V3 Tools
+export { pdfCreate } from './tools/pdfCreate.js';
+export { spreadsheetCreate } from './tools/spreadsheetCreate.js';
+export { imageGenerate } from './tools/imageGenerate.js';
+export { imageAnalyze } from './tools/imageAnalyze.js';
+export { s3Operations } from './tools/s3Operations.js';
+export { googleDrive } from './tools/googleDrive.js';
+export { notionApi } from './tools/notionApi.js';
+export { linearApi } from './tools/linearApi.js';
+export { rssFeedParse } from './tools/rssFeedParse.js';
+export { webMonitor } from './tools/webMonitor.js';
+export { csvTransform } from './tools/csvTransform.js';
+export { dataVisualize } from './tools/dataVisualize.js';
+export { slackMessage } from './tools/slackMessage.js';
+export { smsMessage } from './tools/smsMessage.js';
+export { textClassify } from './tools/textClassify.js';
+export { codeAnalyze } from './tools/codeAnalyze.js';
+export { systemMetrics } from './tools/systemMetrics.js';
+export { invoiceGenerate } from './tools/invoiceGenerate.js';
+export { reportGenerate } from './tools/reportGenerate.js';
