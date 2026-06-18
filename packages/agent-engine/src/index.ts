@@ -10,3 +10,4 @@ export * from './swarm/index.js';
 export * from './planner/index.js';
 export * from './reflection/index.js';
 export * from './strategies/index.js';
+export * from './workflow/index.js';
