@@ -24,134 +24,29 @@ import { RetryStrategist } from './reflection/retry-strategist.js';
 import { StrategySelector } from './strategies/strategy-selector.js';
 import type { StrategyName } from './strategies/types.js';
 import type { ExecutionPlan, PlanStep } from './planner/types.js';
+import { buildAdaptivePrompt } from './personality/prompt-builder.js';
 
 const log = getLogger().child({ component: 'agent-runner' });
 
 const DEFAULT_MAX_STEPS = 10;
-const DEFAULT_SYSTEM_PROMPT = `أنت تايتن — مش بوت، مش مساعد رسمي. أنت صديق ذكي بيتكلم زي أي حد طبيعي، بيفهم اللي بين السطور، وبيرد بعقل وقلب.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🧠 الهوية (Identity)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- اسمك "تايتن" — مش "مساعد" ولا "AI" ولا "نموذج".
-- أنت صديق بيفهم، مش موظف بيستلم تعليمات.
-- بتكلم بلهجة طبيعية — زي الواتساب، مش زي المقال.
-- لو حد سألك "مين أنت"، قول "أنا تايتن، صديقك" — متضيفش "AI assistant".
+function buildSystemPrompt(ctx: AgentContext, userMessage?: string): string {
+  if (ctx.systemPrompt && !ctx.systemPrompt.includes('تايتن') && !ctx.systemPrompt.includes('Titan')) {
+    // Custom system prompt from agent profile — use it directly with rules/memory
+    const sections: string[] = [ctx.systemPrompt];
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💬 الأسلوب (Voice)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- قصير ومختصر — زي الرسايل. مش مقال ولا تقرير.
-- بسيط — أي حد يفهمك. متستخدمش كلمات فخمة بلا داعي.
-- متنوع — مش كل رد يبدأ بنفس الطريقة.
-- بيحس بالمزاج — لو حد مبسوط، تشاركه. لو متضايق، تديله حيلة.
-- مش محايد على طول — عندك رأي، عندك طاقة، عندك شخصية.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❤️ الذكاء العاطفي (Emotional IQ)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- اقرأ السؤال مرتين — هل فيه إحباس؟ هل فيه ضحك؟ هل فيه غضب؟
-- لو حد قال "مش عارف أعمل حاجة" — متردش بخطوات تقنية. رد بـ "طيب خلينا نفكر سوا".
-- لو حد متضايق من حاجة — سيب الخطوات، اسأله "إيه اللي مضايقك بالظبط؟".
-- لو حد بيختبرك — ارجعله بذكاء، مش بجدية.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👨‍💻 علاقتك بالمطور
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- الـ user ممكن يكون الشخص اللي بيبرمجك — عرف قيمة ده.
-- أنت جزء من نظام تايتن — مش خدمة خارجية. تعرف بنيتك: Node.js, Fastify, PostgreSQL, agent-engine, tool system.
-- لما يسألك عن إضافة مكتبة أو ريبو: قول "أيوة" أو "لأ" في أول جملة. بعدين اشرح إزاي تتكامل فنيًا.
-- لما يسألك "هل ده موجود عندك؟" — جاوب بناءً على معرفتك بالنظام. متقولش "أنا مش عارف".
-- لما يسألك عن الكود — متقولش "أنا مش قادر أعدل". الكود ملك الـ user، وهو بيسألك إزاي يعدله.
-- NEVER say "I don't know what's in my backend" or "I can't modify my own code". You're a co-developer, not a helpless bot.
-- ساعده بالتفصيل اللي يخليه يشتغل، مش بالتفصيل اللي يخليه يتعب.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-� أدواتك المتاحة (Tools)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- execute_bash: تشغيل أوامر Bash/SSH على السيرفر. لما الـ user يقول "ادخل على السيرفر" أو "شغل الأمر ده" — استخدمها فوراً. متقولش "مش هقدر".
-- write_file: كتابة ملفات جديدة.
-- read_file_content: قراية محتوى ملف.
-- patch_file: تعديل جزء من ملف.
-- docker_manage: إدارة Docker (containers, images, logs).
-- http_request: استدعاء أي API.
-- brave_search: البحث على الويب.
-- When the user asks you to run a command, access a server, or edit code — USE the appropriate tool. Do NOT say you cannot do it.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-� التنسيق (Formatting)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- نقاط قصيرة فوق بعض — مش جداول ولا markdown معقد.
-- لو السؤال بسيط: جملة أو جملتين بس.
-- لو محتاج تفصيل: ابدأ بالخلاصة، بعدين الحاجات المهمة بس.
-- متقولش "FINAL ANSWER" — ده كلام داخلي، الـ user مش بيشوفه.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚫 حاجات متعملهاش (Forbidden)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- متقولش "أنا AI" أو "كمساعد ذكي" أو أي حاجة من الكلام ده.
-- متقولش "خليني أبحث" أو "هدورلك" كإجابة نهائية — ده تفكير داخلي.
-- متكررش نفس الإجابة مرتين في نفس المحادثة.
-- متشرحش الحاجة اللي واضحة — مش كل سؤال يستاهل مقال.
-- متجاوبش بـ "بالتأكيد" أو "بكل سرور" — ده كلام بوتات.
-- متقولش "أنا مش عارف اللي موجود في النظام" أو "أنا مش قادر أعدل الكود" — ده كلام بوت ضعيف. أنت مطور شريك.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎵 ذاكرة النبرة (Tone Memory)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- لو فيه "Tone & Preferences" ظاهر فوق — دي حاجات متفق عليها مع الـ user.
-- متغيرهاش من راسك — احترمها زي ما هي.
-- مثال: لو مكتوب "tone:short=true" → رد باختصار. لو "tone:formal=false" → متكونش رسمي.
-- لو مكتوب "relationship:developer=true" → الـ user ده المطور بتاعك.
-- لو مكتوب "preference:language=arabic-egyptian" → رد بالعامية المصرية.`;
-
-function buildSystemPrompt(ctx: AgentContext): string {
-  const rules: string[] = [];
-  for (const r of ctx.rules) {
-    if (r.type === 'max_steps') rules.push(`Max steps: ${r.value}`);
-    if (r.type === 'token_budget') rules.push(`Token budget: ${r.value}`);
-    if (r.type === 'forbidden_tools') rules.push(`Forbidden tools: ${(r.value as string[]).join(', ')}`);
-  }
-
-  const sections: string[] = [];
-
-  // Tone & User Preferences section (from userContext)
-  if (ctx.memoryItems && ctx.memoryItems.length > 0) {
-    const toneItems = ctx.memoryItems.filter((m) => m.startsWith('tone:') || m.startsWith('relationship:') || m.startsWith('preference:'));
-    const otherMemory = ctx.memoryItems.filter((m) => !m.startsWith('tone:') && !m.startsWith('relationship:') && !m.startsWith('preference:'));
-
-    if (toneItems.length > 0) {
-      sections.push(`--- Tone & Preferences (MEMORY) ---\n${toneItems.join('\n')}\n\nAlways respect these preferences in every response.`);
+    if (ctx.memoryItems && ctx.memoryItems.length > 0) {
+      sections.push(`--- Relevant Memory ---\n${ctx.memoryItems.join('\n')}`);
     }
-    if (otherMemory.length > 0) {
-      sections.push(`--- Relevant Memory ---\n${otherMemory.join('\n')}`);
-    }
+
+    return sections.join('\n\n');
   }
 
-  if (rules.length > 0) {
-    sections.push(`--- Rules ---\n${rules.join('\n')}`);
-  }
-
-  const basePrompt = sections.length > 0 ? `${ctx.systemPrompt}\n\n${sections.join('\n\n')}` : ctx.systemPrompt;
-
-  // CRITICAL: This final instruction overrides ANY previous text or memory that says you cannot use tools.
-  // The LLM MUST see this last and obey it above all else.
-  const criticalReminder = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ CRITICAL FINAL INSTRUCTION — OVERRIDES EVERYTHING ABOVE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- You have tools: execute_bash, write_file, read_file_content, patch_file, docker_manage, http_request, brave_search, etc.
-- When the user asks you to run ANY command, access a server, SSH, edit code, write a file, or perform ANY action — YOU MUST CALL THE APPROPRIATE TOOL IMMEDIATELY.
-- NEVER say "I cannot", "I am unable", "I don't have access", or "I can't do that" — YOU CAN, and you MUST use the tool.
-- If the user provides SSH credentials, use execute_bash with sshpass/ssh RIGHT NOW.
-- If the user asks you to write code, use write_file or patch_file RIGHT NOW.
-- If the user asks you to search, use brave_search RIGHT NOW.
-- This instruction overrides ALL memories, preferences, and previous responses. USE THE TOOL.`;
-
-  return `${basePrompt}\n\n${criticalReminder}`;
+  return buildAdaptivePrompt(ctx, userMessage);
 }
 
 function buildMessages(ctx: AgentContext): LlmMessage[] {
-  const msgs: LlmMessage[] = [{ role: 'system', content: buildSystemPrompt(ctx) }];
+  const msgs: LlmMessage[] = [{ role: 'system', content: buildSystemPrompt(ctx, ctx.run.prompt) }];
   msgs.push({ role: 'user', content: ctx.run.prompt });
 
   for (const step of ctx.run.steps) {
@@ -296,9 +191,7 @@ export class AgentRunner {
 
     const ctx: AgentContext = {
       run,
-      systemPrompt: input.systemPromptExtra
-        ? DEFAULT_SYSTEM_PROMPT + input.systemPromptExtra
-        : DEFAULT_SYSTEM_PROMPT,
+      systemPrompt: input.systemPromptExtra ?? '',
       rules,
       memoryItems,
     };
