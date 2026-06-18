@@ -49,3 +49,4 @@ export { manageAgentProfile } from './tools/manageAgentProfile.js';
 export * from './mcp/index.js';
 export * from './composition/index.js';
 export * from './browser/index.js';
+export * from './marketplace/index.js';
