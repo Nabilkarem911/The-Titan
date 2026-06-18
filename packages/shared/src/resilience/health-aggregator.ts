@@ -1,6 +1,4 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'health-aggregator' });
+const log = { info: (..._args: unknown[]) => {}, warn: (..._args: unknown[]) => {} };
 
 export type ServiceHealth = 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
 

@@ -1,6 +1,4 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'bulkhead' });
+const log = { info: (..._args: unknown[]) => {}, warn: (..._args: unknown[]) => {} };
 
 export interface BulkheadConfig {
   name: string;

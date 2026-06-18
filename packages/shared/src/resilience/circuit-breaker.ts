@@ -1,6 +1,4 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'circuit-breaker' });
+const log = { info: (..._args: unknown[]) => {}, warn: (..._args: unknown[]) => {} };
 
 export type CircuitState = 'closed' | 'open' | 'half_open';
 
