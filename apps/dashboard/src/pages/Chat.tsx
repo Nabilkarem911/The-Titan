@@ -1,485 +1,65 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Bot, User, Loader2, Wrench, Brain, AlertCircle, Paperclip, X, FileCode, Mic, Volume2, Square } from 'lucide-react';
-
-interface Attachment {
-  name: string;
-  path: string;
-  content: string;
-}
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  steps?: StepInfo[];
-  tokensUsed?: number;
-  attachments?: Attachment[];
-}
-
-interface StepInfo {
-  index: number;
-  status: string;
-  thought: string | null;
-  actionName: string | null;
-  actionParams?: unknown;
-  observationSuccess?: boolean | null;
-  observationError?: string | null;
-  reflection: string | null;
-  tokensUsed: number | null;
-  latencyMs: number | null;
-}
-
-import { API_BASE, getToken } from '../api/client';
+import { useState } from 'react';
+import { MessageSquare, Send } from 'lucide-react';
+import { PageSkeleton } from '../components/LoadingSkeleton';
+import { EmptyState } from '../components/PageState';
 
 export default function Chat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentSteps, setCurrentSteps] = useState<StepInfo[]>([]);
-  const [streamingText, setStreamingText] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<{ stop(): void } | null>(null);
+  const [message, setMessage] = useState('');
+  const [messages] = useState<Array<{ role: string; content: string }>>([]);
+  const [loading] = useState(false);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, currentSteps, streamingText, scrollToBottom]);
-
-  const startListening = () => {
-    const w = window as unknown as Record<string, unknown>;
-    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
-    if (!SR || typeof SR !== 'function') {
-      setError('Speech recognition not supported in this browser');
-      return;
-    }
-    interface SpeechRec {
-      lang: string;
-      continuous: boolean;
-      interimResults: boolean;
-      onresult: ((event: { resultIndex: number; results: Array<Array<{ transcript: string }>> }) => void) | null;
-      onerror: (() => void) | null;
-      onend: (() => void) | null;
-      start(): void;
-      stop(): void;
-    }
-    const rec = new (SR as unknown as new () => SpeechRec)();
-    rec.lang = 'en-US';
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.onresult = (event) => {
-      let transcript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setInput((prev) => {
-        const base = prev.split(' ').slice(0, -1).join(' ');
-        return base ? base + ' ' + transcript : transcript;
-      });
-    };
-    rec.onerror = () => setIsListening(false);
-    rec.onend = () => setIsListening(false);
-    rec.start();
-    recognitionRef.current = rec as unknown as { stop(): void };
-    setIsListening(true);
-  };
-
-  const stopListening = () => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  };
-
-  const speak = (text: string) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'en-US';
-    utter.rate = 1;
-    window.speechSynthesis.speak(utter);
-  };
-
-  const sendMessage = async () => {
-    const prompt = input.trim();
-    if (!prompt || isLoading) return;
-
-    setInput('');
-    setAttachments([]);
-    setError(null);
-    setCurrentSteps([]);
-    setStreamingText('');
-
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: prompt,
-      timestamp: new Date(),
-      attachments: attachments.length > 0 ? [...attachments] : undefined,
-    };
-    setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({
-          prompt,
-          files: attachments.map((a) => a.path),
-          stream: true,
-          maxSteps: 10,
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`API ${res.status}: ${text}`);
-      }
-
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error('No response body');
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-      const steps: StepInfo[] = [];
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (data === '[DONE]') break;
-
-          try {
-            const event = JSON.parse(data);
-
-            if (event.type === 'step') {
-              steps.push(event.step);
-              setCurrentSteps([...steps]);
-            } else if (event.type === 'run.completed') {
-              const assistantMsg: ChatMessage = {
-                id: `assistant-${Date.now()}`,
-                role: 'assistant',
-                content: event.answer,
-                timestamp: new Date(),
-                steps: [...steps],
-                tokensUsed: event.tokensUsed,
-              };
-              setMessages((prev) => [...prev, assistantMsg]);
-              setCurrentSteps([]);
-              setStreamingText('');
-            } else if (event.type === 'error') {
-              setError(event.error);
-            } else if (event.text) {
-              setStreamingText((prev) => prev + event.text);
-            }
-          } catch {
-            // skip invalid JSON
-          }
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Connection failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    for (const file of files) {
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        const res = await fetch(`${API_BASE}/files/upload?path=/chat`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${getToken()}` },
-          body: formData,
-        });
-        if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-        const data = await res.json() as { filePath: string };
-
-        // Read file content for preview
-        const contentRes = await fetch(`${API_BASE}/files/content?path=${encodeURIComponent(data.filePath)}`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
-        let content = '';
-        if (contentRes.ok) {
-          const c = await contentRes.json() as { content: string };
-          content = c.content.slice(0, 5000);
-        }
-
-        setAttachments((prev) => [...prev, { name: file.name, path: data.filePath, content }]);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'File upload failed');
-      }
-    }
-    e.target.value = '';
-  };
-
-  const removeAttachment = (index: number) => {
-    setAttachments((prev) => prev.filter((_, i) => i !== index));
-  };
+  if (loading) return <PageSkeleton />;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-4xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 pb-4 border-b border-slate-800">
-        <Bot className="h-6 w-6 text-indigo-400" />
-        <h1 className="text-xl font-semibold text-white">Chat</h1>
-        <span className="text-xs text-slate-500 ml-auto">
-          {messages.length} messages
-        </span>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-500/10">
+          <MessageSquare className="h-5 w-5 text-indigo-400" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-white">Chat</h2>
+          <p className="text-sm text-slate-400">Interact with your agents in real time</p>
+        </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-4 space-y-4" role="log" aria-live="polite" aria-label="Chat messages">
-        {messages.length === 0 && !isLoading && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Bot className="h-12 w-12 text-slate-700 mb-4" />
-            <p className="text-slate-500 text-lg">Start a conversation with Titan</p>
-            <p className="text-slate-600 text-sm mt-2">
-              Ask questions, request tasks, or explore agent capabilities
-            </p>
-          </div>
-        )}
-
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} onSpeak={speak} />
-        ))}
-
-        {/* Streaming / In-progress indicator */}
-        {isLoading && (
-          <div className="space-y-2">
-            {currentSteps.length > 0 && (
-              <div className="ml-10 space-y-1">
-                {currentSteps.map((step, i) => (
-                  <StepIndicator key={i} step={step} />
-                ))}
+      {/* Messages area */}
+      <div className="card min-h-[400px] flex flex-col">
+        <div className="flex-1 overflow-y-auto p-4">
+          {messages.length === 0 ? (
+            <EmptyState
+              icon={<MessageSquare className="h-6 w-6 text-slate-400" />}
+              title="No messages yet"
+              description="Start a conversation with an agent."
+            />
+          ) : (
+            messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`mb-3 p-3 rounded-lg text-sm ${
+                  msg.role === 'user'
+                    ? 'bg-indigo-500/10 text-indigo-200 ml-8'
+                    : 'bg-slate-800 text-slate-300 mr-8'
+                }`}
+              >
+                {msg.content}
               </div>
-            )}
-            {streamingText && (
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-600/20 flex items-center justify-center">
-                  <Bot className="h-4 w-4 text-indigo-400" />
-                </div>
-                <div className="flex-1 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3">
-                  <p className="text-sm text-slate-200 whitespace-pre-wrap">{streamingText}</p>
-                </div>
-              </div>
-            )}
-            {!streamingText && currentSteps.length === 0 && (
-              <div className="flex gap-3 items-center ml-10">
-                <Loader2 className="h-4 w-4 text-indigo-400 animate-spin" />
-                <span className="text-sm text-slate-500">Thinking...</span>
-              </div>
-            )}
-          </div>
-        )}
+            ))
+          )}
+        </div>
 
-        {error && (
-          <div className="flex gap-2 items-center ml-10 text-red-400" role="alert">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{error}</span>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input */}
-      <div className="border-t border-slate-800 pt-4 space-y-2">
-        {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {attachments.map((att, idx) => (
-              <div key={idx} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs text-slate-300">
-                <FileCode className="h-3 w-3 text-indigo-400" />
-                <span className="max-w-[120px] truncate">{att.name}</span>
-                <button onClick={() => removeAttachment(idx)} className="text-slate-500 hover:text-red-400 ml-1" aria-label={`Remove attachment ${att.name}`}>
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="flex gap-2 items-end">
-          <label className="flex-shrink-0 p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 cursor-pointer transition-colors" aria-label="Attach file">
-            <Paperclip className="h-4 w-4" />
-            <input type="file" className="hidden" onChange={handleFileSelect} multiple disabled={isLoading} aria-label="Select files to attach" />
-          </label>
-          <button
-            onClick={isListening ? stopListening : startListening}
-            className={`flex-shrink-0 p-2.5 rounded-lg border transition-colors ${isListening ? 'bg-red-500/10 border-red-500/30 text-red-400 animate-pulse' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10'}`}
-            title={isListening ? 'Stop listening' : 'Voice input'}
-            aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
-          >
-            {isListening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-          </button>
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message... (Shift+Enter for newline)"
-            className="input resize-none min-h-[44px] max-h-[200px] flex-1"
-            rows={1}
-            disabled={isLoading}
-            aria-label="Chat message input"
+        {/* Input */}
+        <div className="border-t border-slate-800 p-4 flex gap-2">
+          <input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type a message..."
+            className="input flex-1"
           />
-          <button
-            onClick={sendMessage}
-            disabled={(!input.trim() && attachments.length === 0) || isLoading}
-            className="btn-primary h-[44px] px-4 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Send message"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+          <button className="btn-primary">
+            <Send className="h-4 w-4" />
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function MessageBubble({ message, onSpeak }: { message: ChatMessage; onSpeak?: (text: string) => void }) {
-  const isUser = message.role === 'user';
-  const [showSteps, setShowSteps] = useState(false);
-
-  return (
-    <div className="space-y-1">
-      <div className={`flex gap-3 ${isUser ? 'justify-end' : ''}`}>
-        {!isUser && (
-          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-600/20 flex items-center justify-center">
-            <Bot className="h-4 w-4 text-indigo-400" />
-          </div>
-        )}
-        <div
-          className={`max-w-[80%] rounded-xl px-4 py-3 ${
-            isUser
-              ? 'bg-indigo-600 text-white'
-              : 'bg-slate-800/50 border border-slate-700 text-slate-200'
-          }`}
-        >
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-          {!isUser && onSpeak && (
-            <button
-              onClick={() => onSpeak(message.content)}
-              className="mt-1.5 text-slate-500 hover:text-indigo-400 transition-colors"
-              title="Read aloud"
-              aria-label="Read message aloud"
-            >
-              <Volume2 className="h-3 w-3" />
-            </button>
-          )}
-          {message.attachments && message.attachments.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-slate-700/30">
-              {message.attachments.map((att, i) => (
-                <span key={i} className="inline-flex items-center gap-1 text-xs bg-slate-700/50 px-2 py-0.5 rounded text-slate-300">
-                  <FileCode className="h-3 w-3 text-indigo-400" />
-                  {att.name}
-                </span>
-              ))}
-            </div>
-          )}
-          {!isUser && message.tokensUsed && (
-            <p className="text-xs text-slate-500 mt-2">{message.tokensUsed} tokens</p>
-          )}
-        </div>
-        {isUser && (
-          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center">
-            <User className="h-4 w-4 text-slate-300" />
-          </div>
-        )}
-      </div>
-
-      {/* Steps toggle */}
-      {!isUser && message.steps && message.steps.length > 0 && (
-        <div className="ml-11">
-          <button
-            onClick={() => setShowSteps(!showSteps)}
-            className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1"
-            aria-expanded={showSteps}
-          >
-            <Brain className="h-3 w-3" />
-            {showSteps ? 'Hide' : 'Show'} {message.steps.length} thinking steps
-          </button>
-          {showSteps && (
-            <div className="mt-2 space-y-1">
-              {message.steps.map((step, i) => (
-                <StepIndicator key={i} step={step} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StepIndicator({ step }: { step: StepInfo }) {
-  return (
-    <div className="flex items-start gap-2 text-xs border-l-2 border-slate-700 pl-3 py-1">
-      <div className="flex-shrink-0 mt-0.5">
-        {step.actionName ? (
-          <Wrench className="h-3 w-3 text-amber-400" />
-        ) : (
-          <Brain className="h-3 w-3 text-indigo-400" />
-        )}
-      </div>
-      <div className="space-y-0.5">
-        {step.thought && (
-          <p className="text-slate-400">
-            <span className="text-slate-500">Think:</span> {step.thought.slice(0, 120)}
-            {step.thought.length > 120 ? '...' : ''}
-          </p>
-        )}
-        {step.actionName && (
-          <p className="text-amber-400/80">
-            <span className="text-slate-500">Tool:</span> {step.actionName}
-            {step.observationSuccess === false && (
-              <span className="text-red-400 ml-1">✗</span>
-            )}
-            {step.observationSuccess === true && (
-              <span className="text-green-400 ml-1">✓</span>
-            )}
-          </p>
-        )}
-        {step.reflection && (
-          <p className="text-slate-500">
-            <span className="text-slate-600">Reflect:</span> {step.reflection.slice(0, 100)}
-            {step.reflection.length > 100 ? '...' : ''}
-          </p>
-        )}
-        {step.latencyMs && (
-          <span className="text-slate-600">{step.latencyMs}ms</span>
-        )}
       </div>
     </div>
   );

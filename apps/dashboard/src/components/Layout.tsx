@@ -1,57 +1,41 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
+  LayoutDashboard,
   MessageSquare,
   Users,
   Terminal,
+  FolderOpen,
+  Code,
   History,
   Gauge,
+  Clock,
+  ScrollText,
+  HeartPulse,
   BarChart3,
-  LogOut,
-  FolderOpen,
+  Webhook,
+  Puzzle,
+  KeyRound,
   Settings,
+  Shield,
+  GitBranch,
+  Layers,
+  Building2,
+  UsersRound,
+  FileCode,
+  Brain,
+  Zap,
+  LogOut,
   ChevronLeft,
   ChevronRight,
   Menu,
   X,
-  Zap,
-  Code,
-  Monitor,
-  GitBranch,
-  Clock,
-  LayoutDashboard,
-  ScrollText,
-  Webhook,
   Bell,
   Check,
   Trash2 as TrashIcon,
-  KeyRound,
-  Puzzle,
   Sun,
   Moon,
   Search,
-  FileCode,
-  Shield,
-  Bug,
-  Brain,
-  HeartPulse,
-  BookOpen,
-  Rocket,
-  TrendingUp,
-  DollarSign,
-  GitCompare,
-  Workflow,
-  Library,
-  User,
-  Activity,
-  Layers,
-  Wrench,
-  Link,
-  Store,
-  GraduationCap,
-  AlertCircle,
-  BellRing,
-  PieChart,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -64,76 +48,57 @@ interface NavSection {
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    title: 'Workspace',
+    title: 'Core',
     items: [
       { to: '/', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Dashboard', end: true },
-      { to: '/projects', icon: <FolderOpen className="h-4 w-4" />, label: 'Projects' },
       { to: '/chat', icon: <MessageSquare className="h-4 w-4" />, label: 'Chat' },
       { to: '/agents', icon: <Users className="h-4 w-4" />, label: 'Agents' },
-      { to: '/playground', icon: <Terminal className="h-4 w-4" />, label: 'Playground' },
+      { to: '/playground', icon: <Zap className="h-4 w-4" />, label: 'Playground' },
       { to: '/files', icon: <FolderOpen className="h-4 w-4" />, label: 'Files' },
       { to: '/editor', icon: <Code className="h-4 w-4" />, label: 'Editor' },
-      { to: '/terminal', icon: <Monitor className="h-4 w-4" />, label: 'Terminal' },
-      { to: '/git', icon: <GitBranch className="h-4 w-4" />, label: 'Git Push' },
-      { to: '/workflows', icon: <Workflow className="h-4 w-4" />, label: 'Workflows' },
-      { to: '/knowledge', icon: <Library className="h-4 w-4" />, label: 'Knowledge Base' },
-      { to: '/memory', icon: <Brain className="h-4 w-4" />, label: 'Memory' },
-      { to: '/templates', icon: <FileCode className="h-4 w-4" />, label: 'Templates' },
-    ],
-  },
-  {
-    title: 'Intelligence',
-    items: [
-      { to: '/analytics', icon: <TrendingUp className="h-4 w-4" />, label: 'Analytics' },
-      { to: '/agent-performance', icon: <Activity className="h-4 w-4" />, label: 'Agent Performance' },
-      { to: '/model-comparison', icon: <GitCompare className="h-4 w-4" />, label: 'Model Comparison' },
-      { to: '/tool-stats', icon: <Wrench className="h-4 w-4" />, label: 'Tool Stats' },
-      { to: '/cost', icon: <DollarSign className="h-4 w-4" />, label: 'Cost Dashboard' },
-      { to: '/traces', icon: <Layers className="h-4 w-4" />, label: 'Trace Viewer' },
-      { to: '/errors', icon: <AlertCircle className="h-4 w-4" />, label: 'Error Explorer' },
-      { to: '/insights', icon: <PieChart className="h-4 w-4" />, label: 'Workspace Insights' },
     ],
   },
   {
     title: 'Operations',
     items: [
-      { to: '/runs', icon: <History className="h-4 w-4" />, label: 'Run History' },
-      { to: '/queue', icon: <Gauge className="h-4 w-4" />, label: 'Queues' },
-      { to: '/metrics', icon: <BarChart3 className="h-4 w-4" />, label: 'Metrics' },
-      { to: '/cron', icon: <Clock className="h-4 w-4" />, label: 'Cron Jobs' },
+      { to: '/runs', icon: <History className="h-4 w-4" />, label: 'Runs' },
+      { to: '/terminal', icon: <Terminal className="h-4 w-4" />, label: 'Terminal' },
+      { to: '/queue', icon: <Gauge className="h-4 w-4" />, label: 'Queue' },
+      { to: '/cron', icon: <Clock className="h-4 w-4" />, label: 'Cron' },
       { to: '/logs', icon: <ScrollText className="h-4 w-4" />, label: 'Logs' },
+      { to: '/health', icon: <HeartPulse className="h-4 w-4" />, label: 'Health' },
+      { to: '/metrics', icon: <BarChart3 className="h-4 w-4" />, label: 'Metrics' },
+    ],
+  },
+  {
+    title: 'Management',
+    items: [
       { to: '/webhooks', icon: <Webhook className="h-4 w-4" />, label: 'Webhooks' },
-      { to: '/audit-logs', icon: <Shield className="h-4 w-4" />, label: 'Audit Logs' },
-      { to: '/health', icon: <HeartPulse className="h-4 w-4" />, label: 'System Health' },
-    ],
-  },
-  {
-    title: 'Ecosystem',
-    items: [
-      { to: '/integrations', icon: <Link className="h-4 w-4" />, label: 'Integrations' },
-      { to: '/marketplace', icon: <Store className="h-4 w-4" />, label: 'Marketplace' },
       { to: '/plugins', icon: <Puzzle className="h-4 w-4" />, label: 'Plugins' },
-      { to: '/swarm', icon: <Bug className="h-4 w-4" />, label: 'Swarm' },
-      { to: '/teams', icon: <Users className="h-4 w-4" />, label: 'Teams' },
+      { to: '/api-keys', icon: <KeyRound className="h-4 w-4" />, label: 'API Keys' },
+      { to: '/settings', icon: <Settings className="h-4 w-4" />, label: 'Settings' },
+      { to: '/audit-logs', icon: <Shield className="h-4 w-4" />, label: 'Audit Logs' },
     ],
   },
   {
-    title: 'System',
+    title: 'Advanced',
     items: [
-      { to: '/profile', icon: <User className="h-4 w-4" />, label: 'Profile' },
-      { to: '/notifications', icon: <BellRing className="h-4 w-4" />, label: 'Notifications' },
-      { to: '/settings', icon: <Settings className="h-4 w-4" />, label: 'Settings' },
-      { to: '/api-keys', icon: <KeyRound className="h-4 w-4" />, label: 'API Keys' },
-      { to: '/learning', icon: <GraduationCap className="h-4 w-4" />, label: 'Learning' },
-      { to: '/api-docs', icon: <BookOpen className="h-4 w-4" />, label: 'API Docs' },
-      { to: '/getting-started', icon: <Rocket className="h-4 w-4" />, label: 'Getting Started' },
+      { to: '/git', icon: <GitBranch className="h-4 w-4" />, label: 'Git' },
+      { to: '/swarm', icon: <Layers className="h-4 w-4" />, label: 'Swarm' },
+      { to: '/workspaces', icon: <Building2 className="h-4 w-4" />, label: 'Workspaces' },
+      { to: '/teams', icon: <UsersRound className="h-4 w-4" />, label: 'Teams' },
+      { to: '/templates', icon: <FileCode className="h-4 w-4" />, label: 'Templates' },
+      { to: '/memory', icon: <Brain className="h-4 w-4" />, label: 'Memory' },
     ],
   },
 ];
 
+/* ── NotificationBell ─────────────────────────────────────────────── */
+
 function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, removeNotification } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, removeNotification } =
+    useNotifications();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -171,14 +136,29 @@ function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-slate-900 border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden z-50" role="dialog" aria-modal="true" aria-label="Notifications panel">
+        <div
+          className="absolute right-0 top-full mt-2 w-80 bg-slate-900 border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Notifications panel"
+        >
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/50">
             <span className="text-sm font-medium text-white">Notifications</span>
             <div className="flex items-center gap-1">
-              <button onClick={markAllAsRead} className="p-1 rounded text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10" title="Mark all read" aria-label="Mark all notifications as read">
+              <button
+                onClick={markAllAsRead}
+                className="p-1 rounded text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10"
+                title="Mark all read"
+                aria-label="Mark all notifications as read"
+              >
                 <Check className="h-3.5 w-3.5" />
               </button>
-              <button onClick={clearAll} className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10" title="Clear all" aria-label="Clear all notifications">
+              <button
+                onClick={clearAll}
+                className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                title="Clear all"
+                aria-label="Clear all notifications"
+              >
                 <TrashIcon className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -190,20 +170,36 @@ function NotificationBell() {
               notifications.map((n) => (
                 <div
                   key={n.id}
-                  onClick={() => { markAsRead(n.id); if (n.link) window.location.href = n.link; }}
+                  onClick={() => {
+                    markAsRead(n.id);
+                    if (n.link) window.location.href = n.link;
+                  }}
                   className={`px-4 py-2.5 border-b border-slate-800/20 cursor-pointer hover:bg-slate-800/40 transition-colors ${n.read ? 'opacity-60' : ''}`}
                 >
                   <div className="flex items-start gap-2">
-                    <div className={`mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                      n.type === 'error' ? 'bg-red-400' : n.type === 'success' ? 'bg-emerald-400' : n.type === 'warning' ? 'bg-amber-400' : 'bg-indigo-400'
-                    }`} />
+                    <div
+                      className={`mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                        n.type === 'error'
+                          ? 'bg-red-400'
+                          : n.type === 'success'
+                            ? 'bg-emerald-400'
+                            : n.type === 'warning'
+                              ? 'bg-amber-400'
+                              : 'bg-indigo-400'
+                      }`}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium text-slate-200">{n.title}</div>
                       <div className="text-[11px] text-slate-500 truncate">{n.message}</div>
-                      <div className="text-[10px] text-slate-600 mt-0.5">{n.timestamp.toLocaleTimeString()}</div>
+                      <div className="text-[10px] text-slate-600 mt-0.5">
+                        {n.timestamp.toLocaleTimeString()}
+                      </div>
                     </div>
                     <button
-                      onClick={(e) => { e.stopPropagation(); removeNotification(n.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeNotification(n.id);
+                      }}
                       className="text-slate-600 hover:text-red-400 flex-shrink-0"
                       aria-label={`Dismiss notification: ${n.title}`}
                     >
@@ -220,6 +216,8 @@ function NotificationBell() {
   );
 }
 
+/* ── ThemeToggle ──────────────────────────────────────────────────── */
+
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
   return (
@@ -233,6 +231,8 @@ function ThemeToggle() {
     </button>
   );
 }
+
+/* ── GlobalSearch ─────────────────────────────────────────────────── */
 
 function GlobalSearch() {
   const [open, setOpen] = useState(false);
@@ -293,25 +293,45 @@ function GlobalSearch() {
         <Search className="h-5 w-5" />
       </button>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/40 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Search pages">
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/40 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Search pages"
+        >
           <div className="w-full max-w-md mx-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-xl shadow-2xl overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-800/50">
               <Search className="h-4 w-4 text-slate-400" />
               <input
                 ref={inputRef}
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); setSelectedIdx(0); }}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setSelectedIdx(0);
+                }}
                 onKeyDown={(e) => {
-                  if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIdx((i) => Math.min(i + 1, results.length - 1)); }
-                  else if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedIdx((i) => Math.max(i - 1, 0)); }
-                  else if (e.key === 'Enter' && results[selectedIdx]) { navigate(results[selectedIdx].path); setOpen(false); setQuery(''); }
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setSelectedIdx((i) => Math.min(i + 1, results.length - 1));
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setSelectedIdx((i) => Math.max(i - 1, 0));
+                  } else if (e.key === 'Enter' && results[selectedIdx]) {
+                    navigate(results[selectedIdx].path);
+                    setOpen(false);
+                    setQuery('');
+                  }
                 }}
                 placeholder="Search pages..."
                 className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none"
                 role="searchbox"
                 aria-label="Search pages"
               />
-              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" aria-label="Close search">
+              <button
+                onClick={() => setOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                aria-label="Close search"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -322,14 +342,24 @@ function GlobalSearch() {
                 results.map((p, i) => (
                   <button
                     key={p.path}
-                    onClick={() => { navigate(p.path); setOpen(false); setQuery(''); }}
+                    onClick={() => {
+                      navigate(p.path);
+                      setOpen(false);
+                      setQuery('');
+                    }}
                     onMouseEnter={() => setSelectedIdx(i)}
                     className={`flex items-center gap-3 px-4 py-2.5 w-full text-left transition-colors ${
-                      i === selectedIdx ? 'bg-indigo-50 dark:bg-indigo-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                      i === selectedIdx
+                        ? 'bg-indigo-50 dark:bg-indigo-500/10'
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
                     }`}
                     aria-label={`Go to ${p.label}`}
                   >
-                    <span className={`text-sm ${i === selectedIdx ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'}`}>{p.label}</span>
+                    <span
+                      className={`text-sm ${i === selectedIdx ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'}`}
+                    >
+                      {p.label}
+                    </span>
                     <span className="ml-auto text-xs text-slate-400">{p.path}</span>
                   </button>
                 ))
@@ -341,6 +371,8 @@ function GlobalSearch() {
     </div>
   );
 }
+
+/* ── Layout ───────────────────────────────────────────────────────── */
 
 function Layout({ children }: { children: React.ReactNode }) {
   const { logout } = useAuth();
@@ -364,15 +396,23 @@ function Layout({ children }: { children: React.ReactNode }) {
   const SidebarContent = () => (
     <>
       {/* Logo */}
-      <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-4 py-5 border-b border-slate-800/50`}>
+      <div
+        className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-4 py-5 border-b border-slate-800/50`}
+      >
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
           <Zap className="h-4 w-4 text-white" />
         </div>
-        {!collapsed && <span className="text-lg font-bold text-white tracking-tight">Titan</span>}
+        {!collapsed && (
+          <span className="text-lg font-bold text-white tracking-tight">Titan</span>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto scrollbar-thin" role="navigation" aria-label="Main navigation">
+      <nav
+        className="flex-1 px-3 py-4 space-y-6 overflow-y-auto scrollbar-thin"
+        role="navigation"
+        aria-label="Main navigation"
+      >
         {NAV_SECTIONS.map((section) => (
           <div key={section.title}>
             {!collapsed && (
@@ -417,7 +457,7 @@ function Layout({ children }: { children: React.ReactNode }) {
           {!collapsed && <span>Sign out</span>}
         </button>
         {!collapsed && (
-          <div className="text-[10px] text-slate-600 px-3 text-center">Titan v1.0.0</div>
+          <div className="text-[10px] text-slate-600 px-3 text-center">Titan v2.0.0</div>
         )}
       </div>
     </>
@@ -445,8 +485,17 @@ function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Overlay */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Mobile navigation">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} role="presentation" />
+        <div
+          className="lg:hidden fixed inset-0 z-50 flex"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation"
+        >
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+            role="presentation"
+          />
           <aside className="relative w-64 flex flex-col bg-slate-900 border-r border-slate-800/50 shadow-2xl">
             <SidebarContent />
           </aside>
@@ -475,7 +524,9 @@ function Layout({ children }: { children: React.ReactNode }) {
             <NotificationBell />
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
               <div className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Online</span>
+              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                Online
+              </span>
             </div>
           </div>
         </header>

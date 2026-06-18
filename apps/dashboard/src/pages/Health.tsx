@@ -1,222 +1,153 @@
-import { useState, useEffect } from 'react';
-import {
-  HeartPulse,
-  Database,
-  HardDrive,
-  ShieldCheck,
-  Archive,
-  AlertCircle,
-  RefreshCw,
-  Clock,
-  Layers,
-} from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { HeartPulse, RefreshCw } from 'lucide-react';
+import { getToken } from '../api/client';
+import { SkeletonCard } from '../components/LoadingSkeleton';
+import { ErrorState } from '../components/PageState';
 
-interface HealthDashboard {
-  dbPool: { total: number; idle: number; waiting: number } | null;
-  queues: Record<string, { waiting?: number; active?: number; completed?: number; failed?: number; delayed?: number; error?: string }>;
-  audit: { count: number; oldest: string | null; newest: string | null; archiveCount: number } | null;
-  auditIntegrity: { valid?: boolean; brokenAt?: string | null; checked?: number; lastCheckAt?: string; status?: string; reason?: string };
-  auditArchival: { lastArchived?: number; lastArchiveAt?: string; status?: string; reason?: string };
-  timestamp: string;
+interface HealthData {
+  status: string;
+  uptime?: number;
+  db?: { status: string; latency?: number };
+  redis?: { status: string; latency?: number };
+  memory?: { rss?: number; heapUsed?: number; heapTotal?: number };
+  [key: string]: unknown;
 }
 
-import { getToken } from '../api/client';
-
-export default function HealthPage() {
-  const [data, setData] = useState<HealthDashboard | null>(null);
-  const [loading, setLoading] = useState(false);
+export default function Health() {
+  const [data, setData] = useState<HealthData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const fetchHealth = async () => {
-    setLoading(true);
+  const fetchHealth = useCallback(async () => {
+    setLoading((prev) => !data && prev);
     setError(null);
     try {
+      const token = getToken();
       const res = await fetch('/health/dashboard', {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (!res.ok) throw new Error('Failed');
-      const json = await res.json() as HealthDashboard;
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      const json = (await res.json()) as HealthData;
       setData(json);
-      setLastUpdated(new Date());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+      setError(err instanceof Error ? err.message : 'Failed to load health data');
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchHealth();
-    const interval = setInterval(fetchHealth, 10_000);
+    const interval = setInterval(fetchHealth, 15_000);
     return () => clearInterval(interval);
-  }, []);
-
-  const queueEntries = data ? Object.entries(data.queues) : [];
+  }, [fetchHealth]);
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-rose-500/20 text-rose-400">
-            <HeartPulse className="h-5 w-5" />
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10">
+            <HeartPulse className="h-5 w-5 text-emerald-400" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">System Health</h3>
-            <p className="text-xs text-slate-500">Real-time infrastructure status</p>
+            <h2 className="text-lg font-semibold text-white">System Health</h2>
+            <p className="text-sm text-slate-400">Monitor service health and uptime</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span className="text-xs text-slate-500">
-              <Clock className="h-3 w-3 inline mr-1" />
-              {lastUpdated.toLocaleTimeString()}
-            </span>
-          )}
-          <button onClick={fetchHealth} className="btn-secondary px-3">
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
+        <button onClick={fetchHealth} className="btn-secondary text-xs">
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </button>
       </div>
 
-      {error && (
-        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
-          <AlertCircle className="h-4 w-4" />
-          {error}
+      {/* Content */}
+      {loading && !data ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <SkeletonCard count={3} />
         </div>
-      )}
-
-      {/* DB Pool */}
-      {data?.dbPool && (
-        <div className="card space-y-3">
-          <div className="flex items-center gap-2">
-            <Database className="h-4 w-4 text-blue-400" />
-            <h4 className="text-sm font-medium text-white">Database Pool</h4>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="p-3 rounded-lg bg-slate-800/40 text-center">
-              <div className="text-lg font-semibold text-white">{data.dbPool.total}</div>
-              <div className="text-[10px] text-slate-500">Total</div>
-            </div>
-            <div className="p-3 rounded-lg bg-slate-800/40 text-center">
-              <div className="text-lg font-semibold text-emerald-400">{data.dbPool.idle}</div>
-              <div className="text-[10px] text-slate-500">Idle</div>
-            </div>
-            <div className="p-3 rounded-lg bg-slate-800/40 text-center">
-              <div className="text-lg font-semibold text-amber-400">{data.dbPool.waiting}</div>
-              <div className="text-[10px] text-slate-500">Waiting</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Queues */}
-      <div className="card space-y-3">
-        <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-violet-400" />
-          <h4 className="text-sm font-medium text-white">Queues</h4>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {queueEntries.length === 0 ? (
-            <div className="col-span-full text-center text-xs text-slate-500 py-4">No queue data</div>
-          ) : (
-            queueEntries.map(([name, stats]) => (
-              <div key={name} className="p-3 rounded-lg bg-slate-800/40 space-y-2">
-                <div className="text-xs font-medium text-slate-300">{name}</div>
-                {'error' in stats && stats.error ? (
-                  <div className="text-xs text-red-400">{stats.error}</div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div className="flex justify-between"><span className="text-slate-500">Waiting</span><span className="text-white">{stats.waiting ?? 0}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Active</span><span className="text-amber-400">{stats.active ?? 0}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Done</span><span className="text-emerald-400">{stats.completed ?? 0}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Failed</span><span className="text-red-400">{stats.failed ?? 0}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Delayed</span><span className="text-slate-400">{stats.delayed ?? 0}</span></div>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Audit */}
-      {data?.audit && (
-        <div className="card space-y-3">
-          <div className="flex items-center gap-2">
-            <HardDrive className="h-4 w-4 text-emerald-400" />
-            <h4 className="text-sm font-medium text-white">Audit Logs</h4>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-lg bg-slate-800/40 text-center">
-              <div className="text-lg font-semibold text-white">{data.audit.count.toLocaleString()}</div>
-              <div className="text-[10px] text-slate-500">Total</div>
-            </div>
-            <div className="p-3 rounded-lg bg-slate-800/40 text-center">
-              <div className="text-sm font-semibold text-white">{data.audit.oldest ? new Date(data.audit.oldest).toLocaleDateString() : '—'}</div>
-              <div className="text-[10px] text-slate-500">Oldest</div>
-            </div>
-            <div className="p-3 rounded-lg bg-slate-800/40 text-center">
-              <div className="text-sm font-semibold text-white">{data.audit.newest ? new Date(data.audit.newest).toLocaleDateString() : '—'}</div>
-              <div className="text-[10px] text-slate-500">Newest</div>
-            </div>
-            <div className="p-3 rounded-lg bg-slate-800/40 text-center">
-              <div className="text-lg font-semibold text-white">{data.audit.archiveCount.toLocaleString()}</div>
-              <div className="text-[10px] text-slate-500">Archived</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Audit Integrity */}
-      {data?.auditIntegrity && (
-        <div className={`card space-y-2 ${data.auditIntegrity.valid ? 'border-emerald-500/30' : 'border-red-500/30'}`}>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className={`h-4 w-4 ${data.auditIntegrity.valid ? 'text-emerald-400' : 'text-red-400'}`} />
-            <h4 className="text-sm font-medium text-white">Audit Integrity</h4>
-          </div>
-          {'status' in data.auditIntegrity && data.auditIntegrity.status === 'pending' ? (
-            <div className="text-xs text-slate-500">{data.auditIntegrity.reason}</div>
-          ) : (
-            <div className="flex flex-wrap gap-3 text-xs">
-              <span className={`px-2 py-0.5 rounded-full border ${data.auditIntegrity.valid ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                {data.auditIntegrity.valid ? 'Valid' : 'Broken'}
+      ) : error && !data ? (
+        <ErrorState message={error} onRetry={fetchHealth} />
+      ) : data ? (
+        <>
+          {/* Overall status */}
+          <div className="card">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-3 h-3 rounded-full ${
+                data.status === 'ok' || data.status === 'healthy' ? 'bg-emerald-400' : 'bg-red-400'
+              }`} />
+              <span className="text-white font-medium">
+                System is {data.status === 'ok' || data.status === 'healthy' ? 'healthy' : data.status}
               </span>
-              <span className="text-slate-400">Checked: {data.auditIntegrity.checked}</span>
-              {data.auditIntegrity.lastCheckAt && (
-                <span className="text-slate-500">Last: {new Date(data.auditIntegrity.lastCheckAt).toLocaleString()}</span>
-              )}
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Audit Archival */}
-      {data?.auditArchival && (
-        <div className="card space-y-2">
-          <div className="flex items-center gap-2">
-            <Archive className="h-4 w-4 text-blue-400" />
-            <h4 className="text-sm font-medium text-white">Audit Archival</h4>
+            {data.uptime !== undefined && (
+              <p className="text-sm text-slate-400">
+                Uptime: {Math.floor(data.uptime / 3600)}h {Math.floor((data.uptime % 3600) / 60)}m
+              </p>
+            )}
           </div>
-          {'status' in data.auditArchival && data.auditArchival.status === 'pending' ? (
-            <div className="text-xs text-slate-500">{data.auditArchival.reason}</div>
-          ) : (
-            <div className="flex flex-wrap gap-3 text-xs">
-              <span className="text-slate-400">Archived: {data.auditArchival.lastArchived}</span>
-              {data.auditArchival.lastArchiveAt && (
-                <span className="text-slate-500">At: {new Date(data.auditArchival.lastArchiveAt).toLocaleString()}</span>
-              )}
+
+          {/* Service cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <ServiceCard
+              name="Database"
+              status={data.db?.status ?? 'unknown'}
+              latency={data.db?.latency}
+            />
+            <ServiceCard
+              name="Redis"
+              status={data.redis?.status ?? 'unknown'}
+              latency={data.redis?.latency}
+            />
+            <ServiceCard
+              name="API"
+              status={data.status}
+            />
+          </div>
+
+          {/* Memory */}
+          {data.memory && (
+            <div className="card">
+              <h3 className="text-sm font-medium text-white mb-3">Memory Usage</h3>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-slate-500">RSS</p>
+                  <p className="text-white">{formatMB(data.memory.rss)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Heap Used</p>
+                  <p className="text-white">{formatMB(data.memory.heapUsed)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Heap Total</p>
+                  <p className="text-white">{formatMB(data.memory.heapTotal)}</p>
+                </div>
+              </div>
             </div>
           )}
-        </div>
-      )}
+        </>
+      ) : null}
+    </div>
+  );
+}
 
-      {/* Timestamp */}
-      {data?.timestamp && (
-        <div className="text-[10px] text-slate-600 text-right">
-          Last check: {new Date(data.timestamp).toLocaleString()}
-        </div>
+function ServiceCard({ name, status, latency }: { name: string; status: string; latency?: number }) {
+  const isOk = status === 'ok' || status === 'healthy';
+  return (
+    <div className="card">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm text-slate-300">{name}</span>
+        <span className={`badge ${isOk ? 'badge-success' : 'badge-error'}`}>{status}</span>
+      </div>
+      {latency !== undefined && (
+        <p className="text-xs text-slate-500">{latency}ms latency</p>
       )}
     </div>
   );
+}
+
+function formatMB(bytes?: number): string {
+  if (bytes === undefined) return '--';
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }

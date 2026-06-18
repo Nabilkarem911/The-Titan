@@ -1,278 +1,202 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  Activity,
-  CheckCircle,
-  AlertTriangle,
-  XCircle,
-  Cpu,
+  LayoutDashboard,
   Database,
-  HardDrive,
+  Server,
+  Gauge,
   Clock,
-  MessageSquare,
-  FolderOpen,
-  GitBranch,
-  Zap,
   RefreshCw,
-  TrendingUp,
-  BarChart3,
+  Users,
+  Terminal,
+  HeartPulse,
+  AlertCircle,
 } from 'lucide-react';
-import { API_BASE, getToken } from '../api/client';
-import { formatBytes } from '../utils/format';
+import { getToken, API_BASE } from '../api/client';
+import { SkeletonCard } from '../components/LoadingSkeleton';
 import { ErrorState } from '../components/PageState';
 
-interface HealthStatus {
-  dbPool: { total: number; idle: number; waiting: number } | null;
-  queues: Record<string, { waiting?: number; active?: number; completed?: number; failed?: number }>;
-  audit: unknown;
-  auditIntegrity: { valid: boolean } | { status: string };
-  auditArchival: { lastArchived: number } | { status: string };
-  timestamp: string;
+interface HealthData {
+  status: string;
+  db?: { status: string };
+  redis?: { status: string };
+  uptime?: number;
+  [key: string]: unknown;
 }
 
-interface MetricsSnapshot {
-  metrics: Record<string, unknown>;
-  dbPool: { total: number; idle: number; waiting: number } | null;
-  redis: { status: string; memory?: number };
-  timestamp: string;
+interface MetricsData {
+  [key: string]: unknown;
 }
 
-interface WorkspaceStats {
-  totalFiles: number;
-  totalDirs: number;
+interface CronData {
+  items: Array<Record<string, unknown>>;
+  total: number;
 }
 
-export default function DashboardPage() {
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [metrics, setMetrics] = useState<MetricsSnapshot | null>(null);
-  const [workspace, setWorkspace] = useState<WorkspaceStats | null>(null);
-  const [cronCount, setCronCount] = useState(0);
+async function fetchWithAuth(url: string) {
+  const token = getToken();
+  const res = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  return res.json();
+}
+
+export default function Dashboard() {
+  const [health, setHealth] = useState<HealthData | null>(null);
+  const [metrics, setMetrics] = useState<MetricsData | null>(null);
+  const [cronCount, setCronCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  const fetchAll = async () => {
-    setLoading(true);
+  const fetchAll = useCallback(async () => {
+    setLoading((prev) => !health && prev);
     setError(null);
     try {
-      const headers = { Authorization: `Bearer ${getToken()}` };
-      const [healthRes, metricsRes, filesRes, cronRes] = await Promise.all([
-        fetch('/health/dashboard', { headers }).catch(() => null),
-        fetch('/metrics.json', { headers }).catch(() => null),
-        fetch(`${API_BASE}/files?path=/`, { headers }).catch(() => null),
-        fetch(`${API_BASE}/cron`, { headers }).catch(() => null),
+      const [h, m, c] = await Promise.allSettled([
+        fetchWithAuth('/health/dashboard'),
+        fetchWithAuth('/metrics.json'),
+        fetchWithAuth(`${API_BASE}/cron`),
       ]);
 
-      let anySuccess = false;
+      if (h.status === 'fulfilled') setHealth(h.value as HealthData);
+      else setHealth(null);
 
-      if (healthRes?.ok) {
-        setHealth(await healthRes.json() as HealthStatus);
-        anySuccess = true;
-      }
-      if (metricsRes?.ok) {
-        setMetrics(await metricsRes.json() as MetricsSnapshot);
-        anySuccess = true;
-      }
-      if (filesRes?.ok) {
-        const f = await filesRes.json() as { items: Array<{ type: 'file' | 'directory' }> };
-        const items = f.items ?? [];
-        setWorkspace({
-          totalFiles: items.filter((i) => i.type === 'file').length,
-          totalDirs: items.filter((i) => i.type === 'directory').length,
-        });
-        anySuccess = true;
-      }
-      if (cronRes?.ok) {
-        const c = await cronRes.json() as { total: number };
-        setCronCount(c.total ?? 0);
-        anySuccess = true;
-      }
+      if (m.status === 'fulfilled') setMetrics(m.value as MetricsData);
+      else setMetrics(null);
 
-      if (!anySuccess && !health && !metrics) {
-        setError('Could not connect to any backend service');
+      if (c.status === 'fulfilled') {
+        const cronData = c.value as CronData;
+        setCronCount(cronData.total ?? cronData.items?.length ?? 0);
+      } else {
+        setCronCount(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
     }
-    setLastRefresh(new Date());
-    setLoading(false);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchAll();
     const interval = setInterval(fetchAll, 30_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchAll]);
 
-  const dbStatus = health?.dbPool ? 'healthy' : 'unknown';
-  const redisStatus = metrics?.redis.status ?? 'unknown';
-
-  const totalQueueJobs = Object.values(health?.queues ?? {}).reduce(
-    (sum, q) => sum + (q.waiting ?? 0) + (q.active ?? 0) + (q.failed ?? 0),
-    0,
-  );
-
-  if (error && !health && !metrics) {
-    return <ErrorState message={error} onRetry={fetchAll} />;
+  if (loading && !health) {
+    return (
+      <div className="space-y-6">
+        <PageHeader />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <SkeletonCard count={4} />
+        </div>
+      </div>
+    );
   }
+
+  if (error && !health) {
+    return (
+      <div className="space-y-6">
+        <PageHeader />
+        <ErrorState message={error} onRetry={fetchAll} />
+      </div>
+    );
+  }
+
+  const dbStatus = health?.db?.status ?? health?.status ?? 'unknown';
+  const redisStatus = health?.redis?.status ?? 'unknown';
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400">
-            <Activity className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-white">Dashboard</h3>
-            <p className="text-xs text-slate-500">System overview and real-time status</p>
+      <PageHeader onRefresh={fetchAll} />
+
+      {/* Status Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatusCard
+          icon={<Database className="h-5 w-5" />}
+          label="Database"
+          value={dbStatus}
+          color={dbStatus === 'ok' || dbStatus === 'healthy' ? 'emerald' : 'red'}
+        />
+        <StatusCard
+          icon={<Server className="h-5 w-5" />}
+          label="Redis"
+          value={redisStatus}
+          color={redisStatus === 'ok' || redisStatus === 'healthy' ? 'emerald' : 'red'}
+        />
+        <StatusCard
+          icon={<Gauge className="h-5 w-5" />}
+          label="System"
+          value={health?.status ?? 'unknown'}
+          color={health?.status === 'ok' || health?.status === 'healthy' ? 'emerald' : 'amber'}
+        />
+        <StatusCard
+          icon={<Clock className="h-5 w-5" />}
+          label="Cron Jobs"
+          value={cronCount !== null ? String(cronCount) : '--'}
+          color="indigo"
+        />
+      </div>
+
+      {/* Metrics Summary */}
+      {metrics && (
+        <div className="card">
+          <h3 className="text-sm font-medium text-white mb-3">Metrics Overview</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {Object.entries(metrics)
+              .filter(([, v]) => typeof v === 'number')
+              .slice(0, 8)
+              .map(([key, value]) => (
+                <div key={key}>
+                  <p className="text-xs text-slate-500 truncate">{key.replace(/_/g, ' ')}</p>
+                  <p className="text-lg font-semibold text-white">{String(value)}</p>
+                </div>
+              ))}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-500">
-            Last refresh: {lastRefresh.toLocaleTimeString()}
-          </span>
-          <button onClick={fetchAll} className="btn-secondary" disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
+      )}
+
+      {/* Quick Actions */}
+      <div className="card">
+        <h3 className="text-sm font-medium text-white mb-3">Quick Actions</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <QuickAction to="/agents" icon={<Users className="h-4 w-4" />} label="Agents" />
+          <QuickAction to="/runs" icon={<LayoutDashboard className="h-4 w-4" />} label="Runs" />
+          <QuickAction to="/terminal" icon={<Terminal className="h-4 w-4" />} label="Terminal" />
+          <QuickAction to="/health" icon={<HeartPulse className="h-4 w-4" />} label="Health" />
         </div>
       </div>
 
       {error && (
-        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
-          Some services unavailable: {error}
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-400">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>Some data failed to load. Auto-retrying in 30s.</span>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Status Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatusCard
-          icon={<Database className="h-5 w-5" />}
-          label="Database"
-          status={dbStatus}
-          detail={health?.dbPool ? `${health.dbPool.total} connections` : '—'}
-          loading={loading}
-        />
-        <StatusCard
-          icon={<Cpu className="h-5 w-5" />}
-          label="Redis"
-          status={redisStatus}
-          detail={metrics?.redis.memory ? formatBytes(metrics.redis.memory) : '—'}
-          loading={loading}
-        />
-        <StatusCard
-          icon={<TrendingUp className="h-5 w-5" />}
-          label="Queues"
-          status={totalQueueJobs > 0 ? 'active' : 'idle'}
-          detail={`${totalQueueJobs} jobs`}
-          loading={loading}
-        />
-        <StatusCard
-          icon={<CheckCircle className="h-5 w-5" />}
-          label="Audit"
-          status={
-            health?.auditIntegrity && 'valid' in health.auditIntegrity && health.auditIntegrity.valid
-              ? 'healthy'
-              : 'warning'
-          }
-          detail="Integrity check"
-          loading={loading}
-        />
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <QuickStatCard
-          icon={<FolderOpen className="h-5 w-5 text-amber-400" />}
-          label="Workspace Files"
-          value={workspace?.totalFiles ?? 0}
-          sub={`${workspace?.totalDirs ?? 0} dirs`}
-          to="/files"
-        />
-        <QuickStatCard
-          icon={<Clock className="h-5 w-5 text-purple-400" />}
-          label="Cron Jobs"
-          value={cronCount}
-          sub="scheduled"
-          to="/cron"
-        />
-        <QuickStatCard
-          icon={<MessageSquare className="h-5 w-5 text-emerald-400" />}
-          label="Chat"
-          value="Live"
-          sub="streaming"
-          to="/chat"
-        />
-        <QuickStatCard
-          icon={<GitBranch className="h-5 w-5 text-orange-400" />}
-          label="Git"
-          value="Push"
-          sub="deploy"
-          to="/git"
-        />
-      </div>
-
-      {/* Queue Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div className="card p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-indigo-400" />
-            <h4 className="text-sm font-medium text-white">Queue Status</h4>
-          </div>
-          {Object.entries(health?.queues ?? {}).length === 0 ? (
-            <p className="text-sm text-slate-500">No queue data available</p>
-          ) : (
-            <div className="space-y-2">
-              {Object.entries(health?.queues ?? {}).map(([name, stats]) => (
-                <div key={name} className="flex items-center gap-3 text-sm">
-                  <span className="text-slate-400 flex-1 truncate">{name}</span>
-                  <div className="flex gap-2 text-xs">
-                    <span className="text-amber-400">{stats.waiting ?? 0} waiting</span>
-                    <span className="text-blue-400">{stats.active ?? 0} active</span>
-                    <span className="text-emerald-400">{stats.completed ?? 0} done</span>
-                    {stats.failed ? <span className="text-red-400">{stats.failed} failed</span> : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+function PageHeader({ onRefresh }: { onRefresh?: () => void }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-500/10">
+          <LayoutDashboard className="h-5 w-5 text-indigo-400" />
         </div>
-
-        <div className="card p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <HardDrive className="h-4 w-4 text-cyan-400" />
-            <h4 className="text-sm font-medium text-white">Database Pool</h4>
-          </div>
-          {health?.dbPool ? (
-            <div className="grid grid-cols-3 gap-2">
-              <PoolStat label="Total" value={health.dbPool.total} />
-              <PoolStat label="Idle" value={health.dbPool.idle} />
-              <PoolStat label="Waiting" value={health.dbPool.waiting} />
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500">Pool info unavailable</p>
-          )}
+        <div>
+          <h2 className="text-lg font-semibold text-white">Dashboard</h2>
+          <p className="text-sm text-slate-400">System overview and quick actions</p>
         </div>
       </div>
-
-      {/* Quick Actions */}
-      <div className="card p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-yellow-400" />
-          <h4 className="text-sm font-medium text-white">Quick Actions</h4>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-          <QuickAction to="/chat" label="Chat" />
-          <QuickAction to="/agents" label="Agents" />
-          <QuickAction to="/editor" label="Editor" />
-          <QuickAction to="/terminal" label="Terminal" />
-          <QuickAction to="/files" label="Files" />
-          <QuickAction to="/git" label="Git" />
-          <QuickAction to="/analytics" label="Analytics" />
-          <QuickAction to="/settings" label="Settings" />
-        </div>
-      </div>
+      {onRefresh && (
+        <button onClick={onRefresh} className="btn-secondary text-xs">
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </button>
+      )}
     </div>
   );
 }
@@ -280,98 +204,48 @@ export default function DashboardPage() {
 function StatusCard({
   icon,
   label,
-  status,
-  detail,
-  loading,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  status: string;
-  detail: string;
-  loading: boolean;
-}) {
-  const colors: Record<string, string> = {
-    healthy: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    ok: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    active: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-    idle: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
-    warning: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    degraded: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    down: 'text-red-400 bg-red-500/10 border-red-500/20',
-    unknown: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
-  };
-  const color = colors[status] ?? colors.unknown;
-
-  return (
-    <div className={`card p-3 flex items-center gap-3 border ${color}`}>
-      <div className="flex-shrink-0">{icon}</div>
-      <div className="min-w-0">
-        <div className="text-xs text-slate-400">{label}</div>
-        <div className="text-sm font-medium flex items-center gap-1.5">
-          {loading ? (
-            <span className="inline-block w-8 h-3 bg-slate-700/50 rounded animate-pulse" />
-          ) : (
-            <>
-              {status === 'healthy' || status === 'ok' ? (
-                <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
-              ) : status === 'down' ? (
-                <XCircle className="h-3.5 w-3.5 text-red-400" />
-              ) : status === 'warning' || status === 'degraded' ? (
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-              ) : null}
-              <span className="capitalize">{status}</span>
-            </>
-          )}
-        </div>
-        <div className="text-xs text-slate-500">{detail}</div>
-      </div>
-    </div>
-  );
-}
-
-function QuickStatCard({
-  icon,
-  label,
   value,
-  sub,
-  to,
+  color,
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string | number;
-  sub: string;
-  to: string;
+  value: string;
+  color: 'emerald' | 'red' | 'amber' | 'indigo';
 }) {
-  return (
-    <a href={to} className="card p-4 flex items-center gap-3 hover:bg-slate-800/60 transition-colors group">
-      <div className="flex-shrink-0 p-2 rounded-lg bg-slate-800/60 group-hover:bg-slate-700/60 transition-colors">
-        {icon}
-      </div>
-      <div>
-        <div className="text-lg font-semibold text-white">{value}</div>
-        <div className="text-xs text-slate-500">{label}</div>
-        <div className="text-[10px] text-slate-600">{sub}</div>
-      </div>
-    </a>
-  );
-}
+  const colors = {
+    emerald: 'bg-emerald-500/10 text-emerald-400',
+    red: 'bg-red-500/10 text-red-400',
+    amber: 'bg-amber-500/10 text-amber-400',
+    indigo: 'bg-indigo-500/10 text-indigo-400',
+  };
+  const badgeColors = {
+    emerald: 'badge-success',
+    red: 'badge-error',
+    amber: 'badge-warning',
+    indigo: 'badge-info',
+  };
 
-function PoolStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="p-2 rounded-lg bg-slate-800/50 text-center">
-      <div className="text-lg font-semibold text-white">{value}</div>
-      <div className="text-[10px] text-slate-500 uppercase tracking-wider">{label}</div>
+    <div className="card">
+      <div className="flex items-center gap-3 mb-2">
+        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${colors[color]}`}>
+          {icon}
+        </div>
+        <span className="text-sm text-slate-400">{label}</span>
+      </div>
+      <span className={`badge ${badgeColors[color]}`}>{value}</span>
     </div>
   );
 }
 
-function QuickAction({ to, label }: { to: string; label: string }) {
+function QuickAction({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
   return (
-    <a
-      href={to}
-      className="p-2 rounded-lg bg-slate-800/50 text-center text-xs text-slate-300 hover:bg-indigo-500/10 hover:text-indigo-400 transition-colors border border-slate-700/30 hover:border-indigo-500/20"
+    <Link
+      to={to}
+      className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-sm text-slate-300 hover:text-white transition-colors"
     >
+      {icon}
       {label}
-    </a>
+    </Link>
   );
 }
