@@ -29,6 +29,7 @@ export default function Files() {
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   const fetchFiles = useCallback(async () => {
     setLoading(true);
@@ -70,26 +71,8 @@ export default function Files() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('path', currentPath);
-      for (let i = 0; i < files.length; i++) {
-        formData.append('files', files[i]);
-      }
-      const res = await fetch(`${API_BASE}/files/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: formData,
-      });
-      if (!res.ok) throw new Error('Upload failed');
-      await fetchFiles();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
+    await uploadFiles(files);
+    e.target.value = '';
   };
 
   const handleDownload = async (name: string, type: 'file' | 'directory') => {
@@ -156,6 +139,46 @@ export default function Files() {
     a.download = 'workspace.zip';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const uploadFiles = async (files: FileList | File[]) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('path', currentPath);
+      for (const file of files) {
+        formData.append('files', file);
+      }
+      const res = await fetch(`${API_BASE}/files/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      await fetchFiles();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer.files.length > 0) {
+      uploadFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
   };
 
   const breadcrumbs = currentPath === '/' ? ['workspace'] : ['workspace', ...currentPath.split('/').filter(Boolean)];
@@ -234,7 +257,18 @@ export default function Files() {
       )}
 
       {/* File List */}
-      <div className="card p-0 overflow-hidden">
+      <div
+        className={`card p-0 overflow-hidden transition-colors ${dragging ? 'border-indigo-500 bg-indigo-500/5' : ''}`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        {dragging && (
+          <div className="flex items-center justify-center py-8 text-indigo-400 text-sm font-medium">
+            <Upload className="h-5 w-5 mr-2" />
+            Drop files here to upload
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400" />

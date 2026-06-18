@@ -237,8 +237,10 @@ function ThemeToggle() {
 function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [selectedIdx, setSelectedIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const pages = NAV_SECTIONS.flatMap((s) =>
     s.items.map((item) => ({ label: item.label, path: item.to })),
@@ -298,7 +300,12 @@ function GlobalSearch() {
               <input
                 ref={inputRef}
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => { setQuery(e.target.value); setSelectedIdx(0); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIdx((i) => Math.min(i + 1, results.length - 1)); }
+                  else if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedIdx((i) => Math.max(i - 1, 0)); }
+                  else if (e.key === 'Enter' && results[selectedIdx]) { navigate(results[selectedIdx].path); setOpen(false); setQuery(''); }
+                }}
                 placeholder="Search pages..."
                 className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none"
                 role="searchbox"
@@ -312,17 +319,19 @@ function GlobalSearch() {
               {results.length === 0 ? (
                 <div className="px-4 py-6 text-center text-sm text-slate-500">No results</div>
               ) : (
-                results.map((p) => (
-                  <a
+                results.map((p, i) => (
+                  <button
                     key={p.path}
-                    href={p.path}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                    onClick={() => { navigate(p.path); setOpen(false); setQuery(''); }}
+                    onMouseEnter={() => setSelectedIdx(i)}
+                    className={`flex items-center gap-3 px-4 py-2.5 w-full text-left transition-colors ${
+                      i === selectedIdx ? 'bg-indigo-50 dark:bg-indigo-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                    }`}
                     aria-label={`Go to ${p.label}`}
                   >
-                    <span className="text-sm text-slate-700 dark:text-slate-300">{p.label}</span>
+                    <span className={`text-sm ${i === selectedIdx ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'}`}>{p.label}</span>
                     <span className="ml-auto text-xs text-slate-400">{p.path}</span>
-                  </a>
+                  </button>
                 ))
               )}
             </div>
