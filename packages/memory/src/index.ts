@@ -74,3 +74,9 @@ export interface MemoryProvider {
 // MemoryClient will be implemented in client.ts
 export { MemoryClient, getGlobalMemoryClient } from './client.js';
 export { OpenAiEmbeddingProvider, createEmbeddingProvider, getEmbeddingProvider, type EmbeddingProvider } from './embeddings.js';
+
+// Phase 2: Advanced Memory
+export * from './layers/index.js';
+export * from './consolidation/index.js';
+export * from './retrieval/index.js';
+export * from './graph/index.js';

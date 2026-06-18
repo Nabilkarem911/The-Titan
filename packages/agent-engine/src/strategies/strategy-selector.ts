@@ -1,0 +1,121 @@
+import { getLogger } from '@titan/logging';
+import type { LlmProvider } from '../types.js';
+import type { StrategyName, ReasoningStrategy, TaskClassification } from './types.js';
+import { ChainOfThoughtStrategy } from './chain-of-thought.js';
+import { TreeOfThoughtStrategy } from './tree-of-thought.js';
+import { DebateStrategy } from './debate.js';
+
+const log = getLogger().child({ component: 'strategy-selector' });
+
+const CLASSIFY_PROMPT = `Classify this task into exactly one category:
+
+- simple_qa: Direct factual question with a clear answer
+- complex_reasoning: Requires multi-step logical reasoning
+- creative: Open-ended creative task (writing, brainstorming)
+- analytical: Data analysis, comparison, or evaluation
+- multi_step: Task requiring multiple sequential actions (build, deploy, fix)
+- controversial: Topic with multiple valid viewpoints or trade-offs
+
+Respond ONLY with JSON:
+{ "type": "...", "confidence": 0-100, "reasoning": "..." }`;
+
+const STRATEGY_MAP: Record<string, StrategyName> = {
+  simple_qa: 'chain-of-thought',
+  complex_reasoning: 'tree-of-thought',
+  creative: 'chain-of-thought',
+  analytical: 'tree-of-thought',
+  multi_step: 'chain-of-thought',
+  controversial: 'debate',
+};
+
+export class StrategySelector {
+  private strategies: Map<StrategyName, ReasoningStrategy>;
+
+  constructor(private llm?: LlmProvider) {
+    this.strategies = new Map<StrategyName, ReasoningStrategy>();
+    this.strategies.set('chain-of-thought', new ChainOfThoughtStrategy());
+    this.strategies.set('tree-of-thought', new TreeOfThoughtStrategy());
+    this.strategies.set('debate', new DebateStrategy());
+  }
+
+  getStrategy(name: StrategyName): ReasoningStrategy {
+    const strategy = this.strategies.get(name);
+    if (!strategy) {
+      log.warn({ name }, 'unknown strategy — falling back to chain-of-thought');
+      return this.strategies.get('chain-of-thought')!;
+    }
+    return strategy;
+  }
+
+  async autoSelect(prompt: string): Promise<{ strategy: ReasoningStrategy; classification: TaskClassification }> {
+    const classification = this.llm
+      ? await this.classifyWithLlm(prompt)
+      : this.classifyWithHeuristics(prompt);
+
+    const strategy = this.getStrategy(classification.recommendedStrategy);
+    log.info({ type: classification.type, strategy: classification.recommendedStrategy, confidence: classification.confidence }, 'strategy selected');
+
+    return { strategy, classification };
+  }
+
+  classifyWithHeuristics(prompt: string): TaskClassification {
+    const lower = prompt.toLowerCase();
+    const wordCount = prompt.split(/\s+/).length;
+
+    if (lower.match(/\b(what is|who is|when did|where is|how many|define)\b/) && wordCount < 20) {
+      return { type: 'simple_qa', confidence: 80, recommendedStrategy: 'chain-of-thought', reasoning: 'Short factual question' };
+    }
+
+    if (lower.match(/\b(pros and cons|compare|versus|vs\.|trade.?off|should we|debate|argue)\b/)) {
+      return { type: 'controversial', confidence: 75, recommendedStrategy: 'debate', reasoning: 'Task involves multiple viewpoints' };
+    }
+
+    if (lower.match(/\b(analyze|evaluate|assess|measure|calculate|statistics)\b/)) {
+      return { type: 'analytical', confidence: 70, recommendedStrategy: 'tree-of-thought', reasoning: 'Analytical task requiring structured reasoning' };
+    }
+
+    if (lower.match(/\b(build|create|deploy|install|setup|fix|implement|write code)\b/) && wordCount > 15) {
+      return { type: 'multi_step', confidence: 70, recommendedStrategy: 'chain-of-thought', reasoning: 'Multi-step technical task' };
+    }
+
+    if (lower.match(/\b(why|explain|reason|because|prove|logic)\b/) && wordCount > 20) {
+      return { type: 'complex_reasoning', confidence: 65, recommendedStrategy: 'tree-of-thought', reasoning: 'Complex reasoning required' };
+    }
+
+    if (lower.match(/\b(write|story|poem|creative|brainstorm|imagine|design)\b/)) {
+      return { type: 'creative', confidence: 70, recommendedStrategy: 'chain-of-thought', reasoning: 'Creative/generative task' };
+    }
+
+    return { type: 'simple_qa', confidence: 50, recommendedStrategy: 'chain-of-thought', reasoning: 'Default classification' };
+  }
+
+  private async classifyWithLlm(prompt: string): Promise<TaskClassification> {
+    if (!this.llm) return this.classifyWithHeuristics(prompt);
+
+    try {
+      const completion = await this.llm.complete([
+        { role: 'system', content: CLASSIFY_PROMPT },
+        { role: 'user', content: prompt },
+      ], { temperature: 0, maxTokens: 200 });
+
+      const match = completion.content.match(/\{[\s\S]*\}/);
+      if (!match) return this.classifyWithHeuristics(prompt);
+
+      const parsed = JSON.parse(match[0]) as Record<string, unknown>;
+      const type = String(parsed.type ?? 'simple_qa');
+      const validTypes = Object.keys(STRATEGY_MAP);
+
+      if (!validTypes.includes(type)) return this.classifyWithHeuristics(prompt);
+
+      return {
+        type: type as TaskClassification['type'],
+        confidence: Math.max(0, Math.min(100, Number(parsed.confidence) || 50)),
+        recommendedStrategy: STRATEGY_MAP[type] ?? 'chain-of-thought',
+        reasoning: String(parsed.reasoning ?? ''),
+      };
+    } catch (err) {
+      log.warn({ err: err instanceof Error ? err.message : 'Unknown' }, 'LLM classification failed — using heuristics');
+      return this.classifyWithHeuristics(prompt);
+    }
+  }
+}

@@ -15,6 +15,15 @@ import type {
 } from './types.js';
 import type { MemoryClient } from '@titan/memory';
 import { getGlobalToolRegistry } from './tool-registry.js';
+import { TaskDecomposer } from './planner/task-decomposer.js';
+import { PlanReviser } from './planner/plan-reviser.js';
+import { getReadySteps } from './planner/dependency-graph.js';
+import { SelfCritic } from './reflection/self-critic.js';
+import { ConfidenceScorer } from './reflection/confidence-scorer.js';
+import { RetryStrategist } from './reflection/retry-strategist.js';
+import { StrategySelector } from './strategies/strategy-selector.js';
+import type { StrategyName } from './strategies/types.js';
+import type { ExecutionPlan, PlanStep } from './planner/types.js';
 
 const log = getLogger().child({ component: 'agent-runner' });
 
@@ -205,10 +214,38 @@ export interface AgentRunnerDeps {
   tools?: LlmToolDefinition[];
   /** Pre-loaded user context facts to always inject — bypasses vector search */
   userContextItems?: Record<string, string>;
+  /** Enable advanced planning for complex tasks */
+  enablePlanning?: boolean;
+  /** Enable self-critique of final answers */
+  enableSelfCritique?: boolean;
+  /** Force a specific reasoning strategy instead of auto-selection */
+  strategy?: StrategyName;
+  /** Enable auto strategy selection based on task classification */
+  enableAutoStrategy?: boolean;
 }
 
 export class AgentRunner {
-  constructor(private deps: AgentRunnerDeps) {}
+  private planner?: TaskDecomposer;
+  private planReviser?: PlanReviser;
+  private critic?: SelfCritic;
+  private confidenceScorer?: ConfidenceScorer;
+  private retryStrategist?: RetryStrategist;
+  private strategySelector?: StrategySelector;
+
+  constructor(private deps: AgentRunnerDeps) {
+    if (deps.enablePlanning) {
+      this.planner = new TaskDecomposer({ llm: deps.llm });
+      this.planReviser = new PlanReviser(deps.llm);
+    }
+    if (deps.enableSelfCritique) {
+      this.critic = new SelfCritic(deps.llm);
+      this.confidenceScorer = new ConfidenceScorer(deps.llm);
+    }
+    if (deps.enableAutoStrategy || deps.strategy) {
+      this.strategySelector = new StrategySelector(deps.enableAutoStrategy ? deps.llm : undefined);
+      this.retryStrategist = new RetryStrategist(deps.llm);
+    }
+  }
 
   async run(input: AgentRunInput): Promise<AgentRun> {
     const run: AgentRun = {
@@ -268,6 +305,76 @@ export class AgentRunner {
 
     const toolCallCounts = new Map<string, number>();
 
+    // --- Strategy-based execution ---
+    if (this.strategySelector && (this.deps.strategy || this.deps.enableAutoStrategy)) {
+      try {
+        const tools = this.deps.tools ?? buildToolsFromRegistry();
+        const strategyCtx = {
+          run,
+          systemPrompt: ctx.systemPrompt,
+          memoryItems: ctx.memoryItems,
+          tools,
+          llm: this.deps.llm,
+          executeTool: this.deps.executeTool,
+          onStep: this.deps.onStep,
+        };
+
+        let strategy;
+        if (this.deps.strategy) {
+          strategy = this.strategySelector.getStrategy(this.deps.strategy);
+        } else {
+          const selected = await this.strategySelector.autoSelect(input.prompt);
+          strategy = selected.strategy;
+          log.info({ runId: run.id, strategy: selected.classification.recommendedStrategy, type: selected.classification.type }, 'auto-selected strategy');
+        }
+
+        // Use strategy only for non-react strategies; react falls through to classic loop
+        if (strategy.name !== 'react') {
+          const result = await strategy.execute(strategyCtx);
+          run.steps = result.steps;
+          run.tokensUsed = result.tokensUsed;
+          run.currentStep = result.steps.length;
+          run.finalAnswer = result.finalAnswer;
+          run.status = 'completed';
+
+          // Self-critique if enabled
+          if (this.critic && run.finalAnswer) {
+            const critique = await this.critic.quickCheck(run.finalAnswer, run.prompt);
+            if (!critique.pass && critique.reason) {
+              log.info({ runId: run.id, reason: critique.reason }, 'self-critique failed — requesting revision');
+              const fullCritique = await this.critic.critique(run);
+              if (fullCritique.revisedAnswer) {
+                run.finalAnswer = fullCritique.revisedAnswer;
+              }
+            }
+          }
+
+          // Confidence scoring
+          if (this.confidenceScorer) {
+            const score = this.confidenceScorer.heuristicScore(run);
+            log.info({ runId: run.id, confidence: score.overall }, 'confidence score');
+          }
+
+          return this.finishRun(run, input);
+        }
+      } catch (err) {
+        log.warn({ runId: run.id, err: err instanceof Error ? err.message : 'Unknown' }, 'strategy execution failed — falling back to classic ReAct');
+      }
+    }
+
+    // --- Plan-and-Execute mode ---
+    if (this.planner && this.planner.isComplexTask(input.prompt)) {
+      try {
+        const tools = this.deps.tools ?? buildToolsFromRegistry();
+        const plan = await this.planner.decompose(input.prompt, tools);
+        log.info({ runId: run.id, planId: plan.id, steps: plan.steps.length }, 'plan created for complex task');
+        return this.executePlan(run, plan, ctx, input);
+      } catch (err) {
+        log.warn({ runId: run.id, err: err instanceof Error ? err.message : 'Unknown' }, 'planning failed — falling back to classic ReAct');
+      }
+    }
+
+    // --- Classic ReAct loop ---
     try {
       while (run.currentStep < run.maxSteps) {
         if (run.tokenBudget && run.tokensUsed >= run.tokenBudget) {
@@ -332,42 +439,23 @@ export class AgentRunner {
       log.error({ runId: run.id, err }, 'agent run failed');
     }
 
-    if (this.deps.persistRun) {
-      await this.deps.persistRun(run);
-    }
-
-    if (this.deps.memory) {
+    // Self-critique (classic ReAct path)
+    if (this.critic && run.finalAnswer && run.status === 'completed') {
       try {
-        const collection = input.workspaceId ? `workspace_${input.workspaceId}` : 'global';
-        await this.deps.memory.upsert(collection, [
-          {
-            id: run.id,
-            content: `Prompt: ${run.prompt}\nAnswer: ${run.finalAnswer ?? 'N/A'}`,
-            metadata: {
-              agentId: run.agentId,
-              status: run.status,
-              steps: run.steps.length,
-              tokensUsed: run.tokensUsed,
-              userId: run.userId,
-              workspaceId: run.workspaceId,
-            },
-            timestamp: new Date(),
-          },
-        ]);
-        log.info({ runId: run.id }, 'memory stored');
-      } catch (err) {
-        log.warn({ runId: run.id, err: err instanceof Error ? err.message : 'Unknown' }, 'memory storage failed');
+        const critique = await this.critic.quickCheck(run.finalAnswer, run.prompt);
+        if (!critique.pass && critique.reason) {
+          const fullCritique = await this.critic.critique(run);
+          if (fullCritique.revisedAnswer) {
+            run.finalAnswer = fullCritique.revisedAnswer;
+            log.info({ runId: run.id }, 'answer revised after self-critique');
+          }
+        }
+      } catch {
+        // critique is optional — don't fail the run
       }
     }
 
-    const runDuration = Date.now() - run.createdAt.getTime();
-    observeHistogram('agent_run_duration_ms', 'Agent run total duration', runDuration, [100, 500, 1000, 5000, 10000, 30000, 60000]);
-    observeHistogram('agent_run_steps', 'Agent run steps count', run.steps.length, [1, 2, 5, 10, 20, 50]);
-    observeHistogram('agent_run_tokens', 'Agent run tokens used', run.tokensUsed, [100, 500, 1000, 5000, 10000, 50000]);
-    incCounter('agent_runs_total', 'Total agent runs', 1, { status: run.status });
-
-    log.info({ runId: run.id, status: run.status, steps: run.steps.length, durationMs: runDuration }, 'agent run finished');
-    return run;
+    return this.finishRun(run, input);
   }
 
   private async executeStep(ctx: AgentContext, index: number): Promise<AgentStep> {
@@ -442,5 +530,154 @@ export class AgentRunner {
 
     step.updatedAt = new Date();
     return step;
+  }
+
+  private async executePlan(run: AgentRun, plan: ExecutionPlan, ctx: AgentContext, input: AgentRunInput): Promise<AgentRun> {
+    plan.status = 'active';
+    const maxPlanSteps = Math.min(plan.steps.length * 2, run.maxSteps);
+
+    try {
+      while (run.currentStep < maxPlanSteps) {
+        const readySteps = getReadySteps(plan.steps);
+        if (readySteps.length === 0) {
+          const pending = plan.steps.filter((s) => s.status === 'pending');
+          if (pending.length === 0) break;
+          log.warn({ runId: run.id }, 'no ready steps but pending remain — possible deadlock');
+          break;
+        }
+
+        for (const planStep of readySteps) {
+          planStep.status = 'in_progress';
+          run.currentStep++;
+
+          const stepPrompt = planStep.toolHint
+            ? `${planStep.description}\n\nHint: use the "${planStep.toolHint}" tool.`
+            : planStep.description;
+
+          const agentStep = await this.executeStep(
+            { ...ctx, run: { ...ctx.run, prompt: stepPrompt, steps: run.steps } },
+            run.currentStep,
+          );
+
+          run.steps.push(agentStep);
+          run.tokensUsed += agentStep.tokensUsed ?? 0;
+
+          if (agentStep.status === 'completed' || agentStep.observation?.success) {
+            planStep.status = 'completed';
+            planStep.result = agentStep.reflection || agentStep.observation?.data?.toString() || 'Done';
+          } else {
+            planStep.status = 'failed';
+            planStep.error = agentStep.observation?.error || 'Step failed';
+            planStep.retries++;
+
+            // Try to revise the plan
+            if (this.planReviser && this.planReviser.canRevise(plan)) {
+              const revision = await this.planReviser.revise(plan, planStep.id, planStep.error);
+              if (revision) {
+                plan.steps = revision.revisedPlan.steps;
+                plan.revisionCount = revision.revisedPlan.revisionCount;
+                log.info({ runId: run.id, revision: plan.revisionCount }, 'plan revised after failure');
+                continue;
+              }
+            }
+          }
+
+          if (this.deps.persistRun) await this.deps.persistRun(run);
+
+          if (run.tokenBudget && run.tokensUsed >= run.tokenBudget) {
+            run.finalAnswer = 'Token budget exhausted during plan execution.';
+            run.status = 'completed';
+            return this.finishRun(run, input);
+          }
+        }
+      }
+
+      // Synthesize results from all completed plan steps
+      const completedResults = plan.steps
+        .filter((s) => s.status === 'completed' && s.result)
+        .map((s) => s.result as string);
+
+      if (completedResults.length > 0) {
+        run.finalAnswer = completedResults.length === 1
+          ? completedResults[0]
+          : await this.synthesizePlanResults(run.prompt, completedResults);
+      } else {
+        run.finalAnswer = 'Plan execution completed with no results.';
+      }
+
+      run.status = 'completed';
+    } catch (err) {
+      run.status = 'failed';
+      run.finalAnswer = err instanceof Error ? err.message : 'Plan execution failed';
+      log.error({ runId: run.id, err }, 'plan execution failed');
+    }
+
+    // Self-critique the final result
+    if (this.critic && run.finalAnswer) {
+      try {
+        const critique = await this.critic.quickCheck(run.finalAnswer, run.prompt);
+        if (!critique.pass && critique.reason) {
+          const fullCritique = await this.critic.critique(run);
+          if (fullCritique.revisedAnswer) {
+            run.finalAnswer = fullCritique.revisedAnswer;
+            log.info({ runId: run.id }, 'answer revised after self-critique');
+          }
+        }
+      } catch (err) {
+        log.warn({ runId: run.id }, 'self-critique failed — keeping original answer');
+      }
+    }
+
+    return this.finishRun(run, input);
+  }
+
+  private async synthesizePlanResults(prompt: string, results: string[]): Promise<string> {
+    try {
+      const completion = await this.deps.llm.complete([
+        { role: 'system', content: 'Combine the following step results into a single coherent answer. Be concise.' },
+        { role: 'user', content: `Original question: ${prompt}\n\nStep results:\n${results.map((r, i) => `${i + 1}. ${r}`).join('\n')}` },
+      ]);
+      return completion.content;
+    } catch {
+      return results.join('\n\n');
+    }
+  }
+
+  private async finishRun(run: AgentRun, input: AgentRunInput): Promise<AgentRun> {
+    if (this.deps.persistRun) {
+      await this.deps.persistRun(run);
+    }
+
+    if (this.deps.memory) {
+      try {
+        const collection = input.workspaceId ? `workspace_${input.workspaceId}` : 'global';
+        await this.deps.memory.upsert(collection, [
+          {
+            id: run.id,
+            content: `Prompt: ${run.prompt}\nAnswer: ${run.finalAnswer ?? 'N/A'}`,
+            metadata: {
+              agentId: run.agentId,
+              status: run.status,
+              steps: run.steps.length,
+              tokensUsed: run.tokensUsed,
+              userId: run.userId,
+              workspaceId: run.workspaceId,
+            },
+            timestamp: new Date(),
+          },
+        ]);
+      } catch (err) {
+        log.warn({ runId: run.id, err: err instanceof Error ? err.message : 'Unknown' }, 'memory storage failed');
+      }
+    }
+
+    const runDuration = Date.now() - run.createdAt.getTime();
+    observeHistogram('agent_run_duration_ms', 'Agent run total duration', runDuration, [100, 500, 1000, 5000, 10000, 30000, 60000]);
+    observeHistogram('agent_run_steps', 'Agent run steps count', run.steps.length, [1, 2, 5, 10, 20, 50]);
+    observeHistogram('agent_run_tokens', 'Agent run tokens used', run.tokensUsed, [100, 500, 1000, 5000, 10000, 50000]);
+    incCounter('agent_runs_total', 'Total agent runs', 1, { status: run.status });
+
+    log.info({ runId: run.id, status: run.status, steps: run.steps.length, durationMs: runDuration }, 'agent run finished');
+    return run;
   }
 }
