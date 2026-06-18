@@ -316,7 +316,7 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Packages | 16 |
 | API Endpoints | 95+ |
 | Built-in Tools | 90 |
-| Dashboard Pages | 28 |
+| Dashboard Pages | 43 |
 | Database Migrations | 25 |
 | Agent Profiles | 30 |
 | Queue Types | 9 |
