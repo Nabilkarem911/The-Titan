@@ -48,6 +48,7 @@ RUN npm ci --omit=dev --legacy-peer-deps && rm -rf /tmp/* ~/.npm
 
 # Non-root user
 RUN addgroup -S titan -g 1001 && adduser -S titan -G titan -u 1001
+RUN mkdir -p /app/workspaces && chown titan:titan /app/workspaces
 USER titan
 
 EXPOSE 3000

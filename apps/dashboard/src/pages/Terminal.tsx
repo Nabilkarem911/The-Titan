@@ -76,13 +76,15 @@ export default function TerminalPage() {
     term.loadAddon(links);
 
     term.open(terminalRef.current);
-    fit.fit();
+    requestAnimationFrame(() => {
+      try { fit.fit(); } catch { /* terminal not ready yet */ }
+    });
 
     xtermRef.current = term;
     fitAddonRef.current = fit;
 
     const resizeObs = new ResizeObserver(() => {
-      fit.fit();
+      try { fit.fit(); } catch { /* ignore resize during teardown */ }
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
       }

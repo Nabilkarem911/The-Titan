@@ -50,13 +50,17 @@ export const fileRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', requireAuth);
 
   // List directory contents
-  app.get('/api/v1/files', async (req) => {
+  app.get('/api/v1/files', async (req, reply) => {
     const userId = (req as unknown as { auth: { userId: string } }).auth.userId;
     const queryPath = (req.query as { path?: string }).path ?? '/';
     const workspaceRoot = getWorkspaceRoot(userId);
 
-    // Ensure workspace root exists
-    await mkdir(workspaceRoot, { recursive: true });
+    try {
+      await mkdir(workspaceRoot, { recursive: true });
+    } catch (err) {
+      log.warn({ err, workspaceRoot }, 'failed to create workspace directory');
+      return reply.status(500).send({ error: 'Failed to initialize workspace directory' });
+    }
 
     const targetDir = queryPath === '/' ? workspaceRoot : validatePath(workspaceRoot, queryPath);
 
@@ -107,7 +111,10 @@ export const fileRoutes: FastifyPluginAsync = async (app) => {
   app.post('/api/v1/files/upload', async (req, reply) => {
     const userId = (req as unknown as { auth: { userId: string } }).auth.userId;
     const workspaceRoot = getWorkspaceRoot(userId);
-    await mkdir(workspaceRoot, { recursive: true });
+    try { await mkdir(workspaceRoot, { recursive: true }); } catch (err) {
+      log.warn({ err, workspaceRoot }, 'failed to create workspace directory for upload');
+      return reply.status(500).send({ error: 'Failed to initialize workspace' });
+    }
 
     try {
       const parts = (req as unknown as { parts: () => AsyncIterable<{ type: string; fieldname: string; filename?: string; file?: AsyncIterable<Buffer>; value?: string }> }).parts();

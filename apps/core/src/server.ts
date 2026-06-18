@@ -113,7 +113,21 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   app.addHook('onRequest', async (req) => {
     const url = req.url ?? '';
-    if (url.startsWith('/health/') || url === '/metrics' || url === '/metrics.json' || url === '/') return;
+    if (
+      url.startsWith('/health/') ||
+      url === '/metrics' ||
+      url === '/metrics.json' ||
+      url === '/' ||
+      url.startsWith('/assets/') ||
+      url === '/favicon.ico' ||
+      url.endsWith('.js') ||
+      url.endsWith('.css') ||
+      url.endsWith('.svg') ||
+      url.endsWith('.png') ||
+      url.endsWith('.ico') ||
+      url.endsWith('.woff') ||
+      url.endsWith('.woff2')
+    ) return;
     const ip = req.ip ?? 'unknown';
     const auth = (req as { auth?: { userId?: string } }).auth;
     const subject = auth?.userId ? `u:${auth.userId}` : `ip:${ip}`;
