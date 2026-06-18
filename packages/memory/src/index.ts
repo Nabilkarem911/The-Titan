@@ -80,3 +80,5 @@ export * from './layers/index.js';
 export * from './consolidation/index.js';
 export * from './retrieval/index.js';
 export * from './graph/index.js';
+export * from './identity/index.js';
+export * from './rag/index.js';

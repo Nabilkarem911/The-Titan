@@ -48,3 +48,4 @@ export { manageAgentProfile } from './tools/manageAgentProfile.js';
 // Phase 4: MCP & Tool Composition
 export * from './mcp/index.js';
 export * from './composition/index.js';
+export * from './browser/index.js';
