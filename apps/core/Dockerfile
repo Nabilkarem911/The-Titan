@@ -31,7 +31,7 @@ COPY packages/ ./packages/
 COPY apps/core/ ./apps/core/
 COPY apps/dashboard/ ./apps/dashboard/
 RUN npm run build
-RUN npm run build:dashboard 2>/dev/null || (cd apps/dashboard && npm run build)
+RUN npm run build:dashboard
 
 # ── Stage 3: Production runtime ─────────────────────────────
 FROM node:22-alpine AS runner

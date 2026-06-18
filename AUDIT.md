@@ -24,8 +24,9 @@
 11. [DevOps Audit — Status](#11-devops-audit--status)
 12. [Test Coverage Analysis](#12-test-coverage-analysis)
 13. [Dependency Health](#13-dependency-health)
-14. [Remaining Work](#14-remaining-work)
-15. [Commits & Changelog](#15-commits--changelog)
+14. [API Endpoint Audit](#14-api-endpoint-audit)
+15. [Remaining Work](#15-remaining-work)
+16. [Commits & Changelog](#16-commits--changelog)
 
 ---
 
@@ -402,21 +403,126 @@ Original good practices confirmed, plus new ones added by remediation:
 
 ---
 
-## 14. Remaining Work
+## 14. API Endpoint Audit
+
+> Full audit of all 65 endpoints (63 HTTP + 1 WebSocket + 1 Telegram webhook) across 18 route files.
+
+### 14.1 Endpoint Inventory
+
+| Route File | Endpoints | Auth | Rate Limit | Zod Validation | Issues |
+|------------|-----------|------|------------|----------------|--------|
+| `health.ts` | 4 | 1/4 | 0/4 | N/A | dashboard exposes internal data to any user |
+| `auth.ts` | 6 | 3/6 | 3/6 | 3/3 (public) | logout no rate limit, inconsistent error format |
+| `chat.ts` | 2 | 2/2 | 1/2 | 1/1 | **tg: session bypass**, history no rate limit |
+| `agents.ts` | 5 | 5/5 | 3/5 | 2/2 | **stream no rate limit**, runs not filtered by userId |
+| `workspaces.ts` | 8 | 8/8 | 8/8 | 3/3 | No issues — best implemented |
+| `api-keys.ts` | 3 | 3/3 | 3/3 | 1/1 | No issues |
+| `agent-profiles.ts` | 6 | 5/6 | 6/6 | 2/2 | workspace profiles leak |
+| `swarm.ts` | 3 | 3/3 | 1/3 | 1/1 | tasks endpoints no rate limit |
+| `plugins.ts` | 12 | 7/12 | 0/12 | 4/5 | **No rate limit at all**, 5 public endpoints |
+| `compliance.ts` | 4 | 4/4 | 0/4 | 1/2 | No rate limit, unsafe query cast |
+| `cron.ts` | 5 | 5/5 | 0/5 | 2/2 | No rate limit, no cron expression validation |
+| `webhooks.ts` | 7 | 7/7 | 1/7 | 2/2 | No rate limit on management endpoints |
+| `metrics.ts` | 3 | 3/3 | 0/3 | 0/0 | **admin/ endpoint no authorization** |
+| `telegram.ts` | 1 | secret | 0/1 | 0/1 | No rate limit, unsafe cast, optional secret |
+| `files.ts` | 8 | 8/8 | 0/8 | 2/3 | **No rate limit at all**, zip cmd injection risk |
+| `user-keys.ts` | 4 | 4/4 | 0/4 | 1/1 | In-memory storage, decrypted value endpoint |
+| `terminal.ts` | 1 WS | token | 0/1 | 0/0 | **Shell access**, token in URL, no session limit |
+| `git.ts` | 1 | 1/1 | 0/1 | 1/1 | No rate limit |
+
+### 14.2 Coverage Summary
+
+| Metric | Count | Percentage |
+|--------|-------|------------|
+| Endpoints with Auth | 51/65 | 78% |
+| Endpoints with Rate Limiting | **22/65** | **34%** |
+| Endpoints with Zod Validation | 26/30 (that need it) | 87% |
+| Endpoints with proper Authorization | 35/65 | 54% |
+| Endpoints with consistent error format | ~40/65 | 62% |
+| Route files with zero issues | **2/18** (workspaces, api-keys) | 11% |
+
+### 14.3 Critical API Issues Found
+
+| # | Issue | File:Line | Impact |
+|---|-------|-----------|--------|
+| 1 | Any user can read Telegram sessions via `sessionId=tg:*` | `chat.ts:211` | Data leak — all Telegram conversations exposed |
+| 2 | No rate limit on agent streaming — LLM budget drain | `agents.ts:140` | Financial — unlimited LLM API calls |
+| 3 | Terminal gives unrestricted shell access | `terminal.ts:85` | Full server compromise |
+| 4 | Plugin execute runs any registered tool | `plugins.ts:162` | Arbitrary tool execution |
+| 5 | Webhook open if TELEGRAM_WEBHOOK_SECRET unset | `telegram.ts:133` | Remote agent triggering |
+| 6 | Decrypted API keys returned over HTTP, no rate limit | `user-keys.ts:98` | API key exfiltration |
+| 7 | download-zip still has cmd injection risk | `files.ts:210` | Command execution |
+
+### 14.4 High API Issues Found
+
+| # | Issue | File:Line |
+|---|-------|-----------|
+| 8 | `admin/queues/:name/stats` — no admin authorization | `metrics.ts:40` |
+| 9 | `listForAgent` doesn't filter by userId | `agents.ts:80` |
+| 10 | Run access allowed when userId is null | `agents.ts:119` |
+| 11 | Agent profiles leaked via workspaceId without membership check | `agent-profiles.ts:70` |
+| 12 | User keys stored in-memory only — lost on restart | `user-keys.ts:27` |
+| 13 | Plugin install accepts code/codeUrl (executable code upload) | `plugins.ts:54` |
+| 14 | Token in terminal WebSocket URL | `terminal.ts:30` |
+| 15 | No rate limit on file upload — disk exhaustion | `files.ts` |
+
+### 14.5 Rate Limiting Gap Analysis
+
+**Only 4 of 18 route files have rate limiting:**
+- `auth.ts` — 60/min on public endpoints
+- `chat.ts` — 30/min on POST /chat only
+- `agents.ts` — 30/min on run, 200/min on list (but NOT on stream)
+- `webhooks.ts` — 60/min on trigger only
+
+**14 route files with ZERO rate limiting:**
+`health`, `swarm` (GET), `plugins` (all 12 endpoints), `compliance`, `cron`, `metrics`, `telegram`, `files` (all 8), `user-keys`, `terminal`, `git`, `agent-profiles` (partially)
+
+### 14.6 Missing API Capabilities
+
+| Gap | Description |
+|-----|-------------|
+| Password change | No `PATCH /api/v1/auth/me` or password reset flow |
+| Email verification | No verification endpoint |
+| Account deletion | No GDPR-compliant account deletion |
+| Agent listing | No `GET /api/v1/agents` — only runs for specific agent |
+| Chat sessions list | No `GET /api/v1/chat/sessions` |
+| OpenAPI docs | No auto-generated Swagger/OpenAPI |
+| Pagination metadata | Most lists lack `page`, `totalPages`, `hasNext` |
+| Audit logging | Missing in: files, terminal, git, cron, webhooks, user-keys |
+
+---
+
+## 15. Remaining Work
+
+### Immediate (API Security — Before Deploy)
+| # | Issue | File | Effort |
+|---|-------|------|--------|
+| 1 | Fix `tg:` session bypass in chat history | `chat.ts:211` | 30min |
+| 2 | Add rate limiting to agent streaming | `agents.ts:140` | 15min |
+| 3 | Require `TELEGRAM_WEBHOOK_SECRET` (not optional) | `telegram.ts:133` | 15min |
+| 4 | Add admin authorization to `/admin/queues` | `metrics.ts:40` | 15min |
+| 5 | Add admin authorization to `/health/dashboard` | `health.ts:54` | 15min |
+| 6 | Filter `listForAgent` by userId | `agents.ts:80` | 30min |
+| 7 | Fix null userId access in run ownership | `agents.ts:119` | 15min |
 
 ### High Priority (Still Open)
 | ID | Issue | Effort | Notes |
 |----|-------|--------|-------|
-| SEC-011 | Bot token in Telegram URLs | 2h | Needs API proxy to hide token |
-| CODE-003 | SandboxPool per job | 3h | Needs singleton pool pattern |
-| CODE-004 | queue-bootstrap.ts too large | 4h | Needs modular split |
-| FE-005 | Token in WebSocket URL | 2h | First-message auth pattern |
+| API-RL | Add rate limiting to 14 route files | 3h | Only 4/18 files have it |
+| SEC-011 | Bot token in Telegram URLs | 2h | Needs API proxy |
+| CODE-003 | SandboxPool per job | 3h | Singleton pool pattern |
+| CODE-004 | queue-bootstrap.ts too large | 4h | Modular split |
+| FE-005 | Token in WebSocket URL | 2h | First-message auth |
 | ARCH-007 | Sequential build chain | 3h | Turborepo adoption |
+| API-KEYS | Move user-keys from in-memory to PostgreSQL | 2h | Data lost on restart |
+| API-PLUG | Sandbox plugin code execution | 4h | Security critical |
 
 ### Medium Priority
 | Issue | Effort |
 |-------|--------|
-| Rate limiting on remaining endpoints | 2h |
+| Unify error response format across all routes | 3h |
+| Add Zod to remaining unsafe casts (plugins, compliance, telegram) | 2h |
+| Add cron expression validation + per-user job limits | 1h |
 | Focus trap in modals | 1h |
 | Empty catch blocks in 6+ components | 2h |
 | AbortController for fetch requests | 2h |
@@ -430,10 +536,13 @@ Original good practices confirmed, plus new ones added by remediation:
 | Dashboard component tests | 8h |
 | Proper RBAC with permissions | 6h |
 | OpenTelemetry monitoring stack | 4h |
+| OpenAPI/Swagger auto-generation | 4h |
+| Password reset + email verification flows | 6h |
+| GDPR account deletion endpoint | 3h |
 
 ---
 
-## 15. Commits & Changelog
+## 16. Commits & Changelog
 
 ```
 0531617  (initial audit baseline)
