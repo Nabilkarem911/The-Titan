@@ -8,7 +8,7 @@
 
 [![Live](https://img.shields.io/badge/Live-titan.orcanox.xyz-blue?style=for-the-badge)](https://titan.orcanox.xyz)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/Tests-1064_passing-success?style=for-the-badge)](.)
+[![Tests](https://img.shields.io/badge/Tests-1090_passing-success?style=for-the-badge)](.)
 [![Node](https://img.shields.io/badge/Node-22+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](.)
 
@@ -311,11 +311,11 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 |--------|-------|
 | Total Source Files | 400+ |
 | Lines of Code | ~55,000 |
-| Test Files | 59 |
-| Tests Passing | 1,064 |
+| Test Files | 61 |
+| Tests Passing | 1,090 |
 | Packages | 16 |
 | API Endpoints | 95+ |
-| Built-in Tools | 70 |
+| Built-in Tools | 90 |
 | Dashboard Pages | 28 |
 | Database Migrations | 25 |
 | Agent Profiles | 30 |
