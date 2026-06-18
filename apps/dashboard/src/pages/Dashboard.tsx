@@ -56,8 +56,8 @@ export default function DashboardPage() {
     try {
       const headers = { Authorization: `Bearer ${getToken()}` };
       const [healthRes, metricsRes, filesRes, cronRes] = await Promise.all([
-        fetch(`${API_BASE}/health/dashboard`, { headers }).catch(() => null),
-        fetch(`${API_BASE}/metrics`, { headers }).catch(() => null),
+        fetch('/health/dashboard', { headers }).catch(() => null),
+        fetch('/metrics.json', { headers }).catch(() => null),
         fetch(`${API_BASE}/files?path=/`, { headers }).catch(() => null),
         fetch(`${API_BASE}/cron`, { headers }).catch(() => null),
       ]);

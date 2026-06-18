@@ -20,7 +20,7 @@ interface HealthDashboard {
   timestamp: string;
 }
 
-import { API_BASE, getToken } from '../api/client';
+import { getToken } from '../api/client';
 
 export default function HealthPage() {
   const [data, setData] = useState<HealthDashboard | null>(null);
@@ -32,7 +32,7 @@ export default function HealthPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/health/dashboard`, {
+      const res = await fetch('/health/dashboard', {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!res.ok) throw new Error('Failed');

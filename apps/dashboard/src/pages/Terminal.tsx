@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import 'xterm/css/xterm.css';
 
-const WS_BASE = (import.meta as unknown as { env: Record<string, string> }).env.VITE_WS_URL ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/terminal`;
+const WS_BASE = (import.meta as unknown as { env: Record<string, string> }).env.VITE_WS_URL ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`;
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 

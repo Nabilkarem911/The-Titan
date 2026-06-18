@@ -56,6 +56,11 @@ export default function GitPage() {
       const res = await fetch(`${API_BASE}/git/status`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
+      if (res.status === 404) {
+        setStatusError(null);
+        setStatusLoading(false);
+        return;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as GitStatus;
       setGitStatus(data);
@@ -150,6 +155,8 @@ export default function GitPage() {
 
         {statusError ? (
           <ErrorState message={statusError} onRetry={fetchStatus} />
+        ) : !statusLoading && !gitStatus ? (
+          <p className="text-xs text-slate-500">Git status preview not available. You can still commit and push below.</p>
         ) : statusLoading ? (
           <div className="animate-pulse space-y-2">
             <div className="h-4 w-32 bg-slate-700/50 rounded" />
