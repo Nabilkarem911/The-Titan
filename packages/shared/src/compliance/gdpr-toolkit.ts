@@ -1,6 +1,4 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'gdpr' });
+const log = { info: (..._args: unknown[]) => {}, warn: (..._args: unknown[]) => {} };
 
 export interface DataExportRequest {
   userId: string;
