@@ -16,6 +16,7 @@ export * from './providers/multi-model-router.js';
 export * from './personality/index.js';
 export * from './code-intel/index.js';
 export * from './autonomous/index.js';
+export * from './spawner/index.js';
 export * from './voice/index.js';
 export * from './teams/index.js';
 export * from './learning/index.js';
