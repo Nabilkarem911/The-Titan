@@ -295,8 +295,6 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         memory,
         userContextItems,
         enablePlanning: true,
-        enableAutoStrategy: true,
-        enableSelfCritique: true,
       });
 
       // Start background run — do not await so next messages can be processed concurrently
