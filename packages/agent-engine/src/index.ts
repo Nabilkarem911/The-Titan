@@ -11,3 +11,5 @@ export * from './planner/index.js';
 export * from './reflection/index.js';
 export * from './strategies/index.js';
 export * from './workflow/index.js';
+export * from './integrations/index.js';
+export * from './providers/multi-model-router.js';
