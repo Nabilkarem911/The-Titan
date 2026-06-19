@@ -19,7 +19,7 @@ async function ensureSshKey(): Promise<void> {
   const log = getLogger().child({ component: 'ssh-init' });
 
   const sshDir = '/home/titan/.ssh';
-  const keyPath = `${sshDir}/titan_key`;
+  const keyPath = `${sshDir}/titan_rsa`;
 
   try {
     if (existsSync(keyPath)) {
@@ -28,7 +28,7 @@ async function ensureSshKey(): Promise<void> {
     }
 
     mkdirSync(sshDir, { recursive: true });
-    execSync(`ssh-keygen -t ed25519 -f ${keyPath} -N ""`, { stdio: 'pipe' });
+    execSync(`ssh-keygen -t rsa -b 2048 -m PEM -f ${keyPath} -N ""`, { stdio: 'pipe' });
     chmodSync(keyPath, 0o600);
 
     const pubKey = readFileSync(`${keyPath}.pub`, 'utf8').trim();

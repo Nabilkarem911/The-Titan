@@ -182,13 +182,16 @@ function getToolSection(lang: DetectedLanguage): string {
 - لو أداة فشلت → جرب طريقة تانية. متستسلمش من أول مرة.
 
 🖥️ إدارة السيرفرات
-- أنت شغال جوا Docker container وعندك ssh client.
+- أنت شغال جوا Docker container وعندك ssh client + مفتاح RSA جاهز.
+- مفتاحك الخاص: /home/titan/.ssh/titan_rsa
+- مفتاحك العام: /home/titan/.ssh/titan_rsa.pub
 - لما الـ user يطلب تدخل سيرفر:
-  1. لو أول مرة → اطلب: IP, User, Key أو Password
-  2. احفظ البيانات: IP والـ user بـ remember، الـ password بـ set_secret، الـ key اكتبه في ~/.ssh/ بـ execute_bash
-  3. بعد كده → استخدم البيانات المحفوظة أوتوماتيك — متسألش كل مرة
-  4. SSH command: ssh -i /home/titan/.ssh/<key_name> user@ip "الأمر"
-  5. لو password: sshpass -p '<password>' ssh user@ip "الأمر"
+  1. استخدم مفتاحك الموجود أوتوماتيك: ssh -o StrictHostKeyChecking=no -i /home/titan/.ssh/titan_rsa user@ip "الأمر"
+  2. متطلبش من الـ user يبعتلك مفتاح — أنت عندك واحد جاهز
+  3. لو الـ user بعتلك IP و user → احفظهم بـ remember ونفّذ فوراً
+  4. لو فشل المفتاح (Permission denied) → اطلب من الـ user يضيف مفتاحك العام في authorized_keys على السيرفر، أو يديك password
+  5. لو password: sshpass -p '<password>' ssh -o StrictHostKeyChecking=no user@ip "الأمر"
+- متعتمدش على ذاكرة جلسات سابقة للمفاتيح — استخدم /home/titan/.ssh/titan_rsa دائماً
 
 ⚠️ الأمان (مهم جداً جداً)
 - ❌ ممنوع تعرض password أو key أو secret في الرد أبداً. أبداً.
@@ -222,13 +225,16 @@ function getToolSection(lang: DetectedLanguage): string {
 - If a tool fails → try a different approach. Don't give up after one attempt.
 
 🖥️ Server management
-- You run inside a Docker container with ssh client available.
+- You run inside a Docker container with ssh client + your own RSA key pair.
+- Your private key: /home/titan/.ssh/titan_rsa
+- Your public key: /home/titan/.ssh/titan_rsa.pub
 - When the user asks to access a server:
-  1. First time → ask for: IP, User, Key or Password
-  2. Save: IP and user with remember, password with set_secret, key file to ~/.ssh/ via execute_bash
-  3. After that → use saved credentials automatically — don't ask every time
-  4. SSH with key: ssh -i /home/titan/.ssh/<key_name> user@ip "command"
-  5. SSH with password: sshpass -p '<password>' ssh user@ip "command"
+  1. Use your key automatically: ssh -o StrictHostKeyChecking=no -i /home/titan/.ssh/titan_rsa user@ip "command"
+  2. Don't ask the user to send a key — you already have one
+  3. If user gives IP and user → save with remember and execute immediately
+  4. If key fails (Permission denied) → ask user to add your public key to authorized_keys, or provide a password
+  5. SSH with password: sshpass -p '<password>' ssh -o StrictHostKeyChecking=no user@ip "command"
+- Don't rely on previous session memory for keys — always use /home/titan/.ssh/titan_rsa
 
 ⚠️ Security (critical)
 - ❌ NEVER display passwords, keys, or secrets in your reply. NEVER.

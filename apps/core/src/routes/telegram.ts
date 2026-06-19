@@ -182,6 +182,90 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
 
     const chatId = msg.chat.id;
     let text = (msg.text ?? msg.caption ?? '').trim();
+    const ownerId = String(chatId);
+
+    // ── Slash commands ──
+    if (text.startsWith('/')) {
+      const cmd = text.split(/\s/)[0].toLowerCase().replace(/@\w+$/, '');
+      reply.code(200).send({ ok: true });
+
+      if (cmd === '/status') {
+        try {
+          const { execSync } = await import('node:child_process');
+          const uptime = execSync('uptime -p 2>/dev/null || uptime', { timeout: 5000 }).toString().trim();
+          const mem = execSync('free -h 2>/dev/null || echo "N/A"', { timeout: 5000 }).toString().trim();
+          const disk = execSync('df -h / 2>/dev/null | tail -1 || echo "N/A"', { timeout: 5000 }).toString().trim();
+          const dockerPs = execSync('docker ps --format "{{.Names}}: {{.Status}}" 2>/dev/null || echo "Docker not available"', { timeout: 5000 }).toString().trim();
+          await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId,
+            `🖥️ Server Status\n\n⏱ ${uptime}\n\n💾 Memory:\n${mem}\n\n💿 Disk:\n${disk}\n\n🐳 Docker:\n${dockerPs}`);
+        } catch (err) {
+          await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, `❌ Failed to get status: ${(err as Error).message}`);
+        }
+        return;
+      }
+
+      if (cmd === '/memory') {
+        try {
+          const ctx = await userContext.getAll(ownerId);
+          const entries = Object.entries(ctx);
+          if (entries.length === 0) {
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '🧠 الذاكرة فاضية — مفيش حاجة محفوظة.');
+          } else {
+            const lines = entries.map(([k, v]) => `• ${k}: ${String(v).substring(0, 100)}`);
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, `🧠 الذاكرة (${entries.length} عنصر):\n\n${lines.join('\n')}`);
+          }
+        } catch {
+          await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '❌ فشل قراءة الذاكرة.');
+        }
+        return;
+      }
+
+      if (cmd === '/forget') {
+        try {
+          const keys = Object.keys(await userContext.getAll(ownerId));
+          for (const key of keys) await userContext.delete(ownerId, key);
+          await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, `🗑️ تم مسح ${keys.length} عنصر من الذاكرة.`);
+        } catch {
+          await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '❌ فشل مسح الذاكرة.');
+        }
+        return;
+      }
+
+      if (cmd === '/servers') {
+        try {
+          const ctx = await userContext.getAll(ownerId);
+          const serverKeys = Object.entries(ctx).filter(([k]) => k.startsWith('server_'));
+          if (serverKeys.length === 0) {
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '🖥️ مفيش سيرفرات محفوظة.');
+          } else {
+            const lines = serverKeys.map(([k, v]) => `• ${k.replace('server_', '')}: ${v}`);
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, `🖥️ السيرفرات (${serverKeys.length}):\n\n${lines.join('\n')}`);
+          }
+        } catch {
+          await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '❌ فشل قراءة السيرفرات.');
+        }
+        return;
+      }
+
+      if (cmd === '/reset') {
+        try {
+          const keys = Object.keys(await userContext.getAll(ownerId));
+          for (const key of keys) await userContext.delete(ownerId, key);
+          await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '🔄 تم مسح كل البيانات. هنبدأ من جديد.');
+        } catch {
+          await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '❌ فشل إعادة التعيين.');
+        }
+        return;
+      }
+
+      if (cmd === '/help') {
+        await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId,
+          `🤖 أوامر تيتان:\n\n/status — حالة السيرفر\n/memory — عرض الذاكرة\n/forget — مسح الذاكرة\n/servers — السيرفرات المحفوظة\n/reset — مسح كل البيانات\n/help — عرض الأوامر`);
+        return;
+      }
+
+      // Unknown command — fall through to agent
+    }
 
     // Handle file uploads (document or photo)
     let fileInfo: { url?: string; filename?: string; type?: string; localPath?: string } = {};
@@ -235,7 +319,6 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
     // Run agent
     try {
       const agentId = cfg.TELEGRAM_AGENT_ID;
-      const ownerId = String(chatId);
       const sessionId = `tg:${chatId}`;
 
       // Load user context and recent history
