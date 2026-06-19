@@ -313,7 +313,13 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       const runner = createRunner({
         runId,
         agentId,
-        executeTool: (name, params) => registry.execute(name, params),
+        executeTool: (name, params) => {
+          const p = params as Record<string, unknown>;
+          if (['remember', 'recall', 'set_secret', 'list_secrets', 'set_project', 'get_project'].includes(name)) {
+            p.ownerId = ownerId;
+          }
+          return registry.execute(name, p);
+        },
         memory,
         userContextItems,
         enablePlanning: true,
