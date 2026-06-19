@@ -78,24 +78,30 @@ export function validateCwd(cwd: string, config: SandboxConfig = DEFAULT_CONFIG)
 
 export function validateCommand(command: string, config: SandboxConfig = DEFAULT_CONFIG): void {
   const forbidden = config.forbiddenCommands ?? DEFAULT_CONFIG.forbiddenCommands!;
-  const lower = command.toLowerCase();
+
+  // For SSH commands, only validate the local part (the ssh command itself),
+  // not the remote command inside quotes — the remote server has its own security.
+  const isRemoteExec = /^(ssh|sshpass)\s/.test(command.trim().toLowerCase());
+  const checkTarget = isRemoteExec
+    ? command.substring(0, command.indexOf('"') >= 0 ? command.indexOf('"') : command.length).toLowerCase()
+    : command.toLowerCase();
+
   for (const f of forbidden) {
     if (f === 'sh -i') {
-      if (/(?<![s])sh\s+-i/.test(lower)) {
+      if (/(?<![s])sh\s+-i/.test(checkTarget)) {
         log.warn({ command: command.substring(0, 200), forbidden: f }, 'forbidden command detected');
         throw new Error(`Command contains forbidden pattern: "${f}"`);
       }
     } else if (f === 'bash -i') {
-      if (/(?<![a-z])bash\s+-i/.test(lower)) {
+      if (/(?<![a-z])bash\s+-i/.test(checkTarget)) {
         log.warn({ command: command.substring(0, 200), forbidden: f }, 'forbidden command detected');
         throw new Error(`Command contains forbidden pattern: "${f}"`);
       }
-    } else if (lower.includes(f.toLowerCase())) {
+    } else if (checkTarget.includes(f.toLowerCase())) {
       log.warn({ command: command.substring(0, 200), forbidden: f }, 'forbidden command detected');
       throw new Error(`Command contains forbidden pattern: "${f}"`);
     }
   }
-  // Block null bytes which can be used to bypass string checks
   if (command.includes('\0')) {
     throw new Error('Command contains null bytes');
   }
