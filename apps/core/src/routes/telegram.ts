@@ -31,28 +31,20 @@ interface TelegramUpdate {
   };
 }
 
-function escapeMarkdown(text: string): string {
-  // Escape characters that Telegram interprets as Markdown formatting
-  return text
-    .replace(/\\/g, '\\\\')
-    .replace(/_/g, '\\_')
-    .replace(/\*/g, '\\*')
-    .replace(/\[/g, '\\[')
-    .replace(/\]/g, '\\]')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)')
-    .replace(/~/g, '\\~')
-    .replace(/`/g, '\\`')
-    .replace(/>/g, '\\>')
-    .replace(/#/g, '\\#')
-    .replace(/\+/g, '\\+')
-    .replace(/-/g, '\\-')
-    .replace(/=/g, '\\=')
-    .replace(/\|/g, '\\|')
-    .replace(/{/g, '\\{')
-    .replace(/}/g, '\\}')
-    .replace(/\./g, '\\.')
-    .replace(/!/g, '\\!');
+function markdownToTelegramHtml(text: string): string {
+  let html = text;
+  // Code blocks: ```lang\ncode\n``` → <pre>code</pre>
+  html = html.replace(/```[\w]*\n([\s\S]*?)```/g, '<pre>$1</pre>');
+  // Inline code: `code` → <code>code</code>
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Bold: **text** → <b>text</b>
+  html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  // Italic: *text* → <i>text</i> (but not inside <b> tags)
+  html = html.replace(/(?<!\w)\*([^*]+?)\*(?!\w)/g, '<i>$1</i>');
+  // Escape remaining HTML special chars (but not our tags)
+  html = html.replace(/&(?!amp;|lt;|gt;)/g, '&amp;');
+  html = html.replace(/<(?!\/?(?:b|i|code|pre|a)\b)/g, '&lt;');
+  return html;
 }
 
 const TELEGRAM_MSG_LIMIT = 4000;
@@ -78,12 +70,14 @@ function splitMessage(text: string): string[] {
 async function sendTelegramChunk(token: string, chatId: number, text: string): Promise<boolean> {
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
   try {
+    // Try HTML formatting first (converts **bold** → <b>bold</b>, etc.)
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: escapeMarkdown(text), parse_mode: 'MarkdownV2' }),
+      body: JSON.stringify({ chat_id: chatId, text: markdownToTelegramHtml(text), parse_mode: 'HTML' }),
     });
     if (res.ok) return true;
+    // Fallback: send as plain text (strips all formatting)
     const fallbackRes = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
