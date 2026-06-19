@@ -37,9 +37,14 @@ async function ensureSshKey(): Promise<void> {
     try {
       const hostIP = execSync("ip route | grep default | awk '{print $3}'", { stdio: 'pipe' }).toString().trim();
       if (hostIP) {
-        const authorizedKeysPath = `${sshDir}/authorized_keys`;
-        appendFileSync(authorizedKeysPath, pubKey + '\n');
-        log.info({ hostIP }, 'host gateway IP detected — SSH key ready for host access');
+        const sshUser = process.env['SSH_HOST_USER'] ?? 'ubuntu';
+        const addKeyCmd = `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i ${keyPath} ${sshUser}@${hostIP} "grep -qF '${pubKey}' ~/.ssh/authorized_keys 2>/dev/null || echo '${pubKey}' >> ~/.ssh/authorized_keys"`;
+        try {
+          execSync(addKeyCmd, { stdio: 'pipe', timeout: 10_000 });
+          log.info({ hostIP, sshUser }, 'public key added to host authorized_keys');
+        } catch {
+          log.info({ hostIP, sshUser }, 'could not auto-add key to host — manual setup needed: docker exec titan-core cat /home/titan/.ssh/titan_rsa.pub >> ~/.ssh/authorized_keys');
+        }
       }
     } catch {
       log.info('could not detect host IP — SSH key generated but host access needs manual setup');
