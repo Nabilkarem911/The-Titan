@@ -139,10 +139,23 @@ TypeScript check → Production build → Docker image
 **المشكلة:** Telegram limit = 4096 حرف. الرسائل الطويلة بتفشل
 **الحل:** تقسيم الرسالة لـ chunks
 
-### 3. Typing indicator مستمر أثناء التفكير
-**الملف:** `apps/core/src/routes/telegram.ts`
-**المشكلة:** بيبعت typing مرة واحدة بس في الأول
-**الحل:** بعت typing كل 5 ثواني طول ما الـ agent شغال
+### 3. Typing indicator مستمر أثناء التفكير ✅
+**الحل:** بيبعت typing كل 4 ثواني طول ما الـ agent شغال
+
+### 4. SSH في Docker Container
+**الملف:** `apps/core/Dockerfile` + `docker-compose.yml`
+**المشكلة:** الـ container مفيهوش `ssh` ولا `sshpass` — بيروحوا كل deploy
+**الحل:** أضفنا `openssh-client sshpass git` في الـ Dockerfile + `titan-ssh` volume للـ SSH keys
+
+### 5. Docker Socket للـ Container Orchestration
+**الملف:** `docker-compose.yml`
+**المشكلة:** `docker_orchestrator` tool مش شغال — مفيش docker.sock
+**الحل:** mount `/var/run/docker.sock` في الـ core service
+
+### 6. `ssh -i` كانت محظورة بالغلط ✅
+**الملف:** `packages/tools/src/sandbox.ts`
+**المشكلة:** forbidden pattern `sh -i` بيمسك `ssh -i`
+**الحل:** regex مع negative lookbehind
 
 ---
 

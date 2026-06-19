@@ -37,7 +37,7 @@ RUN npm run build:dashboard
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache dumb-init curl
+RUN apk add --no-cache dumb-init curl openssh-client sshpass git
 
 # Copy only what's needed to run
 COPY package.json package-lock.json ./
@@ -48,7 +48,9 @@ RUN npm ci --omit=dev --legacy-peer-deps && rm -rf /tmp/* ~/.npm
 
 # Non-root user
 RUN addgroup -S titan -g 1001 && adduser -S titan -G titan -u 1001
-RUN mkdir -p /app/workspaces && chown titan:titan /app/workspaces
+RUN mkdir -p /app/workspaces /home/titan/.ssh && \
+    chown -R titan:titan /app/workspaces /home/titan/.ssh && \
+    chmod 700 /home/titan/.ssh
 USER titan
 
 EXPOSE 3000

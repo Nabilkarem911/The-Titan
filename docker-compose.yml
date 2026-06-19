@@ -194,6 +194,9 @@ services:
       - EMBEDDING_BASE_URL=http://embed:8000/v1
       - EMBEDDING_DIMENSIONS=384
       - EMBEDDING_API_KEY=local
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - titan-ssh:/home/titan/.ssh
     depends_on:
       postgres:
         condition: service_healthy
@@ -266,6 +269,8 @@ volumes:
   pgadmin_data:
     driver: local
   redis_insight_data:
+    driver: local
+  titan-ssh:
     driver: local
 
 networks:
