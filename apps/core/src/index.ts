@@ -13,12 +13,50 @@ import { startCronScheduler, stopCronScheduler } from './cron-scheduler.js';
 import { setWsServer } from './ws-instance.js';
 import { registerTelegramWebhook } from './routes/telegram.js';
 
+async function ensureSshKey(): Promise<void> {
+  const { existsSync, mkdirSync, readFileSync, appendFileSync, chmodSync } = await import('node:fs');
+  const { execSync } = await import('node:child_process');
+  const log = getLogger().child({ component: 'ssh-init' });
+
+  const sshDir = '/home/titan/.ssh';
+  const keyPath = `${sshDir}/titan_key`;
+
+  try {
+    if (existsSync(keyPath)) {
+      log.info({ keyPath }, 'SSH key already exists');
+      return;
+    }
+
+    mkdirSync(sshDir, { recursive: true });
+    execSync(`ssh-keygen -t ed25519 -f ${keyPath} -N ""`, { stdio: 'pipe' });
+    chmodSync(keyPath, 0o600);
+
+    const pubKey = readFileSync(`${keyPath}.pub`, 'utf8').trim();
+    log.info({ keyPath, pubKeyFingerprint: pubKey.substring(0, 40) + '...' }, 'SSH key generated');
+
+    try {
+      const hostIP = execSync("ip route | grep default | awk '{print $3}'", { stdio: 'pipe' }).toString().trim();
+      if (hostIP) {
+        const authorizedKeysPath = `${sshDir}/authorized_keys`;
+        appendFileSync(authorizedKeysPath, pubKey + '\n');
+        log.info({ hostIP }, 'host gateway IP detected — SSH key ready for host access');
+      }
+    } catch {
+      log.info('could not detect host IP — SSH key generated but host access needs manual setup');
+    }
+  } catch (err) {
+    log.warn({ err }, 'SSH key setup failed — non-fatal, continuing startup');
+  }
+}
+
 async function main(): Promise<void> {
   const cfg = loadConfig();
   const log = getLogger().child({ component: 'bootstrap' });
 
   await initTelemetry();
   log.info({ service: cfg.SERVICE_NAME, version: cfg.SERVICE_VERSION, env: cfg.NODE_ENV }, 'titan-core starting');
+
+  await ensureSshKey();
 
   const dbOk = await dbPing().catch(() => false);
   const redisOk = await pingRedis().catch(() => false);
