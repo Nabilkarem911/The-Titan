@@ -37,7 +37,7 @@ RUN npm run build:dashboard
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache dumb-init curl openssh-client openssh-keygen sshpass git openssl libcrypto3
+RUN apk update && apk add --no-cache dumb-init curl openssh-client sshpass git openssl
 
 # Copy only what's needed to run
 COPY package.json package-lock.json ./
