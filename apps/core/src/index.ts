@@ -14,40 +14,75 @@ import { setWsServer } from './ws-instance.js';
 import { registerTelegramWebhook } from './routes/telegram.js';
 
 async function ensureSshKey(): Promise<void> {
-  const { existsSync, mkdirSync, readFileSync, appendFileSync, chmodSync } = await import('node:fs');
+  const { existsSync, mkdirSync, readFileSync, readdirSync, chmodSync, copyFileSync } = await import('node:fs');
   const { execSync } = await import('node:child_process');
+  const { join } = await import('node:path');
   const log = getLogger().child({ component: 'ssh-init' });
 
   const sshDir = '/home/titan/.ssh';
   const keyPath = `${sshDir}/titan_rsa`;
+  const sshUser = process.env['SSH_HOST_USER'] ?? 'ubuntu';
 
   try {
+    mkdirSync(sshDir, { recursive: true });
+
+    // Detect host IP
+    let hostIP = '';
+    try {
+      hostIP = execSync("ip route | grep default | awk '{print $3}'", { stdio: 'pipe' }).toString().trim();
+    } catch {
+      // not in Docker or no route — will skip host registration
+    }
+
+    // If titan_rsa already exists, we're good
     if (existsSync(keyPath)) {
       log.info({ keyPath }, 'SSH key already exists');
       return;
     }
 
-    mkdirSync(sshDir, { recursive: true });
+    // Check if any existing key from a previous deploy still works on the host
+    if (hostIP) {
+      try {
+        const files = readdirSync(sshDir).filter((f) => !f.endsWith('.pub') && f !== 'known_hosts' && f !== 'authorized_keys' && f !== 'config');
+        for (const file of files) {
+          const existingKey = join(sshDir, file);
+          try {
+            execSync(`ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes -i ${existingKey} ${sshUser}@${hostIP} "echo OK"`, { stdio: 'pipe', timeout: 10_000 });
+            // This key works — reuse it as titan_rsa
+            if (file !== 'titan_rsa') {
+              copyFileSync(existingKey, keyPath);
+              chmodSync(keyPath, 0o600);
+              if (existsSync(`${existingKey}.pub`)) {
+                copyFileSync(`${existingKey}.pub`, `${keyPath}.pub`);
+              }
+            }
+            log.info({ existingKey, keyPath }, 'reusing working SSH key from previous deploy');
+            return;
+          } catch {
+            // Key didn't work, try next
+          }
+        }
+      } catch {
+        // readdirSync failed — continue to generate new key
+      }
+    }
+
+    // No working key found — generate a new one
     execSync(`ssh-keygen -t rsa -b 2048 -m PEM -f ${keyPath} -N ""`, { stdio: 'pipe' });
     chmodSync(keyPath, 0o600);
 
     const pubKey = readFileSync(`${keyPath}.pub`, 'utf8').trim();
-    log.info({ keyPath, pubKeyFingerprint: pubKey.substring(0, 40) + '...' }, 'SSH key generated');
+    log.info({ keyPath }, 'new SSH key generated');
 
-    try {
-      const hostIP = execSync("ip route | grep default | awk '{print $3}'", { stdio: 'pipe' }).toString().trim();
-      if (hostIP) {
-        const sshUser = process.env['SSH_HOST_USER'] ?? 'ubuntu';
+    // Try to auto-register on host
+    if (hostIP) {
+      try {
         const addKeyCmd = `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i ${keyPath} ${sshUser}@${hostIP} "grep -qF '${pubKey}' ~/.ssh/authorized_keys 2>/dev/null || echo '${pubKey}' >> ~/.ssh/authorized_keys"`;
-        try {
-          execSync(addKeyCmd, { stdio: 'pipe', timeout: 10_000 });
-          log.info({ hostIP, sshUser }, 'public key added to host authorized_keys');
-        } catch {
-          log.info({ hostIP, sshUser }, 'could not auto-add key to host — manual setup needed: docker exec titan-core cat /home/titan/.ssh/titan_rsa.pub >> ~/.ssh/authorized_keys');
-        }
+        execSync(addKeyCmd, { stdio: 'pipe', timeout: 10_000 });
+        log.info({ hostIP, sshUser }, 'public key added to host authorized_keys');
+      } catch {
+        log.info({ hostIP, sshUser }, 'could not auto-add key — run: docker exec titan-core cat /home/titan/.ssh/titan_rsa.pub >> ~/.ssh/authorized_keys');
       }
-    } catch {
-      log.info('could not detect host IP — SSH key generated but host access needs manual setup');
     }
   } catch (err) {
     log.warn({ err }, 'SSH key setup failed — non-fatal, continuing startup');
