@@ -106,9 +106,8 @@ async function sendTelegramMessage(token: string, chatId: number, text: string):
   }
 }
 
-async function downloadTelegramFile(token: string, fileId: string): Promise<{ url: string; filename?: string } | null> {
+async function downloadTelegramFile(token: string, fileId: string): Promise<{ url: string; filename?: string; localPath?: string } | null> {
   try {
-    // Step 1: Get file path from Telegram
     const infoRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
     const info = await infoRes.json() as { ok: boolean; result?: { file_path: string; file_size?: number }; description?: string };
     if (!info.ok || !info.result?.file_path) {
@@ -117,7 +116,28 @@ async function downloadTelegramFile(token: string, fileId: string): Promise<{ ur
     }
     const filePath = info.result.file_path;
     const downloadUrl = `https://api.telegram.org/file/bot${token}/${filePath}`;
-    return { url: downloadUrl, filename: filePath.split('/').pop() };
+    const filename = filePath.split('/').pop() ?? 'unknown';
+
+    // Download file to local filesystem so tools can access it
+    try {
+      const { writeFile, mkdir } = await import('node:fs/promises');
+      const { join } = await import('node:path');
+      const res = await fetch(downloadUrl);
+      if (res.ok) {
+        const buffer = Buffer.from(await res.arrayBuffer());
+        const isKey = filename.includes('key') || filename.includes('pem') || filename.includes('id_rsa') || filename.endsWith('.pub');
+        const dir = isKey ? '/home/titan/.ssh' : '/tmp/titan-uploads';
+        await mkdir(dir, { recursive: true });
+        const localPath = join(dir, filename);
+        await writeFile(localPath, buffer, { mode: isKey ? 0o600 : 0o644 });
+        log.info({ fileId, localPath, size: buffer.length }, 'telegram file downloaded to local filesystem');
+        return { url: downloadUrl, filename, localPath };
+      }
+    } catch (dlErr) {
+      log.warn({ fileId, err: dlErr }, 'failed to download file locally — falling back to URL only');
+    }
+
+    return { url: downloadUrl, filename };
   } catch (err) {
     log.error({ fileId, err }, 'downloadTelegramFile error');
     return null;
@@ -164,12 +184,12 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
     let text = (msg.text ?? msg.caption ?? '').trim();
 
     // Handle file uploads (document or photo)
-    let fileInfo: { url?: string; filename?: string; type?: string } = {};
+    let fileInfo: { url?: string; filename?: string; type?: string; localPath?: string } = {};
     if (msg.document) {
       const file = msg.document;
       const downloaded = await downloadTelegramFile(cfg.TELEGRAM_BOT_TOKEN, file.file_id);
       if (downloaded) {
-        fileInfo = { url: downloaded.url, filename: downloaded.filename ?? file.file_name, type: file.mime_type ?? 'document' };
+        fileInfo = { url: downloaded.url, filename: downloaded.filename ?? file.file_name, type: file.mime_type ?? 'document', localPath: downloaded.localPath };
         if (!text) text = `User uploaded a file: ${fileInfo.filename}`;
       }
     } else if (msg.photo && msg.photo.length > 0) {
@@ -177,7 +197,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       const photo = msg.photo[msg.photo.length - 1];
       const downloaded = await downloadTelegramFile(cfg.TELEGRAM_BOT_TOKEN, photo.file_id);
       if (downloaded) {
-        fileInfo = { url: downloaded.url, filename: downloaded.filename, type: 'image' };
+        fileInfo = { url: downloaded.url, filename: downloaded.filename, type: 'image', localPath: downloaded.localPath };
         if (!text) text = 'User uploaded an image.';
       }
     }
@@ -234,9 +254,11 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       // (removed forced SSH prompt — let the LLM decide tool usage naturally)
 
       // File upload info
-      const fileContext = fileInfo.url
-        ? `\n\n📎 File uploaded by user:\n- filename: ${fileInfo.filename ?? 'unknown'}\n- type: ${fileInfo.type ?? 'unknown'}\n- url: ${fileInfo.url}\nThe user has sent you a file. You can reference it in your response.`
-        : '';
+      let fileContext = '';
+      if (fileInfo.url) {
+        const localInfo = fileInfo.localPath ? `\n- saved locally at: ${fileInfo.localPath}\nThe file has been downloaded and saved. You can read it with read_file_content or use it directly (e.g., for SSH keys, use the local path in ssh -i commands).` : `\n- url: ${fileInfo.url}\nThe file is available at the URL above.`;
+        fileContext = `\n\n📎 File uploaded by user:\n- filename: ${fileInfo.filename ?? 'unknown'}\n- type: ${fileInfo.type ?? 'unknown'}${localInfo}`;
+      }
 
       const contextBlock = [
         ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
