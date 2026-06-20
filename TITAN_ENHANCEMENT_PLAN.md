@@ -205,5 +205,5 @@
 - [x] Phase 2.3: Agent Profiles UI — DONE
 - [x] Phase 3.2-3.4: Activity Feed, Token Tracker, Model Selector — DONE
 - [x] Phase 4: Plugin Marketplace — DONE (Details Modal, Tool Testing Console, Categories Filter, Ratings)
-- [ ] Phase 5: Mobile & UX
-- [ ] Phase 6: Pro Features
+- [x] Phase 5: Mobile & UX — DONE (Responsive sidebar, Notifications, Onboarding)
+- [x] Phase 6: Pro Features — DONE (Audit Logs, API Keys, Auto-refresh, Export/Import Memory)
