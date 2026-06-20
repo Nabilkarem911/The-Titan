@@ -21,6 +21,13 @@
     "@titan/config": "0.1.0",
     "@titan/logging": "0.1.0"
   },
+  "optionalDependencies": {
+    "@opentelemetry/sdk-node": "^1.28.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.54.0",
+    "@opentelemetry/resources": "^1.28.0",
+    "@opentelemetry/semantic-conventions": "^1.28.0"
+  },
   "devDependencies": {
     "typescript": "5.6.3"
   }

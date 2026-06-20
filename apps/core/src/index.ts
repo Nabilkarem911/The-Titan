@@ -1,6 +1,6 @@
 import { loadConfig } from '@titan/config';
 import { getLogger, shutdownLogger } from '@titan/logging';
-import { initTelemetry } from '@titan/telemetry';
+import { initTelemetry, shutdownTelemetry } from '@titan/telemetry';
 import { initializeQueues, closeAllQueues, getQueueStats, pingRedis, closeRedis, verifyAuthOnStartup } from '@titan/queue';
 import { QUEUE_NAMES, type QueueName } from '@titan/shared';
 import { runMigrations, closePool, ping as dbPing, verifyTlsOnStartup } from '@titan/database';
@@ -165,6 +165,7 @@ async function main(): Promise<void> {
       await closeAllQueues();
       await closeRedis();
       await closePool();
+      await shutdownTelemetry();
       await shutdownLogger();
     } catch (err) {
       log.error({ err }, 'error during shutdown');

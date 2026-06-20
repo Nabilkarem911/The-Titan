@@ -2,6 +2,7 @@ import { loadConfig } from '@titan/config';
 import { getLogger } from '@titan/logging';
 
 let initialized = false;
+let sdkInstance: { shutdown(): Promise<void> } | null = null;
 
 export async function initTelemetry(): Promise<void> {
   if (initialized) return;
@@ -13,27 +14,46 @@ export async function initTelemetry(): Promise<void> {
     return;
   }
   try {
-    const sdkModule = '@opentelemetry/sdk-node';
-    const exporterModule = '@opentelemetry/exporter-trace-otlp-http';
-    const [nodeSdk, exporter] = await Promise.all([
-      import(sdkModule).catch(() => null),
-      import(exporterModule).catch(() => null),
+    const [nodeSdk, exporter, autoInstr, resources, semconv] = await Promise.all([
+      import('@opentelemetry/sdk-node' as string).catch(() => null),
+      import('@opentelemetry/exporter-trace-otlp-http' as string).catch(() => null),
+      import('@opentelemetry/auto-instrumentations-node' as string).catch(() => null),
+      import('@opentelemetry/resources' as string).catch(() => null),
+      import('@opentelemetry/semantic-conventions' as string).catch(() => null),
     ]);
-    if (!nodeSdk || !exporter) {
-      log.warn(
-        { sdkModule, exporterModule },
-        'OpenTelemetry packages not installed; telemetry no-op',
-      );
+    if (!nodeSdk || !exporter || !autoInstr || !resources || !semconv) {
+      log.warn('OpenTelemetry packages not installed; telemetry no-op');
       initialized = true;
       return;
     }
-    const traceExporter = new (exporter as unknown as { OTLPTraceExporter: new () => unknown }).OTLPTraceExporter();
-    const sdk = new (nodeSdk as unknown as { NodeSDK: new (cfg: unknown) => { start(): void; shutdown(): Promise<void> } }).NodeSDK({
-      traceExporter,
-      serviceName: c.OTEL_SERVICE_NAME,
+
+    const NodeSDK = (nodeSdk as unknown as { NodeSDK: new (cfg: unknown) => { start(): void; shutdown(): Promise<void> } }).NodeSDK;
+    const OTLPTraceExporter = (exporter as unknown as { OTLPTraceExporter: new (cfg?: unknown) => unknown }).OTLPTraceExporter;
+    const getNodeAutoInstrumentations = (autoInstr as unknown as { getNodeAutoInstrumentations: () => unknown }).getNodeAutoInstrumentations;
+    const SemanticAttributes = semconv as unknown as { ATTR_SERVICE_NAME: string; ATTR_SERVICE_VERSION: string };
+    const resourceAttrs: Record<string, string> = {
+      [SemanticAttributes.ATTR_SERVICE_NAME]: c.OTEL_SERVICE_NAME,
+      [SemanticAttributes.ATTR_SERVICE_VERSION]: '0.1.0',
+    };
+    const resource = (resources as unknown as {
+      resourceFromAttributes?: (attrs: Record<string, string>) => unknown;
+      Resource?: new (attrs: Record<string, string>) => unknown;
+    }).resourceFromAttributes?.(resourceAttrs)
+      ?? new (resources as unknown as { Resource: new (attrs: Record<string, string>) => unknown }).Resource(resourceAttrs);
+
+    const traceExporter = new OTLPTraceExporter({
+      url: c.OTEL_EXPORTER_OTLP_ENDPOINT ? `${c.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces` : undefined,
     });
+
+    const sdk = new NodeSDK({
+      traceExporter,
+      resource,
+      instrumentations: [getNodeAutoInstrumentations()],
+    });
+
     sdk.start();
-    log.info({ endpoint: c.OTEL_EXPORTER_OTLP_ENDPOINT }, 'OpenTelemetry initialized');
+    sdkInstance = sdk;
+    log.info({ endpoint: c.OTEL_EXPORTER_OTLP_ENDPOINT }, 'OpenTelemetry initialized with auto-instrumentations');
     initialized = true;
   } catch (err) {
     log.error({ err }, 'failed to initialize OpenTelemetry; continuing without it');
@@ -42,5 +62,13 @@ export async function initTelemetry(): Promise<void> {
 }
 
 export async function shutdownTelemetry(): Promise<void> {
-  if (!initialized) return;
+  if (!initialized || !sdkInstance) return;
+  try {
+    await sdkInstance.shutdown();
+    const log = getLogger().child({ component: 'telemetry' });
+    log.info('OpenTelemetry shut down');
+  } catch {
+    // best-effort
+  }
+  sdkInstance = null;
 }

@@ -63,6 +63,19 @@ interface ClientEntry {
   backpressureDrops: number;
 }
 
+const PER_METHOD_SIZE_LIMITS: Record<string, number> = {
+  'auth': 4 * 1024,
+  'ping': 256,
+  'client.pong': 256,
+  'server.info': 256,
+  'queue.stats': 256,
+  'chat.send': 256 * 1024,
+  'agent.run': 512 * 1024,
+  'file.write': 1024 * 1024,
+};
+
+const DEFAULT_METHOD_SIZE_LIMIT = 64 * 1024;
+
 export interface WsServerOptions {
   router: RpcRouter;
   path?: string;
@@ -335,6 +348,36 @@ export class TitanWebSocketServer {
       if (entry.messageCount === 50) {
         observeHistogram('ws_time_to_50_messages_ms', 'Time to 50 messages on a connection', now - entry.firstMessageAt);
       }
+
+      // Per-method message size check
+      const rawBytes = Buffer.isBuffer(raw)
+        ? raw.length
+        : Array.isArray(raw)
+          ? Buffer.concat(raw).length
+          : (raw as ArrayBuffer).byteLength;
+      const method = typeof msg === 'object' && msg !== null && 'method' in msg
+        ? (msg as { method: string }).method
+        : '';
+      const sizeLimit = PER_METHOD_SIZE_LIMITS[method] ?? DEFAULT_METHOD_SIZE_LIMIT;
+      if (rawBytes > sizeLimit) {
+        incCounter('ws_oversized_message_rejected_total', 'WS messages rejected for exceeding per-method size limit', 1);
+        getAbuseDetector().record({
+          signal: 'ws_invalid_payload',
+          subject: entry.userId ? `u:${entry.userId}` : `ip:${entry.ipAddress ?? 'unknown'}`,
+        });
+        try {
+          ws.send(serializeMessage({
+            jsonrpc: '2.0',
+            id: isRequest(msg) ? msg.id : null,
+            error: {
+              code: JSON_RPC_ERROR.PAYLOAD_REJECTED,
+              message: `Message exceeds size limit for method "${method}" (${rawBytes} > ${sizeLimit} bytes)`,
+            },
+          }));
+        } catch {}
+        return;
+      }
+
       try {
         if (entry.state === 'authenticating') {
           if (entry.authPromise) {

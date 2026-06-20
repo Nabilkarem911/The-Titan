@@ -94,11 +94,11 @@
 
 ## Phase 4 — Nice to Have
 
-### 4.1 Add OpenTelemetry tracing
-### 4.2 Container image vulnerability scanning
-### 4.3 Add `updated_at` trigger on `agent_runs`
-### 4.4 Split large seed migration 0012
-### 4.5 Add per-method WebSocket message size limits
+### 4.1 Add OpenTelemetry tracing ✅ DONE
+### 4.2 Container image vulnerability scanning ✅ DONE
+### 4.3 Add `updated_at` trigger on `agent_runs` ✅ DONE
+### 4.4 Split large seed migration 0012 ⏭️ SKIPPED (already deployed, splitting would require renumbering)
+### 4.5 Add per-method WebSocket message size limits ✅ DONE
 
 ---
 

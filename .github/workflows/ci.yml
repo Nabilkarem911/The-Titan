@@ -56,4 +56,13 @@ jobs:
 
       - name: Verify Docker build
         run: |
-          docker build -f apps/core/Dockerfile -t titan-core:ci --target builder .
+          docker build -f apps/core/Dockerfile -t titan-core:ci .
+
+      - name: Container image vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: titan-core:ci
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
