@@ -57,6 +57,6 @@ USER titan
 
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
-  CMD curl -f http://localhost:3000/health/live || exit 1
+  CMD curl -f http://localhost:3000/api/v1/health/live || exit 1
 
 CMD ["dumb-init", "node", "apps/core/dist/index.js"]

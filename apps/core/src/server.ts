@@ -258,8 +258,8 @@ export async function buildServer(): Promise<FastifyInstance> {
       version: cfg.SERVICE_VERSION,
       env: cfg.NODE_ENV,
       endpoints: {
-        health: '/health/live',
-        ready: '/health/ready',
+        health: '/api/v1/health/live',
+        ready: '/api/v1/health/ready',
         api: '/api/v1',
         ws: cfg.WS_PATH,
       },

@@ -238,16 +238,16 @@ afterAll(async () => {
 // HEALTH ROUTES
 // ===========================================================================
 describe('Health routes', () => {
-  it('GET /health/live returns 200', async () => {
-    const res = await app.inject({ method: 'GET', url: '/health/live' });
+  it('GET /api/v1/health/live returns 200', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/health/live' });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.status).toBe('live');
     expect(body.timestamp).toBeDefined();
   });
 
-  it('GET /health/ready returns 200 with checks', async () => {
-    const res = await app.inject({ method: 'GET', url: '/health/ready' });
+  it('GET /api/v1/health/ready returns 200 with checks', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/health/ready' });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.status).toBe('ready');
@@ -256,15 +256,15 @@ describe('Health routes', () => {
     expect(body.checks.redis).toBeDefined();
   });
 
-  it('GET /health/dashboard requires auth', async () => {
-    const res = await app.inject({ method: 'GET', url: '/health/dashboard' });
+  it('GET /api/v1/health/dashboard requires auth', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/health/dashboard' });
     expect(res.statusCode).toBe(401);
   });
 
-  it('GET /health/dashboard returns data with auth', async () => {
+  it('GET /api/v1/health/dashboard returns data with auth', async () => {
     const res = await app.inject({
       method: 'GET',
-      url: '/health/dashboard',
+      url: '/api/v1/health/dashboard',
       headers: { authorization: 'Bearer valid-token' },
     });
     expect(res.statusCode).toBe(200);

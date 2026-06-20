@@ -6,9 +6,9 @@ import { getLastVerifyResult, getLastArchiveResult } from '../audit-scheduler.js
 import { requireAuth } from '../plugins/auth.js';
 
 export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
-  app.get('/health/live', async () => ({ status: 'live', timestamp: new Date().toISOString() }));
+  app.get('/api/v1/health/live', async () => ({ status: 'live', timestamp: new Date().toISOString() }));
 
-  app.get('/health/ready', async (_req, reply) => {
+  app.get('/api/v1/health/ready', async (_req, reply) => {
     const checks: Record<string, { ok: boolean; latencyMs?: number; error?: string }> = {};
     let allOk = true;
 
@@ -39,7 +39,7 @@ export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
     });
   });
 
-  app.get('/health/startup', async () => {
+  app.get('/api/v1/health/startup', async () => {
     const cfg = await import('@titan/config').then((m) => m.loadConfig());
     const tlsOk = cfg.POSTGRES_TLS ? isTlsVerified() : true;
     const authOk = cfg.REDIS_PASSWORD ? isAuthVerified() : true;
@@ -51,7 +51,7 @@ export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
     };
   });
 
-  app.get('/health/dashboard', { preHandler: requireAuth }, async () => {
+  app.get('/api/v1/health/dashboard', { preHandler: requireAuth }, async () => {
     const dbPool = (() => {
       try {
         const p = getPool();

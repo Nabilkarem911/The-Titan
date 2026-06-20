@@ -99,7 +99,7 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       resourceId: result.user.id,
       metadata: { email: result.user.email, event: 'register' },
     });
-    return reply.status(201).send(result);
+    return reply.status(201).send({ user: result.user, ...result.tokens });
   });
 
   app.post('/api/v1/auth/login', RATE_LIMIT_AUTH(app), async (req, reply) => {
@@ -130,7 +130,7 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         resourceId: result.user.id,
         metadata: { email: result.user.email, event: 'login' },
       });
-      return reply.send(result);
+      return reply.send({ user: result.user, ...result.tokens });
     } catch (err) {
       const ip = req.ip ?? 'unknown';
       const subject = `ip:${ip}`;
