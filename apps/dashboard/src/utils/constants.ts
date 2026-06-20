@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   BarChart3,
   FlaskConical,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -35,6 +36,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'Dashboard', path: '/', icon: LayoutDashboard },
       { label: 'Chat', path: '/chat', icon: MessageSquare },
       { label: 'Agents', path: '/agents', icon: Bot },
+      { label: 'Profiles', path: '/agent-profiles', icon: Users },
       { label: 'Runs', path: '/runs', icon: Activity },
     ],
   },

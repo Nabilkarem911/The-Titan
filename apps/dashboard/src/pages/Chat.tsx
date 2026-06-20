@@ -10,6 +10,10 @@ interface StepData {
   status: string;
   thought?: string;
   actionName?: string;
+  actionParams?: Record<string, unknown>;
+  observationSuccess?: boolean;
+  observationData?: unknown;
+  observationError?: string;
   reflection?: string;
   tokensUsed?: number;
   latencyMs?: number;
@@ -366,6 +370,8 @@ function StepCards({ steps }: { steps: StepData[] }) {
     return <Brain className="w-3.5 h-3.5 text-accent-primary" />;
   };
 
+  const truncate = (s: string, n: number) => s.length > n ? s.slice(0, n) + '...' : s;
+
   return (
     <div className="mb-3 space-y-1.5">
       <div className="text-caption text-text-muted uppercase tracking-wider font-medium mb-1">Agent Steps</div>
@@ -381,6 +387,12 @@ function StepCards({ steps }: { steps: StepData[] }) {
             {step.actionName && (
               <span className="badge bg-accent-secondary/10 text-accent-secondary text-caption ml-1 font-mono">{step.actionName}</span>
             )}
+            {step.observationSuccess === true && (
+              <span className="badge bg-success/10 text-success text-caption ml-1">✓</span>
+            )}
+            {step.observationSuccess === false && (
+              <span className="badge bg-error/10 text-error text-caption ml-1">✗</span>
+            )}
             {step.latencyMs != null && (
               <span className="text-caption text-text-muted ml-auto">{step.latencyMs}ms</span>
             )}
@@ -392,6 +404,24 @@ function StepCards({ steps }: { steps: StepData[] }) {
                 <div>
                   <span className="text-caption text-text-muted font-medium">Thought:</span>
                   <p className="text-caption text-text-secondary italic mt-0.5">{step.thought}</p>
+                </div>
+              )}
+              {step.actionName && step.actionParams && Object.keys(step.actionParams).length > 0 && (
+                <div>
+                  <span className="text-caption text-text-muted font-medium">Parameters:</span>
+                  <pre className="text-caption text-text-secondary mt-0.5 p-2 bg-surface rounded font-mono overflow-x-auto">{JSON.stringify(step.actionParams, null, 2)}</pre>
+                </div>
+              )}
+              {step.observationError && (
+                <div>
+                  <span className="text-caption text-error font-medium">Error:</span>
+                  <p className="text-caption text-error mt-0.5">{step.observationError}</p>
+                </div>
+              )}
+              {step.observationData != null && (
+                <div>
+                  <span className="text-caption text-text-muted font-medium">Result:</span>
+                  <pre className="text-caption text-text-secondary mt-0.5 p-2 bg-surface rounded font-mono overflow-x-auto max-h-40 overflow-y-auto">{truncate(JSON.stringify(step.observationData, null, 2), 2000)}</pre>
                 </div>
               )}
               {step.reflection && (

@@ -28,6 +28,7 @@ const Workspaces = lazy(() => import('./pages/Workspaces'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Memory = lazy(() => import('./pages/Memory'));
 const AuditLogs = lazy(() => import('./pages/AuditLogs'));
+const AgentProfiles = lazy(() => import('./pages/AgentProfiles'));
 
 // ── Protected Layout ──
 function ProtectedLayout() {
@@ -79,6 +80,7 @@ export default function App() {
               <Route path="settings" element={<Settings />} />
               <Route path="memory" element={<Memory />} />
               <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="agent-profiles" element={<AgentProfiles />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
