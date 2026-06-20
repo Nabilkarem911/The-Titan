@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getLogger } from '@titan/logging';
-import type { AgentStep, LlmMessage, ToolResult } from '../types.js';
+import type { AgentStep, LlmMessage, ToolCall, ToolResult } from '../types.js';
 import type { ReasoningStrategy, StrategyContext, StrategyResult } from './types.js';
 
 const log = getLogger().child({ component: 'strategy-cot' });
@@ -56,20 +56,7 @@ export class ChainOfThoughtStrategy implements ReasoningStrategy {
           toolCalls: completion.toolCalls,
         });
 
-        let lastResult: ToolResult | undefined;
-        for (const call of completion.toolCalls) {
-          const result = await executeTool(call, run.id);
-          lastResult = result;
-          messages.push({
-            role: 'tool',
-            content: result.success
-              ? (typeof result.data === 'string' ? result.data : JSON.stringify(result.data)).slice(0, 4000)
-              : `Error: ${result.error}`,
-            toolResult: result,
-          });
-        }
-        step.observation = lastResult;
-
+        step.observation = await this.executeToolCalls(completion.toolCalls, executeTool, run.id, messages);
         step.status = 'observing';
       } else {
         step.thought = completion.content;
@@ -109,5 +96,26 @@ export class ChainOfThoughtStrategy implements ReasoningStrategy {
     }
     parts.push('\nThink step by step. Explain your reasoning at each step before acting.');
     return parts.join('\n');
+  }
+
+  private async executeToolCalls(
+    calls: ToolCall[],
+    executeTool: StrategyContext['executeTool'],
+    runId: string,
+    messages: LlmMessage[],
+  ): Promise<ToolResult | undefined> {
+    let lastResult: ToolResult | undefined;
+    for (const call of calls) {
+      const result = await executeTool(call, runId);
+      lastResult = result;
+      messages.push({
+        role: 'tool',
+        content: result.success
+          ? (typeof result.data === 'string' ? result.data : JSON.stringify(result.data)).slice(0, 4000)
+          : `Error: ${result.error}`,
+        toolResult: result,
+      });
+    }
+    return lastResult;
   }
 }

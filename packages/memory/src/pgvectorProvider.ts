@@ -84,25 +84,29 @@ export class PgVectorMemoryProvider implements MemoryProvider {
     }
     const id = (await this.resolveCollectionId(collection))!;
     for (const item of items) {
-      const embeddingJson = item.embedding ? JSON.stringify(item.embedding) : null;
-      const embeddingVec = item.embedding && item.embedding.length === 1536
-        ? `[${item.embedding.join(',')}]`
-        : null;
-      await this.db.query(
-        `INSERT INTO memory_items (collection_id, external_id, content, embedding, embedding_vec, metadata, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, now())
-         ON CONFLICT (collection_id, external_id)
-         DO UPDATE SET content = EXCLUDED.content, embedding = EXCLUDED.embedding,
-                       embedding_vec = EXCLUDED.embedding_vec,
-                       metadata = EXCLUDED.metadata, updated_at = now()`,
-        [id, item.id, item.content, embeddingJson, embeddingVec, JSON.stringify(item.metadata ?? {})],
-      );
+      await this.insertItem(id, item);
     }
     await this.db.query(
       `UPDATE memory_collections SET item_count = (SELECT COUNT(*) FROM memory_items WHERE collection_id = $1), updated_at = now() WHERE id = $1`,
       [id],
     );
     log.debug({ collection, count: items.length }, 'upserted');
+  }
+
+  private async insertItem(collectionId: string, item: MemoryItem): Promise<void> {
+    const embeddingJson = item.embedding ? JSON.stringify(item.embedding) : null;
+    const embeddingVec = item.embedding && item.embedding.length === 1536
+      ? `[${item.embedding.join(',')}]`
+      : null;
+    await this.db.query(
+      `INSERT INTO memory_items (collection_id, external_id, content, embedding, embedding_vec, metadata, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, now())
+       ON CONFLICT (collection_id, external_id)
+       DO UPDATE SET content = EXCLUDED.content, embedding = EXCLUDED.embedding,
+                     embedding_vec = EXCLUDED.embedding_vec,
+                     metadata = EXCLUDED.metadata, updated_at = now()`,
+      [collectionId, item.id, item.content, embeddingJson, embeddingVec, JSON.stringify(item.metadata ?? {})],
+    );
   }
 
   async search(collection: string, query: string | number[], opts: SearchOpts): Promise<SearchResult[]> {
