@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Brain, Plus, Trash2 } from 'lucide-react';
+import { Brain, Plus, Trash2, Download, Upload } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';
 import { toast } from 'sonner';
@@ -45,6 +45,35 @@ export default function Memory() {
     }
   };
 
+  const handleExport = () => {
+    const json = JSON.stringify(data?.items ?? [], null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `titan-memory-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Memory exported');
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const items: MemoryItem[] = JSON.parse(text);
+      for (const item of items) {
+        await api.post('/user-context', item);
+      }
+      toast.success(`Imported ${items.length} memories`);
+      refetch();
+    } catch {
+      toast.error('Failed to import — invalid JSON format');
+    }
+    e.target.value = '';
+  };
+
   if (error) return <ErrorState message={error} onRetry={refetch} className="py-20" />;
 
   return (
@@ -57,10 +86,21 @@ export default function Memory() {
           </h1>
           <p className="text-small text-text-secondary mt-1">User context and persistent memory</p>
         </div>
-        <button onClick={() => setShowAdd(true)} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          Add Memory
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleExport} disabled={!data?.items.length} className="btn-secondary flex items-center gap-1.5" title="Export as JSON">
+            <Download className="w-4 h-4" />
+            Export
+          </button>
+          <label className="btn-secondary flex items-center gap-1.5 cursor-pointer" title="Import from JSON">
+            <Upload className="w-4 h-4" />
+            Import
+            <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+          </label>
+          <button onClick={() => setShowAdd(true)} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Add Memory
+          </button>
+        </div>
       </div>
 
       {isLoading ? (

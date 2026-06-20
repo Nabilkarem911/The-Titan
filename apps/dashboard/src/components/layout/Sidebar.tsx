@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogOut, Menu, X } from 'lucide-react';
 import { TitanLogo } from '../TitanLogo';
 import { NAV_GROUPS } from '../../utils/constants';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { cn } from '../../utils/cn';
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -16,13 +17,8 @@ export function Sidebar() {
     navigate('/login');
   };
 
-  return (
-    <aside
-      className={cn(
-        'flex flex-col bg-sidebar border-r border-border-subtle transition-all duration-250 ease-in-out shrink-0',
-        collapsed ? 'w-[72px]' : 'w-[260px]',
-      )}
-    >
+  const sidebarContent = (
+    <>
       {/* Logo */}
       <div className="h-14 flex items-center px-4 border-b border-border-subtle shrink-0">
         {collapsed ? (
@@ -50,6 +46,7 @@ export function Sidebar() {
                   key={item.path}
                   to={item.path}
                   end={item.path === '/'}
+                  onClick={() => setMobileOpen(false)}
                   className={({ isActive }) =>
                     cn(
                       'flex items-center gap-3 px-3 py-2 rounded-btn text-sm font-medium transition-all duration-150 relative group',
@@ -96,6 +93,53 @@ export function Sidebar() {
           {!collapsed && <span>Logout</span>}
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile menu button — fixed top-left on small screens */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="lg:hidden fixed top-3 left-3 z-40 w-10 h-10 rounded-btn bg-surface border border-border-subtle flex items-center justify-center text-text-secondary"
+        title="Open menu"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Desktop sidebar */}
+      <aside
+        className={cn(
+          'hidden lg:flex flex-col bg-sidebar border-r border-border-subtle transition-all duration-250 ease-in-out shrink-0',
+          collapsed ? 'w-[72px]' : 'w-[260px]',
+        )}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile drawer */}
+      <aside
+        className={cn(
+          'lg:hidden fixed top-0 left-0 bottom-0 z-50 w-[260px] bg-sidebar border-r border-border-subtle transition-transform duration-250 ease-in-out flex flex-col',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="absolute top-3 right-3 w-8 h-8 rounded-btn hover:bg-elevated flex items-center justify-center text-text-muted"
+        >
+          <X className="w-4 h-4" />
+        </button>
+        {sidebarContent}
+      </aside>
+    </>
   );
 }

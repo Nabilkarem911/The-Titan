@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { CommandPalette } from '../CommandPalette';
+import { Onboarding } from '../Onboarding';
 
 export function Layout() {
   return (
@@ -14,6 +15,7 @@ export function Layout() {
         </main>
       </div>
       <CommandPalette />
+      <Onboarding />
     </div>
   );
 }
