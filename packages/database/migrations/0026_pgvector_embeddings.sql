@@ -6,10 +6,23 @@
 -- Falls back gracefully if pgvector is not installed.
 
 -- Ensure pgvector extension is available
-CREATE EXTENSION IF NOT EXISTS vector;
+-- Wrapped in DO block so migration continues even if pgvector is not installed
+DO $$
+BEGIN
+  CREATE EXTENSION IF NOT EXISTS vector;
+  RAISE NOTICE 'pgvector extension enabled';
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'pgvector not available — vector column and index will be skipped: %', SQLERRM;
+END $$;
 
 -- Add native vector column (1536 dimensions covers OpenAI text-embedding-3-small/large)
-ALTER TABLE memory_items ADD COLUMN IF NOT EXISTS embedding_vec vector(1536);
+-- Skip if pgvector is not available
+DO $$
+BEGIN
+  ALTER TABLE memory_items ADD COLUMN IF NOT EXISTS embedding_vec vector(1536);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'embedding_vec column skipped (pgvector not available): %', SQLERRM;
+END $$;
 
 -- Backfill: convert JSONB array to vector where possible
 -- Only attempt if there are existing embeddings stored as JSONB arrays
