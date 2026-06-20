@@ -177,7 +177,8 @@ export async function resolveAuthFromAccessToken(token: string): Promise<AuthCon
   return {
     userId: user.id,
     ...(payload.sid ? { sessionId: payload.sid } : {}),
-    permissions: [],
+    role: 'owner',
+    permissions: getPermissionsForRole('owner'),
   };
 }
 

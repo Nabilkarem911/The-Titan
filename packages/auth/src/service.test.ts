@@ -371,7 +371,8 @@ describe('resolveAuthFromAccessToken', () => {
 
     expect(ctx.userId).toBe('u1');
     expect(ctx.sessionId).toBe('sess-1');
-    expect(ctx.permissions).toEqual([]);
+    expect(ctx.role).toBe('owner');
+    expect(ctx.permissions.length).toBeGreaterThan(0);
   });
 
   it('throws UnauthorizedError when user not found', async () => {
