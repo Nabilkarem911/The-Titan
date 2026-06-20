@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Paperclip, Bot, User, Loader2, Square, Plus, ChevronDown, Wrench, Brain, Eye } from 'lucide-react';
+import { Send, Paperclip, Bot, User, Loader2, Square, Plus, ChevronDown, Wrench, Brain, Eye, MessageSquare } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -22,6 +22,14 @@ interface Message {
   steps?: StepData[];
 }
 
+interface ChatSession {
+  sessionId: string;
+  lastMessage: string;
+  lastRole: string;
+  messageCount: number;
+  updatedAt: string;
+}
+
 export default function Chat() {
   const { userId } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -30,8 +38,22 @@ export default function Chat() {
   const [agentMode, setAgentMode] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const loadSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    try {
+      const res = await api.get<{ items: ChatSession[]; total: number }>('/chat/sessions');
+      setSessions(res.items);
+    } catch {
+      /* ignore */
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, []);
 
   // Initialize session from localStorage or create new one
   useEffect(() => {
@@ -52,6 +74,7 @@ export default function Chat() {
             localStorage.setItem('titan:chatSessionId', newId);
           })
           .finally(() => setHistoryLoading(false));
+        loadSessions();
         return;
       }
     }
@@ -62,7 +85,8 @@ export default function Chat() {
       localStorage.setItem('titan:chatSessionId', newId);
     }
     setHistoryLoading(false);
-  }, [userId]);
+    loadSessions();
+  }, [userId, loadSessions]);
 
   const handleNewChat = useCallback(() => {
     if (isStreaming) return;
@@ -72,6 +96,21 @@ export default function Chat() {
     localStorage.setItem('titan:chatSessionId', newId);
     setMessages([]);
   }, [userId, isStreaming]);
+
+  const handleSelectSession = useCallback(async (sid: string) => {
+    if (isStreaming) return;
+    setSessionId(sid);
+    localStorage.setItem('titan:chatSessionId', sid);
+    setHistoryLoading(true);
+    try {
+      const res = await api.get<{ items: Array<{ role: string; content: string }>; total: number }>(`/chat/history/${encodeURIComponent(sid)}`);
+      setMessages(res.items.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })));
+    } catch {
+      setMessages([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [isStreaming]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -174,31 +213,68 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full">
+      {/* Sessions Sidebar */}
+      <div className="w-64 shrink-0 border-r border-border-subtle flex flex-col">
+        <div className="p-3 border-b border-border-subtle">
+          <button
+            onClick={handleNewChat}
+            disabled={isStreaming || historyLoading}
+            className="btn-primary w-full flex items-center justify-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            New Chat
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+          {sessionsLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-4 h-4 animate-spin text-text-muted" />
+            </div>
+          ) : sessions.length === 0 ? (
+            <p className="text-caption text-text-muted text-center py-4">No previous chats</p>
+          ) : (
+            sessions.map((s) => (
+              <button
+                key={s.sessionId}
+                onClick={() => handleSelectSession(s.sessionId)}
+                className={cn(
+                  'w-full text-left px-3 py-2 rounded-btn transition-colors group',
+                  s.sessionId === sessionId ? 'bg-accent-primary/10' : 'hover:bg-elevated',
+                )}
+              >
+                <div className="flex items-start gap-2">
+                  <MessageSquare className={cn('w-3.5 h-3.5 shrink-0 mt-0.5', s.sessionId === sessionId ? 'text-accent-primary' : 'text-text-muted')} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-caption text-text-primary truncate">
+                      {s.lastMessage || 'Empty chat'}
+                    </p>
+                    <p className="text-caption text-text-muted mt-0.5">
+                      {s.messageCount} msgs
+                    </p>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Chat Area */}
+      <div className="flex flex-col flex-1 min-w-0">
       {/* Header */}
       <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-h2 text-text-primary">Chat</h1>
           <p className="text-caption text-text-secondary">Multi-turn conversation with AI</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleNewChat}
-            disabled={isStreaming || historyLoading}
-            className="btn-secondary flex items-center gap-1.5"
-            title="Start new chat"
-          >
-            <Plus className="w-4 h-4" />
-            New Chat
-          </button>
-          <button
-            onClick={() => setAgentMode(!agentMode)}
-            className={cn('btn-secondary', agentMode && '!bg-accent-secondary/10 !border-accent-secondary !text-accent-secondary')}
-          >
-            <Bot className="w-4 h-4" />
-            {agentMode ? 'Agent Mode' : 'Chat Mode'}
-          </button>
-        </div>
+        <button
+          onClick={() => setAgentMode(!agentMode)}
+          className={cn('btn-secondary', agentMode && '!bg-accent-secondary/10 !border-accent-secondary !text-accent-secondary')}
+        >
+          <Bot className="w-4 h-4" />
+          {agentMode ? 'Agent Mode' : 'Chat Mode'}
+        </button>
       </div>
 
       {/* Messages */}
@@ -273,6 +349,7 @@ export default function Chat() {
             </button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

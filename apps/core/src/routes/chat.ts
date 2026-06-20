@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getGlobalToolRegistry } from '@titan/agent-engine';
 import { createRunner } from '../create-runner.js';
 import { getGlobalMemoryClient } from '@titan/memory';
-import { agentRuns, userContext, getChatHistory, saveChatMessage, agentProfiles } from '@titan/database';
+import { agentRuns, userContext, getChatHistory, saveChatMessage, agentProfiles, query } from '@titan/database';
 import { ValidationError } from '@titan/shared';
 import { getLogger } from '@titan/logging';
 import { requireAuth } from '../plugins/auth.js';
@@ -36,6 +36,46 @@ const ChatInputSchema = z.object({
 const RATE_LIMIT_CHAT = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
 
 export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
+  // GET /api/v1/chat/sessions — list all chat sessions for current user
+  app.get(
+    '/api/v1/chat/sessions',
+    { preHandler: requireAuth },
+    async (req, reply) => {
+ if (!req.auth) throw new ValidationError('Authentication required');
+      const userId = req.auth.userId;
+
+      try {
+        const result = await query<{ session_id: string; last_message: string; last_role: string; created_at: string; msg_count: number }>(
+          `SELECT 
+             session_id,
+             MAX(created_at) as created_at,
+             COUNT(*) as msg_count,
+             (SELECT content FROM memory_messages WHERE session_id = m.session_id ORDER BY created_at DESC LIMIT 1) as last_message,
+             (SELECT role FROM memory_messages WHERE session_id = m.session_id ORDER BY created_at DESC LIMIT 1) as last_role
+           FROM memory_messages m
+           WHERE session_id LIKE $1
+           GROUP BY session_id
+           ORDER BY created_at DESC
+           LIMIT 50`,
+          [`session:${userId}:%`],
+        );
+        return {
+          items: result.rows.map((r) => ({
+            sessionId: r.session_id,
+            lastMessage: r.last_message?.substring(0, 100) ?? '',
+            lastRole: r.last_role,
+            messageCount: r.msg_count,
+            updatedAt: r.created_at,
+          })),
+          total: result.rows.length,
+        };
+      } catch (err) {
+        log.error({ err, userId }, 'failed to list chat sessions');
+        return { items: [], total: 0 };
+      }
+    },
+  );
+
   // GET /api/v1/chat/history/:sessionId — fetch chat history for a session
   app.get<{ Params: { sessionId: string } }>(
     '/api/v1/chat/history/:sessionId',
@@ -255,9 +295,17 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         /* ignore — fallback to DEFAULT_SYSTEM_PROMPT */
       }
 
+      // Compute workspace root for this user
+      const workspaceRoot = getWorkspaceRoot(userId);
+
       const contextBlock = [
         ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
         historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
+        `\n\nWorkspace:
+- The user's workspace root is: ${workspaceRoot}
+- When using write_file, read_file_content, or any file tool, use paths inside this workspace.
+- For example, to create a website in folder "my-site", write to: ${workspaceRoot}/my-site/index.html
+- The user can see and edit these files in the Files page of the dashboard.`,
         `\n\nPersonality reminder:
 - You are Titan — a friend, not a bot. Talk like a real person (WhatsApp style, not essay style).
 - Feel the mood before responding. Is the user frustrated? Happy? Testing you?

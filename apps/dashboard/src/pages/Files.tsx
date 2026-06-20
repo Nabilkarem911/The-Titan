@@ -8,6 +8,9 @@ import {
   ChevronRight,
   ArrowLeft,
   Save,
+  FolderPlus,
+  FilePlus,
+  X,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
@@ -83,6 +86,29 @@ export default function Files() {
     }
   };
 
+  const [showNewModal, setShowNewModal] = useState<'file' | 'folder' | null>(null);
+  const [newName, setNewName] = useState('');
+
+  const handleCreate = async () => {
+    if (!newName.trim() || !showNewModal) return;
+    const cleanName = newName.trim().replace(/[/\\]/g, '_');
+    const path = currentPath === '/' ? `/${cleanName}` : `${currentPath}/${cleanName}`;
+    try {
+      if (showNewModal === 'folder') {
+        await api.post('/files/mkdir', { path });
+        toast.success('Folder created');
+      } else {
+        await api.put('/files/content', { path, content: '' });
+        toast.success('File created');
+      }
+      setShowNewModal(null);
+      setNewName('');
+      loadDir(currentPath);
+    } catch (err) {
+      toast.error('Failed to create', { description: err instanceof Error ? err.message : undefined });
+    }
+  };
+
   const handleDownload = (entry: FileEntry) => {
     const path = currentPath === '/' ? `/${entry.name}` : `${currentPath}/${entry.name}`;
     const token = localStorage.getItem('titan_access_token');
@@ -108,23 +134,39 @@ export default function Files() {
         <div className="px-4 py-3 border-b border-border-subtle">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-h3 text-text-primary">Files</h1>
-            <label className="btn-icon cursor-pointer" title="Upload">
-              <Upload className="w-4 h-4" />
-              <input type="file" multiple className="hidden" onChange={async (e) => {
-                const files = e.target.files;
-                if (!files?.length) return;
-                const formData = new FormData();
-                formData.append('path', currentPath);
-                Array.from(files).forEach(f => formData.append('files', f));
-                try {
-                  await api.upload('/files/upload', formData);
-                  toast.success(`Uploaded ${files.length} file(s)`);
-                  loadDir(currentPath);
-                } catch (err) {
-                  toast.error('Upload failed', { description: err instanceof Error ? err.message : undefined });
-                }
-              }} />
-            </label>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => { setShowNewModal('folder'); setNewName(''); }}
+                className="btn-icon"
+                title="New Folder"
+              >
+                <FolderPlus className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => { setShowNewModal('file'); setNewName(''); }}
+                className="btn-icon"
+                title="New File"
+              >
+                <FilePlus className="w-4 h-4" />
+              </button>
+              <label className="btn-icon cursor-pointer" title="Upload">
+                <Upload className="w-4 h-4" />
+                <input type="file" multiple className="hidden" onChange={async (e) => {
+                  const files = e.target.files;
+                  if (!files?.length) return;
+                  const formData = new FormData();
+                  formData.append('path', currentPath);
+                  Array.from(files).forEach(f => formData.append('files', f));
+                  try {
+                    await api.upload('/files/upload', formData);
+                    toast.success(`Uploaded ${files.length} file(s)`);
+                    loadDir(currentPath);
+                  } catch (err) {
+                    toast.error('Upload failed', { description: err instanceof Error ? err.message : undefined });
+                  }
+                }} />
+              </label>
+            </div>
           </div>
           {/* Breadcrumbs */}
           <div className="flex items-center gap-1 text-caption text-text-muted overflow-x-auto">
@@ -218,6 +260,35 @@ export default function Files() {
       {fileLoading && (
         <div className="flex-1 flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* New File/Folder Modal */}
+      {showNewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="card p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-h3 text-text-primary flex items-center gap-2">
+                {showNewModal === 'folder' ? <FolderPlus className="w-5 h-5 text-accent-primary" /> : <FilePlus className="w-5 h-5 text-accent-primary" />}
+                {showNewModal === 'folder' ? 'New Folder' : 'New File'}
+              </h3>
+              <button onClick={() => setShowNewModal(null)} className="btn-icon">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              placeholder={showNewModal === 'folder' ? 'folder-name' : 'filename.ext'}
+              className="input mb-4"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowNewModal(null)} className="btn-secondary">Cancel</button>
+              <button onClick={handleCreate} disabled={!newName.trim()} className="btn-primary">Create</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
