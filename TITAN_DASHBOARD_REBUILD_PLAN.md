@@ -4,6 +4,176 @@
 
 ---
 
+## 0. Brand Identity — "Titan"
+
+### 0.1 Brand Concept
+
+Titan is a powerful AI agent platform — the dashboard must feel like a **mission control center** for AI operations. The identity draws from deep space mythology (Titan = Saturn's largest moon) combined with a **cyberpunk-meets-enterprise** aesthetic.
+
+**Tagline**: *"Command Your AI Swarm"*
+
+**Personality**: Powerful, intelligent, precise, trustworthy. Not playful — commanding.
+
+### 0.2 Logo System
+
+```
+┌─────────────────────────────────────┐
+│  T I T A N                          │
+│  ▲                                  │
+│  /|\  — Geometric "T" formed by     │
+│ / | \   ascending triangles,        │
+│  /|\    representing a swarm of     │
+│ / | \   agents converging upward    │
+└─────────────────────────────────────┘
+```
+
+- **Primary Logo**: Geometric "T" mark made of 3 stacked triangles (ascending, representing agent swarm convergence)
+- **Favicon**: Simplified single triangle with gradient
+- **Loading**: Animated triangle assembly (3 triangles converge into the T mark)
+- **Logo variants**: Full (logo + wordmark), Mark only (triangle T), Wordmark only
+
+### 0.3 Color Palette
+
+#### Dark Theme (Primary)
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--bg-void` | `#0A0E1A` | App background (deepest layer) |
+| `--bg-surface` | `#111827` | Cards, panels |
+| `--bg-elevated` | `#1A2234` | Modals, dropdowns, hover states |
+| `--bg-sidebar` | `#0D1320` | Sidebar navigation |
+| `--border-subtle` | `#1E293B` | Subtle borders, dividers |
+| `--border-default` | `#334155` | Default borders, inputs |
+| `--text-primary` | `#F1F5F9` | Primary text |
+| `--text-secondary` | `#94A3B8` | Secondary text, labels |
+| `--text-muted` | `#64748B` | Muted text, placeholders |
+| `--accent-primary` | `#06B6D4` | Cyan — primary actions, links |
+| `--accent-primary-glow` | `#06B6D420` | Glow effect for primary |
+| `--accent-secondary` | `#8B5CF6` | Purple — secondary actions |
+| `--accent-tertiary` | `#10B981` | Emerald — success states |
+| `--status-success` | `#10B981` | Success |
+| `--status-warning` | `#F59E0B` | Warning |
+| `--status-error` | `#EF4444` | Error |
+| `--status-info` | `#3B82F6` | Info |
+| `--status-queued` | `#6366F1` | Queued/pending |
+| `--status-running` | `#06B6D4` | Running/active |
+| `--gradient-brand` | `linear-gradient(135deg, #06B6D4 0%, #8B5CF6 100%)` | Brand gradient |
+| `--gradient-surface` | `linear-gradient(180deg, #111827 0%, #0A0E1A 100%)` | Surface depth |
+
+#### Light Theme (Optional)
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--bg-void` | `#F8FAFC` | App background |
+| `--bg-surface` | `#FFFFFF` | Cards |
+| `--bg-elevated` | `#F1F5F9` | Modals, hover |
+| `--bg-sidebar` | `#FFFFFF` | Sidebar |
+| `--border-subtle` | `#E2E8F0` | Subtle borders |
+| `--border-default` | `#CBD5E1` | Input borders |
+| `--text-primary` | `#0F172A` | Primary text |
+| `--text-secondary` | `#475569` | Secondary text |
+| `--text-muted` | `#94A3B8` | Muted |
+| `--accent-primary` | `#0891B2` | Cyan (darker for contrast) |
+| `--accent-secondary` | `#7C3AED` | Purple |
+
+### 0.4 Typography
+
+| Element | Font | Size | Weight | Line Height |
+|---------|------|------|--------|-------------|
+| Display | Inter | 32px | 700 | 1.2 |
+| H1 | Inter | 28px | 700 | 1.3 |
+| H2 | Inter | 22px | 600 | 1.4 |
+| H3 | Inter | 18px | 600 | 1.4 |
+| Body | Inter | 15px | 400 | 1.6 |
+| Small | Inter | 13px | 400 | 1.5 |
+| Mono | JetBrains Mono | 14px | 400 | 1.6 |
+| Label | Inter | 12px | 500 | 1.4 |
+| Caption | Inter | 11px | 400 | 1.4 |
+
+- **Font loading**: Inter via `@fontsource/inter`, JetBrains Mono via `@fontsource/jetbrains-mono`
+- **Feature**: Tabular numbers for all stats/metrics (font-variant-numeric: tabular-nums)
+
+### 0.5 Spacing & Layout
+
+- **Grid**: 8px base unit (4, 8, 12, 16, 20, 24, 32, 40, 48, 64)
+- **Sidebar width**: 260px (expanded), 72px (collapsed)
+- **Content max-width**: 1440px
+- **Card padding**: 24px (default), 16px (compact)
+- **Border radius**: 12px (cards), 8px (inputs/buttons), 6px (badges), 4px (tags)
+- **Shadows**:
+  - `sm`: `0 1px 2px rgba(0,0,0,0.3)`
+  - `md`: `0 4px 12px rgba(0,0,0,0.4)`
+  - `lg`: `0 8px 24px rgba(0,0,0,0.5)`
+  - `glow`: `0 0 20px rgba(6,182,212,0.15)` (accent glow)
+
+### 0.6 Motion & Animation
+
+| Interaction | Duration | Easing | Effect |
+|-------------|----------|--------|--------|
+| Page transition | 200ms | ease-out | Fade + slight slide |
+| Modal open | 200ms | ease-out | Scale 0.95→1 + fade |
+| Modal close | 150ms | ease-in | Scale 1→0.95 + fade |
+| Sidebar collapse | 250ms | ease-in-out | Width transition |
+| Card hover | 150ms | ease-out | Subtle lift (translateY -2px) |
+| Button press | 100ms | ease-out | Scale 0.97 |
+| Skeleton shimmer | 1.5s | linear | Infinite gradient sweep |
+| Logo assembly | 800ms | spring | Triangles converge |
+| Toast slide-in | 300ms | spring | Slide from bottom-right |
+| Status pulse | 2s | ease-in-out | Infinite opacity pulse for "running" states |
+
+### 0.7 Component Visual Language
+
+- **Buttons**: Solid (primary action), Ghost (secondary), Outline (tertiary), Icon (compact). Primary buttons use brand gradient on hover.
+- **Cards**: `bg-surface` with `border-subtle`, 12px radius, subtle shadow on hover. Optional accent left-border for status cards.
+- **Tables**: Zebra striping with `bg-elevated/30`, sticky headers, hover row highlight with `bg-elevated/50`.
+- **Status Badges**: Pill shape, 6px radius, dot indicator + label. Color from status palette.
+- **Inputs**: `bg-void` with `border-default`, focus ring in `accent-primary` with glow.
+- **Sidebar**: `bg-sidebar` with active item highlighted by left accent bar (3px, accent-primary) + subtle background.
+- **Top bar**: `bg-surface` with bottom border, 56px height, contains: workspace switcher, search, notifications, user menu.
+- **Empty States**: Centered icon (64px, muted), title, description, CTA button.
+- **Loading**: Skeleton shimmer for content, spinner for buttons, progress bar for uploads.
+
+### 0.8 Iconography
+
+- **Library**: Lucide React (already installed)
+- **Size**: 16px (inline), 20px (navigation), 24px (empty states), 48px (hero)
+- **Style**: Stroke-based, 1.5px stroke width, rounded corners
+- **Key icons**:
+  - Dashboard: `LayoutDashboard`
+  - Chat: `MessageSquare`
+  - Agents: `Bot`
+  - Runs: `Activity`
+  - Files: `FolderTree`
+  - Terminal: `TerminalSquare`
+  - Git: `GitBranch`
+  - Swarm: `Network`
+  - Queue: `Layers`
+  - Health: `HeartPulse`
+  - Plugins: `Puzzle`
+  - Webhooks: `Webhook`
+  - Cron: `Clock`
+  - API Keys: `KeyRound`
+  - Settings: `Settings`
+  - Workspaces: `Building2`
+  - Memory: `Brain`
+  - Audit: `ShieldCheck`
+  - Metrics: `BarChart3`
+  - Playground: `FlaskConical`
+
+### 0.9 Voice & Tone
+
+- **UI Copy**: Clear, concise, professional. No jargon. Action-oriented.
+  - "Create agent" not "New agent profile configuration"
+  - "3 runs active" not "There are currently 3 active runs"
+- **Empty States**: Helpful, not apologetic.
+  - "No agents yet — create your first AI agent to get started"
+- **Errors**: Specific, actionable.
+  - "Failed to save file: path not found. Check the file still exists."
+- **Success**: Brief, confirming.
+  - "Agent created" not "Your agent profile was successfully created"
+
+---
+
 ## 1. Tech Stack
 
 | Layer | Technology | Why |
@@ -504,7 +674,7 @@ apps/dashboard/src/
 ## 10. Dependencies to Install
 
 ```bash
-npm install sonner framer-motion react-hook-form @hookform/resolvers class-variance-authority clsx tailwind-merge
+npm install sonner framer-motion react-hook-form @hookform/resolvers class-variance-authority clsx tailwind-merge @fontsource/inter @fontsource/jetbrains-mono
 npx shadcn-ui@latest init
 npx shadcn-ui@latest add button input dialog dropdown-menu select table tabs card badge avatar separator sheet tooltip toast skeleton scroll-area switch checkbox
 ```
