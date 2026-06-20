@@ -7,6 +7,8 @@
 import {
   AgentRunner,
   createProviderFromEnv,
+  createLlmProvider,
+  MultiModelRouter,
   type LlmProvider,
   type ToolCall,
   type ToolResult,
@@ -17,6 +19,7 @@ import type { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps } from '@titan/database';
 import { getLogger } from '@titan/logging';
 import { getWsServer } from './ws-instance.js';
+import { getExperienceCollector } from './learning-singleton.js';
 
 const log = getLogger().child({ component: 'create-runner' });
 
@@ -89,9 +92,36 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
   } = opts;
 
   const llm: LlmProvider = opts.llm ?? (() => {
-    const p = createProviderFromEnv();
-    if (!p) throw new Error('LLM provider not configured — set LLM_PROVIDER_TYPE, LLM_API_KEY, LLM_MODEL');
-    return p;
+    const primary = createProviderFromEnv();
+    if (!primary) throw new Error('LLM provider not configured — set LLM_PROVIDER_TYPE, LLM_API_KEY, LLM_MODEL');
+
+    // Check for fallback provider — if configured, wrap both in MultiModelRouter
+    const fallbackType = process.env['LLM_FALLBACK_PROVIDER_TYPE'] as 'openai' | 'openai-compatible' | 'anthropic' | undefined;
+    const fallbackKey = process.env['LLM_FALLBACK_API_KEY'];
+    const fallbackModel = process.env['LLM_FALLBACK_MODEL'];
+
+    if (fallbackType && fallbackKey && fallbackModel) {
+      try {
+        const fallback = createLlmProvider({
+          type: fallbackType,
+          apiKey: fallbackKey,
+          model: fallbackModel,
+          baseUrl: process.env['LLM_FALLBACK_BASE_URL'],
+        });
+        log.info({ primary: process.env['LLM_MODEL'], fallback: fallbackModel }, 'multi-model router enabled with fallback');
+        return new MultiModelRouter(
+          [
+            { name: 'primary', provider: primary, costPer1kTokens: 0.01, maxTokens: 128000, speed: 'medium', capability: 'advanced', priority: 10 },
+            { name: 'fallback', provider: fallback, costPer1kTokens: 0.005, maxTokens: 128000, speed: 'fast', capability: 'standard', priority: 5 },
+          ],
+          { strategy: 'best', fallbackEnabled: true, maxRetries: 2 },
+        );
+      } catch (err) {
+        log.warn({ err }, 'failed to create fallback provider — using primary only');
+      }
+    }
+
+    return primary;
   })();
 
   return new AgentRunner({
@@ -101,9 +131,9 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
     },
     memory,
     userContextItems,
-    enablePlanning: opts.enablePlanning,
-    enableAutoStrategy: opts.enableAutoStrategy,
-    enableSelfCritique: opts.enableSelfCritique,
+    enablePlanning: opts.enablePlanning ?? true,
+    enableAutoStrategy: opts.enableAutoStrategy ?? true,
+    enableSelfCritique: opts.enableSelfCritique ?? true,
 
     /* ----- persistRun ------------------------------------------------ */
     persistRun: async (run: AgentRun) => {
@@ -115,6 +145,29 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
         });
       } catch (err) {
         log.warn({ err, runId }, 'failed to persist run');
+      }
+
+      // Record learning experience when run finishes
+      if (run.status === 'completed' || run.status === 'failed') {
+        try {
+          const toolsUsed = run.steps
+            .filter((s) => s.action?.name)
+            .map((s) => s.action!.name);
+          const durationMs = Date.now() - run.createdAt.getTime();
+          getExperienceCollector().record({
+            id: run.id,
+            runId,
+            prompt: run.prompt,
+            strategy: 'react',
+            toolsUsed,
+            success: run.status === 'completed',
+            tokensUsed: run.tokensUsed,
+            durationMs,
+            timestamp: new Date(),
+          });
+        } catch {
+          // learning recording is optional — don't fail the run
+        }
       }
 
       sse?.write(`data: ${JSON.stringify({

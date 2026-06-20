@@ -1,12 +1,12 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
-import { ExperienceCollector, FeedbackProcessor, PromptOptimizer, StrategyTuner } from '@titan/agent-engine';
 import { requireAuth } from '../plugins/auth.js';
+import { getExperienceCollector, getFeedbackProcessor, getPromptOptimizer, getStrategyTuner } from '../learning-singleton.js';
 
-// Singletons — persist for server lifetime
-const experienceCollector = new ExperienceCollector();
-const feedbackProcessor = new FeedbackProcessor();
-const promptOptimizer = new PromptOptimizer();
-const strategyTuner = new StrategyTuner();
+// Use shared singletons — same instances used by createRunner
+const experienceCollector = getExperienceCollector();
+const feedbackProcessor = getFeedbackProcessor();
+const promptOptimizer = getPromptOptimizer();
+const strategyTuner = getStrategyTuner();
 
 export const learningRoutesV2: FastifyPluginAsync = async (app: FastifyInstance) => {
   // GET /api/v1/learning/v2/feedback — real feedback summary

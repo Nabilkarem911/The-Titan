@@ -362,6 +362,17 @@ export class AgentRunner {
       }
     }
 
+    // Confidence scoring (classic ReAct path)
+    if (this.confidenceScorer && run.finalAnswer) {
+      try {
+        const score = await this.confidenceScorer.score(run);
+        log.info({ runId: run.id, confidence: score.overall, dimensions: score.dimensions }, 'confidence scored');
+        incCounter('agent_low_confidence', 'Runs with confidence below 50', 1, { below: score.overall < 50 ? 'true' : 'false' });
+      } catch {
+        // scoring is optional
+      }
+    }
+
     return this.finishRun(run, input);
   }
 
@@ -520,6 +531,16 @@ export class AgentRunner {
         }
       } catch (err) {
         log.warn({ runId: run.id }, 'self-critique failed — keeping original answer');
+      }
+    }
+
+    // Confidence scoring (plan execution path)
+    if (this.confidenceScorer && run.finalAnswer) {
+      try {
+        const score = await this.confidenceScorer.score(run);
+        log.info({ runId: run.id, confidence: score.overall, dimensions: score.dimensions }, 'confidence scored (plan)');
+      } catch {
+        // scoring is optional
       }
     }
 
