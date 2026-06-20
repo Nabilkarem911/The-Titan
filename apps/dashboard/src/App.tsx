@@ -35,6 +35,9 @@ const Workflows = lazy(() => import('./pages/Workflows'));
 const Learning = lazy(() => import('./pages/Learning'));
 const CodeIntel = lazy(() => import('./pages/CodeIntel'));
 const Autonomous = lazy(() => import('./pages/Autonomous'));
+const Marketplace = lazy(() => import('./pages/Marketplace'));
+const Teams = lazy(() => import('./pages/Teams'));
+const SkillBuilder = lazy(() => import('./pages/SkillBuilder'));
 
 // ── Protected Layout ──
 function ProtectedLayout() {
@@ -93,6 +96,9 @@ export default function App() {
             <Route path="learning" element={<Learning />} />
             <Route path="code-intel" element={<CodeIntel />} />
             <Route path="autonomous" element={<Autonomous />} />
+            <Route path="marketplace" element={<Marketplace />} />
+            <Route path="teams" element={<Teams />} />
+            <Route path="skill-builder" element={<SkillBuilder />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

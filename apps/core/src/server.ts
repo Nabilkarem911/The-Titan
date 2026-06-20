@@ -40,6 +40,7 @@ import { workflowRoutes } from './routes/workflows.js';
 import { learningRoutesV2 } from './routes/learning-v2.js';
 import { codeIntelRoutes } from './routes/code-intel.js';
 import { autonomousRoutes } from './routes/autonomous.js';
+import { teamsRoutes } from './routes/teams.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 
@@ -237,6 +238,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(learningRoutesV2);
   await app.register(codeIntelRoutes);
   await app.register(autonomousRoutes);
+  await app.register(teamsRoutes);
   await registerTelegramRoutes(app);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));

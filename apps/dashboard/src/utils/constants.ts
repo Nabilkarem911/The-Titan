@@ -23,6 +23,8 @@ import {
   Workflow,
   GraduationCap,
   Code2,
+  Store,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -51,6 +53,8 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'Terminal', path: '/terminal', icon: TerminalSquare },
       { label: 'Git', path: '/git', icon: GitBranch },
       { label: 'Code Intel', path: '/code-intel', icon: Code2 },
+      { label: 'Marketplace', path: '/marketplace', icon: Store },
+      { label: 'Skill Builder', path: '/skill-builder', icon: Wrench },
     ],
   },
   {
@@ -62,6 +66,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'Workflows', path: '/workflows', icon: Workflow },
       { label: 'Learning', path: '/learning', icon: GraduationCap },
       { label: 'Autonomous', path: '/autonomous', icon: Bot },
+      { label: 'Teams', path: '/teams', icon: Users },
     ],
   },
   {
