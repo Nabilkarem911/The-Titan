@@ -20,6 +20,7 @@ import {
   FlaskConical,
   Users,
   GitBranch,
+  Workflow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -55,6 +56,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'Swarm', path: '/swarm', icon: Network },
       { label: 'Playground', path: '/playground', icon: FlaskConical },
       { label: 'Knowledge', path: '/knowledge', icon: Brain },
+      { label: 'Workflows', path: '/workflows', icon: Workflow },
     ],
   },
   {
