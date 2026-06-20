@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Paperclip, Bot, User, Loader2, Square, Plus, ChevronDown, Wrench, Brain, Eye, MessageSquare } from 'lucide-react';
+import { Send, Paperclip, Bot, User, Loader2, Square, Plus, ChevronDown, Wrench, Brain, Eye, MessageSquare, RefreshCw, Download, X, FileText, Image as ImageIcon } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -24,6 +24,7 @@ interface Message {
   content: string;
   streaming?: boolean;
   steps?: StepData[];
+  attachments?: Array<{ name: string; type: string; content: string }>;
 }
 
 interface ChatSession {
@@ -46,8 +47,11 @@ export default function Chat() {
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>(() => localStorage.getItem('titan:chatModel') || 'default');
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [attachments, setAttachments] = useState<Array<{ name: string; type: string; content: string }>>([]);
+  const [lastUserPrompt, setLastUserPrompt] = useState<string>('');
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadSessions = useCallback(async () => {
     setSessionsLoading(true);
@@ -122,13 +126,161 @@ export default function Chat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const newAttachments: Array<{ name: string; type: string; content: string }> = [];
+    for (const file of Array.from(files).slice(0, 3)) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`File ${file.name} is too large (max 5MB)`);
+        continue;
+      }
+      try {
+        const content = await file.text();
+        newAttachments.push({ name: file.name, type: file.type || 'text/plain', content });
+      } catch {
+        newAttachments.push({ name: file.name, type: file.type || 'application/octet-stream', content: `[Binary file: ${file.size} bytes]` });
+      }
+    }
+    setAttachments(prev => [...prev, ...newAttachments]);
+    e.target.value = '';
+  };
+
+  const removeAttachment = (idx: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleExport = (format: 'markdown' | 'json') => {
+    if (messages.length === 0) {
+      toast.error('No messages to export');
+      return;
+    }
+    let content: string;
+    let filename: string;
+    if (format === 'json') {
+      content = JSON.stringify(messages.map(m => ({ role: m.role, content: m.content, steps: m.steps, attachments: m.attachments })), null, 2);
+      filename = `titan-chat-${new Date().toISOString().slice(0, 10)}.json`;
+    } else {
+      content = messages.map(m => {
+        const header = m.role === 'user' ? '**User**' : '**Assistant**';
+        const steps = m.steps && m.steps.length > 0
+          ? m.steps.map(s => `  \n  - Step ${s.index + 1}: ${s.status}${s.actionName ? ` (${s.actionName})` : ''}${s.thought ? `\n    Thought: ${s.thought}` : ''}`).join('')
+          : '';
+        const atts = m.attachments && m.attachments.length > 0
+          ? m.attachments.map(a => `  \n  - Attached: ${a.name} (${a.type})`).join('')
+          : '';
+        return `### ${header}\n${m.content}${steps}${atts}\n`;
+      }).join('\n---\n\n');
+      filename = `titan-chat-${new Date().toISOString().slice(0, 10)}.md`;
+    }
+    const blob = new Blob([content], { type: format === 'json' ? 'application/json' : 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported as ${format.toUpperCase()}`);
+  };
+
+  const handleRegenerate = async () => {
+    if (isStreaming || !lastUserPrompt) return;
+    // Remove last assistant message
+    setMessages(prev => {
+      const updated = [...prev];
+      if (updated[updated.length - 1]?.role === 'assistant') {
+        updated.pop();
+      }
+      return updated;
+    });
+    // Re-send the last user prompt
+    const userMsg: Message = { role: 'user', content: lastUserPrompt };
+    setMessages(prev => [...prev, userMsg]);
+    setIsStreaming(true);
+    const assistantMsg: Message = { role: 'assistant', content: '', streaming: true };
+    setMessages(prev => [...prev, assistantMsg]);
+    try {
+      abortRef.current = new AbortController();
+      for await (const chunk of api.stream('/chat', {
+        prompt: lastUserPrompt,
+        agentId: 'default-agent',
+        sessionId: sessionId ?? undefined,
+        stream: true,
+        ...(selectedModel !== 'default' && { model: selectedModel }),
+      }, abortRef.current.signal)) {
+        try {
+          const parsed = JSON.parse(chunk);
+          if (parsed.type === 'step' && parsed.step) {
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last && last.role === 'assistant') {
+                last.steps = [...(last.steps ?? []), parsed.step];
+              }
+              return [...updated];
+            });
+          } else if (parsed.type === 'run.completed' && parsed.answer) {
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { ...updated[updated.length - 1], content: parsed.answer };
+              return updated;
+            });
+          } else if (parsed.type === 'error') {
+            throw new Error(parsed.error || 'Chat failed');
+          } else if (parsed.text) {
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { ...updated[updated.length - 1], content: updated[updated.length - 1].content + parsed.text };
+              return updated;
+            });
+          }
+        } catch (parseErr) {
+          if (parseErr instanceof Error && parseErr.message !== 'Unexpected token') throw parseErr;
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { ...updated[updated.length - 1], content: updated[updated.length - 1].content + chunk };
+            return updated;
+          });
+        }
+      }
+    } catch (err) {
+      toast.error('Regenerate failed', { description: err instanceof Error ? err.message : 'Unknown error' });
+      setMessages(prev => {
+        const updated = [...prev];
+        if (updated[updated.length - 1]?.streaming) {
+          updated[updated.length - 1] = { ...updated[updated.length - 1], streaming: false, content: 'Failed to regenerate response' };
+        }
+        return updated;
+      });
+    } finally {
+      setMessages(prev => {
+        const updated = [...prev];
+        if (updated[updated.length - 1]?.streaming) {
+          updated[updated.length - 1] = { ...updated[updated.length - 1], streaming: false };
+        }
+        return updated;
+      });
+      setIsStreaming(false);
+      abortRef.current = null;
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isStreaming) return;
 
-    const userMsg: Message = { role: 'user', content: input.trim() };
+    const userMsg: Message = { role: 'user', content: input.trim(), attachments: attachments.length > 0 ? attachments : undefined };
+    setLastUserPrompt(input.trim());
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    setAttachments([]);
     setIsStreaming(true);
+
+    // Build prompt with file context
+    let promptText = userMsg.content;
+    if (attachments.length > 0) {
+      const fileContext = attachments.map(a => `\n[Attached file: ${a.name} (${a.type})]\n${a.content.slice(0, 10000)}`).join('\n');
+      promptText = `${userMsg.content}\n${fileContext}`;
+    }
 
     const assistantMsg: Message = { role: 'assistant', content: '', streaming: true };
     setMessages(prev => [...prev, assistantMsg]);
@@ -136,7 +288,7 @@ export default function Chat() {
     try {
       abortRef.current = new AbortController();
       for await (const chunk of api.stream('/chat', {
-        prompt: userMsg.content,
+        prompt: promptText,
         agentId: 'default-agent',
         sessionId: sessionId ?? undefined,
         stream: true,
@@ -276,6 +428,15 @@ export default function Chat() {
           <p className="text-caption text-text-secondary">Multi-turn conversation with AI</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Export buttons */}
+          <div className="flex items-center gap-1">
+            <button onClick={() => handleExport('markdown')} disabled={messages.length === 0} className="btn-icon" title="Export as Markdown">
+              <FileText className="w-4 h-4" />
+            </button>
+            <button onClick={() => handleExport('json')} disabled={messages.length === 0} className="btn-icon" title="Export as JSON">
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
           {/* Model Selector */}
           <div className="relative">
             <button
@@ -352,6 +513,26 @@ export default function Chat() {
                   {msg.content || (msg.streaming && (!msg.steps || msg.steps.length === 0) && <Loader2 className="w-4 h-4 animate-spin text-text-muted" />)}
                   {msg.streaming && msg.content && <span className="inline-block w-1.5 h-4 bg-accent-primary ml-0.5 animate-pulse-soft" />}
                 </p>
+                {/* Regenerate button for last assistant message */}
+                {msg.role === 'assistant' && !msg.streaming && i === messages.length - 1 && !isStreaming && (
+                  <div className="mt-2 pt-2 border-t border-border-subtle">
+                    <button onClick={handleRegenerate} className="flex items-center gap-1 text-caption text-text-muted hover:text-accent-primary transition-colors">
+                      <RefreshCw className="w-3 h-3" />
+                      Regenerate
+                    </button>
+                  </div>
+                )}
+                {/* Attachments display */}
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {msg.attachments.map((att, ai) => (
+                      <span key={ai} className="badge bg-elevated text-text-secondary text-caption flex items-center gap-1">
+                        {att.type.startsWith('image/') ? <ImageIcon className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                        {att.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))
@@ -360,8 +541,23 @@ export default function Chat() {
 
       {/* Input */}
       <div className="px-6 py-4 border-t border-border-subtle shrink-0">
+        {/* Attachments preview */}
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2 max-w-3xl mx-auto">
+            {attachments.map((att, idx) => (
+              <div key={idx} className="flex items-center gap-1.5 px-2 py-1 rounded-btn bg-elevated border border-border-subtle">
+                {att.type.startsWith('image/') ? <ImageIcon className="w-3.5 h-3.5 text-accent-secondary" /> : <FileText className="w-3.5 h-3.5 text-accent-secondary" />}
+                <span className="text-caption text-text-secondary max-w-[120px] truncate">{att.name}</span>
+                <button onClick={() => removeAttachment(idx)} className="text-text-muted hover:text-error">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex items-end gap-2 max-w-3xl mx-auto">
-          <button className="btn-icon mb-0.5" title="Attach file">
+          <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} className="hidden" accept=".txt,.md,.json,.js,.ts,.tsx,.py,.go,.rs,.java,.c,.cpp,.h,.css,.html,.xml,.yaml,.yml,.csv,.log,.png,.jpg,.jpeg,.gif,.webp,.svg" />
+          <button onClick={() => fileInputRef.current?.click()} className="btn-icon mb-0.5" title="Attach file">
             <Paperclip className="w-4 h-4" />
           </button>
           <textarea

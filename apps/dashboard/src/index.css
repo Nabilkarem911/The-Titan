@@ -8,6 +8,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light theme overrides — applied when html does NOT have .dark class */
+html:not(.dark) {
+  --tw-color-void: #F8FAFC;
+  --tw-color-surface: #FFFFFF;
+  --tw-color-elevated: #F1F5F9;
+  --tw-color-sidebar: #F8FAFC;
+  --tw-color-border-subtle: #E2E8F0;
+  --tw-color-border-default: #CBD5E1;
+  --tw-color-text-primary: #0F172A;
+  --tw-color-text-secondary: #475569;
+  --tw-color-text-muted: #94A3B8;
+}
+
+html:not(.dark) body {
+  background-color: var(--tw-color-void) !important;
+  color: var(--tw-color-text-primary) !important;
+}
+
+html:not(.dark) .bg-void { background-color: var(--tw-color-void) !important; }
+html:not(.dark) .bg-surface { background-color: var(--tw-color-surface) !important; }
+html:not(.dark) .bg-elevated { background-color: var(--tw-color-elevated) !important; }
+html:not(.dark) .bg-sidebar { background-color: var(--tw-color-sidebar) !important; }
+
+html:not(.dark) .border-border-subtle,
+html:not(.dark) .border-border-subtle { border-color: var(--tw-color-border-subtle) !important; }
+html:not(.dark) .border-border-default { border-color: var(--tw-color-border-default) !important; }
+
+html:not(.dark) .text-text-primary { color: var(--tw-color-text-primary) !important; }
+html:not(.dark) .text-text-secondary { color: var(--tw-color-text-secondary) !important; }
+html:not(.dark) .text-text-muted { color: var(--tw-color-text-muted) !important; }
+
+html:not(.dark) .divide-border-subtle > * { border-color: var(--tw-color-border-subtle) !important; }
+
+html:not(.dark) ::-webkit-scrollbar-track { background: var(--tw-color-void) !important; }
+html:not(.dark) ::-webkit-scrollbar-thumb { background: var(--tw-color-border-default) !important; }
+
 @layer base {
   * {
     @apply border-border-subtle;

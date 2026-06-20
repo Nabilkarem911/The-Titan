@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, ChevronDown, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { Search, Bell, User, ChevronDown, CheckCircle2, AlertCircle, Info, Sun, Moon } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../utils/cn';
@@ -20,6 +20,11 @@ export function TopBar() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('titan:theme');
+    if (saved) return saved === 'dark';
+    return true; // default dark
+  });
   const menuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const { data: runsData } = useApi<{ items: Array<{ id: string; status: string; prompt: string; createdAt: string }> }>('/agents/default/runs?limit=5');
@@ -33,6 +38,17 @@ export function TopBar() {
     read: r.status === 'running',
   }));
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    localStorage.setItem('titan:theme', next ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', next);
+  };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
 
   const openCommandPalette = () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, ctrlKey: true }));
@@ -72,6 +88,11 @@ export function TopBar() {
 
       {/* Right actions */}
       <div className="flex items-center gap-2">
+        {/* Theme toggle */}
+        <button onClick={toggleTheme} className="btn-icon" title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+
         {/* Notifications */}
         <div className="relative" ref={notifRef}>
           <button

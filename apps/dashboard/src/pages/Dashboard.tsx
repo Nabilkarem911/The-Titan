@@ -36,6 +36,12 @@ export default function Dashboard() {
   const avgTokens = recentRuns.length > 0 ? Math.round(totalTokens / recentRuns.length) : 0;
   const maxTokens = recentRuns.reduce((max, r) => Math.max(max, r.tokensUsed ?? 0), 0);
 
+  // Cost estimation — blended rate assuming 60% input / 40% output
+  // GPT-4o: $5/1M input, $15/1M output → blended ~$9/1M tokens
+  const COST_PER_1M = 9;
+  const estimatedCost = (totalTokens / 1_000_000) * COST_PER_1M;
+  const costDisplay = estimatedCost >= 1 ? `$${estimatedCost.toFixed(2)}` : `$${estimatedCost.toFixed(4)}`;
+
   const quickActions = [
     { label: 'New Chat', icon: MessageSquare, path: '/chat', color: 'text-accent-primary' },
     { label: 'Run Agent', icon: Bot, path: '/agents', color: 'text-accent-secondary' },
@@ -91,7 +97,7 @@ export default function Dashboard() {
       </div>
 
       {/* Token Tracker */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5">
           <div className="flex items-center gap-2 mb-2">
             <Coins className="w-4 h-4 text-accent-primary" />
@@ -112,6 +118,14 @@ export default function Dashboard() {
             <span className="text-small text-text-secondary">Peak Tokens</span>
           </div>
           <p className="text-h2 font-bold text-text-primary tabular-nums">{maxTokens.toLocaleString()}</p>
+        </div>
+        <div className="card p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Coins className="w-4 h-4 text-warning" />
+            <span className="text-small text-text-secondary">Est. Cost (recent)</span>
+          </div>
+          <p className="text-h2 font-bold text-text-primary tabular-nums">{costDisplay}</p>
+          <p className="text-caption text-text-muted mt-1">~${COST_PER_1M}/1M tokens</p>
         </div>
       </div>
 
