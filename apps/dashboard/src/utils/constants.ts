@@ -5,7 +5,6 @@ import {
   Activity,
   FolderTree,
   TerminalSquare,
-  GitBranch,
   Network,
   Layers,
   HeartPulse,
@@ -44,7 +43,6 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { label: 'Files', path: '/files', icon: FolderTree },
       { label: 'Terminal', path: '/terminal', icon: TerminalSquare },
-      { label: 'Git', path: '/git', icon: GitBranch },
     ],
   },
   {

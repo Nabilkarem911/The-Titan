@@ -15,7 +15,6 @@ const Agents = lazy(() => import('./pages/Agents'));
 const Runs = lazy(() => import('./pages/Runs'));
 const Files = lazy(() => import('./pages/Files'));
 const Terminal = lazy(() => import('./pages/Terminal'));
-const Git = lazy(() => import('./pages/Git'));
 const Swarm = lazy(() => import('./pages/Swarm'));
 const Playground = lazy(() => import('./pages/Playground'));
 const Queue = lazy(() => import('./pages/Queue'));
@@ -67,7 +66,6 @@ export default function App() {
               <Route path="runs" element={<Runs />} />
               <Route path="files" element={<Files />} />
               <Route path="terminal" element={<Terminal />} />
-              <Route path="git" element={<Git />} />
               <Route path="swarm" element={<Swarm />} />
               <Route path="playground" element={<Playground />} />
               <Route path="queue" element={<Queue />} />
