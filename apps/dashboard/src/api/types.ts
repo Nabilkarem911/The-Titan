@@ -209,15 +209,15 @@ export interface MetricsSnapshot {
 // ── Audit Logs ──
 export interface AuditLog {
   id: string;
-  actor_id: string;
-  workspace_id: string;
+  actorId: string | null;
+  workspaceId: string | null;
   action: string;
-  resource: string;
-  resource_id: string;
+  resource: string | null;
+  resourceId: string | null;
   metadata: Record<string, unknown>;
-  ip_address: string;
-  user_agent: string;
-  created_at: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
 }
 
 // ── User Keys ──

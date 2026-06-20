@@ -11,7 +11,7 @@ export default function AuditLogs() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const { data, isLoading, error, refetch } = useApi<ListResponse<AuditLog>>(
-    debouncedSearch ? `/audit-logs?q=${encodeURIComponent(debouncedSearch)}&limit=50` : '/audit-logs?limit=50',
+    debouncedSearch ? `/compliance/audit/logs?limit=50&action=${encodeURIComponent(debouncedSearch)}` : '/compliance/audit/logs?limit=50',
   );
 
   if (error) return <ErrorState message={error} onRetry={refetch} className="py-20" />;
@@ -43,12 +43,12 @@ export default function AuditLogs() {
                     <span className="badge bg-accent-primary/10 text-accent-primary">{log.action}</span>
                     <span className="text-small text-text-secondary">{log.resource}</span>
                   </div>
-                  <span className="text-caption text-text-muted">{formatDate(log.created_at)}</span>
+                  <span className="text-caption text-text-muted">{formatDate(log.createdAt)}</span>
                 </div>
                 <div className="flex items-center gap-4 text-caption text-text-muted">
-                  <span>Actor: <span className="font-mono text-text-secondary">{log.actor_id.slice(0, 8)}</span></span>
-                  <span>IP: <span className="font-mono text-text-secondary">{log.ip_address}</span></span>
-                  {log.resource_id && <span>Resource: <span className="font-mono text-text-secondary">{log.resource_id.slice(0, 8)}</span></span>}
+                  <span>Actor: <span className="font-mono text-text-secondary">{log.actorId?.slice(0, 8) ?? 'system'}</span></span>
+                  <span>IP: <span className="font-mono text-text-secondary">{log.ipAddress ?? '—'}</span></span>
+                  {log.resourceId && <span>Resource: <span className="font-mono text-text-secondary">{log.resourceId.slice(0, 8)}</span></span>}
                 </div>
               </div>
             ))}

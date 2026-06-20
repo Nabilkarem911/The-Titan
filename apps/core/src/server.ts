@@ -33,6 +33,7 @@ import { fileRoutes } from './routes/files.js';
 import { userKeyRoutes } from './routes/user-keys.js';
 import { terminalRoutes } from './routes/terminal.js';
 import { gitRoutes } from './routes/git.js';
+import { userContextRoutes } from './routes/user-context.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 
@@ -223,6 +224,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(userKeyRoutes);
   await app.register(terminalRoutes);
   await app.register(gitRoutes);
+  await app.register(userContextRoutes);
   await registerTelegramRoutes(app);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));

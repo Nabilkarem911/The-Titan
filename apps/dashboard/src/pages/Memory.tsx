@@ -5,13 +5,10 @@ import { api } from '../api/client';
 import { toast } from 'sonner';
 import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonRow } from '../components/LoadingSkeleton';
-import { formatRelativeTime } from '../utils/format';
 
 interface MemoryItem {
-  id: string;
   key: string;
   value: string;
-  createdAt: string;
 }
 
 interface ListResponseMemory {
@@ -37,10 +34,10 @@ export default function Memory() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (key: string) => {
     if (!confirm('Delete this memory?')) return;
     try {
-      await api.delete(`/user-context/${id}`);
+      await api.delete(`/user-context/${encodeURIComponent(key)}`);
       toast.success('Memory deleted');
       refetch();
     } catch (err) {
@@ -72,13 +69,12 @@ export default function Memory() {
         <div className="card overflow-hidden">
           <div className="divide-y divide-border-subtle">
             {data.items.map((item) => (
-              <div key={item.id} className="px-5 py-3 group flex items-center justify-between">
+              <div key={item.key} className="px-5 py-3 group flex items-center justify-between">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-text-primary font-medium">{item.key}</p>
                   <p className="text-small text-text-secondary truncate mt-0.5">{item.value}</p>
-                  <p className="text-caption text-text-muted mt-0.5">{formatRelativeTime(item.createdAt)}</p>
                 </div>
-                <button onClick={() => handleDelete(item.id)} className="btn-icon text-error hover:text-error opacity-0 group-hover:opacity-100 transition-opacity" title="Delete">
+                <button onClick={() => handleDelete(item.key)} className="btn-icon text-error hover:text-error opacity-0 group-hover:opacity-100 transition-opacity" title="Delete">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
