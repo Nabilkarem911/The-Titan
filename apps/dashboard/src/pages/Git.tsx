@@ -1,103 +1,253 @@
 import { useState } from 'react';
-import { GitBranch, Upload } from 'lucide-react';
+import {
+  GitBranch,
+  Send,
+  Tag,
+  CheckCircle2,
+  XCircle,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+} from 'lucide-react';
 import { api } from '../api/client';
-import { ErrorState } from '../components/PageState';
 
 export default function Git() {
-  const [remote, setRemote] = useState('origin');
-  const [branch, setBranch] = useState('main');
+  // Form state
   const [message, setMessage] = useState('');
+  const [branch, setBranch] = useState('main');
+  const [remote, setRemote] = useState('origin');
+  const [addAll, setAddAll] = useState(true);
+  const [tag, setTag] = useState('');
+
+  // Submit state
   const [pushing, setPushing] = useState(false);
+  const [pushError, setPushError] = useState('');
+
+  // Result
   const [result, setResult] = useState<{
     success: boolean;
     message: string;
-    details: Array<{ command: string; stdout: string; stderr: string; exitCode: number }>;
+    command?: string;
+    output?: string;
   } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
-  const handlePush = async () => {
+  const handlePush = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+
     setPushing(true);
-    setError(null);
+    setPushError('');
     setResult(null);
+
     try {
-      const res = await api.gitPush({ remote, branch, commitMessage: message || undefined });
-      setResult(res);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Push failed');
+      const res = await api.gitPush(branch);
+      setResult({
+        success: true,
+        message: typeof res.message === 'string' ? res.message : 'Push completed successfully',
+        command: `git push ${remote} ${branch}`,
+        output: typeof res.message === 'string' ? res.message : JSON.stringify(res),
+      });
+      setMessage('');
+      setTag('');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Push failed';
+      setPushError(msg);
+      setResult({
+        success: false,
+        message: msg,
+        command: `git push ${remote} ${branch}`,
+      });
     } finally {
       setPushing(false);
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-500/10">
-          <GitBranch className="h-5 w-5 text-orange-400" />
-        </div>
+      <div className="flex items-center gap-3 mb-6">
+        <GitBranch size={28} style={{ color: '#00F2FE' }} />
         <div>
-          <h2 className="text-lg font-semibold text-white">Git</h2>
-          <p className="text-sm text-slate-400">Push code changes to remote repositories</p>
+          <h1
+            className="text-2xl font-bold"
+            style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#F8FAFC' }}
+          >
+            Git Operations
+          </h1>
+          <p className="text-sm" style={{ color: '#94A3B8' }}>
+            Commit and push changes to remote repository
+          </p>
         </div>
       </div>
 
-      {/* Push form */}
-      <div className="card space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+      {/* Push Form */}
+      <div className="card p-6 rounded-xl max-w-2xl">
+        <h3
+          className="text-lg font-semibold mb-4"
+          style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#F8FAFC' }}
+        >
+          Push Changes
+        </h3>
+
+        <form onSubmit={handlePush} className="space-y-4">
+          {/* Commit Message */}
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Remote</label>
-            <input
-              value={remote}
-              onChange={(e) => setRemote(e.target.value)}
-              className="input w-full"
-              placeholder="origin"
+            <label className="block text-sm font-medium mb-1" style={{ color: '#94A3B8' }}>
+              Commit Message <span style={{ color: '#FF007A' }}>*</span>
+            </label>
+            <textarea
+              className="input"
+              rows={3}
+              placeholder="Describe your changes..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required
+              style={{ resize: 'vertical', minHeight: 80 }}
             />
           </div>
-          <div>
-            <label className="block text-sm text-slate-400 mb-1">Branch</label>
-            <input
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
-              className="input w-full"
-              placeholder="main"
-            />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm text-slate-400 mb-1">Commit Message (optional)</label>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="input w-full h-20 resize-none"
-            placeholder="Optional commit message..."
-          />
-        </div>
-        <button onClick={handlePush} disabled={pushing} className="btn-primary">
-          <Upload className="h-4 w-4" />
-          {pushing ? 'Pushing...' : 'Push'}
-        </button>
-      </div>
 
-      {/* Error */}
-      {error && <ErrorState message={error} onRetry={() => setError(null)} />}
-
-      {/* Result */}
-      {result && (
-        <div className={`card ${result.success ? 'border-emerald-500/20' : 'border-red-500/20'}`}>
-          <div className="flex items-center gap-2 mb-3">
-            <div className={`w-2.5 h-2.5 rounded-full ${result.success ? 'bg-emerald-400' : 'bg-red-400'}`} />
-            <span className={`text-sm font-medium ${result.success ? 'text-emerald-400' : 'text-red-400'}`}>
-              {result.message}
-            </span>
-          </div>
-          {result.details?.map((detail, i) => (
-            <div key={i} className="mb-2 text-xs">
-              <p className="text-slate-400 font-mono mb-1">$ {detail.command}</p>
-              {detail.stdout && <pre className="text-slate-500 whitespace-pre-wrap">{detail.stdout}</pre>}
-              {detail.stderr && <pre className="text-red-400/70 whitespace-pre-wrap">{detail.stderr}</pre>}
+          {/* Branch + Remote */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#94A3B8' }}>Branch</label>
+              <input
+                className="input"
+                placeholder="main"
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+              />
             </div>
-          ))}
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#94A3B8' }}>Remote</label>
+              <input
+                className="input"
+                placeholder="origin"
+                value={remote}
+                onChange={(e) => setRemote(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Tag */}
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#94A3B8' }}>
+              Tag (optional)
+            </label>
+            <div className="flex items-center gap-2">
+              <Tag size={16} style={{ color: '#64748B' }} />
+              <input
+                className="input"
+                placeholder="e.g. v1.0.0"
+                value={tag}
+                onChange={(e) => setTag(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Add All Checkbox */}
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={addAll}
+                onChange={(e) => setAddAll(e.target.checked)}
+                className="w-4 h-4 rounded"
+                style={{ accentColor: '#7000FF' }}
+              />
+              <span className="text-sm" style={{ color: '#94A3B8' }}>
+                Add all changes before committing
+              </span>
+            </label>
+          </div>
+
+          {/* Error */}
+          {pushError && !result && (
+            <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: 'rgba(255,0,122,0.1)', border: '1px solid rgba(255,0,122,0.2)' }}>
+              <AlertCircle size={16} style={{ color: '#FF007A' }} />
+              <p className="text-sm" style={{ color: '#FF007A' }}>{pushError}</p>
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={pushing || !message.trim()}
+          >
+            <Send size={16} />
+            {pushing ? 'Pushing...' : 'Commit & Push'}
+          </button>
+        </form>
+      </div>
+
+      {/* Result Display */}
+      {result && (
+        <div
+          className="card p-5 rounded-xl mt-6 max-w-2xl"
+          style={{
+            borderColor: result.success ? '#10B981' : '#FF007A',
+            boxShadow: result.success
+              ? '0 0 20px rgba(16, 185, 129, 0.15)'
+              : '0 0 20px rgba(255, 0, 122, 0.15)',
+          }}
+        >
+          <div className="flex items-center gap-3 mb-3">
+            {result.success ? (
+              <CheckCircle2 size={24} style={{ color: '#10B981' }} />
+            ) : (
+              <XCircle size={24} style={{ color: '#FF007A' }} />
+            )}
+            <h3
+              className="text-lg font-semibold"
+              style={{
+                fontFamily: 'Space Grotesk, sans-serif',
+                color: result.success ? '#10B981' : '#FF007A',
+              }}
+            >
+              {result.success ? 'Push Successful' : 'Push Failed'}
+            </h3>
+          </div>
+
+          <p className="text-sm mb-3" style={{ color: '#94A3B8' }}>
+            {result.message}
+          </p>
+
+          {/* Expandable Details */}
+          {result.command && (
+            <div>
+              <button
+                className="btn btn-ghost btn-sm mb-2"
+                onClick={() => setShowDetails(!showDetails)}
+              >
+                {showDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                {showDetails ? 'Hide Details' : 'Show Details'}
+              </button>
+
+              {showDetails && (
+                <div className="space-y-2">
+                  <div className="p-3 rounded-lg" style={{ background: '#0A0F1D', border: '1px solid #1E294B' }}>
+                    <p className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: '#64748B' }}>
+                      Command
+                    </p>
+                    <code className="text-sm font-mono" style={{ color: '#00F2FE' }}>
+                      {result.command}
+                    </code>
+                  </div>
+                  {result.output && (
+                    <div className="p-3 rounded-lg" style={{ background: '#0A0F1D', border: '1px solid #1E294B' }}>
+                      <p className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: '#64748B' }}>
+                        Output
+                      </p>
+                      <pre className="text-sm font-mono whitespace-pre-wrap" style={{ color: '#94A3B8' }}>
+                        {result.output}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

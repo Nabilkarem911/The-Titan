@@ -1,74 +1,251 @@
-const _env = (import.meta as unknown as { env: Record<string, string> }).env;
-export const API_BASE = _env.VITE_API_BASE_URL ?? '/api/v1';
-export const getToken = () => localStorage.getItem('titan_access_token') ?? '';
+// ── Titan API Client ──────────────────────────────────────────────────────────
 
-/* ── Type definitions ─────────────────────────────────────────────── */
+const API_BASE = (import.meta as Record<string, Record<string, string>>).env?.VITE_API_BASE || '/api/v1';
+
+function getToken(): string | null {
+  return localStorage.getItem('titan_token');
+}
+
+function setToken(token: string): void {
+  localStorage.setItem('titan_token', token);
+}
+
+function getRefreshToken(): string | null {
+  return localStorage.getItem('titan_refresh_token');
+}
+
+// ── Error class ──────────────────────────────────────────────────────────────
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public body?: unknown
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+// ── Global error handler ─────────────────────────────────────────────────────
+
+type ErrorHandler = (error: ApiError) => void;
+let _onApiError: ErrorHandler | null = null;
+
+export function onApiError(handler: ErrorHandler): void {
+  _onApiError = handler;
+}
+
+// ── Token refresh ────────────────────────────────────────────────────────────
+
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    const refresh = getRefreshToken();
+    if (!refresh) throw new ApiError(401, 'No refresh token');
+
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refresh }),
+    });
+
+    if (!res.ok) {
+      localStorage.removeItem('titan_token');
+      localStorage.removeItem('titan_refresh_token');
+      throw new ApiError(res.status, 'Token refresh failed');
+    }
+
+    const data = await res.json();
+    setToken(data.access_token);
+    if (data.refresh_token) {
+      localStorage.setItem('titan_refresh_token', data.refresh_token);
+    }
+    return data.access_token as string;
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+// ── Core fetch ───────────────────────────────────────────────────────────────
+
+async function fetchJson<T>(
+  path: string,
+  options: RequestInit = {},
+  retry = true
+): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> || {}),
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (res.status === 401 && retry) {
+    try {
+      const newToken = await refreshAccessToken();
+      headers['Authorization'] = `Bearer ${newToken}`;
+      const retryRes = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers,
+      });
+      if (!retryRes.ok) {
+        const error = new ApiError(retryRes.status, `API error: ${retryRes.statusText}`);
+        _onApiError?.(error);
+        throw error;
+      }
+      return retryRes.json();
+    } catch (err) {
+      if (err instanceof ApiError) {
+        _onApiError?.(err);
+        throw err;
+      }
+      const error = new ApiError(401, 'Authentication failed');
+      _onApiError?.(error);
+      throw error;
+    }
+  }
+
+  if (!res.ok) {
+    let body: unknown;
+    try {
+      body = await res.json();
+    } catch {
+      body = await res.text();
+    }
+    const msg = typeof body === 'object' && body !== null && 'message' in body
+      ? (body as { message: string }).message
+      : `API error: ${res.statusText}`;
+    const error = new ApiError(res.status, msg, body);
+    _onApiError?.(error);
+    throw error;
+  }
+
+  if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
+async function fetchRaw(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> || {}),
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    const error = new ApiError(res.status, `API error: ${res.statusText}`);
+    _onApiError?.(error);
+    throw error;
+  }
+
+  return res;
+}
+
+// ── TypeScript Interfaces ────────────────────────────────────────────────────
 
 export interface AgentProfile {
   id: string;
   name: string;
-  slug: string;
-  description: string | null;
-  systemPrompt: string;
-  allowedTools: string[];
-  forbiddenTools: string[];
-  maxSteps: number;
-  isPublic: boolean;
-  ownerId: string;
-  createdAt: string;
+  model: string;
+  system_prompt: string;
+  tools: string[];
+  temperature: number;
+  max_tokens: number;
+  description?: string;
+  avatar?: string;
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ApiRun {
   id: string;
-  agentId: string;
-  status: string;
-  prompt: string;
-  maxSteps: number;
-  currentStep: number;
-  tokensUsed: number;
-  tokenBudget: number | null;
-  finalAnswer: string | null;
-  createdAt: string;
-  updatedAt: string;
+  agent_id: string;
+  agent_name?: string;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+  input: string;
+  output?: string;
+  error?: string;
+  tokens_used?: number;
+  cost?: number;
+  started_at?: string;
+  completed_at?: string;
+  created_at: string;
+  duration_ms?: number;
+  steps?: ApiStep[];
 }
 
 export interface ApiStep {
   id: string;
-  runId: string;
-  stepIndex: number;
-  status: string;
-  thought: string | null;
-  plan: string | null;
-  actionName: string | null;
-  actionParams: Record<string, unknown> | null;
-  observationSuccess: boolean | null;
-  observationData: unknown;
-  observationError: string | null;
-  reflection: string | null;
-  tokensUsed: number | null;
-  latencyMs: number | null;
-  createdAt: string;
+  run_id: string;
+  type: 'llm' | 'tool' | 'user' | 'system';
+  content: string;
+  tool_name?: string;
+  tool_input?: string;
+  tool_output?: string;
+  tokens?: number;
+  duration_ms?: number;
+  created_at: string;
 }
 
 export interface QueueStats {
-  waiting: number;
-  active: number;
+  pending: number;
+  running: number;
   completed: number;
   failed: number;
-  delayed: number;
+  total: number;
+  workers: number;
+  throughput: number;
+}
+
+export interface QueueJob {
+  id: string;
+  agent_id: string;
+  agent_name?: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  priority: number;
+  input: string;
+  output?: string;
+  error?: string;
+  retries: number;
+  max_retries: number;
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
 }
 
 export interface CronJob {
   id: string;
   name: string;
+  agent_id: string;
+  agent_name?: string;
   schedule: string;
-  agentId: string;
-  prompt: string;
+  input: string;
   enabled: boolean;
-  lastRun: string | null;
-  nextRun: string | null;
-  createdAt: string;
-  updatedAt: string;
+  last_run?: string;
+  next_run?: string;
+  run_count: number;
+  created_at: string;
 }
 
 export interface Webhook {
@@ -76,319 +253,400 @@ export interface Webhook {
   name: string;
   url: string;
   events: string[];
-  secret: string;
+  secret?: string;
   enabled: boolean;
-  createdAt: string;
-  updatedAt: string;
+  last_triggered?: string;
+  failure_count: number;
+  created_at: string;
 }
 
 export interface Plugin {
   id: string;
   name: string;
   version: string;
-  description: string | null;
+  description: string;
+  author: string;
   enabled: boolean;
-  config: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
+  config?: Record<string, unknown>;
+  capabilities: string[];
+  installed_at: string;
 }
 
 export interface ApiKey {
   id: string;
   name: string;
-  prefix: string;
+  key_prefix: string;
   permissions: string[];
-  expiresAt: string | null;
-  lastUsedAt: string | null;
-  createdAt: string;
+  last_used?: string;
+  expires_at?: string;
+  created_at: string;
 }
 
 export interface UserKey {
   id: string;
   provider: string;
-  label: string;
-  maskedKey: string;
-  createdAt: string;
+  name: string;
+  key_prefix: string;
+  created_at: string;
 }
 
 export interface Workspace {
   id: string;
   name: string;
-  slug: string;
-  description: string | null;
-  ownerId: string;
-  memberCount: number;
-  createdAt: string;
-  updatedAt: string;
+  description?: string;
+  owner_id: string;
+  member_count: number;
+  agent_count: number;
+  created_at: string;
+}
+
+export interface WorkspaceMember {
+  id: string;
+  user_id: string;
+  username: string;
+  email: string;
+  role: 'owner' | 'admin' | 'member' | 'viewer';
+  joined_at: string;
 }
 
 export interface AuditLog {
   id: string;
+  user_id: string;
+  username: string;
   action: string;
-  actor: string;
-  target: string | null;
-  meta: Record<string, unknown>;
+  resource_type: string;
+  resource_id: string;
+  details?: Record<string, unknown>;
+  ip_address: string;
   timestamp: string;
-  hash: string;
-  previousHash: string | null;
 }
 
-/* ── Error handling ───────────────────────────────────────────────── */
-
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public statusText: string,
-    public body: string,
-  ) {
-    super(`API ${status}: ${body || statusText}`);
-    this.name = 'ApiError';
-  }
+export interface FileEntry {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  size?: number;
+  modified?: string;
+  mime_type?: string;
 }
 
-type ErrorHandler = (error: ApiError | Error) => void;
-let globalErrorHandler: ErrorHandler | null = null;
-
-export function onApiError(handler: ErrorHandler) {
-  globalErrorHandler = handler;
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string;
+  tool_name?: string;
+  tool_input?: string;
+  tool_output?: string;
+  tokens?: number;
+  created_at: string;
 }
 
-/* ── Token refresh ────────────────────────────────────────────────── */
-
-async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem('titan_refresh_token');
-  if (!refreshToken) return null;
-  try {
-    const res = await fetch(`${API_BASE}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { accessToken: string; refreshToken?: string };
-    localStorage.setItem('titan_access_token', data.accessToken);
-    if (data.refreshToken) localStorage.setItem('titan_refresh_token', data.refreshToken);
-    return data.accessToken;
-  } catch {
-    return null;
-  }
+export interface HealthStatus {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  version: string;
+  uptime: number;
+  checks: Record<string, {
+    status: 'pass' | 'warn' | 'fail';
+    message?: string;
+    latency_ms?: number;
+  }>;
 }
 
-/* ── Core fetch helpers ───────────────────────────────────────────── */
-
-async function fetchJson<T>(path: string, opts?: RequestInit & { _retry?: boolean }): Promise<T> {
-  const makeRequest = (token: string) =>
-    fetch(`${API_BASE}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(opts?.headers ?? {}),
-      },
-      ...opts,
-    });
-
-  let res: Response;
-  try {
-    res = await makeRequest(getToken());
-  } catch (err) {
-    if (!opts?._retry) {
-      await new Promise((r) => setTimeout(r, 1000));
-      return fetchJson<T>(path, { ...opts, _retry: true });
-    }
-    const netErr = err instanceof Error ? err : new Error('Network error');
-    globalErrorHandler?.(netErr);
-    throw netErr;
-  }
-
-  if (res.status === 401) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      res = await makeRequest(newToken);
-    } else {
-      localStorage.removeItem('titan_access_token');
-      localStorage.removeItem('titan_refresh_token');
-      window.location.href = '/login';
-      throw new Error('Session expired. Redirecting to login...');
-    }
-  }
-
-  if (!res.ok) {
-    const text = await res.text();
-    const apiErr = new ApiError(res.status, res.statusText, text);
-    globalErrorHandler?.(apiErr);
-    throw apiErr;
-  }
-  return res.json() as Promise<T>;
+export interface MetricsData {
+  cpu_usage: number;
+  memory_usage: number;
+  disk_usage: number;
+  active_connections: number;
+  requests_per_minute: number;
+  avg_response_time: number;
+  error_rate: number;
+  total_runs: number;
+  total_tokens: number;
+  total_cost: number;
 }
 
-export async function fetchRaw(path: string, opts?: RequestInit): Promise<Response> {
-  const token = getToken();
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(opts?.headers ?? {}),
-    },
-    ...opts,
-  });
-  if (res.status === 401) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      return fetch(`${API_BASE}${path}`, {
-        headers: {
-          Authorization: `Bearer ${newToken}`,
-          ...(opts?.headers ?? {}),
-        },
-        ...opts,
-      });
-    }
-    localStorage.removeItem('titan_access_token');
-    localStorage.removeItem('titan_refresh_token');
-    window.location.href = '/login';
-    throw new Error('Session expired');
-  }
-  return res;
+export interface GitRepo {
+  name: string;
+  path: string;
+  branch: string;
+  status: string;
+  last_commit?: string;
+  remote?: string;
 }
 
-/* ── API methods ──────────────────────────────────────────────────── */
+export interface MemoryEntry {
+  id: string;
+  key: string;
+  value: string;
+  namespace: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SwarmConfig {
+  id: string;
+  name: string;
+  agents: string[];
+  topology: 'sequential' | 'parallel' | 'graph';
+  description?: string;
+  config?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface LogEntry {
+  id: string;
+  level: 'debug' | 'info' | 'warn' | 'error';
+  message: string;
+  source: string;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
+export interface Settings {
+  general: {
+    site_name: string;
+    default_model: string;
+    max_concurrent_runs: number;
+    allow_registration: boolean;
+  };
+  models: {
+    providers: Array<{
+      name: string;
+      enabled: boolean;
+      api_key_set: boolean;
+      models: string[];
+    }>;
+  };
+  security: {
+    session_timeout: number;
+    max_login_attempts: number;
+    require_2fa: boolean;
+    allowed_origins: string[];
+  };
+}
+
+// ── API Methods ──────────────────────────────────────────────────────────────
 
 export const api = {
-  // Agent Profiles
-  listAgentProfiles: () => fetchJson<{ items: AgentProfile[] }>('/agent-profiles'),
-  listPublicAgentProfiles: () => fetchJson<{ items: AgentProfile[] }>('/agent-profiles/public'),
-  createAgentProfile: (body: Record<string, unknown>) =>
-    fetchJson<AgentProfile>('/agent-profiles', { method: 'POST', body: JSON.stringify(body) }),
-  updateAgentProfile: (id: string, body: Record<string, unknown>) =>
-    fetchJson<AgentProfile>(`/agent-profiles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  deleteAgentProfile: (id: string) =>
-    fetchJson<void>(`/agent-profiles/${id}`, { method: 'DELETE' }),
+  // Auth
+  login: (credentials: { username: string; password: string }) =>
+    fetchJson<{ access_token: string; refresh_token: string }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    }),
 
-  // Agent Runs
-  triggerRun: (agentId: string, body: { prompt: string; maxSteps?: number }) =>
-    fetchJson<{ runId: string; jobId: string }>(`/agents/${agentId}/run`, { method: 'POST', body: JSON.stringify(body) }),
-  listRuns: (agentId: string, opts?: { limit?: number; offset?: number }) =>
-    fetchJson<{ items: ApiRun[]; total: number }>(`/agents/${agentId}/runs?limit=${opts?.limit ?? 20}&offset=${opts?.offset ?? 0}`),
-  getRun: (agentId: string, runId: string) =>
-    fetchJson<ApiRun>(`/agents/${agentId}/runs/${runId}`),
-  getSteps: (agentId: string, runId: string) =>
-    fetchJson<{ items: ApiStep[]; total: number }>(`/agents/${agentId}/runs/${runId}/steps`),
+  logout: () => fetchJson<void>('/auth/logout', { method: 'POST' }),
+
+  getProfile: () => fetchJson<{ id: string; username: string; email: string; role: string }>('/auth/profile'),
+
+  // Agents
+  getAgents: () => fetchJson<AgentProfile[]>('/agents'),
+  getAgent: (id: string) => fetchJson<AgentProfile>(`/agents/${id}`),
+  createAgent: (data: Partial<AgentProfile>) =>
+    fetchJson<AgentProfile>('/agents', { method: 'POST', body: JSON.stringify(data) }),
+  updateAgent: (id: string, data: Partial<AgentProfile>) =>
+    fetchJson<AgentProfile>(`/agents/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAgent: (id: string) =>
+    fetchJson<void>(`/agents/${id}`, { method: 'DELETE' }),
+
+  // Runs
+  getRuns: (params?: { agent_id?: string; status?: string; page?: number; per_page?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.agent_id) query.set('agent_id', params.agent_id);
+    if (params?.status) query.set('status', params.status);
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.per_page) query.set('per_page', String(params.per_page));
+    const qs = query.toString();
+    return fetchJson<PaginatedResponse<ApiRun>>(`/runs${qs ? `?${qs}` : ''}`);
+  },
+  getRun: (id: string) => fetchJson<ApiRun>(`/runs/${id}`),
+  createRun: (data: { agent_id: string; input: string }) =>
+    fetchJson<ApiRun>('/runs', { method: 'POST', body: JSON.stringify(data) }),
+  cancelRun: (id: string) =>
+    fetchJson<void>(`/runs/${id}/cancel`, { method: 'POST' }),
+
+  // Chat
+  sendMessage: (agentId: string, message: string, conversationId?: string) =>
+    fetchJson<{ message: ChatMessage; conversation_id: string }>('/chat', {
+      method: 'POST',
+      body: JSON.stringify({ agent_id: agentId, message, conversation_id: conversationId }),
+    }),
+  getChatHistory: (conversationId: string) =>
+    fetchJson<ChatMessage[]>(`/chat/${conversationId}`),
+
+  streamChat: (agentId: string, message: string, conversationId?: string): EventSource => {
+    const token = getToken();
+    const params = new URLSearchParams({
+      agent_id: agentId,
+      message,
+      ...(conversationId ? { conversation_id: conversationId } : {}),
+      ...(token ? { token } : {}),
+    });
+    return new EventSource(`${API_BASE}/chat/stream?${params}`);
+  },
 
   // Queue
-  getQueueStats: (name: string) =>
-    fetchJson<QueueStats>(`/admin/queues/${name}/stats`),
+  getQueueStats: () => fetchJson<QueueStats>('/queue/stats'),
+  getQueueJobs: (status?: string) => {
+    const qs = status ? `?status=${status}` : '';
+    return fetchJson<QueueJob[]>(`/queue/jobs${qs}`);
+  },
+  retryJob: (id: string) =>
+    fetchJson<void>(`/queue/jobs/${id}/retry`, { method: 'POST' }),
+  cancelJob: (id: string) =>
+    fetchJson<void>(`/queue/jobs/${id}/cancel`, { method: 'POST' }),
 
   // Cron
-  listCron: () => fetchJson<{ items: CronJob[]; total: number }>('/cron'),
-  createCron: (body: Record<string, unknown>) =>
-    fetchJson<CronJob>('/cron', { method: 'POST', body: JSON.stringify(body) }),
-  getCron: (id: string) => fetchJson<CronJob>(`/cron/${id}`),
-  updateCron: (id: string, body: Record<string, unknown>) =>
-    fetchJson<CronJob>(`/cron/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  deleteCron: (id: string) =>
+  getCronJobs: () => fetchJson<CronJob[]>('/cron'),
+  createCronJob: (data: Partial<CronJob>) =>
+    fetchJson<CronJob>('/cron', { method: 'POST', body: JSON.stringify(data) }),
+  updateCronJob: (id: string, data: Partial<CronJob>) =>
+    fetchJson<CronJob>(`/cron/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCronJob: (id: string) =>
     fetchJson<void>(`/cron/${id}`, { method: 'DELETE' }),
+  toggleCronJob: (id: string, enabled: boolean) =>
+    fetchJson<CronJob>(`/cron/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
 
   // Webhooks
-  listWebhooks: () => fetchJson<{ items: Webhook[] }>('/webhooks'),
-  createWebhook: (body: Record<string, unknown>) =>
-    fetchJson<Webhook>('/webhooks', { method: 'POST', body: JSON.stringify(body) }),
-  getWebhook: (id: string) => fetchJson<Webhook>(`/webhooks/${id}`),
-  updateWebhook: (id: string, body: Record<string, unknown>) =>
-    fetchJson<Webhook>(`/webhooks/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  getWebhooks: () => fetchJson<Webhook[]>('/webhooks'),
+  createWebhook: (data: Partial<Webhook>) =>
+    fetchJson<Webhook>('/webhooks', { method: 'POST', body: JSON.stringify(data) }),
+  updateWebhook: (id: string, data: Partial<Webhook>) =>
+    fetchJson<Webhook>(`/webhooks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteWebhook: (id: string) =>
     fetchJson<void>(`/webhooks/${id}`, { method: 'DELETE' }),
-  rotateWebhookSecret: (id: string) =>
-    fetchJson<{ secret: string }>(`/webhooks/${id}/rotate-secret`, { method: 'POST' }),
-  getWebhookDeliveries: (id: string) =>
-    fetchJson<{ items: Array<Record<string, unknown>> }>(`/webhooks/${id}/deliveries`),
+  testWebhook: (id: string) =>
+    fetchJson<{ success: boolean; status_code: number }>(`/webhooks/${id}/test`, { method: 'POST' }),
 
   // Plugins
-  listPlugins: () => fetchJson<{ items: Plugin[] }>('/plugins'),
-  getPlugin: (id: string) => fetchJson<Plugin>(`/plugins/${id}`),
-  installPlugin: (body: Record<string, unknown>) =>
-    fetchJson<Plugin>('/plugins', { method: 'POST', body: JSON.stringify(body) }),
-  deletePlugin: (id: string) =>
+  getPlugins: () => fetchJson<Plugin[]>('/plugins'),
+  installPlugin: (data: { name: string; version?: string }) =>
+    fetchJson<Plugin>('/plugins/install', { method: 'POST', body: JSON.stringify(data) }),
+  uninstallPlugin: (id: string) =>
     fetchJson<void>(`/plugins/${id}`, { method: 'DELETE' }),
+  togglePlugin: (id: string, enabled: boolean) =>
+    fetchJson<Plugin>(`/plugins/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
 
   // API Keys
-  listApiKeys: () => fetchJson<{ items: ApiKey[] }>('/api-keys'),
-  createApiKey: (body: Record<string, unknown>) =>
-    fetchJson<ApiKey & { key: string }>('/api-keys', { method: 'POST', body: JSON.stringify(body) }),
+  getApiKeys: () => fetchJson<ApiKey[]>('/api-keys'),
+  createApiKey: (data: { name: string; permissions: string[] }) =>
+    fetchJson<ApiKey & { key: string }>('/api-keys', { method: 'POST', body: JSON.stringify(data) }),
   deleteApiKey: (id: string) =>
     fetchJson<void>(`/api-keys/${id}`, { method: 'DELETE' }),
 
-  // User Keys (provider secrets)
-  listUserKeys: () => fetchJson<{ items: UserKey[] }>('/user/keys'),
-  createUserKey: (body: Record<string, unknown>) =>
-    fetchJson<UserKey>('/user/keys', { method: 'POST', body: JSON.stringify(body) }),
+  // User Keys (provider API keys)
+  getUserKeys: () => fetchJson<UserKey[]>('/user-keys'),
+  setUserKey: (provider: string, key: string) =>
+    fetchJson<UserKey>('/user-keys', { method: 'POST', body: JSON.stringify({ provider, key }) }),
   deleteUserKey: (id: string) =>
-    fetchJson<void>(`/user/keys/${id}`, { method: 'DELETE' }),
+    fetchJson<void>(`/user-keys/${id}`, { method: 'DELETE' }),
 
-  // Git
-  gitPush: (body: Record<string, unknown>) =>
-    fetchJson<{ success: boolean; message: string; details: Array<{ command: string; stdout: string; stderr: string; exitCode: number }> }>(
-      '/git/push',
-      { method: 'POST', body: JSON.stringify(body) },
-    ),
+  // Files
+  listFiles: (path?: string) => {
+    const qs = path ? `?path=${encodeURIComponent(path)}` : '';
+    return fetchJson<FileEntry[]>(`/files${qs}`);
+  },
+  readFile: (path: string) =>
+    fetchJson<{ content: string; mime_type: string }>(`/files/read?path=${encodeURIComponent(path)}`),
+  writeFile: (path: string, content: string) =>
+    fetchJson<void>('/files/write', { method: 'POST', body: JSON.stringify({ path, content }) }),
+  deleteFile: (path: string) =>
+    fetchJson<void>(`/files?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
+  uploadFile: (path: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('path', path);
+    return fetchRaw('/files/upload', { method: 'POST', body: formData });
+  },
 
-  // Swarm
-  runSwarm: (body: Record<string, unknown>) =>
-    fetchJson<{ taskId: string }>('/swarm/run', { method: 'POST', body: JSON.stringify(body) }),
-  listSwarmTasks: () =>
-    fetchJson<{ items: Array<Record<string, unknown>> }>('/swarm/tasks'),
-  getSwarmTask: (id: string) =>
-    fetchJson<Record<string, unknown>>(`/swarm/tasks/${id}`),
+  // Health
+  getHealth: () => fetchJson<HealthStatus>('/health'),
+
+  // Metrics
+  getMetrics: () => fetchJson<MetricsData>('/metrics'),
+  getMetricsHistory: (period: string) =>
+    fetchJson<Array<MetricsData & { timestamp: string }>>(`/metrics/history?period=${period}`),
+
+  // Logs
+  getLogs: (params?: { level?: string; source?: string; limit?: number; offset?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.level) query.set('level', params.level);
+    if (params?.source) query.set('source', params.source);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.offset) query.set('offset', String(params.offset));
+    const qs = query.toString();
+    return fetchJson<LogEntry[]>(`/logs${qs ? `?${qs}` : ''}`);
+  },
+
+  // Settings
+  getSettings: () => fetchJson<Settings>('/settings'),
+  updateSettings: (data: Partial<Settings>) =>
+    fetchJson<Settings>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Audit Logs
+  getAuditLogs: (params?: { page?: number; per_page?: number; action?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.per_page) query.set('per_page', String(params.per_page));
+    if (params?.action) query.set('action', params.action);
+    const qs = query.toString();
+    return fetchJson<PaginatedResponse<AuditLog>>(`/audit-logs${qs ? `?${qs}` : ''}`);
+  },
 
   // Workspaces
-  listWorkspaces: () => fetchJson<{ items: Workspace[] }>('/workspaces'),
-  createWorkspace: (body: Record<string, unknown>) =>
-    fetchJson<Workspace>('/workspaces', { method: 'POST', body: JSON.stringify(body) }),
+  getWorkspaces: () => fetchJson<Workspace[]>('/workspaces'),
   getWorkspace: (id: string) => fetchJson<Workspace>(`/workspaces/${id}`),
-  updateWorkspace: (id: string, body: Record<string, unknown>) =>
-    fetchJson<Workspace>(`/workspaces/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  createWorkspace: (data: Partial<Workspace>) =>
+    fetchJson<Workspace>('/workspaces', { method: 'POST', body: JSON.stringify(data) }),
+  updateWorkspace: (id: string, data: Partial<Workspace>) =>
+    fetchJson<Workspace>(`/workspaces/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteWorkspace: (id: string) =>
     fetchJson<void>(`/workspaces/${id}`, { method: 'DELETE' }),
   getWorkspaceMembers: (id: string) =>
-    fetchJson<{ items: Array<Record<string, unknown>> }>(`/workspaces/${id}/members`),
-  addWorkspaceMember: (id: string, body: Record<string, unknown>) =>
-    fetchJson<void>(`/workspaces/${id}/members`, { method: 'POST', body: JSON.stringify(body) }),
-  removeWorkspaceMember: (wsId: string, userId: string) =>
-    fetchJson<void>(`/workspaces/${wsId}/members/${userId}`, { method: 'DELETE' }),
+    fetchJson<WorkspaceMember[]>(`/workspaces/${id}/members`),
+  addWorkspaceMember: (id: string, data: { email: string; role: string }) =>
+    fetchJson<WorkspaceMember>(`/workspaces/${id}/members`, { method: 'POST', body: JSON.stringify(data) }),
+  removeWorkspaceMember: (workspaceId: string, memberId: string) =>
+    fetchJson<void>(`/workspaces/${workspaceId}/members/${memberId}`, { method: 'DELETE' }),
 
-  // Auth
-  getMe: () =>
-    fetchJson<{ userId: string; sessionId: string; permissions: string[] }>('/auth/me'),
+  // Git
+  getRepos: () => fetchJson<GitRepo[]>('/git/repos'),
+  getRepoStatus: (name: string) => fetchJson<GitRepo>(`/git/repos/${name}`),
+  gitPull: (name: string) =>
+    fetchJson<{ message: string }>(`/git/repos/${name}/pull`, { method: 'POST' }),
+  gitPush: (name: string) =>
+    fetchJson<{ message: string }>(`/git/repos/${name}/push`, { method: 'POST' }),
 
-  // Compliance / Audit
-  getAuditLogs: (params?: string) =>
-    fetchJson<{ items: AuditLog[] }>(`/compliance/audit/logs${params ? `?${params}` : ''}`),
-  verifyAuditChain: () =>
-    fetchJson<{ valid: boolean; brokenAt: string | null; checked: number }>('/compliance/audit/verify'),
-  getAuditRetention: () =>
-    fetchJson<{ count: number; oldest: string | null; newest: string | null; archiveCount: number }>('/compliance/audit/retention'),
-  archiveAuditLogs: (body: Record<string, unknown>) =>
-    fetchJson<{ archived: number }>('/compliance/audit/archive', { method: 'POST', body: JSON.stringify(body) }),
+  // Swarm
+  getSwarms: () => fetchJson<SwarmConfig[]>('/swarms'),
+  getSwarm: (id: string) => fetchJson<SwarmConfig>(`/swarms/${id}`),
+  createSwarm: (data: Partial<SwarmConfig>) =>
+    fetchJson<SwarmConfig>('/swarms', { method: 'POST', body: JSON.stringify(data) }),
+  updateSwarm: (id: string, data: Partial<SwarmConfig>) =>
+    fetchJson<SwarmConfig>(`/swarms/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSwarm: (id: string) =>
+    fetchJson<void>(`/swarms/${id}`, { method: 'DELETE' }),
+  runSwarm: (id: string, input: string) =>
+    fetchJson<ApiRun>(`/swarms/${id}/run`, { method: 'POST', body: JSON.stringify({ input }) }),
 
-  // Files
-  listFiles: (path = '/') =>
-    fetchJson<{ items: Array<{ name: string; type: string; size: number; modified: string }> }>(`/files?path=${encodeURIComponent(path)}`),
-  uploadFile: (path: string, file: File) => {
-    const form = new FormData();
-    form.append('file', file);
-    return fetchRaw(`/files/upload?path=${encodeURIComponent(path)}`, {
-      method: 'POST',
-      body: form,
-    });
+  // Memory
+  getMemories: (namespace?: string) => {
+    const qs = namespace ? `?namespace=${encodeURIComponent(namespace)}` : '';
+    return fetchJson<MemoryEntry[]>(`/memory${qs}`);
   },
-  deleteFile: (path: string) =>
-    fetchJson<void>(`/files?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
-
-  // Logs
-  getLogs: (opts?: { limit?: number; offset?: number; level?: string }) =>
-    fetchJson<{ items: Array<Record<string, unknown>>; total: number }>(
-      `/logs?limit=${opts?.limit ?? 50}&offset=${opts?.offset ?? 0}${opts?.level ? `&level=${opts.level}` : ''}`,
-    ),
-
-  // Settings
-  getSettings: () => fetchJson<Record<string, unknown>>('/settings'),
-  updateSettings: (body: Record<string, unknown>) =>
-    fetchJson<Record<string, unknown>>('/settings', { method: 'PATCH', body: JSON.stringify(body) }),
+  setMemory: (data: { key: string; value: string; namespace?: string }) =>
+    fetchJson<MemoryEntry>('/memory', { method: 'POST', body: JSON.stringify(data) }),
+  deleteMemory: (id: string) =>
+    fetchJson<void>(`/memory/${id}`, { method: 'DELETE' }),
+  searchMemory: (query: string) =>
+    fetchJson<MemoryEntry[]>(`/memory/search?q=${encodeURIComponent(query)}`),
 };

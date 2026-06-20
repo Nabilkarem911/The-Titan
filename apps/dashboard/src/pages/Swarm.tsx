@@ -1,116 +1,77 @@
-import { useState } from 'react';
-import { Layers, Play, RefreshCw } from 'lucide-react';
-import { api } from '../api/client';
+import React, { useState } from 'react';
+import { Network, Plus, Play, Trash2, Edit3, Save, X } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
-import { SkeletonTable } from '../components/LoadingSkeleton';
+import { api } from '../api/client';
 import { ErrorState, EmptyState } from '../components/PageState';
+import { PageSkeleton } from '../components/LoadingSkeleton';
+import { classNames } from '../utils/format';
+import type { SwarmConfig } from '../api/client';
+
+const topoColors: Record<string, string> = { sequential: 'badge-info', parallel: 'badge-success', graph: 'badge-violet' };
 
 export default function Swarm() {
-  const { data, loading, error, refetch } = useApi(() => api.listSwarmTasks(), []);
-  const [prompt, setPrompt] = useState('');
-  const [running, setRunning] = useState(false);
-  const [runResult, setRunResult] = useState<string | null>(null);
-  const [runError, setRunError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Partial<SwarmConfig> | null>(null);
+  const { data: swarms, error, isLoading, refetch } = useApi<SwarmConfig[]>(() => api.getSwarms(), []);
 
-  const handleRun = async () => {
-    if (!prompt.trim()) return;
-    setRunning(true);
-    setRunError(null);
-    setRunResult(null);
-    try {
-      const res = await api.runSwarm({ prompt });
-      setRunResult(`Swarm task started: ${res.taskId}`);
-      setPrompt('');
-      refetch();
-    } catch (err) {
-      setRunError(err instanceof Error ? err.message : 'Failed to start swarm');
-    } finally {
-      setRunning(false);
-    }
+  const save = async () => {
+    if (!editing) return;
+    if (editing.id) await api.updateSwarm(editing.id, editing);
+    else await api.createSwarm(editing);
+    setEditing(null); refetch();
   };
+
+  if (error) return <ErrorState message={error} onRetry={refetch} />;
+  if (isLoading) return <PageSkeleton />;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-500/10">
-            <Layers className="h-5 w-5 text-purple-400" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-white">Swarm</h2>
-            <p className="text-sm text-slate-400">Multi-agent orchestration tasks</p>
-          </div>
-        </div>
-        <button onClick={refetch} className="btn-secondary text-xs">
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </button>
+        <p className="text-text-secondary text-sm">{swarms?.length ?? 0} swarm configurations</p>
+        <button onClick={() => setEditing({ name: '', agents: [], topology: 'sequential' })} className="btn btn-primary"><Plus className="w-4 h-4" /> New Swarm</button>
       </div>
-
-      {/* Run form */}
-      <div className="card space-y-3">
-        <h3 className="text-sm font-medium text-white">Run Swarm Task</h3>
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe the task for the swarm..."
-          className="input w-full h-24 resize-none"
-        />
-        <button onClick={handleRun} disabled={running} className="btn-primary text-sm">
-          <Play className="h-4 w-4" />
-          {running ? 'Starting...' : 'Run Swarm'}
-        </button>
-        {runError && (
-          <div className="text-sm text-red-400 bg-red-500/10 px-3 py-2 rounded-lg">{runError}</div>
-        )}
-        {runResult && (
-          <div className="text-sm text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg">{runResult}</div>
-        )}
-      </div>
-
-      {/* Tasks list */}
-      {loading ? (
-        <SkeletonTable rows={5} cols={4} />
-      ) : error ? (
-        <ErrorState message={error} onRetry={refetch} />
-      ) : !data?.items?.length ? (
-        <EmptyState
-          icon={<Layers className="h-6 w-6 text-slate-400" />}
-          title="No swarm tasks"
-          description="Run a swarm task to coordinate multiple agents."
-        />
+      {!swarms || swarms.length === 0 ? (
+        <EmptyState icon={<Network className="w-7 h-7 text-text-muted" />} title="No swarms" message="Create multi-agent swarm configurations" />
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-800">
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Task ID</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Status</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((task, i) => (
-                <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
-                  <td className="px-4 py-3 text-slate-300 font-mono text-xs">
-                    {String(task.id ?? task.taskId ?? '--').slice(0, 12)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`badge ${
-                      task.status === 'completed' ? 'badge-success' :
-                      task.status === 'failed' ? 'badge-error' : 'badge-info'
-                    }`}>
-                      {String(task.status ?? 'unknown')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {task.createdAt ? new Date(String(task.createdAt)).toLocaleString() : '--'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {swarms.map((swarm) => (
+            <div key={swarm.id} className="card p-5 hover:border-border-light transition-all">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h3 className="font-heading font-semibold text-text-primary">{swarm.name}</h3>
+                  {swarm.description && <p className="text-sm text-text-secondary mt-1">{swarm.description}</p>}
+                </div>
+                <span className={classNames('badge', topoColors[swarm.topology] || 'badge-neutral')}>{swarm.topology}</span>
+              </div>
+              <div className="text-xs text-text-muted mb-4">{swarm.agents.length} agents</div>
+              <div className="flex gap-2">
+                <button onClick={async () => { const input = window.prompt('Enter input:'); if (input) await api.runSwarm(swarm.id, input); }} className="btn btn-primary btn-sm flex-1"><Play className="w-4 h-4" /> Run</button>
+                <button onClick={() => setEditing({ ...swarm })} className="btn btn-secondary btn-sm"><Edit3 className="w-4 h-4" /></button>
+                <button onClick={async () => { await api.deleteSwarm(swarm.id); refetch(); }} className="btn btn-ghost btn-sm text-text-muted hover:text-pink"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative card p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-lg font-semibold text-text-primary">{editing.id ? 'Edit' : 'New'} Swarm</h2>
+              <button onClick={() => setEditing(null)} className="btn btn-ghost p-1"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <div><label className="block text-sm text-text-secondary mb-1.5">Name</label><input value={editing.name ?? ''} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className="input" /></div>
+              <div><label className="block text-sm text-text-secondary mb-1.5">Topology</label>
+                <select value={editing.topology ?? 'sequential'} onChange={(e) => setEditing({ ...editing, topology: e.target.value as SwarmConfig['topology'] })} className="input">
+                  <option value="sequential">Sequential</option><option value="parallel">Parallel</option><option value="graph">Graph</option>
+                </select>
+              </div>
+              <div><label className="block text-sm text-text-secondary mb-1.5">Agent IDs (comma-separated)</label><input value={editing.agents?.join(', ') ?? ''} onChange={(e) => setEditing({ ...editing, agents: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })} className="input font-mono" /></div>
+              <div><label className="block text-sm text-text-secondary mb-1.5">Description</label><textarea value={editing.description ?? ''} onChange={(e) => setEditing({ ...editing, description: e.target.value })} className="input" rows={2} /></div>
+              <div className="flex gap-2"><button onClick={save} className="btn btn-primary flex-1"><Save className="w-4 h-4" /> Save</button><button onClick={() => setEditing(null)} className="btn btn-secondary">Cancel</button></div>
+            </div>
+          </div>
         </div>
       )}
     </div>

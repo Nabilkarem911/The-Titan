@@ -1,100 +1,95 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
-import ErrorToast from './components/ErrorToast';
-import Login from './pages/Login';
-import { useAuth } from './contexts/AuthContext';
-import { NotificationProvider } from './contexts/NotificationContext';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { PageSkeleton } from './components/LoadingSkeleton';
 
-/* ── Lazy-loaded pages ────────────────────────────────────────────── */
-const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const Chat = React.lazy(() => import('./pages/Chat'));
-const Agents = React.lazy(() => import('./pages/Agents'));
-const Playground = React.lazy(() => import('./pages/Playground'));
-const Files = React.lazy(() => import('./pages/Files'));
-const Editor = React.lazy(() => import('./pages/Editor'));
-const Runs = React.lazy(() => import('./pages/Runs'));
-const Terminal = React.lazy(() => import('./pages/Terminal'));
-const Queue = React.lazy(() => import('./pages/Queue'));
-const Cron = React.lazy(() => import('./pages/Cron'));
-const Logs = React.lazy(() => import('./pages/Logs'));
-const Health = React.lazy(() => import('./pages/Health'));
-const Metrics = React.lazy(() => import('./pages/Metrics'));
-const Webhooks = React.lazy(() => import('./pages/Webhooks'));
-const Plugins = React.lazy(() => import('./pages/Plugins'));
-const ApiKeys = React.lazy(() => import('./pages/ApiKeys'));
-const Settings = React.lazy(() => import('./pages/Settings'));
-const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
-const Git = React.lazy(() => import('./pages/Git'));
-const Swarm = React.lazy(() => import('./pages/Swarm'));
-const Workspaces = React.lazy(() => import('./pages/Workspaces'));
-const Teams = React.lazy(() => import('./pages/Teams'));
-const Templates = React.lazy(() => import('./pages/Templates'));
-const Memory = React.lazy(() => import('./pages/Memory'));
-const NotFound = React.lazy(() => import('./pages/NotFound'));
+// ── Lazy-loaded pages ────────────────────────────────────────────────────────
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Chat = lazy(() => import('./pages/Chat'));
+const Agents = lazy(() => import('./pages/Agents'));
+const Playground = lazy(() => import('./pages/Playground'));
+const Files = lazy(() => import('./pages/Files'));
+const Runs = lazy(() => import('./pages/Runs'));
+const TerminalPage = lazy(() => import('./pages/Terminal'));
+const Queue = lazy(() => import('./pages/Queue'));
+const Cron = lazy(() => import('./pages/Cron'));
+const Logs = lazy(() => import('./pages/Logs'));
+const Health = lazy(() => import('./pages/Health'));
+const Metrics = lazy(() => import('./pages/Metrics'));
+const Webhooks = lazy(() => import('./pages/Webhooks'));
+const Plugins = lazy(() => import('./pages/Plugins'));
+const ApiKeys = lazy(() => import('./pages/ApiKeys'));
+const SettingsPage = lazy(() => import('./pages/Settings'));
+const AuditLogs = lazy(() => import('./pages/AuditLogs'));
+const Git = lazy(() => import('./pages/Git'));
+const Swarm = lazy(() => import('./pages/Swarm'));
+const Workspaces = lazy(() => import('./pages/Workspaces'));
+const Memory = lazy(() => import('./pages/Memory'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
-function LoadingFallback() {
-  return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="text-slate-400 text-lg">Loading...</div>
-    </div>
-  );
-}
-
+// ── Protected Layout ─────────────────────────────────────────────────────────
 function ProtectedLayout() {
-  const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-deep">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
+          <span className="text-text-muted text-sm">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
-    <ThemeProvider>
-      <NotificationProvider>
-        <ErrorToast />
-        <Layout>
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/agents" element={<Agents />} />
-                <Route path="/playground" element={<Playground />} />
-                <Route path="/files" element={<Files />} />
-                <Route path="/editor" element={<Editor />} />
-                <Route path="/runs" element={<Runs />} />
-                <Route path="/terminal" element={<Terminal />} />
-                <Route path="/queue" element={<Queue />} />
-                <Route path="/cron" element={<Cron />} />
-                <Route path="/logs" element={<Logs />} />
-                <Route path="/health" element={<Health />} />
-                <Route path="/metrics" element={<Metrics />} />
-                <Route path="/webhooks" element={<Webhooks />} />
-                <Route path="/plugins" element={<Plugins />} />
-                <Route path="/api-keys" element={<ApiKeys />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/audit-logs" element={<AuditLogs />} />
-                <Route path="/git" element={<Git />} />
-                <Route path="/swarm" element={<Swarm />} />
-                <Route path="/workspaces" element={<Workspaces />} />
-                <Route path="/teams" element={<Teams />} />
-                <Route path="/templates" element={<Templates />} />
-                <Route path="/memory" element={<Memory />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
-        </Layout>
-      </NotificationProvider>
-    </ThemeProvider>
+    <NotificationProvider>
+      <Layout />
+    </NotificationProvider>
   );
 }
 
-function App() {
+// ── App ──────────────────────────────────────────────────────────────────────
+export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/*" element={<ProtectedLayout />} />
-    </Routes>
+    <ErrorBoundary>
+      <Suspense fallback={<PageSkeleton />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="chat" element={<Chat />} />
+            <Route path="agents" element={<Agents />} />
+            <Route path="playground" element={<Playground />} />
+            <Route path="files" element={<Files />} />
+            <Route path="runs" element={<Runs />} />
+            <Route path="terminal" element={<TerminalPage />} />
+            <Route path="queue" element={<Queue />} />
+            <Route path="cron" element={<Cron />} />
+            <Route path="logs" element={<Logs />} />
+            <Route path="health" element={<Health />} />
+            <Route path="metrics" element={<Metrics />} />
+            <Route path="webhooks" element={<Webhooks />} />
+            <Route path="plugins" element={<Plugins />} />
+            <Route path="api-keys" element={<ApiKeys />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="git" element={<Git />} />
+            <Route path="swarm" element={<Swarm />} />
+            <Route path="workspaces" element={<Workspaces />} />
+            <Route path="memory" element={<Memory />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
-
-export default App;

@@ -1,87 +1,61 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ScrollText, RefreshCw } from 'lucide-react';
-import { api } from '../api/client';
 import { useApi } from '../hooks/useApi';
-import { SkeletonTable } from '../components/LoadingSkeleton';
+import { api } from '../api/client';
 import { ErrorState, EmptyState } from '../components/PageState';
+import { PageSkeleton } from '../components/LoadingSkeleton';
+import { classNames } from '../utils/format';
+import type { LogEntry } from '../api/client';
+
+const levelColors: Record<string, { badge: string; dot: string }> = {
+  debug: { badge: 'badge-neutral', dot: 'bg-text-muted' },
+  info: { badge: 'badge-info', dot: 'bg-cyan' },
+  warn: { badge: 'badge-warning', dot: 'bg-warning' },
+  error: { badge: 'badge-error', dot: 'bg-pink' },
+};
 
 export default function Logs() {
   const [level, setLevel] = useState('');
-  const { data, loading, error, refetch } = useApi(
-    () => api.getLogs({ limit: 50, level: level || undefined }),
-    [level],
+  const [source, setSource] = useState('');
+  const { data: logs, error, isLoading, refetch } = useApi<LogEntry[]>(
+    () => api.getLogs({ level: level || undefined, source: source || undefined, limit: 200 }),
+    [level, source]
   );
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-cyan-500/10">
-            <ScrollText className="h-5 w-5 text-cyan-400" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-white">Logs</h2>
-            <p className="text-sm text-slate-400">View system and application logs</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <select value={level} onChange={(e) => setLevel(e.target.value)} className="input text-sm">
-            <option value="">All levels</option>
-            <option value="error">Error</option>
-            <option value="warn">Warning</option>
-            <option value="info">Info</option>
-            <option value="debug">Debug</option>
-          </select>
-          <button onClick={refetch} className="btn-secondary text-xs">
-            <RefreshCw className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
+  if (error) return <ErrorState message={error} onRetry={refetch} />;
+  if (isLoading) return <PageSkeleton />;
 
-      {/* Content */}
-      {loading ? (
-        <SkeletonTable rows={10} cols={4} />
-      ) : error ? (
-        <ErrorState message={error} onRetry={refetch} />
-      ) : !data?.items?.length ? (
-        <EmptyState
-          icon={<ScrollText className="h-6 w-6 text-slate-400" />}
-          title="No logs"
-          description="No log entries found for the selected filter."
-        />
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 flex-wrap">
+        <select value={level} onChange={(e) => setLevel(e.target.value)} className="input w-36">
+          <option value="">All Levels</option><option value="debug">Debug</option><option value="info">Info</option><option value="warn">Warn</option><option value="error">Error</option>
+        </select>
+        <input type="text" value={source} onChange={(e) => setSource(e.target.value)} placeholder="Filter by source..." className="input w-48" />
+        <button onClick={refetch} className="btn btn-secondary btn-sm"><RefreshCw className="w-4 h-4" /> Refresh</button>
+      </div>
+      {!logs || logs.length === 0 ? (
+        <EmptyState icon={<ScrollText className="w-7 h-7 text-text-muted" />} title="No logs" message="Log entries will appear here" />
       ) : (
         <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-800">
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Time</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Level</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Message</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((log, i) => (
-                <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
-                  <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
-                    {log.timestamp ? new Date(String(log.timestamp)).toLocaleString() : '--'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`badge ${
-                      log.level === 'error' ? 'badge-error' :
-                      log.level === 'warn' ? 'badge-warning' :
-                      log.level === 'info' ? 'badge-info' : 'badge-success'
-                    }`}>
-                      {String(log.level ?? 'info')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-300 truncate max-w-md">
-                    {String(log.message ?? '')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="divide-y divide-border max-h-[calc(100vh-14rem)] overflow-y-auto">
+            {logs.map((log) => {
+              const colors = levelColors[log.level] || levelColors.info;
+              return (
+                <div key={log.id} className="flex items-start gap-3 px-4 py-2.5 hover:bg-card-hover transition-colors">
+                  <div className={classNames('w-2 h-2 rounded-full mt-1.5 shrink-0', colors.dot)} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={classNames('badge text-[10px]', colors.badge)}>{log.level}</span>
+                      <span className="text-xs font-mono text-text-muted">{log.source}</span>
+                      <span className="text-xs text-text-muted ms-auto">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <p className="text-sm text-text-secondary mt-0.5 break-words">{log.message}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

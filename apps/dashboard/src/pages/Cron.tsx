@@ -1,134 +1,74 @@
-import { useState } from 'react';
-import { Clock, Plus, Trash2 } from 'lucide-react';
-import { api } from '../api/client';
-import type { CronJob } from '../api/client';
+import React, { useState } from 'react';
+import { CalendarClock, Plus, Edit3, Trash2, Power, Save, X } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
-import { SkeletonTable } from '../components/LoadingSkeleton';
+import { api } from '../api/client';
 import { ErrorState, EmptyState } from '../components/PageState';
+import { PageSkeleton } from '../components/LoadingSkeleton';
+import { classNames, formatRelativeTime } from '../utils/format';
+import type { CronJob } from '../api/client';
 
 export default function Cron() {
-  const { data, loading, error, refetch } = useApi(() => api.listCron(), []);
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState('');
-  const [schedule, setSchedule] = useState('');
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [editingJob, setEditingJob] = useState<Partial<CronJob> | null>(null);
+  const { data: jobs, error, isLoading, refetch } = useApi<CronJob[]>(() => api.getCronJobs(), []);
 
-  const handleCreate = async () => {
-    if (!name.trim() || !schedule.trim()) return;
-    setCreateError(null);
-    try {
-      await api.createCron({ name, schedule, enabled: true });
-      setCreating(false);
-      setName('');
-      setSchedule('');
-      refetch();
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create cron job');
-    }
+  const saveJob = async () => {
+    if (!editingJob) return;
+    if (editingJob.id) await api.updateCronJob(editingJob.id, editingJob);
+    else await api.createCronJob(editingJob);
+    setEditingJob(null); refetch();
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await api.deleteCron(id);
-      refetch();
-    } catch (err) {
-      console.error('Delete failed:', err);
-    }
-  };
+  if (error) return <ErrorState message={error} onRetry={refetch} />;
+  if (isLoading) return <PageSkeleton />;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-violet-500/10">
-            <Clock className="h-5 w-5 text-violet-400" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-white">Cron Jobs</h2>
-            <p className="text-sm text-slate-400">Schedule recurring agent tasks</p>
-          </div>
-        </div>
-        <button onClick={() => setCreating(!creating)} className="btn-primary text-sm">
-          <Plus className="h-4 w-4" />
-          New Job
-        </button>
+        <p className="text-text-secondary text-sm">{jobs?.length ?? 0} scheduled jobs</p>
+        <button onClick={() => setEditingJob({ name: '', schedule: '*/5 * * * *', agent_id: '', input: '', enabled: true })} className="btn btn-primary"><Plus className="w-4 h-4" /> New Cron Job</button>
       </div>
-
-      {/* Create form */}
-      {creating && (
-        <div className="card space-y-3">
-          <h3 className="text-sm font-medium text-white">Create Cron Job</h3>
-          {createError && (
-            <div className="text-sm text-red-400 bg-red-500/10 px-3 py-2 rounded-lg">{createError}</div>
-          )}
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Job name"
-            className="input w-full"
-          />
-          <input
-            value={schedule}
-            onChange={(e) => setSchedule(e.target.value)}
-            placeholder="Cron schedule (e.g. */5 * * * *)"
-            className="input w-full"
-          />
-          <div className="flex gap-2">
-            <button onClick={handleCreate} className="btn-primary text-sm">Create</button>
-            <button onClick={() => setCreating(false)} className="btn-secondary text-sm">Cancel</button>
-          </div>
+      {!jobs || jobs.length === 0 ? (
+        <EmptyState icon={<CalendarClock className="w-7 h-7 text-text-muted" />} title="No cron jobs" message="Schedule recurring tasks for your agents" />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {jobs.map((job) => (
+            <div key={job.id} className="card p-5 hover:border-border-light transition-all">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h3 className="font-heading font-semibold text-text-primary">{job.name}</h3>
+                  <p className="text-xs font-mono text-cyan mt-0.5">{job.schedule}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={async () => { await api.toggleCronJob(job.id, !job.enabled); refetch(); }} className={classNames('btn btn-ghost p-1.5', job.enabled ? 'text-success' : 'text-text-muted')}><Power className="w-4 h-4" /></button>
+                  <button onClick={() => setEditingJob({ ...job })} className="btn btn-ghost p-1.5"><Edit3 className="w-4 h-4" /></button>
+                  <button onClick={async () => { await api.deleteCronJob(job.id); refetch(); }} className="btn btn-ghost p-1.5 text-text-muted hover:text-pink"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-text-muted mt-3">
+                <span className={classNames('badge', job.enabled ? 'badge-success' : 'badge-neutral')}>{job.enabled ? 'Active' : 'Paused'}</span>
+                <span>{job.run_count} runs</span>
+                {job.last_run && <span>Last: {formatRelativeTime(job.last_run)}</span>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
-
-      {/* Content */}
-      {loading ? (
-        <SkeletonTable rows={5} cols={5} />
-      ) : error ? (
-        <ErrorState message={error} onRetry={refetch} />
-      ) : !data?.items?.length ? (
-        <EmptyState
-          icon={<Clock className="h-6 w-6 text-slate-400" />}
-          title="No cron jobs"
-          description="Create a cron job to schedule recurring tasks."
-        />
-      ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-800">
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Name</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Schedule</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Status</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Next Run</th>
-                <th className="text-right px-4 py-3 text-slate-400 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((job: CronJob) => (
-                <tr key={job.id} className="border-b border-slate-800/50 hover:bg-slate-800/30">
-                  <td className="px-4 py-3 text-slate-300">{job.name}</td>
-                  <td className="px-4 py-3 text-slate-400 font-mono text-xs">{job.schedule}</td>
-                  <td className="px-4 py-3">
-                    <span className={`badge ${job.enabled ? 'badge-success' : 'badge-warning'}`}>
-                      {job.enabled ? 'Active' : 'Paused'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {job.nextRun ? new Date(job.nextRun).toLocaleString() : '--'}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleDelete(job.id)}
-                      className="text-slate-500 hover:text-red-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {editingJob && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setEditingJob(null)}>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative card p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-lg font-semibold text-text-primary">{editingJob.id ? 'Edit' : 'New'} Cron Job</h2>
+              <button onClick={() => setEditingJob(null)} className="btn btn-ghost p-1"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <div><label className="block text-sm text-text-secondary mb-1.5">Name</label><input value={editingJob.name ?? ''} onChange={(e) => setEditingJob({ ...editingJob, name: e.target.value })} className="input" /></div>
+              <div><label className="block text-sm text-text-secondary mb-1.5">Schedule</label><input value={editingJob.schedule ?? ''} onChange={(e) => setEditingJob({ ...editingJob, schedule: e.target.value })} className="input font-mono" placeholder="*/5 * * * *" /></div>
+              <div><label className="block text-sm text-text-secondary mb-1.5">Agent ID</label><input value={editingJob.agent_id ?? ''} onChange={(e) => setEditingJob({ ...editingJob, agent_id: e.target.value })} className="input font-mono" /></div>
+              <div><label className="block text-sm text-text-secondary mb-1.5">Input</label><textarea value={editingJob.input ?? ''} onChange={(e) => setEditingJob({ ...editingJob, input: e.target.value })} className="input" rows={3} /></div>
+              <div className="flex gap-2"><button onClick={saveJob} className="btn btn-primary flex-1"><Save className="w-4 h-4" /> Save</button><button onClick={() => setEditingJob(null)} className="btn btn-secondary">Cancel</button></div>
+            </div>
+          </div>
         </div>
       )}
     </div>

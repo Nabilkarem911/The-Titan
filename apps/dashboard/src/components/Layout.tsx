@@ -1,543 +1,491 @@
-import { useState, useEffect, useRef } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   MessageSquare,
-  Users,
-  Terminal,
+  Bot,
+  Play,
   FolderOpen,
-  Code,
-  History,
-  Gauge,
+  ListOrdered,
+  Terminal,
   Clock,
+  CalendarClock,
   ScrollText,
-  HeartPulse,
+  Activity,
   BarChart3,
   Webhook,
   Puzzle,
-  KeyRound,
+  Key,
   Settings,
   Shield,
   GitBranch,
-  Layers,
+  Network,
   Building2,
-  UsersRound,
-  FileCode,
   Brain,
-  Zap,
-  LogOut,
+  Search,
+  Bell,
   ChevronLeft,
   ChevronRight,
   Menu,
   X,
-  Bell,
-  Check,
-  Trash2 as TrashIcon,
-  Sun,
-  Moon,
-  Search,
+  Circle,
+  LogOut,
 } from 'lucide-react';
+import TitanLogo from './TitanLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { classNames } from '../utils/format';
+
+// ── Navigation Config ────────────────────────────────────────────────────────
+
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ReactNode;
+}
 
 interface NavSection {
   title: string;
-  items: { to: string; icon: React.ReactNode; label: string; end?: boolean }[];
+  items: NavItem[];
 }
 
-const NAV_SECTIONS: NavSection[] = [
+const navSections: NavSection[] = [
   {
     title: 'Core',
     items: [
-      { to: '/', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Dashboard', end: true },
-      { to: '/chat', icon: <MessageSquare className="h-4 w-4" />, label: 'Chat' },
-      { to: '/agents', icon: <Users className="h-4 w-4" />, label: 'Agents' },
-      { to: '/playground', icon: <Zap className="h-4 w-4" />, label: 'Playground' },
-      { to: '/files', icon: <FolderOpen className="h-4 w-4" />, label: 'Files' },
-      { to: '/editor', icon: <Code className="h-4 w-4" />, label: 'Editor' },
+      { path: '/', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+      { path: '/chat', label: 'Chat', icon: <MessageSquare className="w-5 h-5" /> },
+      { path: '/agents', label: 'Agents', icon: <Bot className="w-5 h-5" /> },
+      { path: '/playground', label: 'Playground', icon: <Play className="w-5 h-5" /> },
+      { path: '/files', label: 'Files', icon: <FolderOpen className="w-5 h-5" /> },
     ],
   },
   {
     title: 'Operations',
     items: [
-      { to: '/runs', icon: <History className="h-4 w-4" />, label: 'Runs' },
-      { to: '/terminal', icon: <Terminal className="h-4 w-4" />, label: 'Terminal' },
-      { to: '/queue', icon: <Gauge className="h-4 w-4" />, label: 'Queue' },
-      { to: '/cron', icon: <Clock className="h-4 w-4" />, label: 'Cron' },
-      { to: '/logs', icon: <ScrollText className="h-4 w-4" />, label: 'Logs' },
-      { to: '/health', icon: <HeartPulse className="h-4 w-4" />, label: 'Health' },
-      { to: '/metrics', icon: <BarChart3 className="h-4 w-4" />, label: 'Metrics' },
+      { path: '/runs', label: 'Runs', icon: <ListOrdered className="w-5 h-5" /> },
+      { path: '/terminal', label: 'Terminal', icon: <Terminal className="w-5 h-5" /> },
+      { path: '/queue', label: 'Queue', icon: <Clock className="w-5 h-5" /> },
+      { path: '/cron', label: 'Cron', icon: <CalendarClock className="w-5 h-5" /> },
+      { path: '/logs', label: 'Logs', icon: <ScrollText className="w-5 h-5" /> },
     ],
   },
   {
     title: 'Management',
     items: [
-      { to: '/webhooks', icon: <Webhook className="h-4 w-4" />, label: 'Webhooks' },
-      { to: '/plugins', icon: <Puzzle className="h-4 w-4" />, label: 'Plugins' },
-      { to: '/api-keys', icon: <KeyRound className="h-4 w-4" />, label: 'API Keys' },
-      { to: '/settings', icon: <Settings className="h-4 w-4" />, label: 'Settings' },
-      { to: '/audit-logs', icon: <Shield className="h-4 w-4" />, label: 'Audit Logs' },
+      { path: '/health', label: 'Health', icon: <Activity className="w-5 h-5" /> },
+      { path: '/metrics', label: 'Metrics', icon: <BarChart3 className="w-5 h-5" /> },
+      { path: '/webhooks', label: 'Webhooks', icon: <Webhook className="w-5 h-5" /> },
+      { path: '/plugins', label: 'Plugins', icon: <Puzzle className="w-5 h-5" /> },
+      { path: '/api-keys', label: 'API Keys', icon: <Key className="w-5 h-5" /> },
     ],
   },
   {
     title: 'Advanced',
     items: [
-      { to: '/git', icon: <GitBranch className="h-4 w-4" />, label: 'Git' },
-      { to: '/swarm', icon: <Layers className="h-4 w-4" />, label: 'Swarm' },
-      { to: '/workspaces', icon: <Building2 className="h-4 w-4" />, label: 'Workspaces' },
-      { to: '/teams', icon: <UsersRound className="h-4 w-4" />, label: 'Teams' },
-      { to: '/templates', icon: <FileCode className="h-4 w-4" />, label: 'Templates' },
-      { to: '/memory', icon: <Brain className="h-4 w-4" />, label: 'Memory' },
+      { path: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
+      { path: '/audit-logs', label: 'Audit Logs', icon: <Shield className="w-5 h-5" /> },
+      { path: '/git', label: 'Git', icon: <GitBranch className="w-5 h-5" /> },
+      { path: '/swarm', label: 'Swarm', icon: <Network className="w-5 h-5" /> },
+      { path: '/workspaces', label: 'Workspaces', icon: <Building2 className="w-5 h-5" /> },
+      { path: '/memory', label: 'Memory', icon: <Brain className="w-5 h-5" /> },
     ],
   },
 ];
 
-/* ── NotificationBell ─────────────────────────────────────────────── */
+// ── Global Search Modal ──────────────────────────────────────────────────────
 
-function NotificationBell() {
-  const [open, setOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, removeNotification } =
-    useNotifications();
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    if (open) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [open]);
-
-  return (
-    <div className="relative" ref={panelRef}>
-      <button
-        onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-        aria-label="Notifications"
-        aria-expanded={open}
-        aria-haspopup="true"
-      >
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
-      </button>
-      {open && (
-        <div
-          className="absolute right-0 top-full mt-2 w-80 bg-slate-900 border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden z-50"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Notifications panel"
-        >
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/50">
-            <span className="text-sm font-medium text-white">Notifications</span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={markAllAsRead}
-                className="p-1 rounded text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10"
-                title="Mark all read"
-                aria-label="Mark all notifications as read"
-              >
-                <Check className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={clearAll}
-                className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10"
-                title="Clear all"
-                aria-label="Clear all notifications"
-              >
-                <TrashIcon className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-          <div className="max-h-80 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-slate-500">No notifications yet</div>
-            ) : (
-              notifications.map((n) => (
-                <div
-                  key={n.id}
-                  onClick={() => {
-                    markAsRead(n.id);
-                    if (n.link) window.location.href = n.link;
-                  }}
-                  className={`px-4 py-2.5 border-b border-slate-800/20 cursor-pointer hover:bg-slate-800/40 transition-colors ${n.read ? 'opacity-60' : ''}`}
-                >
-                  <div className="flex items-start gap-2">
-                    <div
-                      className={`mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                        n.type === 'error'
-                          ? 'bg-red-400'
-                          : n.type === 'success'
-                            ? 'bg-emerald-400'
-                            : n.type === 'warning'
-                              ? 'bg-amber-400'
-                              : 'bg-indigo-400'
-                      }`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-slate-200">{n.title}</div>
-                      <div className="text-[11px] text-slate-500 truncate">{n.message}</div>
-                      <div className="text-[10px] text-slate-600 mt-0.5">
-                        {n.timestamp.toLocaleTimeString()}
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeNotification(n.id);
-                      }}
-                      className="text-slate-600 hover:text-red-400 flex-shrink-0"
-                      aria-label={`Dismiss notification: ${n.title}`}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+interface SearchResult {
+  path: string;
+  label: string;
+  section: string;
+  icon: React.ReactNode;
 }
 
-/* ── ThemeToggle ──────────────────────────────────────────────────── */
-
-function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  return (
-    <button
-      onClick={toggleTheme}
-      className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-    >
-      {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-    </button>
-  );
-}
-
-/* ── GlobalSearch ─────────────────────────────────────────────────── */
-
-function GlobalSearch() {
-  const [open, setOpen] = useState(false);
+function GlobalSearch({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('');
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const pages = NAV_SECTIONS.flatMap((s) =>
-    s.items.map((item) => ({ label: item.label, path: item.to })),
+  const allItems: SearchResult[] = navSections.flatMap((section) =>
+    section.items.map((item) => ({
+      ...item,
+      section: section.title,
+    }))
   );
 
-  const results = query.trim()
-    ? pages.filter((p) => p.label.toLowerCase().includes(query.toLowerCase()))
-    : pages;
+  const filtered = query.trim()
+    ? allItems.filter(
+        (item) =>
+          item.label.toLowerCase().includes(query.toLowerCase()) ||
+          item.path.toLowerCase().includes(query.toLowerCase())
+      )
+    : allItems;
 
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query]);
+
+  const handleSelect = useCallback(
+    (path: string) => {
+      navigate(path);
+      onClose();
+    },
+    [navigate, onClose]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setOpen(true);
+        setSelectedIndex((prev) => Math.min(prev + 1, filtered.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === 'Enter' && filtered[selectedIndex]) {
+        e.preventDefault();
+        handleSelect(filtered[selectedIndex].path);
+      } else if (e.key === 'Escape') {
+        onClose();
       }
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, []);
-
-  useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+    },
+    [filtered, selectedIndex, handleSelect, onClose]
+  );
 
   return (
-    <div className="relative" ref={panelRef}>
-      <button
-        onClick={() => setOpen(true)}
-        className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 text-xs hover:bg-slate-200 dark:hover:bg-slate-700/60 transition-colors"
-        aria-label="Search pages"
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]"
+      onClick={onClose}
+    >
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-lg mx-4 card border-border-light overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
       >
-        <Search className="h-3.5 w-3.5" />
-        <span>Search...</span>
-        <kbd className="ml-1 px-1 rounded bg-slate-200 dark:bg-slate-700 text-[10px]">Ctrl K</kbd>
-      </button>
-      <button
-        onClick={() => setOpen(true)}
-        className="sm:hidden p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-        aria-label="Search pages"
-      >
-        <Search className="h-5 w-5" />
-      </button>
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/40 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Search pages"
-        >
-          <div className="w-full max-w-md mx-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-800/50">
-              <Search className="h-4 w-4 text-slate-400" />
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setSelectedIdx(0);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    setSelectedIdx((i) => Math.min(i + 1, results.length - 1));
-                  } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    setSelectedIdx((i) => Math.max(i - 1, 0));
-                  } else if (e.key === 'Enter' && results[selectedIdx]) {
-                    navigate(results[selectedIdx].path);
-                    setOpen(false);
-                    setQuery('');
-                  }
-                }}
-                placeholder="Search pages..."
-                className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none"
-                role="searchbox"
-                aria-label="Search pages"
-              />
-              <button
-                onClick={() => setOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                aria-label="Close search"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="max-h-64 overflow-y-auto">
-              {results.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-slate-500">No results</div>
-              ) : (
-                results.map((p, i) => (
-                  <button
-                    key={p.path}
-                    onClick={() => {
-                      navigate(p.path);
-                      setOpen(false);
-                      setQuery('');
-                    }}
-                    onMouseEnter={() => setSelectedIdx(i)}
-                    className={`flex items-center gap-3 px-4 py-2.5 w-full text-left transition-colors ${
-                      i === selectedIdx
-                        ? 'bg-indigo-50 dark:bg-indigo-500/10'
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
-                    }`}
-                    aria-label={`Go to ${p.label}`}
-                  >
-                    <span
-                      className={`text-sm ${i === selectedIdx ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'}`}
-                    >
-                      {p.label}
-                    </span>
-                    <span className="ml-auto text-xs text-slate-400">{p.path}</span>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
+        <div className="flex items-center gap-3 p-4 border-b border-border">
+          <Search className="w-5 h-5 text-text-muted shrink-0" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Search pages..."
+            className="flex-1 bg-transparent text-text-primary text-sm outline-none placeholder:text-text-muted"
+          />
+          <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono text-text-muted bg-deep border border-border rounded">
+            ESC
+          </kbd>
         </div>
-      )}
+
+        <div className="max-h-[50vh] overflow-y-auto p-2">
+          {filtered.length === 0 ? (
+            <div className="py-8 text-center text-text-muted text-sm">
+              No results found
+            </div>
+          ) : (
+            filtered.map((item, index) => (
+              <button
+                key={item.path}
+                onClick={() => handleSelect(item.path)}
+                onMouseEnter={() => setSelectedIndex(index)}
+                className={classNames(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
+                  index === selectedIndex
+                    ? 'bg-[rgba(0,242,254,0.08)] text-cyan'
+                    : 'text-text-secondary hover:text-text-primary'
+                )}
+              >
+                <span className="shrink-0 opacity-70">{item.icon}</span>
+                <span className="flex-1 text-start">{item.label}</span>
+                <span className="text-xs text-text-muted">{item.section}</span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ── Layout ───────────────────────────────────────────────────────── */
+// ── Notification Panel ───────────────────────────────────────────────────────
 
-function Layout({ children }: { children: React.ReactNode }) {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+function NotificationPanel({ onClose }: { onClose: () => void }) {
+  const { notifications, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
+  const typeColors: Record<string, string> = {
+    info: 'text-cyan',
+    success: 'text-success',
+    warning: 'text-warning',
+    error: 'text-pink',
   };
 
+  return (
+    <div className="absolute top-full end-0 mt-2 w-80 card border-border-light overflow-hidden z-50 shadow-lg">
+      <div className="flex items-center justify-between p-3 border-b border-border">
+        <span className="font-heading font-semibold text-sm text-text-primary">Notifications</span>
+        <div className="flex items-center gap-2">
+          {notifications.length > 0 && (
+            <>
+              <button onClick={markAllAsRead} className="text-xs text-text-muted hover:text-cyan transition-colors">
+                Mark all read
+              </button>
+              <button onClick={clearNotifications} className="text-xs text-text-muted hover:text-pink transition-colors">
+                Clear
+              </button>
+            </>
+          )}
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="max-h-80 overflow-y-auto">
+        {notifications.length === 0 ? (
+          <div className="py-8 text-center text-text-muted text-sm">
+            No notifications
+          </div>
+        ) : (
+          notifications.slice(0, 20).map((notif) => (
+            <button
+              key={notif.id}
+              onClick={() => markAsRead(notif.id)}
+              className={classNames(
+                'w-full text-start px-3 py-2.5 border-b border-border hover:bg-card-hover transition-colors',
+                !notif.read && 'bg-[rgba(0,242,254,0.03)]'
+              )}
+            >
+              <div className="flex items-start gap-2">
+                {!notif.read && (
+                  <Circle className="w-2 h-2 mt-1.5 fill-cyan text-cyan shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className={classNames('text-xs font-medium', typeColors[notif.type] || 'text-text-secondary')}>
+                    {notif.title}
+                  </div>
+                  <p className="text-xs text-text-muted mt-0.5 truncate">{notif.message}</p>
+                </div>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Layout Component ─────────────────────────────────────────────────────────
+
+export default function Layout() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const location = useLocation();
+  const { logout } = useAuth();
+  const { unreadCount } = useNotifications();
+
+  // Close mobile menu on navigation
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Get page title from current path
   const pageTitle = (() => {
     const path = location.pathname;
     if (path === '/') return 'Dashboard';
-    const segment = path.slice(1).replace(/-/g, ' ');
-    return segment.charAt(0).toUpperCase() + segment.slice(1);
+    for (const section of navSections) {
+      const item = section.items.find((i) => i.path === path);
+      if (item) return item.label;
+    }
+    return 'Titan';
   })();
 
-  const SidebarContent = () => (
-    <>
-      {/* Logo */}
-      <div
-        className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-4 py-5 border-b border-slate-800/50`}
-      >
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
-          <Zap className="h-4 w-4 text-white" />
-        </div>
-        {!collapsed && (
-          <span className="text-lg font-bold text-white tracking-tight">Titan</span>
-        )}
-      </div>
-
-      {/* Navigation */}
-      <nav
-        className="flex-1 px-3 py-4 space-y-6 overflow-y-auto scrollbar-thin"
-        role="navigation"
-        aria-label="Main navigation"
-      >
-        {NAV_SECTIONS.map((section) => (
-          <div key={section.title}>
-            {!collapsed && (
-              <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                {section.title}
-              </div>
-            )}
-            <div className="space-y-0.5">
-              {section.items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center ${collapsed ? 'justify-center' : 'gap-3'} rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
-                      isActive
-                        ? 'bg-indigo-500/15 text-indigo-400 shadow-sm shadow-indigo-500/5'
-                        : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200'
-                    }`
-                  }
-                  title={collapsed ? item.label : undefined}
-                >
-                  {item.icon}
-                  {!collapsed && <span>{item.label}</span>}
-                </NavLink>
-              ))}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      {/* Footer */}
-      <div className="px-3 py-4 border-t border-slate-800/50 space-y-2">
-        <button
-          onClick={handleLogout}
-          className={`w-full flex items-center ${collapsed ? 'justify-center' : 'gap-2'} px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150`}
-          title={collapsed ? 'Sign out' : undefined}
-          aria-label="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-          {!collapsed && <span>Sign out</span>}
-        </button>
-        {!collapsed && (
-          <div className="text-[10px] text-slate-600 px-3 text-center">Titan v2.0.0</div>
-        )}
-      </div>
-    </>
-  );
+  const sidebarWidth = sidebarCollapsed ? 'w-[72px]' : 'w-[260px]';
 
   return (
-    <div className="flex h-screen bg-slate-950">
-      {/* Desktop Sidebar */}
-      <aside
-        className={`hidden lg:flex flex-col border-r border-slate-800/50 bg-slate-900/80 backdrop-blur-xl transition-all duration-300 ${
-          collapsed ? 'w-[68px]' : 'w-64'
-        }`}
-      >
-        <SidebarContent />
-        {/* Collapse toggle */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="absolute bottom-20 -right-3 z-50 flex items-center justify-center w-6 h-6 rounded-full border border-slate-700 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-          style={{ left: collapsed ? '56px' : '248px' }}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
-        </button>
-      </aside>
-
-      {/* Mobile Overlay */}
-      {mobileOpen && (
+    <div className="flex h-screen overflow-hidden bg-deep">
+      {/* Mobile overlay */}
+      {mobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-50 flex"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mobile navigation"
-        >
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)}
-            role="presentation"
-          />
-          <aside className="relative w-64 flex flex-col bg-slate-900 border-r border-slate-800/50 shadow-2xl">
-            <SidebarContent />
-          </aside>
-        </div>
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <header className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/30 backdrop-blur-sm">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-            >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900 dark:text-white">{pageTitle}</h1>
+      {/* Sidebar */}
+      <aside
+        className={classNames(
+          'fixed lg:relative inset-y-0 start-0 z-40 flex flex-col glass-deep border-e border-border transition-all duration-300',
+          sidebarWidth,
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        )}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0">
+          <TitanLogo size={32} />
+          {!sidebarCollapsed && (
+            <span className="font-heading text-lg font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan to-violet">
+              TITAN
+            </span>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
+          {navSections.map((section) => (
+            <div key={section.title}>
+              {!sidebarCollapsed && (
+                <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+                  {section.title}
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.path === '/'}
+                    className={({ isActive }) =>
+                      classNames(
+                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative',
+                        isActive
+                          ? 'text-cyan bg-[rgba(0,242,254,0.05)]'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-card-hover'
+                      )
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive && (
+                          <div className="absolute inset-y-1 start-0 w-[3px] bg-cyan rounded-full" />
+                        )}
+                        <span className={classNames(
+                          'shrink-0 transition-colors',
+                          isActive ? 'text-cyan' : 'text-text-muted group-hover:text-text-secondary'
+                        )}>
+                          {item.icon}
+                        </span>
+                        {!sidebarCollapsed && <span>{item.label}</span>}
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
             </div>
-          </div>
+          ))}
+        </nav>
+
+        {/* Sidebar footer */}
+        <div className="border-t border-border px-2 py-3 space-y-1 shrink-0">
+          <button
+            onClick={logout}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-text-muted hover:text-pink hover:bg-[rgba(255,0,122,0.05)] transition-colors"
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            {!sidebarCollapsed && <span>Logout</span>}
+          </button>
+
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="hidden lg:flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-text-muted hover:text-text-secondary hover:bg-card-hover transition-colors"
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="w-5 h-5 shrink-0" />
+            ) : (
+              <>
+                <ChevronLeft className="w-5 h-5 shrink-0" />
+                <span>Collapse</span>
+              </>
+            )}
+          </button>
+
+          {!sidebarCollapsed && (
+            <div className="px-3 pt-1 text-[10px] text-text-muted">
+              Titan v1.0
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className="h-16 glass border-b border-border flex items-center justify-between px-4 lg:px-6 shrink-0 z-30">
           <div className="flex items-center gap-3">
-            <GlobalSearch />
-            <ThemeToggle />
-            <NotificationBell />
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                Online
-              </span>
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden btn btn-ghost p-2"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h1 className="font-heading text-lg font-semibold text-text-primary">
+              {pageTitle}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Search button */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="btn btn-ghost p-2 gap-2"
+            >
+              <Search className="w-4 h-4" />
+              <span className="hidden sm:inline text-xs text-text-muted">Search</span>
+              <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-text-muted bg-deep border border-border rounded">
+                Ctrl+K
+              </kbd>
+            </button>
+
+            {/* Notification bell */}
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="btn btn-ghost p-2 relative"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 end-1 w-4 h-4 flex items-center justify-center text-[9px] font-bold bg-pink text-white rounded-full">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {notifOpen && <NotificationPanel onClose={() => setNotifOpen(false)} />}
+            </div>
+
+            {/* Status indicator */}
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-full bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)]">
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span className="text-xs text-success font-medium">Online</span>
             </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto">
-          <div className="max-w-7xl mx-auto px-6 py-6">{children}</div>
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <Outlet />
         </main>
       </div>
+
+      {/* Global search modal */}
+      {searchOpen && <GlobalSearch onClose={() => setSearchOpen(false)} />}
     </div>
   );
 }
-
-export default Layout;

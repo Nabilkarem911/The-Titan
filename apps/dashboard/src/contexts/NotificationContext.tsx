@@ -1,117 +1,104 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 
 export interface Notification {
   id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error' | 'agent';
+  timestamp: string;
   read: boolean;
-  timestamp: Date;
-  link?: string;
 }
 
 interface NotificationContextValue {
   notifications: Notification[];
   unreadCount: number;
-  addNotification: (n: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
-  clearAll: () => void;
+  clearNotifications: () => void;
   removeNotification: (id: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
-export function useNotifications() {
-  const ctx = useContext(NotificationContext);
-  if (!ctx) throw new Error('useNotifications must be inside NotificationProvider');
-  return ctx;
-}
-
-const WS_BASE = (import.meta as unknown as { env: Record<string, string> }).env.VITE_WS_URL ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`;
+let notifCounter = 0;
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
-    try {
-      const raw = localStorage.getItem('titan_notifications');
-      if (!raw) return [];
-      const parsed = JSON.parse(raw) as Array<Omit<Notification, 'timestamp'> & { timestamp: string }>;
-      return parsed.map((n) => ({ ...n, timestamp: new Date(n.timestamp) })).slice(0, 50);
-    } catch { return []; }
-  });
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
 
-  useEffect(() => {
-    const toSave = notifications.map((n) => ({ ...n, timestamp: n.timestamp.toISOString() }));
-    localStorage.setItem('titan_notifications', JSON.stringify(toSave));
-  }, [notifications]);
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const addNotification = useCallback((n: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
-    setNotifications((prev) => {
-      const next = [
-        {
-          id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          ...n,
-          read: false,
-          timestamp: new Date(),
-        },
-        ...prev,
-      ];
-      if (next.length > 100) next.pop();
-      return next;
-    });
-  }, []);
+  const addNotification = useCallback(
+    (notif: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+      const newNotif: Notification = {
+        ...notif,
+        id: `notif-${++notifCounter}`,
+        timestamp: new Date().toISOString(),
+        read: false,
+      };
+      setNotifications((prev) => [newNotif, ...prev].slice(0, 100));
+    },
+    []
+  );
 
   const markAsRead = useCallback((id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
   }, []);
 
   const markAllAsRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }, []);
 
-  const clearAll = useCallback(() => setNotifications([]), []);
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
 
   const removeNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
-  // WebSocket listener for real-time notifications
+  // WebSocket connection for real-time notifications
   useEffect(() => {
-    const token = localStorage.getItem('titan_access_token');
+    const token = localStorage.getItem('titan_token');
     if (!token) return;
-    const ws = new WebSocket(`${WS_BASE}?token=${encodeURIComponent(token)}`);
 
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data as string);
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/notifications?token=${token}`;
 
-        if (msg.method === 'agent.run.updated') {
-          const { runId, agentId, status, currentStep } = msg.params ?? {};
-          const isDone = status === 'completed' || status === 'failed';
-          addNotification({
-            title: isDone ? 'Agent run finished' : 'Agent run updated',
-            message: `Run ${runId?.slice(0, 8) ?? '—'} for agent ${agentId?.slice(0, 12) ?? '—'} → ${status}${currentStep !== undefined ? ` (step ${currentStep})` : ''}`,
-            type: status === 'failed' ? 'error' : isDone ? 'success' : 'agent',
-            link: `/runs`,
-          });
-        } else if (msg.method === 'agent.step') {
-          const { runId, step } = msg.params ?? {};
-          if (step?.actionName) {
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'notification') {
             addNotification({
-              title: 'Agent tool call',
-              message: `Run ${runId?.slice(0, 8) ?? '—'} used tool: ${step.actionName}`,
-              type: 'info',
-              link: `/runs`,
+              type: data.level || 'info',
+              title: data.title || 'Notification',
+              message: data.message || '',
             });
           }
+        } catch {
+          // Ignore malformed messages
         }
-      } catch { /* ignore */ }
-    };
+      };
 
-    return () => ws.close();
+      ws.onerror = () => {
+        // Silent — WS is optional enhancement
+      };
+
+      return () => {
+        ws.close();
+        wsRef.current = null;
+      };
+    } catch {
+      // WebSocket not available
+    }
   }, [addNotification]);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <NotificationContext.Provider
@@ -121,11 +108,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         addNotification,
         markAsRead,
         markAllAsRead,
-        clearAll,
+        clearNotifications,
         removeNotification,
       }}
     >
       {children}
     </NotificationContext.Provider>
   );
+}
+
+export function useNotifications(): NotificationContextValue {
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error('useNotifications must be used within a NotificationProvider');
+  }
+  return context;
 }

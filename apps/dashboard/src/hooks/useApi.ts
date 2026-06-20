@@ -1,37 +1,36 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-interface UseApiState<T> {
+interface UseApiResult<T> {
   data: T | null;
-  loading: boolean;
   error: string | null;
+  isLoading: boolean;
+  refetch: () => void;
 }
 
-interface UseApiResult<T> extends UseApiState<T> {
-  refetch: () => Promise<void>;
-}
-
-export function useApi<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseApiResult<T> {
-  const [state, setState] = useState<UseApiState<T>>({
-    data: null,
-    loading: true,
-    error: null,
-  });
+export function useApi<T>(
+  fetcher: () => Promise<T>,
+  deps: React.DependencyList = []
+): UseApiResult<T> {
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
 
-  const execute = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
+  const fetch = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const result = await fetcher();
       if (mountedRef.current) {
-        setState({ data: result, loading: false, error: null });
+        setData(result);
       }
     } catch (err) {
       if (mountedRef.current) {
-        setState((s) => ({
-          ...s,
-          loading: false,
-          error: err instanceof Error ? err.message : 'An error occurred',
-        }));
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsLoading(false);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -39,41 +38,39 @@ export function useApi<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseA
 
   useEffect(() => {
     mountedRef.current = true;
-    execute();
+    fetch();
     return () => {
       mountedRef.current = false;
     };
-  }, [execute]);
+  }, [fetch]);
 
-  return { ...state, refetch: execute };
+  return { data, error, isLoading, refetch: fetch };
 }
 
 export function usePollingApi<T>(
   fetcher: () => Promise<T>,
   intervalMs: number,
-  deps: unknown[] = [],
+  deps: React.DependencyList = []
 ): UseApiResult<T> {
-  const [state, setState] = useState<UseApiState<T>>({
-    data: null,
-    loading: true,
-    error: null,
-  });
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
 
-  const execute = useCallback(async () => {
-    setState((s) => ({ ...s, loading: !s.data, error: null }));
+  const fetch = useCallback(async () => {
     try {
       const result = await fetcher();
       if (mountedRef.current) {
-        setState({ data: result, loading: false, error: null });
+        setData(result);
+        setError(null);
       }
     } catch (err) {
       if (mountedRef.current) {
-        setState((s) => ({
-          ...s,
-          loading: false,
-          error: err instanceof Error ? err.message : 'An error occurred',
-        }));
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsLoading(false);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,13 +78,13 @@ export function usePollingApi<T>(
 
   useEffect(() => {
     mountedRef.current = true;
-    execute();
-    const interval = setInterval(execute, intervalMs);
+    fetch();
+    const interval = setInterval(fetch, intervalMs);
     return () => {
       mountedRef.current = false;
       clearInterval(interval);
     };
-  }, [execute, intervalMs]);
+  }, [fetch, intervalMs]);
 
-  return { ...state, refetch: execute };
+  return { data, error, isLoading, refetch: fetch };
 }

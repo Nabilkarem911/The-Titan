@@ -1,251 +1,267 @@
-import { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Database,
-  Server,
-  Gauge,
+  Bot,
   Clock,
-  RefreshCw,
-  Users,
-  Terminal,
-  HeartPulse,
-  AlertCircle,
+  Activity,
+  TrendingUp,
+  Zap,
+  ArrowUpRight,
+  CircleDot,
+  CheckCircle2,
+  XCircle,
+  BarChart3,
 } from 'lucide-react';
-import { getToken, API_BASE } from '../api/client';
-import { SkeletonCard } from '../components/LoadingSkeleton';
+import { useApi } from '../hooks/useApi';
+import { api } from '../api/client';
 import { ErrorState } from '../components/PageState';
+import { SkeletonCard } from '../components/LoadingSkeleton';
+import { formatRelativeTime, classNames } from '../utils/format';
+import type { AgentProfile, QueueStats, HealthStatus, MetricsData } from '../api/client';
 
-interface HealthData {
-  status: string;
-  db?: { status: string };
-  redis?: { status: string };
-  uptime?: number;
-  [key: string]: unknown;
-}
+function StatCard({
+  label,
+  value,
+  icon,
+  trend,
+  color = 'cyan',
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  trend?: string;
+  color?: 'cyan' | 'violet' | 'success' | 'warning' | 'pink';
+}) {
+  const colorMap = {
+    cyan: { bg: 'bg-[rgba(0,242,254,0.08)]', text: 'text-cyan', border: 'border-[rgba(0,242,254,0.15)]' },
+    violet: { bg: 'bg-[rgba(112,0,255,0.08)]', text: 'text-violet', border: 'border-[rgba(112,0,255,0.15)]' },
+    success: { bg: 'bg-[rgba(16,185,129,0.08)]', text: 'text-success', border: 'border-[rgba(16,185,129,0.15)]' },
+    warning: { bg: 'bg-[rgba(245,158,11,0.08)]', text: 'text-warning', border: 'border-[rgba(245,158,11,0.15)]' },
+    pink: { bg: 'bg-[rgba(255,0,122,0.08)]', text: 'text-pink', border: 'border-[rgba(255,0,122,0.15)]' },
+  };
 
-interface MetricsData {
-  [key: string]: unknown;
-}
+  const c = colorMap[color];
 
-interface CronData {
-  items: Array<Record<string, unknown>>;
-  total: number;
-}
-
-async function fetchWithAuth(url: string) {
-  const token = getToken();
-  const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-  return res.json();
+  return (
+    <div className={classNames('card p-5 border', c.border)}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-text-muted text-sm">{label}</span>
+        <div className={classNames('w-9 h-9 rounded-lg flex items-center justify-center', c.bg)}>
+          <span className={c.text}>{icon}</span>
+        </div>
+      </div>
+      <div className="text-2xl font-heading font-bold text-text-primary">{value}</div>
+      {trend && (
+        <div className="flex items-center gap-1 mt-1">
+          <TrendingUp className="w-3 h-3 text-success" />
+          <span className="text-xs text-success">{trend}</span>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Dashboard() {
-  const [health, setHealth] = useState<HealthData | null>(null);
-  const [metrics, setMetrics] = useState<MetricsData | null>(null);
-  const [cronCount, setCronCount] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: agents, error: agentsError, isLoading: agentsLoading, refetch: refetchAgents } = useApi<AgentProfile[]>(
+    () => api.getAgents(),
+    []
+  );
+  const { data: queueStats, isLoading: queueLoading } = useApi<QueueStats>(
+    () => api.getQueueStats(),
+    []
+  );
+  const { data: health, isLoading: healthLoading } = useApi<HealthStatus>(
+    () => api.getHealth(),
+    []
+  );
+  const { data: metrics, isLoading: metricsLoading } = useApi<MetricsData>(
+    () => api.getMetrics(),
+    []
+  );
 
-  const fetchAll = useCallback(async () => {
-    setLoading((prev) => !health && prev);
-    setError(null);
-    try {
-      const [h, m, c] = await Promise.allSettled([
-        fetchWithAuth('/health/dashboard'),
-        fetchWithAuth('/metrics.json'),
-        fetchWithAuth(`${API_BASE}/cron`),
-      ]);
-
-      if (h.status === 'fulfilled') setHealth(h.value as HealthData);
-      else setHealth(null);
-
-      if (m.status === 'fulfilled') setMetrics(m.value as MetricsData);
-      else setMetrics(null);
-
-      if (c.status === 'fulfilled') {
-        const cronData = c.value as CronData;
-        setCronCount(cronData.total ?? cronData.items?.length ?? 0);
-      } else {
-        setCronCount(null);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    fetchAll();
-    const interval = setInterval(fetchAll, 30_000);
-    return () => clearInterval(interval);
-  }, [fetchAll]);
-
-  if (loading && !health) {
-    return (
-      <div className="space-y-6">
-        <PageHeader />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <SkeletonCard count={4} />
-        </div>
-      </div>
-    );
+  if (agentsError) {
+    return <ErrorState message={agentsError} onRetry={refetchAgents} />;
   }
 
-  if (error && !health) {
-    return (
-      <div className="space-y-6">
-        <PageHeader />
-        <ErrorState message={error} onRetry={fetchAll} />
-      </div>
-    );
-  }
-
-  const dbStatus = health?.db?.status ?? health?.status ?? 'unknown';
-  const redisStatus = health?.redis?.status ?? 'unknown';
+  const isLoading = agentsLoading || queueLoading || healthLoading || metricsLoading;
 
   return (
     <div className="space-y-6">
-      <PageHeader onRefresh={fetchAll} />
-
-      {/* Status Cards */}
+      {/* Stats grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatusCard
-          icon={<Database className="h-5 w-5" />}
-          label="Database"
-          value={dbStatus}
-          color={dbStatus === 'ok' || dbStatus === 'healthy' ? 'emerald' : 'red'}
-        />
-        <StatusCard
-          icon={<Server className="h-5 w-5" />}
-          label="Redis"
-          value={redisStatus}
-          color={redisStatus === 'ok' || redisStatus === 'healthy' ? 'emerald' : 'red'}
-        />
-        <StatusCard
-          icon={<Gauge className="h-5 w-5" />}
-          label="System"
-          value={health?.status ?? 'unknown'}
-          color={health?.status === 'ok' || health?.status === 'healthy' ? 'emerald' : 'amber'}
-        />
-        <StatusCard
-          icon={<Clock className="h-5 w-5" />}
-          label="Cron Jobs"
-          value={cronCount !== null ? String(cronCount) : '--'}
-          color="indigo"
-        />
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : (
+          <>
+            <StatCard
+              label="Active Agents"
+              value={agents?.length ?? 0}
+              icon={<Bot className="w-5 h-5" />}
+              color="violet"
+            />
+            <StatCard
+              label="Queue Jobs"
+              value={queueStats?.running ?? 0}
+              icon={<Clock className="w-5 h-5" />}
+              trend={queueStats ? `${queueStats.pending} pending` : undefined}
+              color="cyan"
+            />
+            <StatCard
+              label="System Health"
+              value={health?.status === 'healthy' ? 'Healthy' : health?.status ?? 'Unknown'}
+              icon={<Activity className="w-5 h-5" />}
+              color={health?.status === 'healthy' ? 'success' : 'warning'}
+            />
+            <StatCard
+              label="Requests / min"
+              value={metrics?.requests_per_minute ?? 0}
+              icon={<Zap className="w-5 h-5" />}
+              color="cyan"
+            />
+          </>
+        )}
       </div>
 
-      {/* Metrics Summary */}
-      {metrics && (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Agents overview */}
+        <div className="lg:col-span-2 card">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h2 className="font-heading font-semibold text-text-primary">Agents</h2>
+            <Link to="/agents" className="text-xs text-cyan hover:underline flex items-center gap-1">
+              View all <ArrowUpRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="p-4">
+            {agentsLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="skeleton h-14 w-full" />
+                ))}
+              </div>
+            ) : agents && agents.length > 0 ? (
+              <div className="space-y-2">
+                {agents.slice(0, 5).map((agent) => (
+                  <Link
+                    key={agent.id}
+                    to="/agents"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-card-hover transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-[rgba(112,0,255,0.1)] flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-violet" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-text-primary truncate">{agent.name}</div>
+                      <div className="text-xs text-text-muted">{agent.model}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-text-muted">{agent.tools.length} tools</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-text-muted text-sm">
+                No agents configured
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick stats */}
         <div className="card">
-          <h3 className="text-sm font-medium text-white mb-3">Metrics Overview</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {Object.entries(metrics)
-              .filter(([, v]) => typeof v === 'number')
-              .slice(0, 8)
-              .map(([key, value]) => (
-                <div key={key}>
-                  <p className="text-xs text-slate-500 truncate">{key.replace(/_/g, ' ')}</p>
-                  <p className="text-lg font-semibold text-white">{String(value)}</p>
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h2 className="font-heading font-semibold text-text-primary">System</h2>
+            <Link to="/metrics" className="text-xs text-cyan hover:underline flex items-center gap-1">
+              Details <ArrowUpRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="p-4 space-y-4">
+            {metricsLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="skeleton h-8 w-full" />
+                ))}
+              </div>
+            ) : metrics ? (
+              <>
+                <MetricBar label="CPU" value={metrics.cpu_usage} />
+                <MetricBar label="Memory" value={metrics.memory_usage} />
+                <MetricBar label="Disk" value={metrics.disk_usage} />
+                <div className="pt-2 border-t border-border">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-text-muted">Avg Response</span>
+                    <span className="text-text-primary font-mono">{metrics.avg_response_time}ms</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-2">
+                    <span className="text-text-muted">Error Rate</span>
+                    <span className={classNames(
+                      'font-mono',
+                      metrics.error_rate > 5 ? 'text-pink' : 'text-success'
+                    )}>
+                      {metrics.error_rate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-2">
+                    <span className="text-text-muted">Total Runs</span>
+                    <span className="text-text-primary font-mono">{metrics.total_runs.toLocaleString()}</span>
+                  </div>
                 </div>
-              ))}
+              </>
+            ) : (
+              <div className="py-8 text-center text-text-muted text-sm">
+                No metrics data
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Queue overview */}
+      {queueStats && (
+        <div className="card">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h2 className="font-heading font-semibold text-text-primary">Queue Overview</h2>
+            <Link to="/queue" className="text-xs text-cyan hover:underline flex items-center gap-1">
+              Manage <ArrowUpRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 p-4">
+            <QueueStat label="Pending" value={queueStats.pending} icon={<CircleDot className="w-4 h-4" />} color="text-warning" />
+            <QueueStat label="Running" value={queueStats.running} icon={<BarChart3 className="w-4 h-4" />} color="text-cyan" />
+            <QueueStat label="Completed" value={queueStats.completed} icon={<CheckCircle2 className="w-4 h-4" />} color="text-success" />
+            <QueueStat label="Failed" value={queueStats.failed} icon={<XCircle className="w-4 h-4" />} color="text-pink" />
+            <QueueStat label="Workers" value={queueStats.workers} icon={<Zap className="w-4 h-4" />} color="text-violet" />
           </div>
         </div>
       )}
-
-      {/* Quick Actions */}
-      <div className="card">
-        <h3 className="text-sm font-medium text-white mb-3">Quick Actions</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <QuickAction to="/agents" icon={<Users className="h-4 w-4" />} label="Agents" />
-          <QuickAction to="/runs" icon={<LayoutDashboard className="h-4 w-4" />} label="Runs" />
-          <QuickAction to="/terminal" icon={<Terminal className="h-4 w-4" />} label="Terminal" />
-          <QuickAction to="/health" icon={<HeartPulse className="h-4 w-4" />} label="Health" />
-        </div>
-      </div>
-
-      {error && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-400">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          <span>Some data failed to load. Auto-retrying in 30s.</span>
-        </div>
-      )}
     </div>
   );
 }
 
-function PageHeader({ onRefresh }: { onRefresh?: () => void }) {
+function MetricBar({ label, value }: { label: string; value: number }) {
+  const color = value > 80 ? 'bg-pink' : value > 60 ? 'bg-warning' : 'bg-cyan';
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-500/10">
-          <LayoutDashboard className="h-5 w-5 text-indigo-400" />
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold text-white">Dashboard</h2>
-          <p className="text-sm text-slate-400">System overview and quick actions</p>
-        </div>
+    <div>
+      <div className="flex items-center justify-between text-sm mb-1">
+        <span className="text-text-muted">{label}</span>
+        <span className="text-text-primary font-mono">{value.toFixed(0)}%</span>
       </div>
-      {onRefresh && (
-        <button onClick={onRefresh} className="btn-secondary text-xs">
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </button>
-      )}
+      <div className="w-full h-1.5 bg-deep rounded-full overflow-hidden">
+        <div
+          className={classNames('h-full rounded-full transition-all duration-500', color)}
+          style={{ width: `${Math.min(value, 100)}%` }}
+        />
+      </div>
     </div>
   );
 }
 
-function StatusCard({
-  icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  color: 'emerald' | 'red' | 'amber' | 'indigo';
-}) {
-  const colors = {
-    emerald: 'bg-emerald-500/10 text-emerald-400',
-    red: 'bg-red-500/10 text-red-400',
-    amber: 'bg-amber-500/10 text-amber-400',
-    indigo: 'bg-indigo-500/10 text-indigo-400',
-  };
-  const badgeColors = {
-    emerald: 'badge-success',
-    red: 'badge-error',
-    amber: 'badge-warning',
-    indigo: 'badge-info',
-  };
-
+function QueueStat({ label, value, icon, color }: { label: string; value: number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="card">
-      <div className="flex items-center gap-3 mb-2">
-        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${colors[color]}`}>
-          {icon}
-        </div>
-        <span className="text-sm text-slate-400">{label}</span>
-      </div>
-      <span className={`badge ${badgeColors[color]}`}>{value}</span>
+    <div className="text-center">
+      <div className={classNames('flex items-center justify-center mb-1', color)}>{icon}</div>
+      <div className="text-xl font-heading font-bold text-text-primary">{value}</div>
+      <div className="text-xs text-text-muted">{label}</div>
     </div>
-  );
-}
-
-function QuickAction({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-sm text-slate-300 hover:text-white transition-colors"
-    >
-      {icon}
-      {label}
-    </Link>
   );
 }

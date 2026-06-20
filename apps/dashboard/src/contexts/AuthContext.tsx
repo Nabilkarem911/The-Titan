@@ -1,46 +1,70 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { api } from '../api/client';
 
-const ACCESS_TOKEN_KEY = 'titan_access_token';
-const REFRESH_TOKEN_KEY = 'titan_refresh_token';
-
-/** Standalone helper used by api/client.ts (no React context needed). */
-export function getStoredToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
 }
 
 interface AuthContextValue {
-  token: string | null;
+  user: User | null;
   isAuthenticated: boolean;
-  login: (accessToken: string, refreshToken: string) => void;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be inside AuthProvider');
-  return ctx;
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(ACCESS_TOKEN_KEY));
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = useCallback((accessToken: string, refreshToken: string) => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-    setToken(accessToken);
+  const isAuthenticated = user !== null;
+
+  useEffect(() => {
+    const token = localStorage.getItem('titan_token');
+    if (token) {
+      api.getProfile()
+        .then(setUser)
+        .catch(() => {
+          localStorage.removeItem('titan_token');
+          localStorage.removeItem('titan_refresh_token');
+        })
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const login = useCallback(async (username: string, password: string) => {
+    const result = await api.login({ username, password });
+    localStorage.setItem('titan_token', result.access_token);
+    localStorage.setItem('titan_refresh_token', result.refresh_token);
+    const profile = await api.getProfile();
+    setUser(profile);
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    setToken(null);
+    api.logout().catch(() => {});
+    localStorage.removeItem('titan_token');
+    localStorage.removeItem('titan_refresh_token');
+    setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, isAuthenticated: !!token, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function useAuth(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

@@ -1,42 +1,51 @@
-import { AlertCircle, RefreshCw, Inbox } from 'lucide-react';
+import React from 'react';
+import type { ReactNode } from 'react';
+import { AlertTriangle, Inbox, RefreshCw } from 'lucide-react';
 
-export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+interface ErrorStateProps {
+  title?: string;
+  message: string;
+  onRetry?: () => void;
+}
+
+export function ErrorState({ title = 'Error', message, onRetry }: ErrorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-4">
-        <AlertCircle className="h-6 w-6 text-red-400" />
+    <div className="flex items-center justify-center min-h-[300px] p-8">
+      <div className="text-center max-w-md">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[rgba(255,0,122,0.1)] mb-4">
+          <AlertTriangle className="w-7 h-7 text-pink" />
+        </div>
+        <h3 className="font-heading text-lg font-semibold text-text-primary mb-2">{title}</h3>
+        <p className="text-text-secondary text-sm mb-4">{message}</p>
+        {onRetry && (
+          <button onClick={onRetry} className="btn btn-secondary btn-sm">
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </button>
+        )}
       </div>
-      <p className="text-sm text-red-400 mb-1">Something went wrong</p>
-      <p className="text-xs text-slate-500 mb-4 max-w-md">{message}</p>
-      {onRetry && (
-        <button onClick={onRetry} className="btn-secondary text-xs">
-          <RefreshCw className="h-3.5 w-3.5" />
-          Try again
-        </button>
-      )}
     </div>
   );
 }
 
-export function EmptyState({
-  icon,
-  title,
-  description,
-  action,
-}: {
-  icon?: React.ReactNode;
+interface EmptyStateProps {
+  icon?: ReactNode;
   title: string;
-  description?: string;
-  action?: React.ReactNode;
-}) {
+  message: string;
+  action?: ReactNode;
+}
+
+export function EmptyState({ icon, title, message, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-slate-500/10 mb-4">
-        {icon ?? <Inbox className="h-6 w-6 text-slate-400" />}
+    <div className="flex items-center justify-center min-h-[300px] p-8">
+      <div className="text-center max-w-md">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[rgba(0,242,254,0.05)] border border-border mb-4">
+          {icon || <Inbox className="w-7 h-7 text-text-muted" />}
+        </div>
+        <h3 className="font-heading text-lg font-semibold text-text-primary mb-2">{title}</h3>
+        <p className="text-text-secondary text-sm mb-4">{message}</p>
+        {action}
       </div>
-      <p className="text-sm text-slate-300 mb-1">{title}</p>
-      {description && <p className="text-xs text-slate-500 mb-4 max-w-md">{description}</p>}
-      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }

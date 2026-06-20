@@ -1,20 +1,28 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle } from 'lucide-react';
+import TitanLogo from '../components/TitanLogo';
+import { ArrowLeft } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-      <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10 mb-6">
-        <AlertCircle className="h-8 w-8 text-red-400" />
+    <div className="min-h-screen bg-deep flex items-center justify-center p-4">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/3 start-1/4 w-72 h-72 bg-violet/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-1/3 end-1/4 w-72 h-72 bg-cyan/5 rounded-full blur-[100px]" />
       </div>
-      <h1 className="text-4xl font-bold text-white mb-2">404</h1>
-      <p className="text-lg text-slate-400 mb-1">Page not found</p>
-      <p className="text-sm text-slate-500 mb-6 max-w-md">
-        The page you are looking for does not exist or has been moved.
-      </p>
-      <Link to="/" className="btn-primary">
-        Go to Dashboard
-      </Link>
+      <div className="relative text-center">
+        <TitanLogo size={48} className="mx-auto mb-6" />
+        <h1 className="font-heading text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan to-violet mb-4">
+          404
+        </h1>
+        <p className="text-text-secondary text-lg mb-6">
+          This page does not exist in the Titan network.
+        </p>
+        <Link to="/" className="btn btn-primary">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </Link>
+      </div>
     </div>
   );
 }

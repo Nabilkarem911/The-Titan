@@ -1,153 +1,57 @@
-import { useState, useEffect, useCallback } from 'react';
-import { HeartPulse, RefreshCw } from 'lucide-react';
-import { getToken } from '../api/client';
-import { SkeletonCard } from '../components/LoadingSkeleton';
+import React from 'react';
+import { Activity, CheckCircle2, AlertTriangle, XCircle, Clock } from 'lucide-react';
+import { usePollingApi } from '../hooks/useApi';
+import { api } from '../api/client';
 import { ErrorState } from '../components/PageState';
+import { PageSkeleton } from '../components/LoadingSkeleton';
+import { classNames, formatDuration } from '../utils/format';
+import type { HealthStatus } from '../api/client';
 
-interface HealthData {
-  status: string;
-  uptime?: number;
-  db?: { status: string; latency?: number };
-  redis?: { status: string; latency?: number };
-  memory?: { rss?: number; heapUsed?: number; heapTotal?: number };
-  [key: string]: unknown;
-}
+const statusIcon: Record<string, React.ReactNode> = {
+  pass: <CheckCircle2 className="w-5 h-5 text-success" />,
+  warn: <AlertTriangle className="w-5 h-5 text-warning" />,
+  fail: <XCircle className="w-5 h-5 text-pink" />,
+};
+
+const statusColor: Record<string, { text: string; bg: string; border: string }> = {
+  healthy: { text: 'text-success', bg: 'bg-[rgba(16,185,129,0.08)]', border: 'border-[rgba(16,185,129,0.2)]' },
+  degraded: { text: 'text-warning', bg: 'bg-[rgba(245,158,11,0.08)]', border: 'border-[rgba(245,158,11,0.2)]' },
+  unhealthy: { text: 'text-pink', bg: 'bg-[rgba(255,0,122,0.08)]', border: 'border-[rgba(255,0,122,0.2)]' },
+};
 
 export default function Health() {
-  const [data, setData] = useState<HealthData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchHealth = useCallback(async () => {
-    setLoading((prev) => !data && prev);
-    setError(null);
-    try {
-      const token = getToken();
-      const res = await fetch('/health/dashboard', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      const json = (await res.json()) as HealthData;
-      setData(json);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load health data');
-    } finally {
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    fetchHealth();
-    const interval = setInterval(fetchHealth, 15_000);
-    return () => clearInterval(interval);
-  }, [fetchHealth]);
+  const { data: health, error, isLoading, refetch } = usePollingApi<HealthStatus>(() => api.getHealth(), 10000, []);
+  if (error) return <ErrorState message={error} onRetry={refetch} />;
+  if (isLoading) return <PageSkeleton />;
+  if (!health) return <ErrorState message="No health data" onRetry={refetch} />;
+  const sc = statusColor[health.status] || statusColor.unhealthy;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10">
-            <HeartPulse className="h-5 w-5 text-emerald-400" />
-          </div>
+      <div className={classNames('card p-6 border', sc.border)}>
+        <div className="flex items-center gap-4">
+          <div className={classNames('w-14 h-14 rounded-xl flex items-center justify-center', sc.bg)}><Activity className={classNames('w-7 h-7', sc.text)} /></div>
           <div>
-            <h2 className="text-lg font-semibold text-white">System Health</h2>
-            <p className="text-sm text-slate-400">Monitor service health and uptime</p>
+            <h2 className={classNames('font-heading text-2xl font-bold capitalize', sc.text)}>{health.status}</h2>
+            <div className="flex items-center gap-4 text-sm text-text-muted mt-1">
+              <span>Version: {health.version}</span>
+              <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Uptime: {formatDuration(health.uptime)}</span>
+            </div>
           </div>
         </div>
-        <button onClick={fetchHealth} className="btn-secondary text-xs">
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </button>
       </div>
-
-      {/* Content */}
-      {loading && !data ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <SkeletonCard count={3} />
-        </div>
-      ) : error && !data ? (
-        <ErrorState message={error} onRetry={fetchHealth} />
-      ) : data ? (
-        <>
-          {/* Overall status */}
-          <div className="card">
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`w-3 h-3 rounded-full ${
-                data.status === 'ok' || data.status === 'healthy' ? 'bg-emerald-400' : 'bg-red-400'
-              }`} />
-              <span className="text-white font-medium">
-                System is {data.status === 'ok' || data.status === 'healthy' ? 'healthy' : data.status}
-              </span>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Object.entries(health.checks).map(([name, check]) => (
+          <div key={name} className="card p-5 hover:border-border-light transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-heading font-semibold text-text-primary capitalize">{name}</h3>
+              {statusIcon[check.status]}
             </div>
-            {data.uptime !== undefined && (
-              <p className="text-sm text-slate-400">
-                Uptime: {Math.floor(data.uptime / 3600)}h {Math.floor((data.uptime % 3600) / 60)}m
-              </p>
-            )}
+            {check.message && <p className="text-sm text-text-secondary mb-2">{check.message}</p>}
+            {check.latency_ms != null && <div className="flex items-center gap-1 text-xs text-text-muted"><Clock className="w-3 h-3" />{check.latency_ms}ms</div>}
           </div>
-
-          {/* Service cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <ServiceCard
-              name="Database"
-              status={data.db?.status ?? 'unknown'}
-              latency={data.db?.latency}
-            />
-            <ServiceCard
-              name="Redis"
-              status={data.redis?.status ?? 'unknown'}
-              latency={data.redis?.latency}
-            />
-            <ServiceCard
-              name="API"
-              status={data.status}
-            />
-          </div>
-
-          {/* Memory */}
-          {data.memory && (
-            <div className="card">
-              <h3 className="text-sm font-medium text-white mb-3">Memory Usage</h3>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-slate-500">RSS</p>
-                  <p className="text-white">{formatMB(data.memory.rss)}</p>
-                </div>
-                <div>
-                  <p className="text-slate-500">Heap Used</p>
-                  <p className="text-white">{formatMB(data.memory.heapUsed)}</p>
-                </div>
-                <div>
-                  <p className="text-slate-500">Heap Total</p>
-                  <p className="text-white">{formatMB(data.memory.heapTotal)}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      ) : null}
+        ))}
+      </div>
     </div>
   );
-}
-
-function ServiceCard({ name, status, latency }: { name: string; status: string; latency?: number }) {
-  const isOk = status === 'ok' || status === 'healthy';
-  return (
-    <div className="card">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-slate-300">{name}</span>
-        <span className={`badge ${isOk ? 'badge-success' : 'badge-error'}`}>{status}</span>
-      </div>
-      {latency !== undefined && (
-        <p className="text-xs text-slate-500">{latency}ms latency</p>
-      )}
-    </div>
-  );
-}
-
-function formatMB(bytes?: number): string {
-  if (bytes === undefined) return '--';
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
