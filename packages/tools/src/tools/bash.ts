@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { getLogger } from '@titan/logging';
+import { loadConfig } from '@titan/config';
 import { validateCwd, validateCommand, truncateOutput } from '../sandbox.js';
 import type { ExecuteBashInput } from '../schemas.js';
 
@@ -46,6 +47,9 @@ export async function executeBash(input: ExecuteBashInput): Promise<{
       };
     }
     log.warn('sandbox requested but unavailable; falling back to host execution');
+    if (loadConfig().SANDBOX_STRICT_MODE) {
+      throw new Error('Sandbox strict mode is enabled but sandbox is unavailable. Host execution is not allowed.');
+    }
   }
 
   log.info({ command: command.substring(0, 100), cwd: resolvedCwd }, 'executing bash command');

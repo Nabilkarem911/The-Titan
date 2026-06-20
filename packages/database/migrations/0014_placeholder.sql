@@ -1,0 +1,6 @@
+-- =============================================================================
+-- 0014 - Placeholder (intentionally skipped)
+-- =============================================================================
+-- This migration number was reserved but not used. No schema changes are needed.
+-- If you are looking for the next migration, proceed to 0015.
+-- This file exists solely to prevent confusion about the gap in numbering.

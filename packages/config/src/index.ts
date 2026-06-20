@@ -158,6 +158,16 @@ const EnvSchema = z.object({
   BRAVE_ANSWERS_API_KEY: z.string().default(''),
 
   GITHUB_TOKEN: z.string().default(''),
+
+  SANDBOX_STRICT_MODE: z
+    .union([z.literal('true'), z.literal('false')])
+    .transform((v) => v === 'true')
+    .default('false'),
+
+  POSTGRES_ALLOW_NO_TLS: z
+    .union([z.literal('true'), z.literal('false')])
+    .transform((v) => v === 'true')
+    .default('false'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

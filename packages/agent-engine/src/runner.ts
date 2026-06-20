@@ -320,10 +320,16 @@ export class AgentRunner {
             const fromObservation = step.observation?.data
               ? (typeof step.observation.data === 'string' ? step.observation.data : JSON.stringify(step.observation.data)).slice(0, 2000)
               : null;
+            const locale = (run as unknown as Record<string, unknown>).locale as string | undefined;
+            const isArabic = locale === 'ar';
             run.finalAnswer =
               (fromReflection && fromReflection.length > 5 ? fromReflection : null) ??
-              (fromObservation && fromObservation.length > 5 ? `بناءً على ما وجدته:\n\n${fromObservation}` : null) ??
-              `لم أتمكن من إكمال المهمة: الأداة "${step.action.name}" أعادت نفس النتيجة أكثر من مرة. ${step.observation?.error ?? ''}`.trim();
+              (fromObservation && fromObservation.length > 5
+                ? (isArabic ? `بناءً على ما وجدته:\n\n${fromObservation}` : `Based on what I found:\n\n${fromObservation}`)
+                : null) ??
+              (isArabic
+                ? `لم أتمكن من إكمال المهمة: الأداة "${step.action.name}" أعادت نفس النتيجة أكثر من مرة. ${step.observation?.error ?? ''}`.trim()
+                : `Unable to complete the task: tool "${step.action.name}" returned the same result multiple times. ${step.observation?.error ?? ''}`.trim());
             log.warn({ runId: run.id, tool: step.action.name, count }, 'repeated tool call detected — stopping loop');
             break;
           }

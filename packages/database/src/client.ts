@@ -66,7 +66,11 @@ export function getPool(): Pool {
     poolOpts.ssl = { rejectUnauthorized: cfg.tlsRejectUnauthorized };
     log.info({ rejectUnauthorized: cfg.tlsRejectUnauthorized }, 'postgres TLS enabled');
   } else if (loadConfig().NODE_ENV === 'production') {
-    log.warn('postgres TLS disabled in production (invariant would have prevented this)');
+    if (loadConfig().POSTGRES_ALLOW_NO_TLS) {
+      log.warn('postgres TLS disabled in production — explicitly allowed via POSTGRES_ALLOW_NO_TLS=true');
+    } else {
+      throw new Error('postgres TLS is disabled in production. Set POSTGRES_TLS=true or POSTGRES_ALLOW_NO_TLS=true to override.');
+    }
   }
   pool = new PgPool(poolOpts);
   pool.on('error', (err) => {

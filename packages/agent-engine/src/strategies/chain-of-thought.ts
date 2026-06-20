@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getLogger } from '@titan/logging';
-import type { AgentStep, LlmMessage } from '../types.js';
+import type { AgentStep, LlmMessage, ToolResult } from '../types.js';
 import type { ReasoningStrategy, StrategyContext, StrategyResult } from './types.js';
 
 const log = getLogger().child({ component: 'strategy-cot' });
@@ -46,26 +46,29 @@ export class ChainOfThoughtStrategy implements ReasoningStrategy {
       step.tokensUsed = completion.tokensUsed;
 
       if (completion.toolCalls && completion.toolCalls.length > 0) {
-        const call = completion.toolCalls[0];
-        step.thought = completion.content || `Reasoning requires: ${call.name}`;
-        step.action = call;
+        step.thought = completion.content || `Reasoning requires: ${completion.toolCalls.map((c) => c.name).join(', ')}`;
+        step.action = completion.toolCalls[0];
         step.status = 'executing';
-
-        const result = await executeTool(call, run.id);
-        step.observation = result;
 
         messages.push({
           role: 'assistant',
           content: step.thought,
-          toolCalls: [call],
+          toolCalls: completion.toolCalls,
         });
-        messages.push({
-          role: 'tool',
-          content: result.success
-            ? (typeof result.data === 'string' ? result.data : JSON.stringify(result.data)).slice(0, 4000)
-            : `Error: ${result.error}`,
-          toolResult: result,
-        });
+
+        let lastResult: ToolResult | undefined;
+        for (const call of completion.toolCalls) {
+          const result = await executeTool(call, run.id);
+          lastResult = result;
+          messages.push({
+            role: 'tool',
+            content: result.success
+              ? (typeof result.data === 'string' ? result.data : JSON.stringify(result.data)).slice(0, 4000)
+              : `Error: ${result.error}`,
+            toolResult: result,
+          });
+        }
+        step.observation = lastResult;
 
         step.status = 'observing';
       } else {

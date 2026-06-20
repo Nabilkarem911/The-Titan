@@ -84,13 +84,18 @@ export class PgVectorMemoryProvider implements MemoryProvider {
     }
     const id = (await this.resolveCollectionId(collection))!;
     for (const item of items) {
+      const embeddingJson = item.embedding ? JSON.stringify(item.embedding) : null;
+      const embeddingVec = item.embedding && item.embedding.length === 1536
+        ? `[${item.embedding.join(',')}]`
+        : null;
       await this.db.query(
-        `INSERT INTO memory_items (collection_id, external_id, content, embedding, metadata, updated_at)
-         VALUES ($1, $2, $3, $4, $5, now())
+        `INSERT INTO memory_items (collection_id, external_id, content, embedding, embedding_vec, metadata, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, now())
          ON CONFLICT (collection_id, external_id)
          DO UPDATE SET content = EXCLUDED.content, embedding = EXCLUDED.embedding,
+                       embedding_vec = EXCLUDED.embedding_vec,
                        metadata = EXCLUDED.metadata, updated_at = now()`,
-        [id, item.id, item.content, item.embedding ? JSON.stringify(item.embedding) : null, JSON.stringify(item.metadata ?? {})],
+        [id, item.id, item.content, embeddingJson, embeddingVec, JSON.stringify(item.metadata ?? {})],
       );
     }
     await this.db.query(
@@ -146,7 +151,27 @@ export class PgVectorMemoryProvider implements MemoryProvider {
       }));
     }
 
-    // Vector array provided — try pgvector cosine similarity if extension available
+    // Vector array provided — try pgvector cosine similarity on native vector column first
+    try {
+      const vectorStr = `[${query.join(',')}]`;
+      const { rows } = await this.db.query<{ external_id: string; content: string; metadata: Record<string, unknown>; similarity: number }>(
+        `SELECT external_id, content, metadata,
+                1 - (embedding_vec <=> $3::vector) AS similarity
+         FROM memory_items
+         WHERE collection_id = $1
+           AND embedding_vec IS NOT NULL
+         ORDER BY embedding_vec <=> $3::vector
+         LIMIT $2`,
+        [collId, limit, vectorStr],
+      );
+      if (rows.length > 0) {
+        return rows.map((r) => ({ id: r.external_id, content: r.content, score: r.similarity, metadata: r.metadata }));
+      }
+    } catch {
+      // native vector column not available — try JSONB fallback
+    }
+
+    // Fallback: try casting JSONB embedding to vector
     try {
       const vectorStr = `[${query.join(',')}]`;
       const { rows } = await this.db.query<{ external_id: string; content: string; metadata: Record<string, unknown>; similarity: number }>(

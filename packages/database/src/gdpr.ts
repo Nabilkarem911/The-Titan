@@ -10,20 +10,32 @@ export interface ErasureResult {
   errors: string[];
 }
 
+const ERASURE_TABLES = [
+  { table: 'sessions', column: 'user_id' },
+  { table: 'api_keys', column: 'user_id' },
+  { table: 'workspace_members', column: 'user_id' },
+  { table: 'plugin_ratings', column: 'user_id' },
+] as const;
+
+const ERASURE_TABLE_NAMES = new Set(ERASURE_TABLES.map((t) => t.table));
+const ERASURE_COLUMN_NAMES = new Set(ERASURE_TABLES.map((t) => t.column));
+const SUMMARY_TABLE_NAMES = new Set([...ERASURE_TABLE_NAMES, 'audit.logs']);
+
+function assertValidIdentifier(name: string, allowed: Set<string>): void {
+  if (!allowed.has(name)) {
+    throw new Error(`Invalid table or column identifier: ${name}`);
+  }
+}
+
 export async function eraseUserData(userId: string): Promise<ErasureResult> {
   const errors: string[] = [];
   let rowsDeleted = 0;
   let tablesAffected = 0;
 
-  const tables = [
-    { table: 'sessions', column: 'user_id' },
-    { table: 'api_keys', column: 'user_id' },
-    { table: 'workspace_members', column: 'user_id' },
-    { table: 'plugin_ratings', column: 'user_id' },
-  ];
-
   await withTransaction(async (client) => {
-    for (const { table, column } of tables) {
+    for (const { table, column } of ERASURE_TABLES) {
+      assertValidIdentifier(table, ERASURE_TABLE_NAMES);
+      assertValidIdentifier(column, ERASURE_COLUMN_NAMES);
       try {
         const r = await client.query<{ count: string }>(
           `SELECT count(*)::text AS count FROM ${table} WHERE ${column} = $1`,
@@ -65,13 +77,8 @@ export async function eraseUserData(userId: string): Promise<ErasureResult> {
 
 export async function getUserDataSummary(userId: string): Promise<Record<string, number>> {
   const summary: Record<string, number> = {};
-  const tables = [
-    'sessions',
-    'api_keys',
-    'workspace_members',
-    'plugin_ratings',
-  ];
-  for (const table of tables) {
+  for (const { table } of ERASURE_TABLES) {
+    assertValidIdentifier(table, SUMMARY_TABLE_NAMES);
     const r = await query<{ count: string }>(
       `SELECT count(*)::text AS count FROM ${table} WHERE user_id = $1`,
       [userId],

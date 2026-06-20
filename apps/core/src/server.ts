@@ -1,4 +1,4 @@
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
@@ -140,7 +140,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(requestContextPlugin);
   await app.register(authPlugin);
 
-  function sendZodError(reply: any, err: ZodError, requestId: string) {
+  function sendZodError(reply: FastifyReply, err: ZodError, requestId: string) {
     return reply.status(400).send({
       type: 'https://titan.local/problems/validation',
       title: 'Validation failed',
@@ -151,7 +151,7 @@ export async function buildServer(): Promise<FastifyInstance> {
     });
   }
 
-  function sendTitanError(reply: any, err: TitanError, requestId: string) {
+  function sendTitanError(reply: FastifyReply, err: TitanError, requestId: string) {
     log.warn({ err, requestId, code: err.code }, 'titan error');
     return reply.status(err.statusCode).send({
       type: `https://titan.local/problems/${err.code.toLowerCase()}`,
@@ -163,7 +163,7 @@ export async function buildServer(): Promise<FastifyInstance> {
     });
   }
 
-  function sendValidationError(reply: any, err: { message?: string; validation?: unknown }, requestId: string) {
+  function sendValidationError(reply: FastifyReply, err: { message?: string; validation?: unknown }, requestId: string) {
     return reply.status(400).send({
       type: 'https://titan.local/problems/validation',
       title: err.message ?? 'Validation error',
@@ -174,7 +174,7 @@ export async function buildServer(): Promise<FastifyInstance> {
     });
   }
 
-  function sendRateLimitError(reply: any, requestId: string) {
+  function sendRateLimitError(reply: FastifyReply, requestId: string) {
     return reply.status(429).send({
       type: 'https://titan.local/problems/rate-limit',
       title: 'Too many requests',
@@ -184,7 +184,7 @@ export async function buildServer(): Promise<FastifyInstance> {
     });
   }
 
-  function sendInternalError(reply: any, err: unknown, requestId: string, statusCode?: number) {
+  function sendInternalError(reply: FastifyReply, err: unknown, requestId: string, statusCode?: number) {
     log.error({ err, requestId }, 'unhandled error');
     return reply.status(statusCode ?? 500).send({
       type: 'https://titan.local/problems/internal',

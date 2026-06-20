@@ -622,6 +622,19 @@ export class TitanWebSocketServer {
     }
   }
 
+  broadcastToWorkspace(workspaceId: string, event: string, data: unknown): void {
+    const msg = serializeMessage({ jsonrpc: '2.0', method: event, params: data } as JsonRpcNotification);
+    for (const entry of this.clients.values()) {
+      if (
+        entry.state === 'authenticated' &&
+        entry.workspaceId === workspaceId &&
+        entry.socket.readyState === entry.socket.OPEN
+      ) {
+        try { entry.socket.send(msg); } catch {}
+      }
+    }
+  }
+
   stats(): {
     total: number;
     authenticated: number;
