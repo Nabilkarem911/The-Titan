@@ -36,6 +36,26 @@ const ChatInputSchema = z.object({
 const RATE_LIMIT_CHAT = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
 
 export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
+  // GET /api/v1/chat/history/:sessionId — fetch chat history for a session
+  app.get<{ Params: { sessionId: string } }>(
+    '/api/v1/chat/history/:sessionId',
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      if (!req.auth) throw new ValidationError('Authentication required');
+      const { sessionId } = req.params;
+      const userId = req.auth.userId;
+
+      // Ensure sessionId belongs to this user (prevent reading other users' chats)
+      const expectedPrefix = `session:${userId}:`;
+      if (!sessionId.startsWith(expectedPrefix) && !sessionId.startsWith(`tg:${userId}`)) {
+        return reply.status(403).send({ error: 'Access denied' });
+      }
+
+      const history = await getChatHistory(sessionId, 100);
+      return { items: history, total: history.length };
+    },
+  );
+
   // POST /api/v1/chat — Multi-turn chat with agent (streaming SSE)
   app.post(
     '/api/v1/chat',
