@@ -22,7 +22,7 @@ COPY packages/telemetry/package.json   packages/telemetry/package.json
 COPY packages/agent-engine/package.json packages/agent-engine/package.json
 COPY apps/core/package.json            apps/core/package.json
 COPY apps/dashboard/package.json       apps/dashboard/package.json
-RUN npm ci --legacy-peer-deps
+RUN npm ci
 
 # ── Stage 2: Build ──────────────────────────────────────────
 FROM deps AS builder
@@ -46,7 +46,7 @@ COPY package.json package-lock.json ./
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/core ./apps/core
 COPY --from=builder /app/apps/dashboard/dist ./apps/dashboard/dist
-RUN npm ci --omit=dev --legacy-peer-deps && rm -rf /tmp/* ~/.npm
+RUN npm ci --omit=dev && rm -rf /tmp/* ~/.npm
 
 # Non-root user
 RUN addgroup -S titan -g 1001 && adduser -S titan -G titan -u 1001

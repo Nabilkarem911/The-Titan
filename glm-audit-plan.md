@@ -75,7 +75,7 @@
 - **Issue**: Only first tool call executed
 - **Fix**: Loop through all `completion.toolCalls` and execute in sequence
 
-### 3.3 Resolve `--legacy-peer-deps`
+### 3.3 Resolve `--legacy-peer-deps` ✅ DONE
 - **File**: `apps/core/Dockerfile`, `package.json`
 - **Issue**: Peer dependency conflicts
 - **Fix**: Audit dependencies and resolve conflicts properly
