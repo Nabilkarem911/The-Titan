@@ -32,6 +32,7 @@ const AgentProfiles = lazy(() => import('./pages/AgentProfiles'));
 const Git = lazy(() => import('./pages/Git'));
 const Knowledge = lazy(() => import('./pages/Knowledge'));
 const Workflows = lazy(() => import('./pages/Workflows'));
+const Learning = lazy(() => import('./pages/Learning'));
 
 // ── Protected Layout ──
 function ProtectedLayout() {
@@ -87,6 +88,7 @@ export default function App() {
             <Route path="git" element={<Git />} />
             <Route path="knowledge" element={<Knowledge />} />
             <Route path="workflows" element={<Workflows />} />
+            <Route path="learning" element={<Learning />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

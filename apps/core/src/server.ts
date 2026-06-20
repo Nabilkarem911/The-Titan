@@ -37,6 +37,7 @@ import { userContextRoutes } from './routes/user-context.js';
 import { voiceRoutes } from './routes/voice.js';
 import { knowledgeRoutes } from './routes/knowledge.js';
 import { workflowRoutes } from './routes/workflows.js';
+import { learningRoutesV2 } from './routes/learning-v2.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 
@@ -231,6 +232,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(voiceRoutes);
   await app.register(knowledgeRoutes);
   await app.register(workflowRoutes);
+  await app.register(learningRoutesV2);
   await registerTelegramRoutes(app);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));

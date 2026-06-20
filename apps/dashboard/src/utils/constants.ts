@@ -21,6 +21,7 @@ import {
   Users,
   GitBranch,
   Workflow,
+  GraduationCap,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -57,6 +58,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'Playground', path: '/playground', icon: FlaskConical },
       { label: 'Knowledge', path: '/knowledge', icon: Brain },
       { label: 'Workflows', path: '/workflows', icon: Workflow },
+      { label: 'Learning', path: '/learning', icon: GraduationCap },
     ],
   },
   {
