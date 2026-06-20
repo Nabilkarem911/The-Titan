@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Activity, ChevronRight } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
+import { useWebSocket } from '../hooks/useWebSocket';
 import type { ListResponse, AgentRun, AgentStep } from '../api/types';
 import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonRow } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatRelativeTime, formatDuration } from '../utils/format';
-import { useEffect } from 'react';
 
 export default function Runs() {
   const [selectedRun, setSelectedRun] = useState<string | null>(null);
@@ -16,21 +16,37 @@ export default function Runs() {
     selectedRun ? `/agents/default/runs/${selectedRun}/steps` : null,
   );
 
-  // Auto-refresh when there are running tasks
+  // Live updates via WebSocket
+  const onWsMessage = useCallback((method: string) => {
+    if (method === 'agent.run.updated' || method === 'agent.run.completed' || method === 'agent.step') {
+      refetch();
+    }
+  }, [refetch]);
+
+  const { connected } = useWebSocket(onWsMessage);
+
+  // Fallback: auto-refresh when there are running tasks and WS is not connected
   useEffect(() => {
+    if (connected) return; // WS handles it
     const hasRunning = data?.items.some(r => r.status === 'running' || r.status === 'queued');
     if (!hasRunning) return;
     const interval = setInterval(() => refetch(), 5000);
     return () => clearInterval(interval);
-  }, [data, refetch]);
+  }, [data, refetch, connected]);
 
   if (error) return <ErrorState message={error} onRetry={refetch} className="py-20" />;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary">Runs</h1>
-        <p className="text-small text-text-secondary mt-1">Agent execution history and step details</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-h1 text-text-primary">Runs</h1>
+          <p className="text-small text-text-secondary mt-1">Agent execution history and step details</p>
+        </div>
+        <div className="flex items-center gap-1.5 text-caption">
+          <span className={`w-2 h-2 rounded-full ${connected ? 'bg-success animate-pulse-soft' : 'bg-text-muted'}`} />
+          <span className={connected ? 'text-success' : 'text-text-muted'}>{connected ? 'Live' : 'Polling'}</span>
+        </div>
       </div>
 
       {isLoading ? (

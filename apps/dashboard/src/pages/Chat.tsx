@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Paperclip, Bot, User, Loader2, Square, Plus, ChevronDown, Wrench, Brain, Eye, MessageSquare, RefreshCw, Download, X, FileText, Image as ImageIcon } from 'lucide-react';
+import { Send, Paperclip, Bot, User, Loader2, Square, Plus, ChevronDown, Wrench, Brain, Eye, MessageSquare, RefreshCw, Download, X, FileText, Image as ImageIcon, ThumbsUp, ThumbsDown, Search } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -25,6 +25,18 @@ interface Message {
   streaming?: boolean;
   steps?: StepData[];
   attachments?: Array<{ name: string; type: string; content: string }>;
+  feedback?: 'up' | 'down' | null;
+  _idx?: number;
+}
+
+function highlightSearch(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text;
+  const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase()
+      ? <mark key={i} className="bg-accent-primary/30 text-text-primary rounded px-0.5">{part}</mark>
+      : part
+  );
 }
 
 interface ChatSession {
@@ -49,6 +61,9 @@ export default function Chat() {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [attachments, setAttachments] = useState<Array<{ name: string; type: string; content: string }>>([]);
   const [lastUserPrompt, setLastUserPrompt] = useState<string>('');
+  const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | null>>({});
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +140,44 @@ export default function Chat() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      // Escape closes modals/search
+      if (e.key === 'Escape') {
+        setShowSearch(false);
+        setShowModelDropdown(false);
+      }
+      // Ctrl+Enter sends message
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        if (!isStreaming && input.trim()) handleSend();
+      }
+      // Ctrl+/ toggles search
+      if (e.key === '/' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setShowSearch(s => !s);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [input, isStreaming]);
+
+  // Filtered messages for search
+  const filteredMessages = searchQuery.trim()
+    ? messages.map((m, i) => ({ ...m, _idx: i })).filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+    : null;
+
+  const handleFeedback = (msgIndex: number, type: 'up' | 'down') => {
+    setFeedback(prev => {
+      const current = prev[msgIndex];
+      const next = current === type ? null : type;
+      return { ...prev, [msgIndex]: next };
+    });
+    if (type === 'up') toast.success('Thanks for the feedback!');
+    else toast.info('Feedback noted — will help improve responses');
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -430,6 +483,9 @@ export default function Chat() {
         <div className="flex items-center gap-2">
           {/* Export buttons */}
           <div className="flex items-center gap-1">
+            <button onClick={() => setShowSearch(s => !s)} className="btn-icon" title="Search (Ctrl+/)">
+              <Search className="w-4 h-4" />
+            </button>
             <button onClick={() => handleExport('markdown')} disabled={messages.length === 0} className="btn-icon" title="Export as Markdown">
               <FileText className="w-4 h-4" />
             </button>
@@ -478,6 +534,28 @@ export default function Chat() {
         </div>
       </div>
 
+      {/* Search bar */}
+      {showSearch && (
+        <div className="px-6 py-3 border-b border-border-subtle shrink-0">
+          <div className="relative max-w-3xl mx-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+            <input
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Escape' && setShowSearch(false)}
+              placeholder="Search messages..."
+              className="input pl-9"
+            />
+            {filteredMessages && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-caption text-text-muted">
+                {filteredMessages.length} found
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {historyLoading ? (
@@ -492,6 +570,32 @@ export default function Chat() {
             <h3 className="text-h3 text-text-primary mb-1">Start a conversation</h3>
             <p className="text-small text-text-secondary">Send a message to begin chatting with the AI</p>
           </div>
+        ) : filteredMessages ? (
+          filteredMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <Search className="w-8 h-8 text-text-muted mb-2" />
+              <p className="text-small text-text-secondary">No messages found for "{searchQuery}"</p>
+            </div>
+          ) : (
+            filteredMessages.map((msg) => (
+              <div key={msg._idx} className={cn('flex gap-3 max-w-3xl', msg.role === 'user' && 'ml-auto flex-row-reverse')}>
+                <div className={cn(
+                  'w-8 h-8 rounded-full shrink-0 flex items-center justify-center',
+                  msg.role === 'user' ? 'bg-accent-primary/10' : 'bg-accent-secondary/10',
+                )}>
+                  {msg.role === 'user' ? <User className="w-4 h-4 text-accent-primary" /> : <Bot className="w-4 h-4 text-accent-secondary" />}
+                </div>
+                <div className={cn(
+                  'rounded-card px-4 py-3 max-w-full flex-1',
+                  msg.role === 'user' ? 'bg-accent-primary/10 text-text-primary' : 'bg-surface text-text-primary',
+                )}>
+                  <p className="text-sm whitespace-pre-wrap break-words">
+                    {highlightSearch(msg.content, searchQuery)}
+                  </p>
+                </div>
+              </div>
+            ))
+          )
         ) : (
           messages.map((msg, i) => (
             <div key={i} className={cn('flex gap-3 max-w-3xl', msg.role === 'user' && 'ml-auto flex-row-reverse')}>
@@ -513,13 +617,29 @@ export default function Chat() {
                   {msg.content || (msg.streaming && (!msg.steps || msg.steps.length === 0) && <Loader2 className="w-4 h-4 animate-spin text-text-muted" />)}
                   {msg.streaming && msg.content && <span className="inline-block w-1.5 h-4 bg-accent-primary ml-0.5 animate-pulse-soft" />}
                 </p>
-                {/* Regenerate button for last assistant message */}
+                {/* Regenerate + Feedback buttons for last assistant message */}
                 {msg.role === 'assistant' && !msg.streaming && i === messages.length - 1 && !isStreaming && (
-                  <div className="mt-2 pt-2 border-t border-border-subtle">
+                  <div className="mt-2 pt-2 border-t border-border-subtle flex items-center gap-3">
                     <button onClick={handleRegenerate} className="flex items-center gap-1 text-caption text-text-muted hover:text-accent-primary transition-colors">
                       <RefreshCw className="w-3 h-3" />
                       Regenerate
                     </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleFeedback(i, 'up')}
+                        className={cn('p-1 rounded-btn transition-colors', feedback[i] === 'up' ? 'text-success' : 'text-text-muted hover:text-success')}
+                        title="Good response"
+                      >
+                        <ThumbsUp className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(i, 'down')}
+                        className={cn('p-1 rounded-btn transition-colors', feedback[i] === 'down' ? 'text-error' : 'text-text-muted hover:text-error')}
+                        title="Bad response"
+                      >
+                        <ThumbsDown className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 )}
                 {/* Attachments display */}
