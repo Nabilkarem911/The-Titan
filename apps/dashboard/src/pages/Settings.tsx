@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Settings as SettingsIcon, User, Key, Bell, Palette } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings as SettingsIcon, User, Key, Bell, Palette, MessageCircle, Link2, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/client';
 import { toast } from 'sonner';
@@ -59,16 +59,97 @@ export default function Settings() {
 }
 
 function ProfileTab({ userId, onLogoutAll }: { userId: string | null; onLogoutAll: () => Promise<void> }) {
+  const [telegramId, setTelegramId] = useState('');
+  const [linkedTelegram, setLinkedTelegram] = useState<string | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get<{ linked: boolean; telegramId: string | null }>('/user-context/telegram-status');
+        setLinkedTelegram(res.telegramId);
+      } catch {
+        /* ignore */
+      } finally {
+        setLoadingStatus(false);
+      }
+    })();
+  }, []);
+
+  const handleLink = async () => {
+    if (!telegramId.trim()) {
+      toast.error('Enter your Telegram ID');
+      return;
+    }
+    setLinking(true);
+    try {
+      const res = await api.post<{ linked: boolean; telegramId: string; memoryMerged: number; historyMerged: number }>('/user-context/link-telegram', { telegramId: telegramId.trim() });
+      setLinkedTelegram(res.telegramId);
+      setTelegramId('');
+      toast.success('Telegram linked!', {
+        description: `Merged ${res.memoryMerged} memories and ${res.historyMerged} messages`,
+      });
+    } catch (err) {
+      toast.error('Failed to link Telegram', { description: err instanceof Error ? err.message : undefined });
+    } finally {
+      setLinking(false);
+    }
+  };
+
   return (
-    <div className="card p-6 space-y-4">
-      <h2 className="text-h3 text-text-primary">Profile</h2>
-      <div>
-        <label className="block text-label text-text-secondary mb-1.5">User ID</label>
-        <input value={userId ?? ''} readOnly className="input font-mono opacity-60" />
+    <div className="space-y-4">
+      <div className="card p-6 space-y-4">
+        <h2 className="text-h3 text-text-primary">Profile</h2>
+        <div>
+          <label className="block text-label text-text-secondary mb-1.5">User ID</label>
+          <input value={userId ?? ''} readOnly className="input font-mono opacity-60" />
+        </div>
+        <button onClick={onLogoutAll} className="btn-secondary text-error hover:text-error">
+          Logout from all devices
+        </button>
       </div>
-      <button onClick={onLogoutAll} className="btn-secondary text-error hover:text-error">
-        Logout from all devices
-      </button>
+
+      <div className="card p-6 space-y-4">
+        <h2 className="text-h3 text-text-primary flex items-center gap-2">
+          <MessageCircle className="w-5 h-5 text-accent-secondary" />
+          Telegram Link
+        </h2>
+        <p className="text-small text-text-secondary">
+          Link your Telegram account so Titan remembers you across both platforms. Your memory and chat history from Telegram will be merged into your dashboard account.
+        </p>
+
+        {loadingStatus ? (
+          <div className="flex items-center gap-2 text-small text-text-muted">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Checking link status...
+          </div>
+        ) : linkedTelegram ? (
+          <div className="flex items-center gap-2 p-3 rounded-btn bg-success/10">
+            <Check className="w-4 h-4 text-success" />
+            <span className="text-small text-success font-medium">Linked to Telegram ID: {linkedTelegram}</span>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-label text-text-secondary mb-1.5">Your Telegram ID</label>
+              <input
+                value={telegramId}
+                onChange={(e) => setTelegramId(e.target.value)}
+                className="input"
+                placeholder="e.g. 123456789"
+              />
+              <p className="text-caption text-text-muted mt-1">
+                Send <code className="text-accent-primary">/memory</code> to Titan on Telegram to see your ID, or check @userinfobot
+              </p>
+            </div>
+            <button onClick={handleLink} disabled={linking} className="btn-primary flex items-center gap-2">
+              {linking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+              Link Telegram
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

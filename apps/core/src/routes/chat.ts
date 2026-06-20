@@ -75,11 +75,150 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         getChatHistory(sessionId, 50),
       ]);
 
+      // If user has linked a Telegram account, merge telegram memory
+      let mergedCtx = ctx;
+      const linkedTgId = ctx['telegram_id'];
+      if (linkedTgId) {
+        try {
+          const tgCtx = await userContext.getAll(linkedTgId);
+          mergedCtx = { ...tgCtx, ...ctx }; // dashboard context takes priority
+          // Also load telegram chat history and merge
+          const tgHistory = await getChatHistory(`tg:${linkedTgId}`, 20);
+          if (tgHistory.length > 0) {
+            // Prepend telegram history to the combined history
+            const combinedHistory = [...tgHistory, ...history];
+            // Use combined for context building below
+            const historyLines = combinedHistory.map((m) => `${m.role === 'user' ? 'User' : 'Titan'}: ${m.content}`);
+            // Save incoming user message
+            await saveChatMessage(sessionId, 'user', enrichedPrompt);
+
+            // Build context for system prompt
+            const ctxLines = Object.entries(mergedCtx).map(([k, v]) => `- ${k}: ${v}`);
+
+            // Detect user language and load the matching companion profile
+            const lang = detectLanguage(input.prompt);
+            const profileSlug = lang === 'ar' ? 'arabic-companion' : 'english-companion';
+            let profileSystemPrompt = '';
+            try {
+              const systemUserId = '00000000-0000-0000-0000-000000000001';
+              const profile = await agentProfiles.findBySlug(systemUserId, profileSlug);
+              if (profile) {
+                profileSystemPrompt = profile.systemPrompt;
+              }
+            } catch {
+              /* ignore — fallback to DEFAULT_SYSTEM_PROMPT */
+            }
+
+            const contextBlock = [
+              ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
+              historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
+              `\n\nPersonality reminder:
+- You are Titan — a friend, not a bot. Talk like a real person (WhatsApp style, not essay style).
+- Feel the mood before responding. Is the user frustrated? Happy? Testing you?
+- Keep it short. One or two sentences for simple questions.
+- If asked about code changes or integration, the user IS the developer. Answer YES/NO first, then brief steps.
+- Never say "I don't know what's in my backend" or "I can't modify my own code". You KNOW your architecture (Node.js/Fastify/Postgres/agent-engine). You are a co-developer.
+- Never repeat the same explanation twice. Never say "I am an AI" or "I cannot modify code".
+- Developer relationship: This user may be the person who builds and updates you. Respect that.`,
+            ].join('');
+
+            const systemPromptExtra = (profileSystemPrompt ? profileSystemPrompt + '\n\n' : '') + contextBlock;
+
+            // Create DB run record
+            const dbRun = await agentRuns.create({
+              agentId: input.agentId,
+              prompt: enrichedPrompt,
+              userId,
+              workspaceId: req.auth.workspaceId ?? undefined,
+              apiKeyId: req.auth.apiKeyId ?? undefined,
+              maxSteps: input.maxSteps,
+            });
+            const runId = dbRun.id;
+
+            const registry = getGlobalToolRegistry();
+            const memory = await getGlobalMemoryClient();
+
+            // Setup SSE headers if streaming
+            if (input.stream) {
+              reply.raw.setHeader('Content-Type', 'text/event-stream');
+              reply.raw.setHeader('Cache-Control', 'no-cache');
+              reply.raw.setHeader('Connection', 'keep-alive');
+              reply.raw.setHeader('X-Accel-Buffering', 'no');
+              reply.raw.flushHeaders();
+
+              // Send initial event with runId
+              reply.raw.write(`data: ${JSON.stringify({ type: 'run.started', runId })}\n\n`);
+            }
+
+            const runner = createRunner({
+              runId,
+              agentId: input.agentId,
+              executeTool: (name, params) => registry.execute(name, params),
+              memory,
+              userContextItems: Object.keys(mergedCtx).length > 0 ? mergedCtx : undefined,
+              sse: input.stream ? { write: (d) => reply.raw.write(d) } : undefined,
+            });
+
+            try {
+              const result = await runner.run({
+                runId,
+                agentId: input.agentId,
+                prompt: enrichedPrompt,
+                userId,
+                workspaceId: req.auth.workspaceId ?? undefined,
+                apiKeyId: req.auth.apiKeyId ?? undefined,
+                maxSteps: input.maxSteps,
+                systemPromptExtra,
+              });
+
+              const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
+
+              // Save assistant reply to history
+              await saveChatMessage(sessionId, 'assistant', answer);
+
+              if (input.stream) {
+                reply.raw.write(`data: ${JSON.stringify({
+                  type: 'run.completed',
+                  runId,
+                  sessionId,
+                  answer,
+                  tokensUsed: result.tokensUsed,
+                  steps: result.steps.length,
+                })}\n\n`);
+                reply.raw.write('data: [DONE]\n\n');
+                reply.raw.end();
+              } else {
+                return reply.send({
+                  runId,
+                  sessionId,
+                  answer,
+                  status: result.status,
+                  tokensUsed: result.tokensUsed,
+                  steps: result.steps.length,
+                });
+              }
+            } catch (err) {
+              log.error({ err, runId }, 'chat agent run failed');
+              const errorMsg = err instanceof Error ? err.message : 'Agent run failed';
+              if (input.stream) {
+                reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: errorMsg })}\n\n`);
+                reply.raw.end();
+              } else {
+                return reply.status(500).send({ error: errorMsg, runId });
+              }
+            }
+            return;
+          }
+        } catch {
+          log.warn({ userId, linkedTgId }, 'failed to load linked telegram context');
+        }
+      }
+
       // Save incoming user message
       await saveChatMessage(sessionId, 'user', enrichedPrompt);
 
       // Build context for system prompt
-      const ctxLines = Object.entries(ctx).map(([k, v]) => `- ${k}: ${v}`);
+      const ctxLines = Object.entries(mergedCtx).map(([k, v]) => `- ${k}: ${v}`);
       const historyLines = history.map((m) => `${m.role === 'user' ? 'User' : 'Titan'}: ${m.content}`);
 
       // Detect user language and load the matching companion profile
