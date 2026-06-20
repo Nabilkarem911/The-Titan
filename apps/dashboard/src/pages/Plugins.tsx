@@ -1,6 +1,6 @@
 import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';
-import { Puzzle, Search, Plus, X, Trash2, Power, Store, Download } from 'lucide-react';
+import { Puzzle, Search, Plus, X, Trash2, Power, Store, Download, Check } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { ListResponse, Plugin } from '../api/types';
@@ -149,7 +149,7 @@ export default function Plugins() {
             </button>
           </div>
           <p className="text-small text-text-secondary">Ready-made plugins you can install with one click. After installing, enable the plugin to make its tools available to the agent.</p>
-          <LibraryPlugins installingKey={installingKey} onInstall={handleInstallBuiltin} />
+          <LibraryPlugins installingKey={installingKey} onInstall={handleInstallBuiltin} installedNames={new Set(data?.items.map((p) => p.name) ?? [])} />
         </div>
       )}
 
@@ -248,54 +248,89 @@ export default function Plugins() {
   );
 }
 
-function LibraryPlugins({ installingKey, onInstall }: { installingKey: string | null; onInstall: (key: string) => void }) {
+function LibraryPlugins({ installingKey, onInstall, installedNames }: { installingKey: string | null; onInstall: (key: string) => void; installedNames: Set<string> }) {
+  const [libSearch, setLibSearch] = useState('');
   const { data, isLoading, error } = useApi<{ items: LibraryPlugin[] }>('/plugins/library');
 
   if (error) return <p className="text-small text-error">Failed to load library</p>;
   if (isLoading) return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>;
 
-  const categories = Array.from(new Set(data?.items.map((p) => p.category) ?? []));
+  const all = data?.items ?? [];
+  const q = libSearch.toLowerCase().trim();
+  const filtered = q
+    ? all.filter((p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.tags.some((t) => t.includes(q)))
+    : all;
+
+  const notInstalled = filtered.filter((p) => !installedNames.has(p.name));
+  const installed = filtered.filter((p) => installedNames.has(p.name));
+
+  const renderPluginCard = (plugin: LibraryPlugin, isInstalled: boolean) => (
+    <div key={plugin.key} className={`card p-4 flex flex-col gap-3 ${isInstalled ? 'opacity-60' : ''}`}>
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <h4 className="text-small font-semibold text-text-primary">{plugin.name}</h4>
+          <p className="text-caption text-text-secondary line-clamp-2 mt-0.5">{plugin.description}</p>
+        </div>
+        <span className="badge bg-accent-secondary/10 text-accent-secondary text-caption shrink-0 ml-2">{plugin.toolsCount} tools</span>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {plugin.tags.map((tag) => (
+          <span key={tag} className="badge bg-elevated text-text-muted text-caption">{tag}</span>
+        ))}
+      </div>
+      <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
+        <span className="text-caption text-text-muted">v{plugin.version}</span>
+        {isInstalled ? (
+          <span className="flex items-center gap-1 text-caption text-success font-medium">
+            <Check className="w-3.5 h-3.5" />
+            Installed
+          </span>
+        ) : (
+          <button
+            onClick={() => onInstall(plugin.key)}
+            disabled={installingKey === plugin.key}
+            className="btn-primary flex items-center gap-1.5 text-caption !py-1.5 !px-3"
+          >
+            {installingKey === plugin.key ? (
+              <span className="w-3 h-3 border-2 border-void border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            Install
+          </button>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      {categories.map((cat) => (
-        <div key={cat}>
-          <h3 className="text-label text-text-secondary uppercase tracking-wider mb-3">{cat}</h3>
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+        <input value={libSearch} onChange={(e) => setLibSearch(e.target.value)} placeholder="Search library plugins..." className="input pl-9" />
+      </div>
+
+      {notInstalled.length > 0 && (
+        <div>
+          <h3 className="text-label text-text-secondary uppercase tracking-wider mb-3">Available ({notInstalled.length})</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {data?.items.filter((p) => p.category === cat).map((plugin) => (
-              <div key={plugin.key} className="card p-4 flex flex-col gap-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-small font-semibold text-text-primary">{plugin.name}</h4>
-                    <p className="text-caption text-text-secondary line-clamp-2 mt-0.5">{plugin.description}</p>
-                  </div>
-                  <span className="badge bg-accent-secondary/10 text-accent-secondary text-caption shrink-0 ml-2">{plugin.toolsCount} tools</span>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {plugin.tags.map((tag) => (
-                    <span key={tag} className="badge bg-elevated text-text-muted text-caption">{tag}</span>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
-                  <span className="text-caption text-text-muted">v{plugin.version}</span>
-                  <button
-                    onClick={() => onInstall(plugin.key)}
-                    disabled={installingKey === plugin.key}
-                    className="btn-primary flex items-center gap-1.5 text-caption !py-1.5 !px-3"
-                  >
-                    {installingKey === plugin.key ? (
-                      <span className="w-3 h-3 border-2 border-void border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Download className="w-3.5 h-3.5" />
-                    )}
-                    Install
-                  </button>
-                </div>
-              </div>
-            ))}
+            {notInstalled.map((p) => renderPluginCard(p, false))}
           </div>
         </div>
-      ))}
+      )}
+
+      {installed.length > 0 && (
+        <div>
+          <h3 className="text-label text-text-secondary uppercase tracking-wider mb-3">Installed ({installed.length})</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {installed.map((p) => renderPluginCard(p, true))}
+          </div>
+        </div>
+      )}
+
+      {filtered.length === 0 && (
+        <p className="text-small text-text-muted text-center py-8">No plugins match your search.</p>
+      )}
     </div>
   );
 }
