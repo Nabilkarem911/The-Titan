@@ -54,6 +54,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { label: 'Swarm', path: '/swarm', icon: Network },
       { label: 'Playground', path: '/playground', icon: FlaskConical },
+      { label: 'Knowledge', path: '/knowledge', icon: Brain },
     ],
   },
   {

@@ -30,6 +30,7 @@ const Memory = lazy(() => import('./pages/Memory'));
 const AuditLogs = lazy(() => import('./pages/AuditLogs'));
 const AgentProfiles = lazy(() => import('./pages/AgentProfiles'));
 const Git = lazy(() => import('./pages/Git'));
+const Knowledge = lazy(() => import('./pages/Knowledge'));
 
 // ── Protected Layout ──
 function ProtectedLayout() {
@@ -83,6 +84,7 @@ export default function App() {
               <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="agent-profiles" element={<AgentProfiles />} />
             <Route path="git" element={<Git />} />
+            <Route path="knowledge" element={<Knowledge />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
