@@ -61,6 +61,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'Knowledge', path: '/knowledge', icon: Brain },
       { label: 'Workflows', path: '/workflows', icon: Workflow },
       { label: 'Learning', path: '/learning', icon: GraduationCap },
+      { label: 'Autonomous', path: '/autonomous', icon: Bot },
     ],
   },
   {

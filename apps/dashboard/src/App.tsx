@@ -34,6 +34,7 @@ const Knowledge = lazy(() => import('./pages/Knowledge'));
 const Workflows = lazy(() => import('./pages/Workflows'));
 const Learning = lazy(() => import('./pages/Learning'));
 const CodeIntel = lazy(() => import('./pages/CodeIntel'));
+const Autonomous = lazy(() => import('./pages/Autonomous'));
 
 // ── Protected Layout ──
 function ProtectedLayout() {
@@ -91,6 +92,7 @@ export default function App() {
             <Route path="workflows" element={<Workflows />} />
             <Route path="learning" element={<Learning />} />
             <Route path="code-intel" element={<CodeIntel />} />
+            <Route path="autonomous" element={<Autonomous />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
