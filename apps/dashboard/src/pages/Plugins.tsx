@@ -189,7 +189,7 @@ export default function Plugins() {
                 </button>
               </div>
             </div>
-          ))
+          ))}
         </div>
       ) : (
         <EmptyState icon={Puzzle} title="No plugins found" description={search ? "Try a different search term" : "Install plugins to extend functionality"} action={{ label: 'Install Plugin', onClick: () => setShowInstall(true) }} />
