@@ -79,6 +79,13 @@ export const users = {
     const r = await query<{ c: string }>('SELECT count(*)::text AS c FROM users WHERE deleted_at IS NULL');
     return Number(r.rows[0]?.c ?? 0);
   },
+
+  async findFirst(): Promise<PublicUser | null> {
+    const r = await query<Record<string, unknown>>(
+      'SELECT * FROM users WHERE deleted_at IS NULL ORDER BY created_at ASC LIMIT 1',
+    );
+    return r.rows[0] ? mapUser(r.rows[0]) : null;
+  },
 };
 
 export const workspaces = {

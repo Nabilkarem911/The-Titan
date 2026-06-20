@@ -34,6 +34,15 @@ export interface RegisterInput {
   password: string;
 }
 
+async function isFirstUserById(userId: string): Promise<boolean> {
+  const allUsers = await users.count();
+  if (allUsers <= 1) return true;
+  const r = await users.findById(userId);
+  if (!r) return false;
+  const firstCreated = await users.findFirst();
+  return firstCreated?.id === userId;
+}
+
 export interface LoginInput {
   email: string;
   password: string;
@@ -55,13 +64,20 @@ export interface AuthResult {
 
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   const email = input.email.toLowerCase();
+
+  const userCount = await users.count();
+  if (userCount > 0 && process.env.DISABLE_REGISTRATION === 'true') {
+    throw new UnauthorizedError('Registration is disabled');
+  }
+
   const passwordHash = await hashPassword(input.password);
   const created = await users.create({ email, name: input.name, passwordHash });
   if (!created) {
     throw new ConflictError('A user with that email already exists');
   }
   const tokens = await issueTokenPair(created.id);
-  log.info({ userId: created.id }, 'user registered');
+  const isFirstUser = userCount === 0;
+  log.info({ userId: created.id, isFirstUser, role: isFirstUser ? 'owner' : 'member' }, 'user registered');
   return {
     user: { id: created.id, email: created.email, name: created.name },
     tokens,
@@ -174,11 +190,13 @@ export async function resolveAuthFromAccessToken(token: string): Promise<AuthCon
       throw new UnauthorizedError('Session/user mismatch');
     }
   }
+  const isFirstUser = await isFirstUserById(user.id);
+  const role = isFirstUser ? 'owner' : 'member';
   return {
     userId: user.id,
     ...(payload.sid ? { sessionId: payload.sid } : {}),
-    role: 'owner',
-    permissions: getPermissionsForRole('owner'),
+    role,
+    permissions: getPermissionsForRole(role),
   };
 }
 
