@@ -36,24 +36,39 @@ export default function Chat() {
     try {
       abortRef.current = new AbortController();
       for await (const chunk of api.stream('/chat', {
-        message: userMsg.content,
-        agentMode,
-        history: messages.map(m => ({ role: m.role, content: m.content })),
+        prompt: userMsg.content,
+        agentId: 'default-agent',
+        stream: true,
       }, abortRef.current.signal)) {
         try {
           const parsed = JSON.parse(chunk);
-          if (parsed.delta) {
+          if (parsed.type === 'run.started') {
+            // runId received, streaming will follow
+          } else if (parsed.type === 'run.completed' && parsed.answer) {
             setMessages(prev => {
               const updated = [...prev];
               updated[updated.length - 1] = {
                 ...updated[updated.length - 1],
-                content: updated[updated.length - 1].content + parsed.delta,
+                content: parsed.answer,
+              };
+              return updated;
+            });
+          } else if (parsed.type === 'error') {
+            throw new Error(parsed.error || 'Chat failed');
+          } else if (parsed.text) {
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                ...updated[updated.length - 1],
+                content: updated[updated.length - 1].content + parsed.text,
               };
               return updated;
             });
           }
-          if (parsed.done) break;
-        } catch {
+        } catch (parseErr) {
+          if (parseErr instanceof Error && parseErr.message !== 'Unexpected token') {
+            throw parseErr;
+          }
           // plain text chunk
           setMessages(prev => {
             const updated = [...prev];

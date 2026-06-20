@@ -176,8 +176,6 @@ export class TitanWebSocketServer {
     httpServer.on('upgrade', (req, socket, head) => {
       const url = new URL(req.url ?? '/', 'http://localhost');
       if (url.pathname !== this.path) {
-        socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
-        socket.destroy();
         return;
       }
       const ip = (req.socket.remoteAddress ?? 'unknown') as string;

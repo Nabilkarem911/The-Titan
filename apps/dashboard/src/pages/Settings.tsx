@@ -81,7 +81,7 @@ function ProviderKeysTab() {
     for (const { provider, key } of keys) {
       if (!key) continue;
       try {
-        await api.post('/user-keys', { provider, value: key });
+        await api.post('/user/keys', { name: `${provider}-key`, provider, value: key });
         toast.success(`${provider} key saved`);
       } catch (err) {
         toast.error(`Failed to save ${provider} key`, { description: err instanceof Error ? err.message : undefined });

@@ -10,7 +10,7 @@ export const metricsRoutes: FastifyPluginAsync = async (app: FastifyInstance) =>
     return reply.type('text/plain; version=0.0.4').send(body);
   });
 
-  app.get('/metrics.json', { preHandler: requireAuth }, async () => {
+  app.get('/api/v1/metrics.json', { preHandler: requireAuth }, async () => {
     const snap = snapshot();
     let dbPool: { total: number; idle: number; waiting: number } | null = null;
     try {

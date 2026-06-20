@@ -1,5 +1,9 @@
-import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
+import type { FastifyPluginAsync } from 'fastify';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { mkdir } from 'node:fs/promises';
+import { WebSocketServer, type WebSocket } from 'ws';
 import { getLogger } from '@titan/logging';
 import { verifyAccessToken } from '@titan/auth';
 
@@ -10,20 +14,21 @@ interface TerminalSession {
   userId: string;
   process: ChildProcessWithoutNullStreams;
   cwd: string;
-  ws: import('ws').WebSocket;
+  ws: WebSocket;
 }
 
 const sessions = new Map<string, TerminalSession>();
+let terminalWss: WebSocketServer | null = null;
 
 function getWorkspaceRoot(userId: string): string {
-  const { join } = require('node:path');
   const base = process.env.WORKSPACE_ROOT ?? join(process.cwd(), 'workspaces');
   return join(base, userId);
 }
 
 export const terminalRoutes: FastifyPluginAsync = async (app) => {
-  // Upgrade handler for /terminal
-  app.server.on('upgrade', async (request: FastifyRequest['raw'], socket, head) => {
+  terminalWss = new WebSocketServer({ noServer: true });
+
+  app.server.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url ?? '/', 'http://localhost');
     if (url.pathname !== '/terminal') return;
 
@@ -44,18 +49,13 @@ export const terminalRoutes: FastifyPluginAsync = async (app) => {
       return;
     }
 
-    const { WebSocketServer } = await import('ws');
-    const wss = new WebSocketServer({ noServer: true });
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
+    terminalWss!.handleUpgrade(request, socket, head, (ws) => {
       handleTerminalConnection(ws, userId);
     });
   });
 };
 
-async function handleTerminalConnection(ws: import('ws').WebSocket, userId: string) {
-  const { randomUUID } = await import('node:crypto');
-  const { mkdir } = await import('node:fs/promises');
+async function handleTerminalConnection(ws: WebSocket, userId: string) {
   const sessionId = randomUUID();
   const workspaceRoot = getWorkspaceRoot(userId);
   await mkdir(workspaceRoot, { recursive: true });

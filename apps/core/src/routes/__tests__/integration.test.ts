@@ -366,8 +366,8 @@ describe('Metrics routes', () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it('GET /metrics.json requires auth', async () => {
-    const res = await app.inject({ method: 'GET', url: '/metrics.json' });
+  it('GET /api/v1/metrics.json requires auth', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/metrics.json' });
     expect(res.statusCode).toBe(401);
   });
 

@@ -11,7 +11,7 @@ interface QueueStats {
   delayed: number;
 }
 
-const QUEUE_NAMES = ['agent-execute', 'swarm-execute', 'chat-stream', 'cron-tick', 'webhook-deliver'];
+const QUEUE_NAMES = ['agent-execute', 'swarm-execute', 'tool-execute', 'memory-index', 'memory-retrieve', 'sandbox-exec', 'monitoring-check', 'audit-write', 'webhook-deliver'];
 
 export default function Queue() {
   const [stats, setStats] = useState<Record<string, QueueStats | { error: string }>>({});
