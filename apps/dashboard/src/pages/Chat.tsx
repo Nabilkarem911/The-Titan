@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Paperclip, Bot, User, Loader2, Square, Plus, ChevronDown, Wrench, Brain, Eye, MessageSquare, RefreshCw, Download, X, FileText, Image as ImageIcon, ThumbsUp, ThumbsDown, Search } from 'lucide-react';
+import { Send, Paperclip, Bot, User, Loader2, Square, Plus, ChevronDown, Wrench, Brain, Eye, MessageSquare, RefreshCw, Download, X, FileText, Image as ImageIcon, ThumbsUp, ThumbsDown, Search, Mic, Volume2 } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -64,6 +64,9 @@ export default function Chat() {
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | null>>({});
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -175,6 +178,70 @@ export default function Chat() {
     });
     if (type === 'up') toast.success('Thanks for the feedback!');
     else toast.info('Feedback noted — will help improve responses');
+  };
+
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        stream.getTracks().forEach(t => t.stop());
+        // Transcribe
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'audio.wav');
+        try {
+          const res = await fetch('/api/v1/voice/transcribe', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('titan_access_token')}` },
+            body: formData,
+          });
+          if (!res.ok) throw new Error('Transcription failed');
+          const data = await res.json() as { text: string };
+          if (data.text) {
+            setInput(prev => prev + (prev ? ' ' : '') + data.text);
+            toast.success('Transcribed!');
+          }
+        } catch (err) {
+          toast.error('Voice transcription failed', { description: err instanceof Error ? err.message : 'Unknown error' });
+        }
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch {
+      toast.error('Microphone access denied');
+    }
+  };
+
+  const handleStopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+  };
+
+  const handleSpeak = async (text: string) => {
+    if (!text.trim()) return;
+    try {
+      const res = await fetch('/api/v1/voice/synthesize', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('titan_access_token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error('TTS failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.play();
+    } catch (err) {
+      toast.error('Voice synthesis failed', { description: err instanceof Error ? err.message : 'Unknown error' });
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -615,12 +682,20 @@ export default function Chat() {
                   {msg.content || (msg.streaming && (!msg.steps || msg.steps.length === 0) && <Loader2 className="w-4 h-4 animate-spin text-text-muted" />)}
                   {msg.streaming && msg.content && <span className="inline-block w-1.5 h-4 bg-accent-primary ml-0.5 animate-pulse-soft" />}
                 </p>
-                {/* Regenerate + Feedback buttons for last assistant message */}
+                {/* Regenerate + Feedback + Speak buttons for last assistant message */}
                 {msg.role === 'assistant' && !msg.streaming && i === messages.length - 1 && !isStreaming && (
                   <div className="mt-2 pt-2 border-t border-border-subtle flex items-center gap-3">
                     <button onClick={handleRegenerate} className="flex items-center gap-1 text-caption text-text-muted hover:text-accent-primary transition-colors">
                       <RefreshCw className="w-3 h-3" />
                       Regenerate
+                    </button>
+                    <button
+                      onClick={() => handleSpeak(msg.content)}
+                      className="flex items-center gap-1 text-caption text-text-muted hover:text-accent-secondary transition-colors"
+                      title="Read aloud"
+                    >
+                      <Volume2 className="w-3 h-3" />
+                      Speak
                     </button>
                     <div className="flex items-center gap-1">
                       <button
@@ -677,6 +752,13 @@ export default function Chat() {
           <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} className="hidden" accept=".txt,.md,.json,.js,.ts,.tsx,.py,.go,.rs,.java,.c,.cpp,.h,.css,.html,.xml,.yaml,.yml,.csv,.log,.png,.jpg,.jpeg,.gif,.webp,.svg" />
           <button onClick={() => fileInputRef.current?.click()} className="btn-icon mb-0.5" title="Attach file">
             <Paperclip className="w-4 h-4" />
+          </button>
+          <button
+            onClick={isRecording ? handleStopRecording : handleStartRecording}
+            className={cn('btn-icon mb-0.5', isRecording && '!text-error !bg-error/10 animate-pulse-soft')}
+            title={isRecording ? 'Stop recording' : 'Voice input'}
+          >
+            <Mic className="w-4 h-4" />
           </button>
           <textarea
             value={input}
