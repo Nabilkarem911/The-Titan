@@ -8,6 +8,7 @@ import { ValidationError } from '@titan/shared';
 import { getLogger } from '@titan/logging';
 import { requireAuth } from '../plugins/auth.js';
 import { detectLanguage } from '../lang-detect.js';
+import { recordUserInteraction, getLearnedPreferences, getPersonaInstructionsForUser } from '../preference-singleton.js';
 import { readFile } from 'node:fs/promises';
 import { join, resolve, relative } from 'node:path';
 
@@ -204,6 +205,14 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
             const contextBlock = [
               ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
               historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
+              (() => {
+                const learned = getLearnedPreferences(userId);
+                const persona = getPersonaInstructionsForUser(userId);
+                const parts: string[] = [];
+                if (learned) parts.push(`\n\nLearned user preferences:\n${learned}`);
+                if (persona) parts.push(`\n\nAdaptive persona:\n${persona}`);
+                return parts.join('');
+              })(),
               `\n\nPersonality reminder:
 - You are Titan — a friend, not a bot. Talk like a real person (WhatsApp style, not essay style).
 - Feel the mood before responding. Is the user frustrated? Happy? Testing you?
@@ -269,6 +278,13 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
               // Save assistant reply to history
               await saveChatMessage(sessionId, 'assistant', answer);
+
+              // Record interaction for preference learning (non-blocking)
+              try {
+                recordUserInteraction(userId, [input.prompt, answer]);
+              } catch {
+                // preference learning is optional
+              }
 
               if (input.stream) {
                 reply.raw.write(`data: ${JSON.stringify({

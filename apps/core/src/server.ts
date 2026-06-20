@@ -41,6 +41,8 @@ import { learningRoutesV2 } from './routes/learning-v2.js';
 import { codeIntelRoutes } from './routes/code-intel.js';
 import { autonomousRoutes } from './routes/autonomous.js';
 import { teamsRoutes } from './routes/teams.js';
+import { mcpRoutes } from './routes/mcp.js';
+import { spawnerRoutes } from './routes/spawner.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 
@@ -239,6 +241,8 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(codeIntelRoutes);
   await app.register(autonomousRoutes);
   await app.register(teamsRoutes);
+  await app.register(mcpRoutes);
+  await app.register(spawnerRoutes);
   await registerTelegramRoutes(app);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -291,6 +295,14 @@ export async function buildServer(): Promise<FastifyInstance> {
         details: { method: req.method, url: req.url },
       });
     });
+  }
+
+  // Start memory consolidation daemon (runs every 6 hours)
+  try {
+    const { startConsolidationDaemon } = await import('./jobs/memory-consolidation.js');
+    startConsolidationDaemon();
+  } catch (err) {
+    log.warn({ err }, 'failed to start memory consolidation daemon — non-critical');
   }
 
   return app;
