@@ -44,6 +44,8 @@ export default function Chat() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>(() => localStorage.getItem('titan:chatModel') || 'default');
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -138,6 +140,7 @@ export default function Chat() {
         agentId: 'default-agent',
         sessionId: sessionId ?? undefined,
         stream: true,
+        ...(selectedModel !== 'default' && { model: selectedModel }),
       }, abortRef.current.signal)) {
         try {
           const parsed = JSON.parse(chunk);
@@ -272,13 +275,46 @@ export default function Chat() {
           <h1 className="text-h2 text-text-primary">Chat</h1>
           <p className="text-caption text-text-secondary">Multi-turn conversation with AI</p>
         </div>
-        <button
-          onClick={() => setAgentMode(!agentMode)}
-          className={cn('btn-secondary', agentMode && '!bg-accent-secondary/10 !border-accent-secondary !text-accent-secondary')}
-        >
-          <Bot className="w-4 h-4" />
-          {agentMode ? 'Agent Mode' : 'Chat Mode'}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Model Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setShowModelDropdown(!showModelDropdown)}
+              className="btn-secondary flex items-center gap-1.5 text-sm"
+            >
+              <Bot className="w-4 h-4" />
+              {selectedModel === 'default' ? 'Auto' : selectedModel}
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            {showModelDropdown && (
+              <div className="absolute right-0 mt-1 w-48 card p-1 z-20 shadow-xl">
+                {['default', 'gpt-4o', 'gpt-4o-mini', 'claude-3-5-sonnet', 'claude-3-haiku'].map(m => (
+                  <button
+                    key={m}
+                    onClick={() => {
+                      setSelectedModel(m);
+                      localStorage.setItem('titan:chatModel', m);
+                      setShowModelDropdown(false);
+                    }}
+                    className={cn(
+                      'w-full text-left px-3 py-1.5 rounded-btn text-sm transition-colors',
+                      m === selectedModel ? 'bg-accent-primary/10 text-accent-primary' : 'hover:bg-elevated text-text-secondary',
+                    )}
+                  >
+                    {m === 'default' ? 'Auto (default)' : m}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setAgentMode(!agentMode)}
+            className={cn('btn-secondary', agentMode && '!bg-accent-secondary/10 !border-accent-secondary !text-accent-secondary')}
+          >
+            <Bot className="w-4 h-4" />
+            {agentMode ? 'Agent Mode' : 'Chat Mode'}
+          </button>
+        </div>
       </div>
 
       {/* Messages */}

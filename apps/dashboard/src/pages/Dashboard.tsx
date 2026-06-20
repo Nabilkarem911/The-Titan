@@ -7,6 +7,8 @@ import {
   Plus,
   TerminalSquare,
   Zap,
+  Coins,
+  TrendingUp,
 } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import type { HealthDashboard, ListResponse, AgentRun, AgentProfile } from '../api/types';
@@ -27,6 +29,12 @@ export default function Dashboard() {
     { label: 'Agent Profiles', value: profilesData?.total ?? 0, icon: Bot, color: 'text-accent-secondary', bg: 'bg-accent-secondary/10' },
     { label: 'DB Pool', value: health?.dbPool ? `${health.dbPool.total}` : '—', icon: Network, color: 'text-accent-tertiary', bg: 'bg-accent-tertiary/10' },
   ];
+
+  // Token stats from recent runs
+  const recentRuns = runsData?.items ?? [];
+  const totalTokens = recentRuns.reduce((sum, r) => sum + (r.tokensUsed ?? 0), 0);
+  const avgTokens = recentRuns.length > 0 ? Math.round(totalTokens / recentRuns.length) : 0;
+  const maxTokens = recentRuns.reduce((max, r) => Math.max(max, r.tokensUsed ?? 0), 0);
 
   const quickActions = [
     { label: 'New Chat', icon: MessageSquare, path: '/chat', color: 'text-accent-primary' },
@@ -80,6 +88,31 @@ export default function Dashboard() {
             <span className="text-sm font-medium text-text-primary">{action.label}</span>
           </button>
         ))}
+      </div>
+
+      {/* Token Tracker */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="card p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Coins className="w-4 h-4 text-accent-primary" />
+            <span className="text-small text-text-secondary">Total Tokens (recent)</span>
+          </div>
+          <p className="text-h2 font-bold text-text-primary tabular-nums">{totalTokens.toLocaleString()}</p>
+        </div>
+        <div className="card p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-4 h-4 text-accent-secondary" />
+            <span className="text-small text-text-secondary">Avg Tokens / Run</span>
+          </div>
+          <p className="text-h2 font-bold text-text-primary tabular-nums">{avgTokens.toLocaleString()}</p>
+        </div>
+        <div className="card p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="w-4 h-4 text-accent-tertiary" />
+            <span className="text-small text-text-secondary">Peak Tokens</span>
+          </div>
+          <p className="text-h2 font-bold text-text-primary tabular-nums">{maxTokens.toLocaleString()}</p>
+        </div>
       </div>
 
       {/* Recent Runs + Health */}
