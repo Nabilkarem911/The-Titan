@@ -22,6 +22,7 @@ import {
   GitBranch,
   Workflow,
   GraduationCap,
+  Code2,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -49,6 +50,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'Files', path: '/files', icon: FolderTree },
       { label: 'Terminal', path: '/terminal', icon: TerminalSquare },
       { label: 'Git', path: '/git', icon: GitBranch },
+      { label: 'Code Intel', path: '/code-intel', icon: Code2 },
     ],
   },
   {
