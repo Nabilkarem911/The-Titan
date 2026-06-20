@@ -29,6 +29,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Memory = lazy(() => import('./pages/Memory'));
 const AuditLogs = lazy(() => import('./pages/AuditLogs'));
 const AgentProfiles = lazy(() => import('./pages/AgentProfiles'));
+const Git = lazy(() => import('./pages/Git'));
 
 // ── Protected Layout ──
 function ProtectedLayout() {
@@ -81,20 +82,14 @@ export default function App() {
               <Route path="memory" element={<Memory />} />
               <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="agent-profiles" element={<AgentProfiles />} />
+            <Route path="git" element={<Git />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
         <Toaster
-          theme="dark"
+          theme={localStorage.getItem('titan:theme') === 'light' ? 'light' : 'dark'}
           position="bottom-right"
-          toastOptions={{
-            style: {
-              background: '#1A2234',
-              border: '1px solid #334155',
-              color: '#F1F5F9',
-            },
-          }}
         />
       </AuthProvider>
     </ErrorBoundary>

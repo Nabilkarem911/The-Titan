@@ -144,17 +144,15 @@ export default function Chat() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      // Escape closes modals/search
       if (e.key === 'Escape') {
         setShowSearch(false);
         setShowModelDropdown(false);
       }
-      // Ctrl+Enter sends message
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        if (!isStreaming && input.trim()) handleSend();
+        const sendBtn = document.querySelector('[data-send-btn]') as HTMLButtonElement | null;
+        if (sendBtn && !sendBtn.disabled) sendBtn.click();
       }
-      // Ctrl+/ toggles search
       if (e.key === '/' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         setShowSearch(s => !s);
@@ -162,7 +160,7 @@ export default function Chat() {
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [input, isStreaming]);
+  }, []);
 
   // Filtered messages for search
   const filteredMessages = searchQuery.trim()
@@ -700,7 +698,7 @@ export default function Chat() {
               Stop
             </button>
           ) : (
-            <button onClick={handleSend} disabled={!input.trim()} className="btn-primary mb-0.5">
+            <button onClick={handleSend} disabled={!input.trim()} data-send-btn className="btn-primary mb-0.5">
               <Send className="w-4 h-4" />
             </button>
           )}
