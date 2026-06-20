@@ -10,6 +10,10 @@ export function TopBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const openCommandPalette = () => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, ctrlKey: true }));
+  };
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -29,14 +33,14 @@ export function TopBar() {
     <header className="h-14 bg-surface border-b border-border-subtle flex items-center justify-between px-6 shrink-0">
       {/* Search */}
       <div className="flex items-center gap-4 flex-1 max-w-md">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="input pl-9 h-9 text-sm"
-          />
-        </div>
+        <button
+          onClick={openCommandPalette}
+          className="relative w-full flex items-center gap-2 px-3 h-9 rounded-btn bg-elevated border border-border-subtle text-text-muted hover:border-border-default transition-colors"
+        >
+          <Search className="w-4 h-4 shrink-0" />
+          <span className="text-sm">Search pages...</span>
+          <kbd className="ml-auto text-caption bg-surface px-1.5 py-0.5 rounded border border-border-subtle">⌘K</kbd>
+        </button>
       </div>
 
       {/* Right actions */}
