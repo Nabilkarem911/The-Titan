@@ -370,6 +370,331 @@ module.exports = {
   }
 };`,
   },
+
+  {
+    key: 'qr-generator',
+    name: 'qr-generator',
+    description: 'Generate QR codes for any text or URL. Returns a QR code image URL.',
+    author: 'Titan Built-in',
+    version: '1.0.0',
+    tags: ['qr', 'image', 'generator'],
+    category: 'Media',
+    tools: [
+      {
+        name: 'generate_qr',
+        description: 'Generate a QR code for text or a URL and return the image URL.',
+        schema: {
+          data: { type: 'string', description: 'Text or URL to encode in the QR code' },
+          size: { type: 'number', description: 'Image size in pixels (default: 200)' },
+        },
+        requiredParams: ['data'],
+      },
+    ],
+    code: `module.exports = {
+  generate_qr: async function(params) {
+    const { data, size } = params;
+    const s = size || 200;
+    const url = 'https://api.qrserver.com/v1/create-qr-code/?size=' + s + 'x' + s + '&data=' + encodeURIComponent(data);
+    return { qrUrl: url, data: data, size: s };
+  }
+};`,
+  },
+  {
+    key: 'url-shortener',
+    name: 'url-shortener',
+    description: 'Shorten long URLs using is.gd free URL shortener service (no API key required).',
+    author: 'Titan Built-in',
+    version: '1.0.0',
+    tags: ['url', 'web', 'shortener'],
+    category: 'Web',
+    tools: [
+      {
+        name: 'shorten_url',
+        description: 'Shorten a long URL and return the short version.',
+        schema: { url: { type: 'string', description: 'The long URL to shorten' } },
+        requiredParams: ['url'],
+      },
+    ],
+    code: `module.exports = {
+  shorten_url: async function(params) {
+    const { url } = params;
+    const res = await fetch('https://is.gd/create.php?format=json&url=' + encodeURIComponent(url));
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return { shortUrl: data.shorturl, originalUrl: url };
+  }
+};`,
+  },
+  {
+    key: 'ip-lookup',
+    name: 'ip-lookup',
+    description: 'Look up geolocation and network information for any IP address.',
+    author: 'Titan Built-in',
+    version: '1.0.0',
+    tags: ['ip', 'network', 'geo'],
+    category: 'Network',
+    tools: [
+      {
+        name: 'lookup_ip',
+        description: 'Get geolocation, ISP, and country info for an IP address. Leave empty for your own IP.',
+        schema: { ip: { type: 'string', description: 'IP address to look up (optional, defaults to caller IP)' } },
+      },
+    ],
+    code: `module.exports = {
+  lookup_ip: async function(params) {
+    const ip = params.ip || '';
+    const url = ip ? 'http://ip-api.com/json/' + ip : 'http://ip-api.com/json/';
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status === 'fail') throw new Error(data.message || 'Lookup failed');
+    return {
+      ip: data.query,
+      country: data.country,
+      countryCode: data.countryCode,
+      region: data.regionName,
+      city: data.city,
+      lat: data.lat,
+      lon: data.lon,
+      timezone: data.timezone,
+      isp: data.isp,
+      org: data.org,
+    };
+  }
+};`,
+  },
+  {
+    key: 'translator',
+    name: 'translator',
+    description: 'Translate text between languages using Google Translate (free, no API key needed).',
+    author: 'Titan Built-in',
+    version: '1.0.0',
+    tags: ['translate', 'language', 'i18n'],
+    category: 'Language',
+    tools: [
+      {
+        name: 'translate',
+        description: 'Translate text from one language to another.',
+        schema: {
+          text: { type: 'string', description: 'Text to translate' },
+          from: { type: 'string', description: 'Source language code (e.g. en, ar, fr). Use "auto" for auto-detect.' },
+          to: { type: 'string', description: 'Target language code (e.g. en, ar, fr)' },
+        },
+        requiredParams: ['text', 'to'],
+      },
+    ],
+    code: `module.exports = {
+  translate: async function(params) {
+    const { text, from, to } = params;
+    const src = from || 'auto';
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' + src + '&tl=' + to + '&dt=t&q=' + encodeURIComponent(text);
+    const res = await fetch(url);
+    const data = await res.json();
+    const translated = (data[0] || []).map(function(t) { return t[0] || ''; }).join('');
+    const detected = data[2] || src;
+    return { translated: translated, from: detected, to: to, original: text };
+  }
+};`,
+  },
+  {
+    key: 'rss-reader',
+    name: 'rss-reader',
+    description: 'Parse RSS/Atom feeds and return feed title and recent items.',
+    author: 'Titan Built-in',
+    version: '1.0.0',
+    tags: ['rss', 'feed', 'news'],
+    category: 'Web',
+    tools: [
+      {
+        name: 'read_feed',
+        description: 'Fetch and parse an RSS/Atom feed URL, returning title and recent items.',
+        schema: {
+          url: { type: 'string', description: 'RSS/Atom feed URL' },
+          limit: { type: 'number', description: 'Max items to return (default: 10)' },
+        },
+        requiredParams: ['url'],
+      },
+    ],
+    code: `module.exports = {
+  read_feed: async function(params) {
+    const { url, limit } = params;
+    const res = await fetch(url);
+    const text = await res.text();
+    var items = [];
+    var title = '';
+    var titleMatch = text.match(/<title>([^<]+)<\\/title>/);
+    if (titleMatch) title = titleMatch[1].trim();
+    var itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;
+    var entryRegex = /<entry>([\\s\\S]*?)<\\/entry>/g;
+    var regex = itemRegex;
+    var match;
+    var max = limit || 10;
+    while ((match = regex.exec(text)) !== null && items.length < max) {
+      var block = match[1];
+      var t = (block.match(/<title>([^<]+)<\\/title>/) || [])[1] || '';
+      var l = (block.match(/<link>([^<]+)<\\/link>/) || [])[1] || '';
+      var d = (block.match(/<description>([\\s\\S]*?)<\\/description>/) || [])[1] || '';
+      var p = (block.match(/<pubDate>([^<]+)<\\/pubDate>/) || [])[1] || '';
+      items.push({ title: t.trim(), link: l.trim(), description: d.trim().replace(/<[^>]+>/g, '').slice(0, 200), pubDate: p.trim() });
+    }
+    if (items.length === 0) {
+      regex = entryRegex;
+      while ((match = regex.exec(text)) !== null && items.length < max) {
+        var block = match[1];
+        var t = (block.match(/<title>([^<]+)<\\/title>/) || [])[1] || '';
+        var l = (block.match(/href="([^"]+)"/) || [])[1] || '';
+        var d = (block.match(/<summary>([\\s\\S]*?)<\\/summary>/) || [])[1] || '';
+        var p = (block.match(/<published>([^<]+)<\\/published>/) || [])[1] || '';
+        items.push({ title: t.trim(), link: l.trim(), description: d.trim().replace(/<[^>]+>/g, '').slice(0, 200), pubDate: p.trim() });
+      }
+    }
+    return { feedTitle: title, items: items, count: items.length };
+  }
+};`,
+  },
+  {
+    key: 'regex-tester',
+    name: 'regex-tester',
+    description: 'Test regular expressions against text. Returns matches, groups, and match count.',
+    author: 'Titan Built-in',
+    version: '1.0.0',
+    tags: ['regex', 'text', 'testing'],
+    category: 'Utilities',
+    tools: [
+      {
+        name: 'test_regex',
+        description: 'Test a regular expression against text and return all matches.',
+        schema: {
+          pattern: { type: 'string', description: 'Regular expression pattern (without slashes)' },
+          text: { type: 'string', description: 'Text to test against' },
+          flags: { type: 'string', description: 'Regex flags (e.g. gi, g, i). Default: g' },
+        },
+        requiredParams: ['pattern', 'text'],
+      },
+    ],
+    code: `module.exports = {
+  test_regex: async function(params) {
+    const { pattern, text, flags } = params;
+    const f = flags || 'g';
+    const regex = new RegExp(pattern, f);
+    const matches = [];
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+      matches.push({ match: match[0], index: match.index, groups: match.slice(1) });
+      if (!regex.global) break;
+    }
+    return { pattern: pattern, flags: f, matchCount: matches.length, matches: matches };
+  }
+};`,
+  },
+  {
+    key: 'color-tools',
+    name: 'color-tools',
+    description: 'Color conversion and utilities: HEX to RGB, RGB to HSL, generate palettes.',
+    author: 'Titan Built-in',
+    version: '1.0.0',
+    tags: ['color', 'design', 'conversion'],
+    category: 'Design',
+    tools: [
+      {
+        name: 'hex_to_rgb',
+        description: 'Convert a HEX color code to RGB values.',
+        schema: { hex: { type: 'string', description: 'HEX color (e.g. #FF5733 or FF5733)' } },
+        requiredParams: ['hex'],
+      },
+      {
+        name: 'rgb_to_hsl',
+        description: 'Convert RGB values to HSL (hue, saturation, lightness).',
+        schema: {
+          r: { type: 'number', description: 'Red (0-255)' },
+          g: { type: 'number', description: 'Green (0-255)' },
+          b: { type: 'number', description: 'Blue (0-255)' },
+        },
+        requiredParams: ['r', 'g', 'b'],
+      },
+      {
+        name: 'generate_palette',
+        description: 'Generate a color palette from a base HEX color.',
+        schema: { hex: { type: 'string', description: 'Base HEX color' } },
+        requiredParams: ['hex'],
+      },
+    ],
+    code: `module.exports = {
+  hex_to_rgb: async function(params) {
+    var h = params.hex.replace('#', '');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    var r = parseInt(h.slice(0, 2), 16);
+    var g = parseInt(h.slice(2, 4), 16);
+    var b = parseInt(h.slice(4, 6), 16);
+    return { r: r, g: g, b: b, rgb: 'rgb(' + r + ', ' + g + ', ' + b + ')' };
+  },
+  rgb_to_hsl: async function(params) {
+    var r = params.r / 255, g = params.g / 255, b = params.b / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h, s, l = (max + min) / 2;
+    if (max === min) { h = s = 0; }
+    else {
+      var d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
+    }
+    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100), hsl: 'hsl(' + Math.round(h*360) + ', ' + Math.round(s*100) + '%, ' + Math.round(l*100) + '%)' };
+  },
+  generate_palette: async function(params) {
+    var h = params.hex.replace('#', '');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    var r = parseInt(h.slice(0, 2), 16);
+    var g = parseInt(h.slice(2, 4), 16);
+    var b = parseInt(h.slice(4, 6), 16);
+    function shift(amt) {
+      var nr = Math.max(0, Math.min(255, r + amt));
+      var ng = Math.max(0, Math.min(255, g + amt));
+      var nb = Math.max(0, Math.min(255, b + amt));
+      return '#' + nr.toString(16).padStart(2,'0') + ng.toString(16).padStart(2,'0') + nb.toString(16).padStart(2,'0');
+    }
+    return { base: '#' + h, lighter: shift(40), light: shift(20), dark: shift(-20), darker: shift(-40) };
+  }
+};`,
+  },
+  {
+    key: 'markdown-converter',
+    name: 'markdown-converter',
+    description: 'Convert Markdown text to HTML. Supports headings, bold, italic, links, lists, and code blocks.',
+    author: 'Titan Built-in',
+    version: '1.0.0',
+    tags: ['markdown', 'html', 'conversion'],
+    category: 'Utilities',
+    tools: [
+      {
+        name: 'md_to_html',
+        description: 'Convert Markdown text to HTML.',
+        schema: { markdown: { type: 'string', description: 'Markdown text to convert' } },
+        requiredParams: ['markdown'],
+      },
+    ],
+    code: `module.exports = {
+  md_to_html: async function(params) {
+    var md = params.markdown;
+    var html = md
+      .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+      .replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>')
+      .replace(/\\*(.+?)\\*/g, '<em>$1</em>')
+      .replace(/\`(.+?)\`/g, '<code>$1</code>')
+      .replace(/\\[(.+?)\\]\\((.+?)\\)/g, '<a href="$2">$1</a>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\\/li>)/s, '<ul>$1</ul>')
+      .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+      .replace(/\\n\\n/g, '</p><p>')
+      .replace(/^/, '<p>')
+      .replace(/$/, '</p>');
+    return { html: html };
+  }
+};`,
+  },
 ];
 
 export function getBuiltinPlugin(key: string): BuiltinPlugin | undefined {
