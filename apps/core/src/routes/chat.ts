@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { getGlobalToolRegistry } from '@titan/agent-engine';
+import { getGlobalToolRegistry, type ToolResult } from '@titan/agent-engine';
 import { createRunner } from '../create-runner.js';
 import { getGlobalMemoryClient } from '@titan/memory';
 import { agentRuns, userContext, getChatHistory, saveChatMessage, agentProfiles, query } from '@titan/database';
@@ -34,6 +34,38 @@ const ChatInputSchema = z.object({
 });
 
 const RATE_LIMIT_CHAT = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
+
+/** File tools that should have their filePath rewritten to workspace root. */
+const FILE_TOOLS = new Set(['write_file', 'read_file_content', 'read_file_ast', 'patch_file']);
+
+/** Wrap executeTool to force file paths inside the user's workspace. */
+function createWorkspaceToolExecutor(
+  registry: ReturnType<typeof getGlobalToolRegistry>,
+  workspaceRoot: string,
+  log: ReturnType<typeof getLogger>,
+) {
+  return async (name: string, params: unknown): Promise<ToolResult> => {
+    if (FILE_TOOLS.has(name) && typeof params === 'object' && params !== null) {
+      const p = params as Record<string, unknown>;
+      if (typeof p['filePath'] === 'string') {
+        const original = p['filePath'] as string;
+        const wsRoot = workspaceRoot.replace(/\\/g, '/');
+        const normalized = original.replace(/\\/g, '/');
+        if (!normalized.startsWith(wsRoot)) {
+          let relative = normalized
+            .replace(/^\/+/, '')
+            .replace(/^home\/titan\//, '')
+            .replace(/^home\/[^/]+\//, '')
+            .replace(/^tmp\/titan-uploads\//, '')
+            .replace(/^app\/Titan\//, '');
+          p['filePath'] = join(workspaceRoot, relative);
+          log.info({ tool: name, original, rewritten: p['filePath'] }, 'rewrote file path to workspace');
+        }
+      }
+    }
+    return registry.execute(name, params);
+  };
+}
 
 export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // GET /api/v1/chat/sessions — list all chat sessions for current user
@@ -197,6 +229,8 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
             const registry = getGlobalToolRegistry();
             const memory = await getGlobalMemoryClient();
+            const tgWorkspaceRoot = getWorkspaceRoot(userId);
+            const tgExecuteTool = createWorkspaceToolExecutor(registry, tgWorkspaceRoot, log);
 
             // Setup SSE headers if streaming
             if (input.stream) {
@@ -213,7 +247,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
             const runner = createRunner({
               runId,
               agentId: input.agentId,
-              executeTool: (name, params) => registry.execute(name, params),
+              executeTool: tgExecuteTool,
               memory,
               userContextItems: Object.keys(mergedCtx).length > 0 ? mergedCtx : undefined,
               sse: input.stream ? { write: (d) => reply.raw.write(d) } : undefined,
@@ -331,6 +365,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
       const registry = getGlobalToolRegistry();
       const memory = await getGlobalMemoryClient();
+      const wrappedExecuteTool = createWorkspaceToolExecutor(registry, workspaceRoot, log);
 
       // Setup SSE headers if streaming
       if (input.stream) {
@@ -347,7 +382,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const runner = createRunner({
         runId,
         agentId: input.agentId,
-        executeTool: (name, params) => registry.execute(name, params),
+        executeTool: wrappedExecuteTool,
         memory,
         userContextItems: Object.keys(ctx).length > 0 ? ctx : undefined,
         sse: input.stream ? { write: (d) => reply.raw.write(d) } : undefined,
