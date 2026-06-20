@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Bot, Plus, Edit3, Trash2, Copy, Search,
   Layers, Save, X, Wand2,

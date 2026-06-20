@@ -1,6 +1,6 @@
 // ── Titan API Client ──────────────────────────────────────────────────────────
 
-const API_BASE = (import.meta as Record<string, Record<string, string>>).env?.VITE_API_BASE || '/api/v1';
+const API_BASE = (import.meta as unknown as Record<string, Record<string, string>>).env?.VITE_API_BASE || '/api/v1';
 
 function getToken(): string | null {
   return localStorage.getItem('titan_token');

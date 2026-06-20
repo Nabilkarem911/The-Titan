@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Clock, RefreshCw, RotateCcw, XCircle } from 'lucide-react';
 import { usePollingApi, useApi } from '../hooks/useApi';
 import { api } from '../api/client';

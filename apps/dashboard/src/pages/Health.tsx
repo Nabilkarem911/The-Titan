@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { Activity, CheckCircle2, AlertTriangle, XCircle, Clock } from 'lucide-react';
 import { usePollingApi } from '../hooks/useApi';
 import { api } from '../api/client';
@@ -7,7 +7,7 @@ import { PageSkeleton } from '../components/LoadingSkeleton';
 import { classNames, formatDuration } from '../utils/format';
 import type { HealthStatus } from '../api/client';
 
-const statusIcon: Record<string, React.ReactNode> = {
+const statusIcon: Record<string, ReactNode> = {
   pass: <CheckCircle2 className="w-5 h-5 text-success" />,
   warn: <AlertTriangle className="w-5 h-5 text-warning" />,
   fail: <XCircle className="w-5 h-5 text-pink" />,

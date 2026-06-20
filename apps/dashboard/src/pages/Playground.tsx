@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Play, Square, RotateCcw, Settings2, Copy, CheckCheck } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';

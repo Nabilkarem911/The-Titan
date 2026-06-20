@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback, Fragment } from 'react';
 import {
   FolderOpen, File, ChevronRight, ArrowLeft, Upload,
   Trash2, Edit3, Save, X,
@@ -71,10 +71,10 @@ export default function Files() {
         <div className="flex items-center gap-2 text-sm">
           <button onClick={() => navigateTo('')} className="text-cyan hover:underline">root</button>
           {breadcrumbs.map((part, i) => (
-            <React.Fragment key={i}>
+            <Fragment key={i}>
               <ChevronRight className="w-3 h-3 text-text-muted" />
               <button onClick={() => navigateTo(breadcrumbs.slice(0, i + 1).join('/'))} className="text-text-secondary hover:text-cyan transition-colors">{part}</button>
-            </React.Fragment>
+            </Fragment>
           ))}
         </div>
         <div className="flex gap-2">

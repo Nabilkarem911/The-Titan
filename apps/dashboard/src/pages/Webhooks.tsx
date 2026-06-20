@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Webhook, Plus, Edit3, Trash2, Save, X, TestTube2 } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';

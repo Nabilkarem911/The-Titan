@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bot,
@@ -16,7 +15,7 @@ import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';
 import { ErrorState } from '../components/PageState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
-import { formatRelativeTime, classNames } from '../utils/format';
+import { classNames } from '../utils/format';
 import type { AgentProfile, QueueStats, HealthStatus, MetricsData } from '../api/client';
 
 function StatCard({

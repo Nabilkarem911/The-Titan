@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Puzzle, Power, Trash2, Download, Plus, X } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';

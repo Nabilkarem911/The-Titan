@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function SkeletonCard() {
   return (
     <div className="card p-6">

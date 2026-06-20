@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface TitanLogoProps {
   size?: number;
   className?: string;

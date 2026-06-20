@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Terminal as TerminalIcon, Maximize2, Minimize2 } from 'lucide-react';
 import { classNames } from '../utils/format';
 

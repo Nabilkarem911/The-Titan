@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Bot, User, Loader2, StopCircle, Trash2, Plus } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';

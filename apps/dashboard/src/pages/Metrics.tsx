@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { Cpu, HardDrive, Wifi, Clock, Zap, DollarSign, Hash, BarChart3 } from 'lucide-react';
 import { usePollingApi } from '../hooks/useApi';
 import { api } from '../api/client';
@@ -7,7 +7,7 @@ import { PageSkeleton } from '../components/LoadingSkeleton';
 import { classNames } from '../utils/format';
 import type { MetricsData } from '../api/client';
 
-function GaugeCard({ label, value, unit, icon, color }: { label: string; value: number; unit: string; icon: React.ReactNode; color: string }) {
+function GaugeCard({ label, value, unit, icon, color }: { label: string; value: number; unit: string; icon: ReactNode; color: string }) {
   const barColor = value > 80 ? 'bg-pink' : value > 60 ? 'bg-warning' : `bg-${color}`;
   return (
     <div className="card p-5">
