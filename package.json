@@ -65,5 +65,14 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@hookform/resolvers": "^5.4.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.40.0",
+    "react-hook-form": "^7.80.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0"
   }
 }
