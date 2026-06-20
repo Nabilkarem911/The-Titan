@@ -5,6 +5,7 @@ import { getLogger } from '@titan/logging';
 import { getGlobalPluginRunner, getGlobalToolRegistry } from '@titan/agent-engine';
 import { requireAuth, requirePermission } from '../plugins/auth.js';
 import { PERMISSIONS } from '@titan/shared';
+import { BUILTIN_PLUGINS, getBuiltinPlugin, computeChecksum } from '../plugins/builtin-plugins.js';
 
 const log = getLogger().child({ component: 'plugin-routes' });
 const runner = getGlobalPluginRunner();
@@ -299,6 +300,65 @@ export const pluginRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
     } catch (err) {
       log.error({ err, id }, 'failed to delete plugin');
       return reply.status(500).send({ error: 'Failed to delete plugin' });
+    }
+  });
+
+  // GET /api/v1/plugins/library — list available built-in plugins
+  app.get('/api/v1/plugins/library', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (_req, reply) => {
+    const items = BUILTIN_PLUGINS.map((p) => ({
+      key: p.key,
+      name: p.name,
+      description: p.description,
+      author: p.author,
+      version: p.version,
+      tags: p.tags,
+      category: p.category,
+      toolsCount: p.tools.length,
+      tools: p.tools.map((t) => ({ name: t.name, description: t.description })),
+    }));
+    return reply.send({ items });
+  });
+
+  // POST /api/v1/plugins/library/:key/install — install a built-in plugin by key
+  app.post('/api/v1/plugins/library/:key/install', { preHandler: [async (req: FastifyRequest) => { await requireAuth(req); }] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { key } = req.params as { key: string };
+    const builtin = getBuiltinPlugin(key);
+    if (!builtin) return reply.status(404).send({ error: 'Built-in plugin not found' });
+
+    try {
+      const existing = await plugins.findByName(builtin.name);
+      if (existing) {
+        return reply.status(409).send({ error: 'Plugin already installed', pluginId: existing.id });
+      }
+
+      const checksum = computeChecksum(builtin.code);
+      const plugin = await plugins.create({
+        name: builtin.name,
+        description: builtin.description,
+        author: builtin.author,
+        source: 'local',
+        tags: builtin.tags,
+        capabilities: [],
+      });
+
+      await pluginVersions.create({
+        pluginId: plugin.id,
+        version: builtin.version,
+        manifest: {
+          tools: builtin.tools,
+          code: builtin.code,
+        },
+        entrypoint: undefined,
+        checksum,
+        signature: undefined,
+      });
+
+      log.info({ plugin: builtin.name, key }, 'built-in plugin installed');
+      return reply.status(201).send(plugin);
+    } catch (err) {
+      log.error({ err, key }, 'failed to install built-in plugin');
+      return reply.status(500).send({ error: 'Failed to install built-in plugin' });
     }
   });
 };

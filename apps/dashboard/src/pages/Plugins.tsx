@@ -1,6 +1,6 @@
 import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';
-import { Puzzle, Search, Plus, X, Trash2, Power } from 'lucide-react';
+import { Puzzle, Search, Plus, X, Trash2, Power, Store, Download } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { ListResponse, Plugin } from '../api/types';
@@ -9,10 +9,24 @@ import { SkeletonCard } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { useDebounce } from '../hooks/useDebounce';
 
+interface LibraryPlugin {
+  key: string;
+  name: string;
+  description: string;
+  author: string;
+  version: string;
+  tags: string[];
+  category: string;
+  toolsCount: number;
+  tools: Array<{ name: string; description: string }>;
+}
+
 export default function Plugins() {
   const [search, setSearch] = useState('');
   const [showInstall, setShowInstall] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const [installingKey, setInstallingKey] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -85,6 +99,20 @@ export default function Plugins() {
     }
   };
 
+  const handleInstallBuiltin = async (key: string) => {
+    setInstallingKey(key);
+    try {
+      await api.post(`/plugins/library/${key}/install`);
+      toast.success('Plugin installed — enable it to activate');
+      setShowLibrary(false);
+      refetch();
+    } catch (err) {
+      toast.error('Failed to install plugin', { description: err instanceof Error ? err.message : undefined });
+    } finally {
+      setInstallingKey(null);
+    }
+  };
+
   if (error) return <ErrorState message={error} onRetry={refetch} className="py-20" />;
 
   return (
@@ -97,11 +125,33 @@ export default function Plugins() {
           </h1>
           <p className="text-small text-text-secondary mt-1">Browse and manage installed plugins</p>
         </div>
-        <button onClick={() => setShowInstall(true)} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Install Plugin
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowLibrary(true)} className="btn-secondary flex items-center gap-2">
+            <Store className="w-4 h-4" />
+            Plugin Library
+          </button>
+          <button onClick={() => setShowInstall(true)} className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Custom Install
+          </button>
+        </div>
       </div>
+
+      {showLibrary && (
+        <div className="card p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-h2 text-text-primary flex items-center gap-2">
+              <Store className="w-5 h-5 text-accent-secondary" />
+              Plugin Library
+            </h2>
+            <button onClick={() => setShowLibrary(false)} className="btn-icon text-text-muted hover:text-text-primary">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-small text-text-secondary">Ready-made plugins you can install with one click. After installing, enable the plugin to make its tools available to the agent.</p>
+          <LibraryPlugins installingKey={installingKey} onInstall={handleInstallBuiltin} />
+        </div>
+      )}
 
       {showInstall && (
         <div className="card p-6 space-y-4">
@@ -194,6 +244,58 @@ export default function Plugins() {
       ) : (
         <EmptyState icon={Puzzle} title="No plugins found" description={search ? "Try a different search term" : "Install plugins to extend functionality"} action={{ label: 'Install Plugin', onClick: () => setShowInstall(true) }} />
       )}
+    </div>
+  );
+}
+
+function LibraryPlugins({ installingKey, onInstall }: { installingKey: string | null; onInstall: (key: string) => void }) {
+  const { data, isLoading, error } = useApi<{ items: LibraryPlugin[] }>('/plugins/library');
+
+  if (error) return <p className="text-small text-error">Failed to load library</p>;
+  if (isLoading) return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>;
+
+  const categories = Array.from(new Set(data?.items.map((p) => p.category) ?? []));
+
+  return (
+    <div className="space-y-6">
+      {categories.map((cat) => (
+        <div key={cat}>
+          <h3 className="text-label text-text-secondary uppercase tracking-wider mb-3">{cat}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {data?.items.filter((p) => p.category === cat).map((plugin) => (
+              <div key={plugin.key} className="card p-4 flex flex-col gap-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-small font-semibold text-text-primary">{plugin.name}</h4>
+                    <p className="text-caption text-text-secondary line-clamp-2 mt-0.5">{plugin.description}</p>
+                  </div>
+                  <span className="badge bg-accent-secondary/10 text-accent-secondary text-caption shrink-0 ml-2">{plugin.toolsCount} tools</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {plugin.tags.map((tag) => (
+                    <span key={tag} className="badge bg-elevated text-text-muted text-caption">{tag}</span>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
+                  <span className="text-caption text-text-muted">v{plugin.version}</span>
+                  <button
+                    onClick={() => onInstall(plugin.key)}
+                    disabled={installingKey === plugin.key}
+                    className="btn-primary flex items-center gap-1.5 text-caption !py-1.5 !px-3"
+                  >
+                    {installingKey === plugin.key ? (
+                      <span className="w-3 h-3 border-2 border-void border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    Install
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
