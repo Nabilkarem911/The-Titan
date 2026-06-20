@@ -194,9 +194,13 @@
 - [x] Plugin Library search + installed/available sections — DONE
 - [x] Telegram linking (merge memory + history) — DONE
 - [x] Fix POST body 400 error — DONE
-- [ ] Phase 1: Chat Experience
+- [x] Phase 1.1: Load chat history on page open — DONE
+- [x] Phase 1.2: Render agent steps in chat — DONE
+- [x] Phase 1.3: Stop/abort button — DONE
+- [x] Phase 1.4: Session persistence + New Chat — DONE
+- [x] Phase 3.1: Command Palette (Cmd+K) — DONE
 - [ ] Phase 2: Agent Transparency
-- [ ] Phase 3: Dashboard Polish
+- [ ] Phase 3.2-3.4: Activity Feed, Token Tracker, Model Selector
 - [ ] Phase 4: Plugin Marketplace
 - [ ] Phase 5: Mobile & UX
 - [ ] Phase 6: Pro Features
