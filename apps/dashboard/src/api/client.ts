@@ -59,8 +59,9 @@ class ApiClient {
     isRetry = false,
   ): Promise<T> {
     const token = this.getToken();
+    const hasBody = options.body !== undefined && options.body !== null;
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers as Record<string, string>),
     };
     if (token) {

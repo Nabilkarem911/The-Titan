@@ -32,7 +32,8 @@ export default function Files() {
     setIsLoading(true);
     setSelectedFile(null);
     try {
-      const data = await api.get<{ items: FileEntry[] }>(`/files?path=${encodeURIComponent(path)}`);
+      const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+      const data = await api.get<{ items: FileEntry[] }>(`/files?path=${encodedPath}`);
       setEntries(data.items);
       setCurrentPath(path);
     } catch (err) {
@@ -53,7 +54,8 @@ export default function Files() {
       setFileLoading(true);
       const filePath = currentPath === '/' ? `/${entry.name}` : `${currentPath}/${entry.name}`;
       try {
-        const data = await api.get<{ content: string; path: string }>(`/files/content?path=${encodeURIComponent(filePath)}`);
+        const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
+        const data = await api.get<{ content: string; path: string }>(`/files/content?path=${encodedPath}`);
         setSelectedFile({ path: filePath, content: data.content });
         setEditedContent(data.content);
       } catch (err) {
@@ -78,7 +80,8 @@ export default function Files() {
     if (!confirm(`Delete ${entry.name}?`)) return;
     const path = currentPath === '/' ? `/${entry.name}` : `${currentPath}/${entry.name}`;
     try {
-      await api.delete(`/files?path=${encodeURIComponent(path)}`);
+      const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+      await api.delete(`/files?path=${encodedPath}`);
       toast.success('Deleted');
       loadDir(currentPath);
     } catch (err) {
@@ -111,8 +114,9 @@ export default function Files() {
 
   const handleDownload = (entry: FileEntry) => {
     const path = currentPath === '/' ? `/${entry.name}` : `${currentPath}/${entry.name}`;
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/');
     const token = localStorage.getItem('titan_access_token');
-    const url = `/api/v1/files/download?path=${encodeURIComponent(path)}`;
+    const url = `/api/v1/files/download?path=${encodedPath}`;
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.blob())
       .then(blob => {
