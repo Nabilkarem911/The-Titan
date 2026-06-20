@@ -11,7 +11,7 @@
 - **Backend**: Add `GET /api/v1/chat/history/:sessionId` endpoint
 - **What**: When user opens Chat page, fetch last 50 messages from DB and display them
 - **Why**: Currently messages disappear on refresh — they're saved in DB but not loaded
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 1.2 Render Agent Steps in Chat
 - **File**: `apps/dashboard/src/pages/Chat.tsx`
@@ -23,19 +23,19 @@
   - Observation result (collapsible)
   - Reflection (if any)
 - **Why**: Makes Titan feel like a real agent, not a black box
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 1.3 Stop/Abort Button
 - **File**: `apps/dashboard/src/pages/Chat.tsx`
 - **What**: Already has `abortRef` — add a visible Stop button that calls `abortRef.current.abort()`
 - **UI**: Replace send button with stop button while streaming
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 1.4 Session Persistence
 - **File**: `apps/dashboard/src/pages/Chat.tsx`
 - **What**: Save `sessionId` in localStorage, use it when sending messages. Add "New Chat" button to start fresh session.
 - **Backend**: Add `GET /api/v1/chat/sessions` to list user's chat sessions
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ---
 
@@ -49,19 +49,19 @@
   - Result (success/error badge + data, collapsible)
   - Latency (ms)
 - **Why**: User sees what tools Titan is using in real-time
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 2.2 Streaming Thoughts
 - **File**: `apps/dashboard/src/pages/Chat.tsx`
 - **What**: Show thought text live as it streams (not just in final step card)
 - **UI**: Typing indicator + thought text appearing character by character
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 2.3 Agent Profiles UI
 - **File**: New page `apps/dashboard/src/pages/AgentProfiles.tsx`
 - **Backend**: Already has `agentProfiles` DB repo + routes
 - **What**: CRUD UI for agent profiles — name, slug, system prompt, max steps, forbidden tools
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ---
 
@@ -71,25 +71,25 @@
 - **File**: New component `apps/dashboard/src/components/CommandPalette.tsx`
 - **What**: Global search + quick actions overlay triggered by Cmd+K / Ctrl+K
 - **Actions**: Navigate to pages, start new chat, install plugin, toggle theme
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 3.2 Activity Feed
 - **File**: New component on Dashboard home
 - **Backend**: Add `GET /api/v1/activity` endpoint (recent runs, tool executions, plugin installs)
 - **What**: Timeline showing last 20 actions across the platform
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 3.3 Token/Cost Tracker
 - **File**: `apps/dashboard/src/pages/Runs.tsx` or new widget
 - **What**: Show tokens used per run, total tokens today/week/month
 - **Backend**: Data already in `agentRuns.tokensUsed`
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 3.4 Model Selector
 - **File**: `apps/dashboard/src/pages/Chat.tsx` header
 - **What**: Dropdown to select LLM model (GPT-4, Claude, etc.)
 - **Backend**: Pass `model` param to runner
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ---
 
@@ -98,24 +98,24 @@
 ### 4.1 Plugin Details Modal
 - **File**: `apps/dashboard/src/pages/Plugins.tsx`
 - **What**: Click plugin in library → modal with full description, tools list, code preview, example usage
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 4.2 Tool Testing Console
 - **File**: New page `apps/dashboard/src/pages/ToolConsole.tsx`
 - **What**: Select any registered tool, input params as JSON, execute, see result
 - **Backend**: Already has `POST /api/v1/plugins/:id/execute`
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 4.3 Plugin Categories Filter
 - **File**: `apps/dashboard/src/pages/Plugins.tsx`
 - **What**: Filter buttons for categories in library (Web, Utilities, Security, etc.)
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ### 4.4 Plugin Ratings
 - **File**: `apps/dashboard/src/pages/Plugins.tsx`
 - **Backend**: Already has `pluginRatings` DB repo
 - **What**: Star rating + review text on installed plugins
-- **Status**: [ ] Not started
+- **Status**: [x] Done
 
 ---
 
@@ -199,8 +199,11 @@
 - [x] Phase 1.3: Stop/abort button — DONE
 - [x] Phase 1.4: Session persistence + New Chat — DONE
 - [x] Phase 3.1: Command Palette (Cmd+K) — DONE
-- [ ] Phase 2: Agent Transparency
-- [ ] Phase 3.2-3.4: Activity Feed, Token Tracker, Model Selector
-- [ ] Phase 4: Plugin Marketplace
+- [x] Phase 2: Agent Transparency — DONE
+- [x] Phase 2.1: Tool Usage Cards — DONE
+- [x] Phase 2.2: Streaming Thoughts — DONE (thoughts appear live per step)
+- [x] Phase 2.3: Agent Profiles UI — DONE
+- [x] Phase 3.2-3.4: Activity Feed, Token Tracker, Model Selector — DONE
+- [x] Phase 4: Plugin Marketplace — DONE (Details Modal, Tool Testing Console, Categories Filter, Ratings)
 - [ ] Phase 5: Mobile & UX
 - [ ] Phase 6: Pro Features
