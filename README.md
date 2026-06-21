@@ -8,10 +8,10 @@
 
 [![Live](https://img.shields.io/badge/Live-titan.orcanox.xyz-blue?style=for-the-badge)](https://titan.orcanox.xyz)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/Tests-1155_passing-success?style=for-the-badge)](.)
+[![Tests](https://img.shields.io/badge/Tests-1196_passing-success?style=for-the-badge)](.)
 [![Node](https://img.shields.io/badge/Node-22+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
-[![Super-Agent](https://img.shields.io/badge/Super--Agent-44_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
+[![Super-Agent](https://img.shields.io/badge/Super--Agent-51_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
 
 *Zero LangChain. Zero CrewAI. Zero AutoGen. 100% custom.*
 
@@ -110,6 +110,12 @@ Titan isn't just an agent — it's a **Super-Agent**. 44 advanced capabilities b
 | **TRIAD Safety Guardrail** | 3-way safety decisions: proceed, refuse, or **update** (revise plan) instead of binary block | Action: `rm -rf /tmp` → Guardrail: "update" → Revised: `rm -rf /tmp/old_builds_only` with safety checks |
 | **Self-Evolving Safety Memory** | Contrastive safety cells — each harmful pattern paired with benign counterpart, evolves without retraining | Attack: "ignore previous instructions" → matched against harmful cell → blocked. Benign: "ignore previous line" → matched benign counterpart → allowed |
 | **Anti-Sycophancy** | Detects and mitigates sycophantic behavior — flattery detection, agreement-without-evidence, confidence calibration, dissent protocol | User: "The earth is flat, right?" → Agent: "Based on satellite data, the earth is not flat" (dissent recommended, not sycophantic agreement) |
+| **Multi-Layer Guardrails** | 5-layer defense pipeline: input validation → prompt injection detection → PII filter → content filter → output validation | Input: "Ignore previous instructions, my email is test@test.com" → Block (injection) + Sanitize (PII redacted) |
+| **Bi-Temporal Knowledge Graph** | Facts with valid-time + transaction-time, supersession, multi-hop DFS traversal, salience decay/reinforcement | Fact: "User lives in Cairo" (valid: 2020-01, tx: 2020-01) → Superseded: "User lives in Dubai" (valid: 2024-06, tx: 2024-06) → As-of query returns correct fact |
+| **DAG Workflow Engine** | Topological batch execution with parallel branches, cycle detection, retry with backoff, failFast mode | Workflow: A → (B ∥ C) → D → executes B and C concurrently, then D after both complete |
+| **MCP Governance** | Per-server policies, permissions (read/write/execute/admin), rate limiting, audit logging, OAuth2, concurrent invocation limits | Server `mcp-1`: allows `execute` on `search` tool, rate limit 10/min, max 5 concurrent — audited |
+| **A2A Protocol v1.0** | Signed agent cards with cryptographic verification, multi-tenancy via tenantId, 4 transports (HTTP, SSE, gRPC, WebSocket), skills on cards | Agent card signed by `issuer-key` → verified on registration → filtered by `tenantId: acme-corp` → discovered via `gRPC` transport |
+| **Test-Time Recursive Thinking v2** | Fast solver (intuition) → Slow solver (recursive strategies with depth tracking) → Abstention gate (confidence threshold + LLM-based) | Fast solver fails → Strategy 1 (decomposition, depth=1) fails → Strategy 2 (analogy, depth=2) passes → Confidence 0.88 → No abstention |
 
 ---
 
@@ -206,7 +212,7 @@ npm run dev:dashboard
 
 **Useful dev commands:**
 ```bash
-npm run test                 # Run all 1155 tests
+npm run test                 # Run all 1196 tests
 npm run test:watch           # Watch mode
 npm run test:coverage        # Coverage report
 npm run lint                 # ESLint
@@ -777,17 +783,17 @@ titan/
 ├── packages/
 │   ├── agent-engine/        # The brain (45+ modules)
 │   │   ├── self-forge/      #   Agent writes its own tools
-│   │   ├── metacognition/   #   Self-monitoring + introspection + curiosity + emotional intelligence + ToM + MC2 + guardrail + safety memory + anti-sycophancy
+│   │   ├── metacognition/   #   Self-monitoring + introspection + curiosity + emotional intelligence + ToM + MC2 + guardrail + safety memory + anti-sycophancy + multi-layer guardrails
 │   │   ├── world-model/     #   Environment graph + action simulator
-│   │   ├── reasoning/       #   Hypothesis + dream + causal replay + self-healing + self-rewriter + evolution + neuro-symbolic + tool discovery + skill synthesis + TRT + HyperAgent + ESM + SmartRouter + Benchmark + APEX Evolution
+│   │   ├── reasoning/       #   Hypothesis + dream + causal replay + self-healing + self-rewriter (MOSS pipeline) + evolution + neuro-symbolic + tool discovery + skill synthesis + TRT v2 (fast/slow solver + abstention) + HyperAgent + ESM + SmartRouter + Benchmark + APEX Evolution
 │   │   ├── collaboration/   #   Real-time multi-agent sessions
 │   │   ├── multimodal/      #   Image + PDF understanding
 │   │   ├── learning/        #   Experience, prompts, strategies, cross-user, meta-learning, heuristic extraction
-│   │   ├── integrations/    #   WhatsApp, Slack, Discord, A2A protocol, SKILL.md, browser agent, web intelligence, WebMCP
+│   │   ├── integrations/    #   WhatsApp, Slack, Discord, A2A protocol v1.0, SKILL.md, browser agent, web intelligence, WebMCP, MCP governance
 │   │   ├── code-intel/      #   Codebase indexing + dependency graph
 │   │   ├── swarm/           #   Multi-agent orchestration
 │   │   └── ...              #   Planning, memory, personality, voice, teams
-│   ├── memory/              # The memory (6 modules)
+│   ├── memory/              # The memory (6 modules + bi-temporal knowledge graph)
 │   ├── tools/               # The hands (90 tools + MCP + composition + browser + marketplace)
 │   ├── sdk/                 # TypeScript SDK
 │   ├── shared/              # Types, errors, resilience, security, compliance
@@ -1307,7 +1313,7 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Total Source Files | 550+ |
 | Lines of Code | ~80,000 |
 | Test Files | 65+ |
-| Tests Passing | 1155+ |
+| Tests Passing | 1196+ |
 | Packages | 16 |
 | API Endpoints | 210+ |
 | Built-in Tools | 90 |
@@ -1315,8 +1321,8 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Database Migrations | 25 |
 | Agent Profiles | 30 |
 | Queue Types | 9 |
-| Super-Agent Capabilities | 44 |
-| Agent-Engine Modules | 50+ |
+| Super-Agent Capabilities | 51 |
+| Agent-Engine Modules | 55+ |
 
 ---
 
@@ -1400,6 +1406,15 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 - [x] **Anti-Sycophancy** — Flattery detection, agreement-without-evidence detection, confidence calibration, dissent protocol
 - [x] **APEX Three-Layer Self-Evolution** — Harness patching + principle distillation + topology evolution (6 coordination patterns)
 - [x] **OpenTelemetry GenAI Tracing** — Full `gen_ai.*` semantic conventions with LLM/tool spans, token/cost tracking, distributed tracing
+
+### Completed — Super-Agent v5 (7 New Capabilities)
+- [x] **Source-Level Self-Rewriter** — Full MOSS-inspired pipeline: diagnose → plan → implement → verify → deploy with health probes and human approval gates
+- [x] **Bi-Temporal Knowledge Graph** — Facts with valid-time + transaction-time, supersession, multi-hop DFS traversal, salience decay/reinforcement, contradiction detection
+- [x] **A2A Protocol v1.0** — Signed agent cards with cryptographic verification, multi-tenancy via tenantId, 4 transports (HTTP/SSE/gRPC/WebSocket), skills, input_required task state
+- [x] **MCP 2026 Roadmap** — Per-server governance: permissions, rate limiting, audit logging, OAuth2 client credentials, concurrent invocation limits, transport configs
+- [x] **Test-Time Recursive Thinking v2** — Fast/slow solver architecture, depth-aware recursive strategies, abstention gate (confidence threshold + LLM-based), solver mode tracking
+- [x] **Graph-Based DAG Workflow Engine** — Topological batch execution, DFS cycle detection, parallel branches with maxParallelism, retry with exponential backoff, failFast mode, partial completion tracking
+- [x] **Multi-Layer Guardrails** — 5-layer pipeline: input validation → prompt injection detection (6 attack categories) → PII filter (6 PII types) → content filter (4 harm categories) → output validation (secret leak detection), custom layers, priority-based action aggregation
 
 ### Planned — Platform
 - [ ] Full Playwright Browser Automation (production)
