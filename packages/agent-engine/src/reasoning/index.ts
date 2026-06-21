@@ -8,3 +8,7 @@ export * from './neuro-symbolic.js';
 export * from './tool-discovery.js';
 export * from './skill-synthesis.js';
 export * from './test-time-recursive-thinking.js';
+export * from './hyper-agent.js';
+export * from './execution-state-memory.js';
+export * from './multi-model-router.js';
+export * from './benchmarking-suite.js';
