@@ -2,9 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies first (layer cache)
+# Install torch WITHOUT deps to skip 2GB+ of nvidia/cuda packages on aarch64
+# Then install only the minimal CPU runtime deps torch actually needs
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --no-deps torch && \
+    pip install --no-cache-dir \
+      sympy networkx jinja2 filelock fsspec typing-extensions typing-inspection && \
+    pip install --no-cache-dir --prefer-binary -r requirements.txt
 
 # Pre-download model at build time (not runtime)
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-en-v1.5')"
