@@ -8,3 +8,4 @@ export * from './metacognitive-consolidation.js';
 export * from './safety-guardrail.js';
 export * from './safety-memory.js';
 export * from './anti-sycophancy.js';
+export * from './multi-layer-guardrails.js';
