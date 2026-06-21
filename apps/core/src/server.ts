@@ -53,6 +53,7 @@ import { codeArchitectureRoutes } from './routes/code-architecture.js';
 import { crossUserRoutes } from './routes/cross-user.js';
 import { collaborationRoutes } from './routes/collaboration.js';
 import { multimodalRoutes } from './routes/multimodal.js';
+import { reasoningRoutes } from './routes/reasoning.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 
@@ -263,6 +264,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(crossUserRoutes);
   await app.register(collaborationRoutes);
   await app.register(multimodalRoutes);
+  await app.register(reasoningRoutes);
   await registerTelegramRoutes(app);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));
