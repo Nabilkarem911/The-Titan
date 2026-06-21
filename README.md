@@ -35,7 +35,7 @@ titan                # Interactive REPL mode
 
 ## Super-Agent Capabilities
 
-Titan isn't just an agent — it's a **Super-Agent**. 34 advanced capabilities built on top of cutting-edge 2026 AI research:
+Titan isn't just an agent — it's a **Super-Agent**. 39 advanced capabilities built on top of cutting-edge 2026 AI research:
 
 ### Self-Improvement & Awareness
 
@@ -51,6 +51,7 @@ Titan isn't just an agent — it's a **Super-Agent**. 34 advanced capabilities b
 | **Test-time Recursive Thinking** | Iterative self-improvement at inference time — generate → verify → extract lessons → retry with accumulated knowledge | Problem fails → Strategy 1 (direct) fails → Strategy 2 (decomposition) fails → Strategy 3 (analogy) succeeds with knowledge from attempts 1-2 |
 | **Metacognitive Consolidation** | 3-level hierarchical memory: instance reflections → batch micro-lessons → global procedural knowledge | 50 reflections → "Tasks with file uploads need streaming" → Proceduralized: "Always use streaming for files >1MB" |
 | **Experiential Heuristic Extraction** | Extracts transferable heuristics from task trajectories and injects them into future task context | After successful debug: "Null checks before .length access prevent 80% of TypeErrors" → retrieved for next debugging task |
+| **HyperAgent** | Continuous self-improvement loop: introspect → improve → evaluate → decide (keep/rollback) | Cycle 1: detects weakness in planning → proposes change → +8% performance → kept. Cycle 2: proposes change → -3% → rolled back |
 
 ### World Understanding
 
@@ -64,6 +65,7 @@ Titan isn't just an agent — it's a **Super-Agent**. 34 advanced capabilities b
 | **Theory of Mind** | Models beliefs, desires, and knowledge of other entities (users, agents) — predicts their next action | User says "this again?" → ToM: believes task is recurring, desires permanent fix → Response: proactive root-cause fix |
 | **Live Web Intelligence** | Real-time web search, scrape, crawl, and interact — agent accesses live data, not just training data | "What's the latest Node.js version?" → searches web → scrapes nodejs.org → "Node.js v22.3.0 released June 2026" |
 | **Browser Automation Agent** | LLM-driven plan-act loop for web tasks — 13 action types with self-healing locators | "Fill the form on example.com" → navigates → finds form → types name → clicks submit → screenshot evidence |
+| **Execution State Memory** | Checkpoint/resume for long-running agent tasks — full state snapshots with restore | Task crashes at step 8/12 → resume from checkpoint at step 7 → continue to completion without restarting |
 
 ### Autonomous Operation
 
@@ -78,6 +80,9 @@ Titan isn't just an agent — it's a **Super-Agent**. 34 advanced capabilities b
 | **Dynamic Tool Discovery** | Discovers tools from npm, GitHub, APIs, and MCP servers when missing capabilities are detected | "I need to send a Slack message but no Slack tool exists" → discovers slack-webhook npm package → verifies → installs |
 | **A2A Protocol** | Agent-to-agent interoperability via Google's A2A standard — Titan can delegate tasks to and receive tasks from external agents | Titan needs translation → sends task to Claude agent via A2A → Claude translates → result returned with artifacts |
 | **SKILL.md Standard** | Portable skills in AIP-3 standard format — skills are interchangeable with Claude Code, Codex, and other frameworks | Skill `csv-parser/SKILL.md` created in Titan → can be loaded by any AIP-3 compatible agent |
+| **WebMCP Bridge** | Connect to remote MCP servers over HTTP — discover tools, invoke, and ping across the web | Titan connects to `mcp-server.com/tools` → discovers 15 tools → invokes `translate` → gets result |
+| **Smart Model Router** | Complexity-based model tier routing: SLM for simple, large for complex — optimizes cost and latency | "What is 2+2?" → routes to SLM ($0.0001) instead of large ($0.015) → 99% cost savings |
+| **Benchmarking Suite** | Self-evaluation with 8 default tasks across 5 categories (reasoning, coding, planning, debugging, architecture) | Run suite → 6/8 passed, avg score 0.78 → identifies architecture as weakness → focuses improvement |
 
 ### Learning & Collaboration
 
@@ -705,6 +710,55 @@ GET  /api/v1/heuristics/extractions       # Get extraction history
 GET  /api/v1/heuristics/stats             # Get heuristic stats
 ```
 
+### HyperAgent
+```bash
+POST /api/v1/hyper-agent/cycle            # Run one self-improvement cycle
+POST /api/v1/hyper-agent/start            # Start continuous improvement loop
+POST /api/v1/hyper-agent/stop             # Stop the loop
+GET  /api/v1/hyper-agent/cycles           # Get all cycles
+GET  /api/v1/hyper-agent/stats            # Get HyperAgent stats
+```
+
+### Execution State Memory
+```bash
+POST /api/v1/esm/checkpoint               # Save a checkpoint
+POST /api/v1/esm/resume/:checkpointId     # Resume from a checkpoint
+GET  /api/v1/esm/checkpoints/:runId       # Get checkpoints for a run
+GET  /api/v1/esm/latest/:runId            # Get latest checkpoint for a run
+POST /api/v1/esm/complete/:runId          # Mark a run as completed
+GET  /api/v1/esm/active-runs              # Get active runs
+GET  /api/v1/esm/stats                    # Get ESM stats
+```
+
+### Smart Model Router
+```bash
+POST /api/v1/router/route                 # Route input to best model
+GET  /api/v1/router/models                # List all models
+POST /api/v1/router/models                # Add a model
+GET  /api/v1/router/stats                 # Get routing stats
+```
+
+### Benchmarking Suite
+```bash
+POST /api/v1/benchmark/run                # Run a benchmark suite
+GET  /api/v1/benchmark/tasks              # Get default tasks
+POST /api/v1/benchmark/tasks              # Add a custom task
+GET  /api/v1/benchmark/suites             # Get all suite results
+GET  /api/v1/benchmark/stats              # Get benchmark stats
+```
+
+### WebMCP Bridge
+```bash
+POST /api/v1/webmcp/servers               # Register a remote MCP server
+DELETE /api/v1/webmcp/servers/:id         # Unregister a server
+GET  /api/v1/webmcp/servers               # List all servers
+POST /api/v1/webmcp/servers/:id/discover  # Discover tools on a server
+POST /api/v1/webmcp/invoke                # Invoke a remote tool
+POST /api/v1/webmcp/ping/:id              # Ping a server
+GET  /api/v1/webmcp/tools                 # Get all discovered tools
+GET  /api/v1/webmcp/stats                 # Get WebMCP stats
+```
+
 ---
 
 ## Architecture
@@ -712,19 +766,19 @@ GET  /api/v1/heuristics/stats             # Get heuristic stats
 ```
 titan/
 ├── apps/
-│   ├── core/                # Fastify API server (180+ endpoints)
+│   ├── core/                # Fastify API server (210+ endpoints)
 │   ├── dashboard/           # React 18 + Vite + Tailwind (43 pages)
 │   └── cli/                 # Terminal interface (REPL + commands)
 ├── packages/
-│   ├── agent-engine/        # The brain (40+ modules)
+│   ├── agent-engine/        # The brain (45+ modules)
 │   │   ├── self-forge/      #   Agent writes its own tools
 │   │   ├── metacognition/   #   Self-monitoring + introspection + curiosity + emotional intelligence + ToM + MC2 + guardrail + safety memory
 │   │   ├── world-model/     #   Environment graph + action simulator
-│   │   ├── reasoning/       #   Hypothesis + dream + causal replay + self-healing + self-rewriter + evolution + neuro-symbolic + tool discovery + skill synthesis + TRT
+│   │   ├── reasoning/       #   Hypothesis + dream + causal replay + self-healing + self-rewriter + evolution + neuro-symbolic + tool discovery + skill synthesis + TRT + HyperAgent + ESM + SmartRouter + Benchmark
 │   │   ├── collaboration/   #   Real-time multi-agent sessions
 │   │   ├── multimodal/      #   Image + PDF understanding
 │   │   ├── learning/        #   Experience, prompts, strategies, cross-user, meta-learning, heuristic extraction
-│   │   ├── integrations/    #   WhatsApp, Slack, Discord, A2A protocol, SKILL.md, browser agent, web intelligence
+│   │   ├── integrations/    #   WhatsApp, Slack, Discord, A2A protocol, SKILL.md, browser agent, web intelligence, WebMCP
 │   │   ├── code-intel/      #   Codebase indexing + dependency graph
 │   │   ├── swarm/           #   Multi-agent orchestration
 │   │   └── ...              #   Planning, memory, personality, voice, teams
@@ -1140,6 +1194,74 @@ curl -X POST http://localhost:3000/api/v1/trt/solve \
 # }
 ```
 
+### Example 18: Smart Model Router — Cost-Optimized Routing
+
+```bash
+# Route a simple question to the cheapest capable model
+curl -X POST http://localhost:3000/api/v1/router/route \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"input": "What is the capital of France?", "taskType": "simple-qa"}'
+
+# Response:
+# {
+#   "modelId": "slm-1",
+#   "tier": "slm",
+#   "reasoning": "Complexity 0.15 → tier slm (match: 100%)",
+#   "estimatedCost": 0.0002,
+#   "estimatedLatency": 200,
+#   "complexityScore": 0.15,
+#   "routingFactors": { "inputLength": 0.007, "complexityScore": 0.15, "capabilityMatch": 0.4, "latencyConstraint": 0, "costConstraint": 0 }
+# }
+
+# Route a complex architecture task to the large model
+curl -X POST http://localhost:3000/api/v1/router/route \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"input": "Design a distributed rate limiter with consistency guarantees, failure handling, and saga pattern for transactions across 10K orders/sec", "taskType": "architecture"}'
+
+# Response:
+# {
+#   "modelId": "large-1",
+#   "tier": "large",
+#   "reasoning": "Complexity 0.85 → tier large (match: 93%)",
+#   "estimatedCost": 0.015,
+#   "estimatedLatency": 3000,
+#   "complexityScore": 0.85
+# }
+```
+
+### Example 19: Execution State Memory — Checkpoint & Resume
+
+```bash
+# Save a checkpoint during a long-running task
+curl -X POST http://localhost:3000/api/v1/esm/checkpoint \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"runId": "run-abc123", "stepIndex": 7, "stepCount": 12, "state": {"messages": [{"role": "assistant", "content": "Analyzed 3 files, found 2 bugs"}], "toolResults": [{"tool": "bash", "result": "ok"}], "plan": ["fix bug 1", "fix bug 2", "run tests"], "variables": {"filesChecked": 3}, "intermediateResults": ["bug1: null pointer", "bug2: race condition"]}}'
+
+# Response:
+# {
+#   "id": "cp1a2b3",
+#   "runId": "run-abc123",
+#   "stepIndex": 7,
+#   "stepCount": 12,
+#   "status": "running",
+#   "createdAt": "2026-06-21T02:10:00Z"
+# }
+
+# Resume from checkpoint after a crash
+curl -X POST http://localhost:3000/api/v1/esm/resume/cp1a2b3 \
+  -H "Authorization: Bearer $TOKEN"
+
+# Response:
+# {
+#   "id": "cp1a2b3",
+#   "runId": "run-abc123",
+#   "stepIndex": 7,
+#   "status": "resumed",
+#   "resumedAt": "2026-06-21T02:15:00Z",
+#   "state": { "messages": [...], "toolResults": [...], "plan": [...] }
+# }
+```
+
 ---
 
 ## Environment Variables
@@ -1178,18 +1300,18 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Metric | Value |
 |--------|-------|
 | Total Source Files | 550+ |
-| Lines of Code | ~75,000 |
+| Lines of Code | ~80,000 |
 | Test Files | 65+ |
 | Tests Passing | 63+ (core suites) |
 | Packages | 16 |
-| API Endpoints | 180+ |
+| API Endpoints | 210+ |
 | Built-in Tools | 90 |
 | Dashboard Pages | 43 |
 | Database Migrations | 25 |
 | Agent Profiles | 30 |
 | Queue Types | 9 |
-| Super-Agent Capabilities | 34 |
-| Agent-Engine Modules | 40+ |
+| Super-Agent Capabilities | 39 |
+| Agent-Engine Modules | 45+ |
 
 ---
 
@@ -1250,7 +1372,7 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 - [x] **Autonomous Skill Synthesis** — Decompose tasks → synthesize reusable skills
 - [x] **Meta-Learning Optimizer** — Optimize agent's own learning parameters
 
-### Completed — Super-Agent v3 (10 New Capabilities)
+### Completed — Super-Agent v3 (15 New Capabilities)
 - [x] **A2A Protocol** — Agent-to-agent interoperability (Google A2A standard, 150+ orgs)
 - [x] **SKILL.md Standard** — Portable skills in AIP-3 format (agentskills.io spec)
 - [x] **Browser Automation Agent** — LLM-driven web tasks with self-healing locators
@@ -1261,6 +1383,11 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 - [x] **TRIAD Safety Guardrail** — 3-way decisions: proceed, refuse, update
 - [x] **Self-Evolving Safety Memory** — Contrastive cells, cross-attack transfer (Membrane)
 - [x] **Experiential Heuristic Extraction** — Transferable lessons from trajectories (ERL)
+- [x] **HyperAgent** — Continuous self-improvement loop with rollback (HyperAgent v2)
+- [x] **Execution State Memory** — Checkpoint/resume for long-running agent tasks
+- [x] **Smart Model Router** — Complexity-based SLM→XL routing for cost optimization
+- [x] **Benchmarking Suite** — Self-evaluation with 8 tasks across 5 categories
+- [x] **WebMCP Bridge** — Connect to remote MCP servers over HTTP
 
 ### Planned — Platform
 - [ ] Full Playwright Browser Automation (production)
