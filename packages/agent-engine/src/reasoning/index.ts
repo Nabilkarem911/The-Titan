@@ -12,3 +12,4 @@ export * from './hyper-agent.js';
 export * from './execution-state-memory.js';
 export * from './multi-model-router.js';
 export * from './benchmarking-suite.js';
+export * from './apex-evolution.js';
