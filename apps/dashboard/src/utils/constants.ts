@@ -25,6 +25,8 @@ import {
   Code2,
   Store,
   Wrench,
+  Shield,
+  GitGraph,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -67,6 +69,15 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'Learning', path: '/learning', icon: GraduationCap },
       { label: 'Autonomous', path: '/autonomous', icon: Bot },
       { label: 'Teams', path: '/teams', icon: Users },
+    ],
+  },
+  {
+    label: 'V5 Capabilities',
+    items: [
+      { label: 'MCP Governance', path: '/mcp-governance', icon: ShieldCheck },
+      { label: 'DAG Workflow', path: '/dag-workflow', icon: Workflow },
+      { label: 'Guardrails', path: '/guardrails', icon: Shield },
+      { label: 'Bi-Temporal Graph', path: '/bi-temporal-graph', icon: GitGraph },
     ],
   },
   {

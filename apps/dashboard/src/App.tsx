@@ -38,6 +38,10 @@ const Autonomous = lazy(() => import('./pages/Autonomous'));
 const Marketplace = lazy(() => import('./pages/Marketplace'));
 const Teams = lazy(() => import('./pages/Teams'));
 const SkillBuilder = lazy(() => import('./pages/SkillBuilder'));
+const MCPGovernance = lazy(() => import('./pages/MCPGovernance'));
+const DAGWorkflow = lazy(() => import('./pages/DAGWorkflow'));
+const Guardrails = lazy(() => import('./pages/Guardrails'));
+const BiTemporalGraph = lazy(() => import('./pages/BiTemporalGraph'));
 
 // ── Protected Layout ──
 function ProtectedLayout() {
@@ -99,6 +103,10 @@ export default function App() {
             <Route path="marketplace" element={<Marketplace />} />
             <Route path="teams" element={<Teams />} />
             <Route path="skill-builder" element={<SkillBuilder />} />
+            <Route path="mcp-governance" element={<MCPGovernance />} />
+            <Route path="dag-workflow" element={<DAGWorkflow />} />
+            <Route path="guardrails" element={<Guardrails />} />
+            <Route path="bi-temporal-graph" element={<BiTemporalGraph />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
