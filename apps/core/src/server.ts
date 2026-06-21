@@ -44,6 +44,8 @@ import { teamsRoutes } from './routes/teams.js';
 import { mcpRoutes } from './routes/mcp.js';
 import { spawnerRoutes } from './routes/spawner.js';
 import { multiPlatformBotRoutes } from './routes/multi-platform-bots.js';
+import { sandboxRoutes } from './routes/sandbox.js';
+import { insightsRoutes } from './routes/insights.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 
@@ -245,6 +247,8 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(mcpRoutes);
   await app.register(spawnerRoutes);
   await app.register(multiPlatformBotRoutes);
+  await app.register(sandboxRoutes);
+  await app.register(insightsRoutes);
   await registerTelegramRoutes(app);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));
