@@ -35,7 +35,7 @@ titan                # Interactive REPL mode
 
 ## Super-Agent Capabilities
 
-Titan isn't just an agent — it's a **Super-Agent**. 12 advanced capabilities built on top of cutting-edge 2026 AI research:
+Titan isn't just an agent — it's a **Super-Agent**. 24 advanced capabilities built on top of cutting-edge 2026 AI research:
 
 ### Self-Improvement & Awareness
 
@@ -45,6 +45,9 @@ Titan isn't just an agent — it's a **Super-Agent**. 12 advanced capabilities b
 | **Meta-Agent** | Agent analyzes its own runs and proposes concrete improvements to prompts, strategies, and tool usage | After a failed run: "Strategy 'chain-of-thought' had 23% lower accuracy than 'tree-of-thought' for math tasks — switching recommendation" |
 | **Metacognition** | Agent monitors its own reasoning confidence and flags when it's uncertain | "I'm 34% confident in this answer — I recommend verifying with a second approach" |
 | **Introspective Awareness** | Agent inspects its own internal states and detects biases in its reasoning | "I notice I consistently overestimate success probability for bash tools — adjusting confidence calibration" |
+| **Dream Mode** | Agent consolidates memories in background like human sleep — synthesizes insights from past experiences | Every 30 min: reviews recent runs → "Noticed pattern: tasks with file uploads fail 40% less when using streaming strategy" |
+| **Recursive Self-Rewrite** | Agent proposes improvements to its own logic, tests in sandbox, auto-rolls back if worse | "Proposed change to planning module → sandbox tested → +12% performance → applied as version 7" |
+| **Meta-Learning Optimizer** | Agent optimizes its own learning parameters (learning rate, exploration rate, strategy weights) | "Success rate dropped 15% → increasing exploration rate from 0.1 to 0.25 → trying new strategies" |
 
 ### World Understanding
 
@@ -53,6 +56,8 @@ Titan isn't just an agent — it's a **Super-Agent**. 12 advanced capabilities b
 | **World Model** | Agent builds an environment graph of entities, causal relations, and events; simulates outcomes before acting | Before running `rm -rf /tmp/old_builds`: simulates the action → predicts "safe, 0 affected services" → executes |
 | **Code Architecture Awareness** | Agent understands the codebase as a dependency graph with impact analysis | "If you change `runner.ts`, 12 files are affected (high risk) — 3 direct dependents, 9 transitive" |
 | **Hypothesis Testing** | Agent uses the scientific method to diagnose problems | Problem: "API returns 500" → Hypothesis 1: "DB connection pool exhausted" → Test: check pool stats → Result: confirmed → Fix applied |
+| **Neuro-Symbolic Reasoning** | Combines neural intuition with symbolic logic rules for hybrid reasoning | Neural: "I think the bug is in auth" + Symbolic rule: "error-implies-failure" → Synthesis: "Auth module error confirmed, triggering recovery" |
+| **Causal Replay** | Determines which specific step in a run caused the failure using causal attribution | Run failed at step 5 → Analysis: "Step 3 (decision to use cache) is the pivotal cause, not step 5 (where it crashed)" |
 
 ### Autonomous Operation
 
@@ -61,6 +66,10 @@ Titan isn't just an agent — it's a **Super-Agent**. 12 advanced capabilities b
 | **Autonomous Loop** | Agent runs 24/7 background monitoring with configurable health checks | Every 5 min: checks server health, DB connections, error rates → if anomaly detected → auto-diagnoses and proposes fix |
 | **Goal Decomposition** | Agent breaks complex goals into sub-tasks with dependency tracking | "Build a REST API" → Plan: schema design → DB migration → route handlers → middleware → tests → docs (with dependencies) |
 | **Curiosity Engine** | Agent proactively explores and acquires new skills when idle | Agent discovers it doesn't know Kubernetes → runs self-directed learning task → adds k8s-deploy skill to library |
+| **Self-Healing Debugger** | Multi-agent debugging pipeline: instrument → analyze → repair, with historical lesson learning | Bug: "TypeError in parser" → Instrument: add probes → Analyze: root cause is null check → Repair: add guard → Verified |
+| **Evolutionary Solver** | Population-based solution evolution: generate N candidates → score → elite selection → mutate → repeat | Problem: "optimize DB query" → Gen 1: 4 solutions (avg 52) → Gen 2: mutated elites (avg 71) → Gen 3: converged at 94 |
+| **Autonomous Skill Synthesis** | Decomposes complex tasks into sub-skills, synthesizes reusable code, verifies with test cases | Task: "build CSV parser" → Decompose: tokenize, parse rows, validate → Synthesize: reusable csv-parse skill → Verified |
+| **Dynamic Tool Discovery** | Discovers tools from npm, GitHub, APIs, and MCP servers when missing capabilities are detected | "I need to send a Slack message but no Slack tool exists" → discovers slack-webhook npm package → verifies → installs |
 
 ### Learning & Collaboration
 
@@ -70,11 +79,12 @@ Titan isn't just an agent — it's a **Super-Agent**. 12 advanced capabilities b
 | **Real-time Collaboration** | Multiple agents work together on the same problem in live sessions | Agent A (researcher): "Found 3 relevant papers" → Agent B (coder): "Implementing approach 2" → Agent C (reviewer): "Approach 2 has a race condition" → Agent B: fixes it |
 | **Personality Cloning** | Agent adapts its communication style to match each user | User A (formal): "I'll analyze the architecture" → User B (casual): "lemme check how this thing works real quick" |
 
-### Multimodal Understanding
+### Multimodal & Emotional
 
 | Capability | What It Does | Example |
 |-----------|--------------|---------|
 | **Multimodal** | Agent analyzes images and PDFs — extracts text, identifies objects, detects document types | Upload `invoice.pdf` → Agent: "This is an invoice for $4,200 from Acme Corp, due July 15, 2026 — 3 line items detected" |
+| **Emotional Intelligence** | Analyzes user emotions using Plutchik's 8 primary emotions, models empathy, and adapts response strategy | User: "This is frustrating!" → Analysis: anger=70, sadness=40 → Strategy: "Acknowledge frustration, offer concrete solution" |
 
 ---
 
@@ -481,6 +491,105 @@ GET  /api/v1/insights/knowledge     # Knowledge graph
 POST /api/v1/insights/feedback      # Record feedback
 ```
 
+### Dream Mode
+```bash
+POST /api/v1/dream/start            # Start background dreaming
+POST /api/v1/dream/stop             # Stop dreaming
+POST /api/v1/dream/trigger          # Manually trigger a dream session
+GET  /api/v1/dream/insights         # Get dream insights
+GET  /api/v1/dream/reports          # Get dream reports
+GET  /api/v1/dream/stats            # Get dream statistics
+```
+
+### Causal Replay
+```bash
+POST /api/v1/causal-replay/analyze  # Analyze which step caused failure
+```
+
+### Self-Healing Debugger
+```bash
+POST /api/v1/debug/analyze          # Debug a bug (full pipeline)
+GET  /api/v1/debug/lessons          # Get historical lessons
+GET  /api/v1/debug/stats            # Get debugger statistics
+```
+
+### Self-Rewriter
+```bash
+POST /api/v1/self-rewrite/propose   # Propose a self-improvement
+POST /api/v1/self-rewrite/apply     # Evaluate and apply a proposal
+POST /api/v1/self-rewrite/rollback  # Rollback a version
+GET  /api/v1/self-rewrite/versions  # Get all versions
+GET  /api/v1/self-rewrite/stats     # Get rewriter statistics
+```
+
+### Evolutionary Solver
+```bash
+POST /api/v1/evolution/solve        # Evolve solutions for a problem
+```
+
+### Introspection
+```bash
+POST /api/v1/introspection/step     # Introspect a single step
+POST /api/v1/introspection/run      # Introspect all steps in a run
+GET  /api/v1/introspection/reports  # Get recent introspection reports
+GET  /api/v1/introspection/stats    # Get introspection statistics
+```
+
+### Curiosity Engine
+```bash
+POST /api/v1/curiosity/start        # Start curiosity engine
+POST /api/v1/curiosity/stop         # Stop curiosity engine
+POST /api/v1/curiosity/explore      # Manually trigger exploration
+GET  /api/v1/curiosity/skills       # Get acquired skills
+GET  /api/v1/curiosity/explorations # Get exploration history
+GET  /api/v1/curiosity/stats        # Get curiosity statistics
+```
+
+### Emotional Intelligence
+```bash
+POST /api/v1/emotion/analyze              # Analyze emotion in a message
+GET  /api/v1/emotion/readings             # Get recent emotion readings
+GET  /api/v1/emotion/profile/:userId      # Get user emotion profile
+GET  /api/v1/emotion/stats                # Get emotion statistics
+```
+
+### Neuro-Symbolic Reasoning
+```bash
+POST /api/v1/neuro-symbolic/reason        # Run neuro-symbolic reasoning
+POST /api/v1/neuro-symbolic/rules         # Add a symbolic rule
+DELETE /api/v1/neuro-symbolic/rules/:id   # Remove a rule
+GET  /api/v1/neuro-symbolic/rules         # Get all rules
+GET  /api/v1/neuro-symbolic/results       # Get reasoning results
+GET  /api/v1/neuro-symbolic/stats         # Get neuro-symbolic statistics
+```
+
+### Dynamic Tool Discovery
+```bash
+POST /api/v1/tool-discovery/discover          # Discover tools for a task
+POST /api/v1/tool-discovery/install/:toolId   # Install a discovered tool
+POST /api/v1/tool-discovery/uninstall/:toolId # Uninstall a tool
+GET  /api/v1/tool-discovery/tools             # Get all discovered tools
+GET  /api/v1/tool-discovery/installed         # Get installed tools
+GET  /api/v1/tool-discovery/stats             # Get discovery statistics
+```
+
+### Skill Synthesis
+```bash
+POST /api/v1/skill-synthesis/synthesize   # Synthesize a skill from a task
+GET  /api/v1/skill-synthesis/skills       # Get all synthesized skills
+GET  /api/v1/skill-synthesis/verified     # Get verified skills only
+GET  /api/v1/skill-synthesis/results      # Get synthesis results
+GET  /api/v1/skill-synthesis/stats        # Get synthesis statistics
+```
+
+### Meta-Learning Optimizer
+```bash
+POST /api/v1/meta-learning/optimize       # Run meta-learning optimization
+GET  /api/v1/meta-learning/config         # Get current learning config
+GET  /api/v1/meta-learning/results        # Get optimization results
+GET  /api/v1/meta-learning/stats          # Get meta-learning statistics
+```
+
 ---
 
 ## Architecture
@@ -492,14 +601,14 @@ titan/
 │   ├── dashboard/           # React 18 + Vite + Tailwind (43 pages)
 │   └── cli/                 # Terminal interface (REPL + commands)
 ├── packages/
-│   ├── agent-engine/        # The brain (20+ modules)
+│   ├── agent-engine/        # The brain (30+ modules)
 │   │   ├── self-forge/      #   Agent writes its own tools
-│   │   ├── metacognition/   #   Agent monitors its own thinking
+│   │   ├── metacognition/   #   Self-monitoring + introspection + curiosity + emotional intelligence
 │   │   ├── world-model/     #   Environment graph + action simulator
-│   │   ├── reasoning/       #   Hypothesis testing (scientific method)
+│   │   ├── reasoning/       #   Hypothesis testing + dream mode + causal replay + self-healing + self-rewriter + evolutionary solver + neuro-symbolic + tool discovery + skill synthesis
 │   │   ├── collaboration/   #   Real-time multi-agent sessions
 │   │   ├── multimodal/      #   Image + PDF understanding
-│   │   ├── learning/        #   Experience, prompts, strategies, cross-user
+│   │   ├── learning/        #   Experience, prompts, strategies, cross-user, meta-learning optimizer
 │   │   ├── code-intel/      #   Codebase indexing + dependency graph
 │   │   ├── swarm/           #   Multi-agent orchestration
 │   │   └── ...              #   Planning, memory, personality, voice, teams
@@ -681,6 +790,136 @@ curl http://localhost:3000/api/v1/cross-user/insights \
 # }
 ```
 
+### Example 7: Dream Mode — Background Memory Consolidation
+
+```bash
+# Start dream mode (runs every 30 min by default)
+curl -X POST http://localhost:3000/api/v1/dream/start \
+  -H "Authorization: Bearer $TOKEN"
+
+# Manually trigger a dream session
+curl -X POST http://localhost:3000/api/v1/dream/trigger \
+  -H "Authorization: Bearer $TOKEN"
+
+# Response:
+# {
+#   "dreamId": "a3f8b2c1",
+#   "experiencesReviewed": 47,
+#   "insights": [
+#     { "type": "pattern", "content": "Tasks with file uploads succeed 40% more with streaming", "confidence": 82 },
+#     { "type": "skill_gap", "content": "Agent struggles with Kubernetes deployment tasks", "confidence": 71 },
+#     { "type": "optimization", "content": "Batch size 16 is optimal for most tasks", "confidence": 68 }
+#   ],
+#   "memoriesConsolidated": 3
+# }
+```
+
+### Example 8: Causal Replay — Which Step Caused the Failure?
+
+```bash
+# Analyze a failed run
+curl -X POST http://localhost:3000/api/v1/causal-replay/analyze \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"run": {"id": "run-123", "status": "failed", "steps": [...]}}'
+
+# Response:
+# {
+#   "pivotalStep": {
+#     "stepIndex": 3,
+#     "stepDescription": "Plan: Use cached result instead of re-fetching",
+#     "causalScore": 0.89,
+#     "reasoning": "The decision to use stale cache data caused the downstream failure at step 5"
+#   },
+#   "rootCause": "Stale cache decision at step 3",
+#   "recommendations": ["Add cache invalidation check before using cached results"]
+# }
+```
+
+### Example 9: Self-Healing Debugger — Autonomous Bug Fixing
+
+```bash
+# Report a bug
+curl -X POST http://localhost:3000/api/v1/debug/analyze \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"filePath": "src/parser.ts", "errorType": "TypeError", "errorMessage": "Cannot read property length of null"}'
+
+# Response:
+# {
+#   "diagnosed": true,
+#   "rootCause": "Missing null check before accessing .length on parsed result",
+#   "repairApplied": true,
+#   "repairDescription": "Added null guard: if (!result) return []",
+#   "attempts": [
+#     { "attempt": 1, "success": true, "fixDescription": "Add null guard before .length access" }
+#   ],
+#   "lessonsLearned": [{ "errorType": "TypeError", "successfulFix": "Add null guard" }],
+#   "finalStatus": "fixed"
+# }
+```
+
+### Example 10: Emotional Intelligence — Empathy-Aware Responses
+
+```bash
+# Analyze user emotion
+curl -X POST http://localhost:3000/api/v1/emotion/analyze \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"message": "This keeps failing and I am getting really frustrated!", "userId": "user-123"}'
+
+# Response:
+# {
+#   "dominantUserEmotion": "anger",
+#   "userEmotion": { "anger": 78, "sadness": 35, "trust": 20, ... },
+#   "valence": -0.65,
+#   "arousal": 0.82,
+#   "empathyScore": 0.87,
+#   "responseStrategy": "Acknowledge frustration, provide concrete step-by-step solution, avoid generic responses"
+# }
+```
+
+### Example 11: Evolutionary Solver — Evolve Optimal Solutions
+
+```bash
+# Evolve solutions for a problem
+curl -X POST http://localhost:3000/api/v1/evolution/solve \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"problem": "Write an efficient function to deduplicate an array while preserving order", "generations": 3, "populationSize": 4}'
+
+# Response:
+# {
+#   "generations": [
+#     { "generation": 0, "bestScore": 62, "avgScore": 48 },
+#     { "generation": 1, "bestScore": 78, "avgScore": 65 },
+#     { "generation": 2, "bestScore": 94, "avgScore": 79 }
+#   ],
+#   "bestSolution": { "score": 94, "description": "Using Map for O(n) dedup with order preservation" },
+#   "converged": true,
+#   "totalCandidates": 12
+# }
+```
+
+### Example 12: Dynamic Tool Discovery — Find and Install Missing Tools
+
+```bash
+# Discover tools for a task
+curl -X POST http://localhost:3000/api/v1/tool-discovery/discover \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"taskDescription": "Send a notification to a Slack channel", "missingCapabilities": ["slack-messaging"]}'
+
+# Response:
+# {
+#   "status": "found",
+#   "results": [
+#     { "name": "slack-webhook", "source": "npm", "verified": true, "reliabilityScore": 88 },
+#     { "name": "slack-api-sdk", "source": "github", "verified": true, "reliabilityScore": 92 }
+#   ]
+# }
+
+# Install the best tool
+curl -X POST http://localhost:3000/api/v1/tool-discovery/install/tool-abc123 \
+  -H "Authorization: Bearer $TOKEN"
+# { "success": true }
+```
+
 ---
 
 ## Environment Variables
@@ -729,8 +968,8 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Database Migrations | 25 |
 | Agent Profiles | 30 |
 | Queue Types | 9 |
-| Super-Agent Capabilities | 12 |
-| Agent-Engine Modules | 20+ |
+| Super-Agent Capabilities | 24 |
+| Agent-Engine Modules | 30+ |
 
 ---
 
@@ -777,19 +1016,19 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 - [x] **Personality Cloning** — Adaptive communication style per user
 - [x] **Real-time Collaboration** — Live multi-agent sessions
 
-### Planned — Super-Agent v2 (12 New Capabilities)
-- [ ] **Dream Mode** — Background memory consolidation (OpenAI Dreaming V3 inspired)
-- [ ] **Causal Replay** — Which step caused failure? (CAR inspired)
-- [ ] **Recursive Self-Rewrite** — Agent rewrites its own logic at runtime (Gödel Agent inspired)
-- [ ] **Evolutionary Solver** — Population-based solution evolution (AgentGA inspired)
-- [ ] **Self-Healing Debugger** — Multi-agent debugging with historical lessons
-- [ ] **Introspective Awareness** — Agent inspects its own internal states
-- [ ] **Curiosity Engine** — Proactive skill acquisition without external requests
-- [ ] **Emotional Intelligence** — IQ-EQ co-reasoning with empathy modeling
-- [ ] **Neuro-Symbolic Reasoning** — Logic over knowledge graph
-- [ ] **Dynamic Tool Discovery** — Find tools from external registries (MCP)
-- [ ] **Thought Auditor** — Real-time chain-of-thought safety auditing
-- [ ] **Memory Folding** — Compress long interactions to prevent context overflow
+### Completed — Super-Agent v2 (12 New Capabilities)
+- [x] **Dream Mode** — Background memory consolidation (OpenAI Dreaming V3 inspired)
+- [x] **Causal Replay** — Which step caused failure? (CAR inspired)
+- [x] **Recursive Self-Rewrite** — Agent rewrites its own logic at runtime (Gödel Agent inspired)
+- [x] **Evolutionary Solver** — Population-based solution evolution (AgentGA inspired)
+- [x] **Self-Healing Debugger** — Multi-agent debugging with historical lessons
+- [x] **Introspective Awareness** — Agent inspects its own internal states
+- [x] **Curiosity Engine** — Proactive skill acquisition without external requests
+- [x] **Emotional Intelligence** — IQ-EQ co-reasoning with empathy modeling
+- [x] **Neuro-Symbolic Reasoning** — Neural intuition + symbolic logic rules
+- [x] **Dynamic Tool Discovery** — Find tools from npm, GitHub, APIs, MCP
+- [x] **Autonomous Skill Synthesis** — Decompose tasks → synthesize reusable skills
+- [x] **Meta-Learning Optimizer** — Optimize agent's own learning parameters
 
 ### Planned — Platform
 - [ ] Full Playwright Browser Automation
