@@ -12,6 +12,8 @@ import {
   EmotionalIntelligence,
   NeuroSymbolicReasoner,
   DynamicToolDiscovery,
+  AutonomousSkillSynthesis,
+  MetaLearningOptimizer,
   createProviderFromEnv,
   type BugReport,
 } from '@titan/agent-engine';
@@ -26,6 +28,8 @@ let curiosityEngine: CuriosityEngine | null = null;
 let emotionalIntelligence: EmotionalIntelligence | null = null;
 let neuroSymbolicReasoner: NeuroSymbolicReasoner | null = null;
 let toolDiscovery: DynamicToolDiscovery | null = null;
+let skillSynthesis: AutonomousSkillSynthesis | null = null;
+let metaLearningOptimizer: MetaLearningOptimizer | null = null;
 
 function getDreamMode(): DreamMode | null {
   if (dreamMode) return dreamMode;
@@ -105,6 +109,22 @@ function getToolDiscovery(): DynamicToolDiscovery | null {
   if (!llm) return null;
   toolDiscovery = new DynamicToolDiscovery(llm);
   return toolDiscovery;
+}
+
+function getSkillSynthesis(): AutonomousSkillSynthesis | null {
+  if (skillSynthesis) return skillSynthesis;
+  const llm = createProviderFromEnv();
+  if (!llm) return null;
+  skillSynthesis = new AutonomousSkillSynthesis(llm);
+  return skillSynthesis;
+}
+
+function getMetaLearningOptimizer(): MetaLearningOptimizer | null {
+  if (metaLearningOptimizer) return metaLearningOptimizer;
+  const llm = createProviderFromEnv();
+  if (!llm) return null;
+  metaLearningOptimizer = new MetaLearningOptimizer(llm);
+  return metaLearningOptimizer;
 }
 
 export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
@@ -543,5 +563,80 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     const td = getToolDiscovery();
     if (!td) return reply.send({ totalDiscoveries: 0, installedTools: 0, verifiedTools: 0, bySource: [], byCategory: [], avgReliability: 0 });
     return reply.send(td.stats());
+  });
+
+  // === Autonomous Skill Synthesis ===
+
+  // POST /api/v1/skill-synthesis/synthesize — synthesize a skill from a task
+  app.post('/api/v1/skill-synthesis/synthesize', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { taskDescription } = req.body as { taskDescription: string };
+    if (!taskDescription) return reply.code(400).send({ error: 'taskDescription is required' });
+    const ss = getSkillSynthesis();
+    if (!ss) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await ss.synthesize(taskDescription);
+    return reply.send(result);
+  });
+
+  // GET /api/v1/skill-synthesis/skills — get all synthesized skills
+  app.get('/api/v1/skill-synthesis/skills', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ss = getSkillSynthesis();
+    if (!ss) return reply.send({ skills: [] });
+    return reply.send({ skills: ss.getSkills() });
+  });
+
+  // GET /api/v1/skill-synthesis/verified — get verified skills only
+  app.get('/api/v1/skill-synthesis/verified', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ss = getSkillSynthesis();
+    if (!ss) return reply.send({ skills: [] });
+    return reply.send({ skills: ss.getVerifiedSkills() });
+  });
+
+  // GET /api/v1/skill-synthesis/results — get synthesis results
+  app.get('/api/v1/skill-synthesis/results', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ss = getSkillSynthesis();
+    if (!ss) return reply.send({ results: [] });
+    return reply.send({ results: ss.getResults() });
+  });
+
+  // GET /api/v1/skill-synthesis/stats — get synthesis stats
+  app.get('/api/v1/skill-synthesis/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ss = getSkillSynthesis();
+    if (!ss) return reply.send({ totalSkills: 0, verifiedSkills: 0, totalSyntheses: 0, successRate: 0, avgProficiency: 0, topSkills: [] });
+    return reply.send(ss.stats());
+  });
+
+  // === Meta-Learning Optimizer ===
+
+  // POST /api/v1/meta-learning/optimize — run meta-learning optimization
+  app.post('/api/v1/meta-learning/optimize', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { performanceData } = req.body as { performanceData: Record<string, unknown> };
+    if (!performanceData) return reply.code(400).send({ error: 'performanceData is required' });
+    const ml = getMetaLearningOptimizer();
+    if (!ml) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await ml.optimize(performanceData as any);
+    return reply.send(result);
+  });
+
+  // GET /api/v1/meta-learning/config — get current learning config
+  app.get('/api/v1/meta-learning/config', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ml = getMetaLearningOptimizer();
+    if (!ml) return reply.send({ config: null });
+    return reply.send({ config: ml.getConfig() });
+  });
+
+  // GET /api/v1/meta-learning/results — get optimization results
+  app.get('/api/v1/meta-learning/results', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ml = getMetaLearningOptimizer();
+    if (!ml) return reply.send({ results: [] });
+    return reply.send({ results: ml.getResults() });
+  });
+
+  // GET /api/v1/meta-learning/stats — get meta-learning stats
+  app.get('/api/v1/meta-learning/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ml = getMetaLearningOptimizer();
+    if (!ml) return reply.send({ totalOptimizations: 0, currentLearningRate: 0, currentExplorationRate: 0, currentBatchSize: 0, strategyCount: 0, toolCount: 0, promptCount: 0, avgImprovement: 0, bestImprovement: 0 });
+    return reply.send(ml.stats());
   });
 };
