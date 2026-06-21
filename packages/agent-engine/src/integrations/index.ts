@@ -3,3 +3,7 @@ export * from './whatsapp.js';
 export * from './slack.js';
 export * from './discord.js';
 export * from './channel-router.js';
+export * from './a2a-protocol.js';
+export * from './skill-md-registry.js';
+export * from './browser-agent.js';
+export * from './web-intelligence.js';
