@@ -7,3 +7,4 @@ export * from './evolutionary-solver.js';
 export * from './neuro-symbolic.js';
 export * from './tool-discovery.js';
 export * from './skill-synthesis.js';
+export * from './test-time-recursive-thinking.js';

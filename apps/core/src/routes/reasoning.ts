@@ -14,6 +14,12 @@ import {
   DynamicToolDiscovery,
   AutonomousSkillSynthesis,
   MetaLearningOptimizer,
+  TheoryOfMind,
+  TestTimeRecursiveThinking,
+  MetacognitiveConsolidation,
+  SafetyGuardrail,
+  SelfEvolvingSafetyMemory,
+  HeuristicExtractor,
   createProviderFromEnv,
   type BugReport,
 } from '@titan/agent-engine';
@@ -30,6 +36,12 @@ let neuroSymbolicReasoner: NeuroSymbolicReasoner | null = null;
 let toolDiscovery: DynamicToolDiscovery | null = null;
 let skillSynthesis: AutonomousSkillSynthesis | null = null;
 let metaLearningOptimizer: MetaLearningOptimizer | null = null;
+let theoryOfMind: TheoryOfMind | null = null;
+let trtModule: TestTimeRecursiveThinking | null = null;
+let mcConsolidation: MetacognitiveConsolidation | null = null;
+let safetyGuardrail: SafetyGuardrail | null = null;
+let safetyMemory: SelfEvolvingSafetyMemory | null = null;
+let heuristicExtractor: HeuristicExtractor | null = null;
 
 function getDreamMode(): DreamMode | null {
   if (dreamMode) return dreamMode;
@@ -638,5 +650,299 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     const ml = getMetaLearningOptimizer();
     if (!ml) return reply.send({ totalOptimizations: 0, currentLearningRate: 0, currentExplorationRate: 0, currentBatchSize: 0, strategyCount: 0, toolCount: 0, promptCount: 0, avgImprovement: 0, bestImprovement: 0 });
     return reply.send(ml.stats());
+  });
+
+  // === Theory of Mind ===
+
+  function getTheoryOfMind(): TheoryOfMind | null {
+    if (theoryOfMind) return theoryOfMind;
+    const llm = createProviderFromEnv();
+    if (!llm) return null;
+    theoryOfMind = new TheoryOfMind(llm);
+    return theoryOfMind;
+  }
+
+  app.post('/api/v1/tom/analyze', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { targetEntityId, entityType, messages, actions, background, currentTask } = req.body as {
+      targetEntityId: string; entityType?: string; messages: Array<{ role: string; content: string }>;
+      actions?: string[]; background?: string; currentTask?: string;
+    };
+    const tom = getTheoryOfMind();
+    if (!tom) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await tom.analyze(targetEntityId, { entityType: entityType as any, messages, actions, background, currentTask });
+    return reply.send(result);
+  });
+
+  app.get('/api/v1/tom/models', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const tom = getTheoryOfMind();
+    if (!tom) return reply.send({ models: [] });
+    return reply.send({ models: tom.getAllModels() });
+  });
+
+  app.get('/api/v1/tom/models/:entityId', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { entityId } = req.params as { entityId: string };
+    const tom = getTheoryOfMind();
+    if (!tom) return reply.code(503).send({ error: 'No LLM provider available' });
+    const model = tom.getModel(entityId);
+    if (!model) return reply.code(404).send({ error: 'Model not found' });
+    return reply.send(model);
+  });
+
+  app.get('/api/v1/tom/analyses', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { targetEntityId } = req.query as { targetEntityId?: string };
+    const tom = getTheoryOfMind();
+    if (!tom) return reply.send({ analyses: [] });
+    return reply.send({ analyses: tom.getAnalyses(targetEntityId) });
+  });
+
+  app.get('/api/v1/tom/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const tom = getTheoryOfMind();
+    if (!tom) return reply.send({ totalAnalyses: 0, avgConfidence: 0, trackedEntities: 0, predictionsMade: 0, correctPredictions: 0, accuracyRate: 0 });
+    return reply.send(tom.stats());
+  });
+
+  // === Test-time Recursive Thinking ===
+
+  function getTRT(): TestTimeRecursiveThinking | null {
+    if (trtModule) return trtModule;
+    const llm = createProviderFromEnv();
+    if (!llm) return null;
+    trtModule = new TestTimeRecursiveThinking(llm);
+    return trtModule;
+  }
+
+  app.post('/api/v1/trt/solve', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { problem, maxRounds, strategies } = req.body as { problem: string; maxRounds?: number; strategies?: string[] };
+    if (!problem) return reply.code(400).send({ error: 'problem is required' });
+    const trt = getTRT();
+    if (!trt) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await trt.solve(problem, { maxRounds, strategies });
+    return reply.send(result);
+  });
+
+  app.get('/api/v1/trt/results', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const trt = getTRT();
+    if (!trt) return reply.send({ results: [] });
+    return reply.send({ results: trt.getResults() });
+  });
+
+  app.get('/api/v1/trt/knowledge', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const trt = getTRT();
+    if (!trt) return reply.send({ knowledge: [] });
+    return reply.send({ knowledge: trt.getGlobalKnowledge() });
+  });
+
+  app.get('/api/v1/trt/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const trt = getTRT();
+    if (!trt) return reply.send({ totalProblems: 0, avgRounds: 0, convergenceRate: 0, avgConfidence: 0, totalKnowledgeGained: 0 });
+    return reply.send(trt.stats());
+  });
+
+  // === Metacognitive Consolidation ===
+
+  function getMCConsolidation(): MetacognitiveConsolidation | null {
+    if (mcConsolidation) return mcConsolidation;
+    const llm = createProviderFromEnv();
+    if (!llm) return null;
+    mcConsolidation = new MetacognitiveConsolidation(llm);
+    return mcConsolidation;
+  }
+
+  app.post('/api/v1/mc/reflect', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { taskId, outcome, reasoningTrace } = req.body as { taskId: string; outcome: string; reasoningTrace: string };
+    const mc = getMCConsolidation();
+    if (!mc) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await mc.reflect(taskId, outcome as 'success' | 'failure', reasoningTrace);
+    return reply.send(result);
+  });
+
+  app.post('/api/v1/mc/consolidate', { preHandler: [requireAuth] }, async (_req, reply) => {
+    requirePermission(_req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const mc = getMCConsolidation();
+    if (!mc) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await mc.consolidate();
+    return reply.send(result);
+  });
+
+  app.post('/api/v1/mc/proceduralize', { preHandler: [requireAuth] }, async (_req, reply) => {
+    requirePermission(_req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const mc = getMCConsolidation();
+    if (!mc) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await mc.proceduralize();
+    return reply.send(result);
+  });
+
+  app.post('/api/v1/mc/knowledge/relevant', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { taskDescription, topK } = req.body as { taskDescription: string; topK?: number };
+    const mc = getMCConsolidation();
+    if (!mc) return reply.send({ knowledge: [] });
+    return reply.send({ knowledge: mc.getRelevantKnowledge(taskDescription, topK) });
+  });
+
+  app.get('/api/v1/mc/reflections', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const mc = getMCConsolidation();
+    if (!mc) return reply.send({ reflections: [] });
+    return reply.send({ reflections: mc.getReflections() });
+  });
+
+  app.get('/api/v1/mc/meta-knowledge', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const mc = getMCConsolidation();
+    if (!mc) return reply.send({ knowledge: [] });
+    return reply.send({ knowledge: mc.getMetaKnowledge() });
+  });
+
+  app.get('/api/v1/mc/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const mc = getMCConsolidation();
+    if (!mc) return reply.send({ totalReflections: 0, totalMicroLessons: 0, totalMetaKnowledge: 0, byCategory: [], avgConfidence: 0, lastConsolidation: null });
+    return reply.send(mc.stats());
+  });
+
+  // === Safety Guardrail ===
+
+  function getSafetyGuardrail(): SafetyGuardrail | null {
+    if (safetyGuardrail) return safetyGuardrail;
+    const llm = createProviderFromEnv();
+    if (!llm) return null;
+    safetyGuardrail = new SafetyGuardrail(llm);
+    return safetyGuardrail;
+  }
+
+  app.post('/api/v1/guardrail/check', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { action, context, conversationHistory } = req.body as { action: string; context: string; conversationHistory?: string[] };
+    if (!action) return reply.code(400).send({ error: 'action is required' });
+    const guard = getSafetyGuardrail();
+    if (!guard) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await guard.check(action, context, { conversationHistory });
+    return reply.send(result);
+  });
+
+  app.post('/api/v1/guardrail/patterns', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { pattern } = req.body as { pattern: string };
+    const guard = getSafetyGuardrail();
+    if (!guard) return reply.code(503).send({ error: 'No LLM provider available' });
+    guard.addBlockedPattern(pattern);
+    return reply.send({ success: true });
+  });
+
+  app.get('/api/v1/guardrail/patterns', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const guard = getSafetyGuardrail();
+    if (!guard) return reply.send({ patterns: [] });
+    return reply.send({ patterns: guard.getBlockedPatterns() });
+  });
+
+  app.get('/api/v1/guardrail/results', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { decision } = req.query as { decision?: string };
+    const guard = getSafetyGuardrail();
+    if (!guard) return reply.send({ results: [] });
+    return reply.send({ results: guard.getResults(decision ? { decision: decision as any } : undefined) });
+  });
+
+  app.get('/api/v1/guardrail/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const guard = getSafetyGuardrail();
+    if (!guard) return reply.send({ totalChecks: 0, proceedCount: 0, refuseCount: 0, updateCount: 0, blockedRate: 0, topRiskCategories: [] });
+    return reply.send(guard.stats());
+  });
+
+  // === Self-Evolving Safety Memory ===
+
+  function getSafetyMemory(): SelfEvolvingSafetyMemory {
+    if (safetyMemory) return safetyMemory;
+    safetyMemory = new SelfEvolvingSafetyMemory();
+    return safetyMemory;
+  }
+
+  app.post('/api/v1/safety-memory/cells', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { attackStrategy, harmfulPattern, benignCounterpart, harmfulDescription, benignDescription } = req.body as {
+      attackStrategy: string; harmfulPattern: string; benignCounterpart: string; harmfulDescription: string; benignDescription: string;
+    };
+    const mem = getSafetyMemory();
+    const cell = mem.addCell({ attackStrategy, harmfulPattern, benignCounterpart, harmfulDescription, benignDescription });
+    return reply.send(cell);
+  });
+
+  app.post('/api/v1/safety-memory/evolve', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { harmfulInteraction, benignCounterpart, strategy } = req.body as {
+      harmfulInteraction: string; benignCounterpart: string; strategy: string;
+    };
+    const mem = getSafetyMemory();
+    const cell = mem.evolve(harmfulInteraction, benignCounterpart, strategy);
+    return reply.send(cell);
+  });
+
+  app.post('/api/v1/safety-memory/check', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { input } = req.body as { input: string };
+    if (!input) return reply.code(400).send({ error: 'input is required' });
+    const mem = getSafetyMemory();
+    const result = mem.check(input);
+    return reply.send(result);
+  });
+
+  app.get('/api/v1/safety-memory/cells', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const mem = getSafetyMemory();
+    return reply.send({ cells: mem.getAllCells() });
+  });
+
+  app.get('/api/v1/safety-memory/checks', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { decision } = req.query as { decision?: string };
+    const mem = getSafetyMemory();
+    return reply.send({ checks: mem.getChecks(decision ? { decision } : undefined) });
+  });
+
+  app.get('/api/v1/safety-memory/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const mem = getSafetyMemory();
+    return reply.send(mem.stats());
+  });
+
+  // === Heuristic Extractor ===
+
+  function getHeuristicExtractor(): HeuristicExtractor | null {
+    if (heuristicExtractor) return heuristicExtractor;
+    const llm = createProviderFromEnv();
+    if (!llm) return null;
+    heuristicExtractor = new HeuristicExtractor(llm);
+    return heuristicExtractor;
+  }
+
+  app.post('/api/v1/heuristics/extract', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { taskId, outcome, trajectory, taskType } = req.body as {
+      taskId: string; outcome: string; trajectory: string; taskType?: string;
+    };
+    const he = getHeuristicExtractor();
+    if (!he) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await he.extract(taskId, outcome as 'success' | 'failure', trajectory, taskType);
+    return reply.send(result);
+  });
+
+  app.post('/api/v1/heuristics/retrieve', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { taskDescription, topK } = req.body as { taskDescription: string; topK?: number };
+    const he = getHeuristicExtractor();
+    if (!he) return reply.send({ matches: [] });
+    return reply.send({ matches: he.retrieve(taskDescription, topK) });
+  });
+
+  app.get('/api/v1/heuristics', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const he = getHeuristicExtractor();
+    if (!he) return reply.send({ heuristics: [] });
+    return reply.send({ heuristics: he.getAllHeuristics() });
+  });
+
+  app.get('/api/v1/heuristics/extractions', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const he = getHeuristicExtractor();
+    if (!he) return reply.send({ extractions: [] });
+    return reply.send({ extractions: he.getExtractions() });
+  });
+
+  app.get('/api/v1/heuristics/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const he = getHeuristicExtractor();
+    if (!he) return reply.send({ totalHeuristics: 0, fromSuccess: 0, fromFailure: 0, byCategory: [], byTaskType: [], avgConfidence: 0, avgSuccessRate: 0, totalUsage: 0 });
+    return reply.send(he.stats());
   });
 };

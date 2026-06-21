@@ -3,3 +3,7 @@ export * from './self-improver.js';
 export * from './introspection.js';
 export * from './curiosity-engine.js';
 export * from './emotional-intelligence.js';
+export * from './theory-of-mind.js';
+export * from './metacognitive-consolidation.js';
+export * from './safety-guardrail.js';
+export * from './safety-memory.js';
