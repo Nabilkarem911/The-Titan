@@ -24,3 +24,5 @@ export * from './self-forge/index.js';
 export * from './metacognition/index.js';
 export * from './world-model/index.js';
 export * from './reasoning/index.js';
+export * from './collaboration/index.js';
+export * from './multimodal/index.js';
