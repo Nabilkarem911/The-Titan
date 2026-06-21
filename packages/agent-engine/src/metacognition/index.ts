@@ -7,3 +7,4 @@ export * from './theory-of-mind.js';
 export * from './metacognitive-consolidation.js';
 export * from './safety-guardrail.js';
 export * from './safety-memory.js';
+export * from './anti-sycophancy.js';

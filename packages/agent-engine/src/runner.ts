@@ -30,6 +30,7 @@ import type { MetaMonitor } from './metacognition/meta-monitor.js';
 import type { SelfImprover } from './metacognition/self-improver.js';
 import type { WorldSimulator, EnvironmentGraph } from './world-model/index.js';
 import { ContextOptimizer, type ContextOptimizationOptions } from './providers/context-optimizer.js';
+import type { AntiSycophancyModule } from './metacognition/anti-sycophancy.js';
 
 const log = getLogger().child({ component: 'agent-runner' });
 
@@ -144,6 +145,8 @@ export interface AgentRunnerDeps {
   contextOptimizer?: ContextOptimizer;
   /** Context optimization options (used if contextOptimizer not provided) */
   contextOptimization?: ContextOptimizationOptions;
+  /** Anti-Sycophancy: detect and correct sycophantic behavior in agent responses */
+  antiSycophancy?: AntiSycophancyModule;
 }
 
 export class AgentRunner {
@@ -159,6 +162,7 @@ export class AgentRunner {
   private worldSimulator?: WorldSimulator;
   private environmentGraph?: EnvironmentGraph;
   private contextOptimizer?: ContextOptimizer;
+  private antiSycophancy?: AntiSycophancyModule;
 
   constructor(private deps: AgentRunnerDeps) {
     if (deps.enablePlanning) {
@@ -179,6 +183,7 @@ export class AgentRunner {
     this.worldSimulator = deps.worldSimulator;
     this.environmentGraph = deps.environmentGraph;
     this.contextOptimizer = deps.contextOptimizer ?? (deps.contextOptimization ? new ContextOptimizer(deps.contextOptimization) : undefined);
+    this.antiSycophancy = deps.antiSycophancy;
   }
 
   async run(input: AgentRunInput): Promise<AgentRun> {
@@ -425,6 +430,18 @@ export class AgentRunner {
         }
       } catch {
         // self-improvement is optional
+      }
+    }
+
+    // Anti-Sycophancy: detect and flag sycophantic behavior (classic ReAct path)
+    if (this.antiSycophancy && run.finalAnswer) {
+      try {
+        const assessment = this.antiSycophancy.assessQuick(run.finalAnswer, run.prompt);
+        if (assessment.isSycophantic) {
+          log.info({ runId: run.id, level: assessment.level, dissent: assessment.dissentRecommended }, 'sycophantic behavior detected');
+        }
+      } catch {
+        // anti-sycophancy is optional
       }
     }
 
