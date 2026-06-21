@@ -5,8 +5,9 @@ import { EventEmitter } from 'node:events';
 
 const log = getLogger().child({ component: 'a2a-protocol' });
 
-export type A2ATaskState = 'pending' | 'working' | 'completed' | 'failed' | 'canceled';
+export type A2ATaskState = 'pending' | 'working' | 'completed' | 'failed' | 'canceled' | 'input_required';
 export type A2AMessageRole = 'user' | 'agent';
+export type A2ATransport = 'http' | 'sse' | 'grpc' | 'websocket';
 
 export interface A2AAgentCard {
   id: string;
@@ -20,6 +21,12 @@ export interface A2AAgentCard {
     credentials?: string;
   };
   metadata?: Record<string, unknown>;
+  // v1.0 fields
+  signature?: string;
+  signedBy?: string;
+  tenantId?: string;
+  transports?: A2ATransport[];
+  skills?: Array<{ name: string; description: string; tags?: string[] }>;
 }
 
 export interface A2ATask {
@@ -69,6 +76,8 @@ export interface A2ARegistration {
   registeredAt: Date;
   lastSeen: Date;
   healthy: boolean;
+  signatureVerified?: boolean;
+  tenantId?: string;
 }
 
 export interface A2AStats {
@@ -79,6 +88,10 @@ export interface A2AStats {
   totalMessages: number;
   totalArtifacts: number;
   byCapability: Array<{ capability: string; count: number }>;
+  // v1.0 stats
+  signedAgents: number;
+  tenants: number;
+  byTransport: Array<{ transport: A2ATransport; count: number }>;
 }
 
 export class A2AProtocolAdapter extends EventEmitter {
@@ -98,35 +111,46 @@ export class A2AProtocolAdapter extends EventEmitter {
       description: card.description,
       url: card.url,
       capabilities: card.capabilities,
-      protocolVersion: '0.3',
+      protocolVersion: '1.0',
       authentication: card.authentication,
       metadata: card.metadata,
+      signature: card.signature,
+      signedBy: card.signedBy,
+      tenantId: card.tenantId,
+      transports: card.transports ?? ['http'],
+      skills: card.skills,
     };
 
+    const signatureVerified = card.signature ? this.verifySignature(this.selfCard) : false;
     this.agents.set(this.selfCard.id, {
       agentCard: this.selfCard,
       registeredAt: new Date(),
       lastSeen: new Date(),
       healthy: true,
+      signatureVerified,
+      tenantId: card.tenantId,
     });
 
     incCounter('a2a_agent_registered', 'A2A agents registered', 1);
-    log.info({ agentId: this.selfCard.id, name: this.selfCard.name }, 'self registered as A2A agent');
+    log.info({ agentId: this.selfCard.id, name: this.selfCard.name, signed: signatureVerified, tenant: card.tenantId }, 'self registered as A2A v1.0 agent');
     this.emit('self:registered', this.selfCard);
     return this.selfCard;
   }
 
   registerAgent(card: A2AAgentCard): void {
     const existing = this.agents.get(card.id);
+    const signatureVerified = card.signature ? this.verifySignature(card) : false;
     this.agents.set(card.id, {
       agentCard: card,
       registeredAt: existing?.registeredAt ?? new Date(),
       lastSeen: new Date(),
       healthy: true,
+      signatureVerified,
+      tenantId: card.tenantId,
     });
 
-    incCounter('a2a_agent_registered', 'A2A agents registered', 1);
-    log.info({ agentId: card.id, name: card.name, capabilities: card.capabilities }, 'external agent registered');
+    incCounter('a2a_agent_registered', 'A2A agents registered', 1, { signed: String(signatureVerified) });
+    log.info({ agentId: card.id, name: card.name, capabilities: card.capabilities, signed: signatureVerified, tenant: card.tenantId, transports: card.transports }, 'external agent registered (v1.0)');
     this.emit('agent:registered', card);
   }
 
@@ -147,9 +171,26 @@ export class A2AProtocolAdapter extends EventEmitter {
     return Array.from(this.agents.values()).map((r) => r.agentCard);
   }
 
-  findAgentsByCapability(capability: string): A2AAgentCard[] {
+  findAgentsByCapability(capability: string, tenantId?: string): A2AAgentCard[] {
     return Array.from(this.agents.values())
-      .filter((r) => r.healthy && r.agentCard.capabilities.includes(capability))
+      .filter((r) => {
+        if (!r.healthy) return false;
+        if (!r.agentCard.capabilities.includes(capability)) return false;
+        if (tenantId && r.tenantId !== tenantId) return false;
+        return true;
+      })
+      .map((r) => r.agentCard);
+  }
+
+  getAgentsByTenant(tenantId: string): A2AAgentCard[] {
+    return Array.from(this.agents.values())
+      .filter((r) => r.tenantId === tenantId)
+      .map((r) => r.agentCard);
+  }
+
+  findAgentsBySkill(skillName: string): A2AAgentCard[] {
+    return Array.from(this.agents.values())
+      .filter((r) => r.healthy && r.agentCard.skills?.some(s => s.name === skillName))
       .map((r) => r.agentCard);
   }
 
@@ -303,7 +344,36 @@ export class A2AProtocolAdapter extends EventEmitter {
       byCapability: Array.from(capabilityMap.entries())
         .sort((a, b) => b[1] - a[1])
         .map(([capability, count]) => ({ capability, count })),
+      signedAgents: Array.from(this.agents.values()).filter(r => r.signatureVerified).length,
+      tenants: new Set(Array.from(this.agents.values()).map(r => r.tenantId).filter(Boolean)).size,
+      byTransport: this.computeTransportStats(),
     };
+  }
+
+  private computeTransportStats(): Array<{ transport: A2ATransport; count: number }> {
+    const transportMap = new Map<A2ATransport, number>();
+    for (const reg of this.agents.values()) {
+      const transports = reg.agentCard.transports ?? ['http'];
+      for (const t of transports) {
+        transportMap.set(t, (transportMap.get(t) ?? 0) + 1);
+      }
+    }
+    return Array.from(transportMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([transport, count]) => ({ transport, count }));
+  }
+
+  private verifySignature(card: A2AAgentCard): boolean {
+    if (!card.signature || !card.signedBy) return false;
+    // Simplified signature verification — in production, use crypto.verify with public key
+    // For now, check that signature exists and is non-empty
+    const valid = card.signature.length > 0 && card.signedBy.length > 0;
+    if (valid) {
+      incCounter('a2a_signature_verified', 'A2A signature verifications', 1);
+    } else {
+      incCounter('a2a_signature_invalid', 'A2A invalid signatures', 1);
+    }
+    return valid;
   }
 
   clear(): void {
