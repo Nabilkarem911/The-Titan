@@ -14,6 +14,8 @@ export interface TRTAttempt {
   failureModes: string[];
   knowledgeGained: string;
   tokensUsed: number;
+  solverMode: 'fast' | 'slow';
+  depth: number;
 }
 
 export interface TRTResult {
@@ -27,6 +29,9 @@ export interface TRTResult {
   accumulatedKnowledge: string[];
   durationMs: number;
   success: boolean;
+  abstained: boolean;
+  abstentionReason?: string;
+  solverMode: 'fast' | 'slow';
 }
 
 export interface TRTStats {
@@ -35,13 +40,29 @@ export interface TRTStats {
   convergenceRate: number;
   avgConfidence: number;
   totalKnowledgeGained: number;
+  abstentionRate: number;
+  fastSolverUsage: number;
+  slowSolverUsage: number;
 }
+
+const FAST_SOLVER_PROMPT = `You are a fast solver. Solve the problem quickly using intuition and pattern matching.
+
+Respond in JSON:
+{
+  "answer": "your solution",
+  "selfVerification": "quick check",
+  "passed": true/false,
+  "failureModes": [],
+  "knowledgeGained": "lesson or none",
+  "confidence": 0-100
+}`;
 
 const STRATEGY_PROMPT = `You are a test-time recursive thinking module. Solve the problem using a specific strategy.
 
 Strategy: {strategy}
 Accumulated knowledge from previous attempts: {knowledge}
 Previous failure modes: {failures}
+Depth: {depth}
 
 Solve the problem. Then self-verify your answer.
 
@@ -51,7 +72,22 @@ Respond in JSON:
   "selfVerification": "why you think this is correct or not",
   "passed": true/false,
   "failureModes": ["what went wrong if not passed"],
-  "knowledgeGained": "what lesson to carry forward"
+  "knowledgeGained": "what lesson to carry forward",
+  "confidence": 0-100
+}`;
+
+const ABSTENTION_PROMPT = `You are an abstention gate. Given the problem, the best answer produced, and the confidence level, determine if the agent should answer or abstain.
+
+Abstain if:
+1. Confidence is below threshold
+2. The problem is ambiguous or ill-posed
+3. The answer might be harmful or misleading
+4. Insufficient information to answer reliably
+
+Respond in JSON:
+{
+  "shouldAbstain": true/false,
+  "reason": "explanation"
 }`;
 
 const STRATEGIES = [
@@ -69,59 +105,95 @@ export class TestTimeRecursiveThinking {
   private globalKnowledge: string[] = [];
   private maxGlobalKnowledge = 200;
 
-  constructor(private llm: LlmProvider, private maxRounds: number = 5) {}
+  constructor(private llm: LlmProvider, private maxRounds: number = 5, private abstentionThreshold: number = 0.4) {}
 
   async solve(problem: string, opts?: {
     maxRounds?: number;
     strategies?: string[];
+    fastSolverFirst?: boolean;
   }): Promise<TRTResult> {
     const id = randomUUID().slice(0, 8);
     const startedAt = Date.now();
     const rounds = opts?.maxRounds ?? this.maxRounds;
     const strategies = opts?.strategies ?? STRATEGIES;
+    const useFastFirst = opts?.fastSolverFirst ?? true;
     const attempts: TRTAttempt[] = [];
     const accumulatedKnowledge: string[] = [];
     let converged = false;
     let finalAnswer = '';
     let confidence = 0;
+    let solverMode: 'fast' | 'slow' = 'fast';
 
-    log.info({ id, problem: problem.slice(0, 80), maxRounds: rounds }, 'TRT started');
+    log.info({ id, problem: problem.slice(0, 80), maxRounds: rounds, fastFirst: useFastFirst }, 'TRT started');
 
-    for (let round = 0; round < rounds; round++) {
-      const strategy = strategies[round % strategies.length];
-      const previousFailures = attempts
-        .filter((a) => !a.passed)
-        .flatMap((a) => a.failureModes);
-
-      const response = await this.llm.complete([
-        {
-          role: 'system',
-          content: STRATEGY_PROMPT
-            .replace('{strategy}', strategy)
-            .replace('{knowledge}', accumulatedKnowledge.join('; ') || 'none')
-            .replace('{failures}', previousFailures.join('; ') || 'none'),
-        },
+    // Phase 1: Fast solver attempt (round 0)
+    if (useFastFirst) {
+      const fastResponse = await this.llm.complete([
+        { role: 'system', content: FAST_SOLVER_PROMPT },
         { role: 'user', content: problem },
-      ], { temperature: 0.2 + round * 0.05, maxTokens: 800 });
+      ], { temperature: 0.1, maxTokens: 400 });
 
-      const parsed = this.parseAttempt(response.content, round, strategy, response.tokensUsed);
-      attempts.push(parsed);
+      const fastAttempt = this.parseAttempt(fastResponse.content, 0, 'fast-solver', fastResponse.tokensUsed, 'fast', 0);
+      attempts.push(fastAttempt);
 
-      if (parsed.knowledgeGained && parsed.knowledgeGained !== 'none') {
-        accumulatedKnowledge.push(parsed.knowledgeGained);
+      if (fastAttempt.knowledgeGained && fastAttempt.knowledgeGained !== 'none') {
+        accumulatedKnowledge.push(fastAttempt.knowledgeGained);
       }
 
-      incCounter('trt_attempt', 'TRT attempts', 1, { passed: parsed.passed ? 'true' : 'false' });
+      incCounter('trt_attempt', 'TRT attempts', 1, { passed: fastAttempt.passed ? 'true' : 'false', solver: 'fast' });
 
-      if (parsed.passed) {
+      if (fastAttempt.passed) {
         converged = true;
-        finalAnswer = parsed.answer;
-        confidence = Math.min(0.99, 0.5 + (round === 0 ? 0.4 : 0.3 - round * 0.05));
-        log.info({ id, round, strategy }, 'TRT converged');
-        break;
+        finalAnswer = fastAttempt.answer;
+        confidence = 0.85;
+        log.info({ id, round: 0, strategy: 'fast-solver' }, 'TRT converged (fast)');
+      } else {
+        solverMode = 'slow';
+        log.info({ id }, 'fast solver failed — switching to slow solver');
       }
+    }
 
-      finalAnswer = parsed.answer;
+    // Phase 2: Slow solver with recursive strategies
+    if (!converged) {
+      const startRound = useFastFirst ? 1 : 0;
+      for (let round = startRound; round < rounds; round++) {
+        const strategy = strategies[(round - (useFastFirst ? 1 : 0)) % strategies.length];
+        const depth = round - (useFastFirst ? 1 : 0) + 1;
+        const previousFailures = attempts
+          .filter((a) => !a.passed)
+          .flatMap((a) => a.failureModes);
+
+        const response = await this.llm.complete([
+          {
+            role: 'system',
+            content: STRATEGY_PROMPT
+              .replace('{strategy}', strategy)
+              .replace('{knowledge}', accumulatedKnowledge.join('; ') || 'none')
+              .replace('{failures}', previousFailures.join('; ') || 'none')
+              .replace('{depth}', String(depth)),
+          },
+          { role: 'user', content: problem },
+        ], { temperature: 0.2 + (round - (useFastFirst ? 1 : 0)) * 0.05, maxTokens: 800 });
+
+        const parsed = this.parseAttempt(response.content, round, strategy, response.tokensUsed, 'slow', depth);
+        attempts.push(parsed);
+
+        if (parsed.knowledgeGained && parsed.knowledgeGained !== 'none') {
+          accumulatedKnowledge.push(parsed.knowledgeGained);
+        }
+
+        incCounter('trt_attempt', 'TRT attempts', 1, { passed: parsed.passed ? 'true' : 'false', solver: 'slow' });
+
+        if (parsed.passed) {
+          converged = true;
+          finalAnswer = parsed.answer;
+          confidence = Math.min(0.99, 0.5 + (round === 0 ? 0.4 : 0.3 - (round - (useFastFirst ? 1 : 0)) * 0.05));
+          log.info({ id, round, strategy, depth }, 'TRT converged (slow)');
+          break;
+        }
+
+        finalAnswer = parsed.answer;
+      }
     }
 
     if (!converged) {
@@ -144,17 +216,59 @@ export class TestTimeRecursiveThinking {
       this.globalKnowledge = this.globalKnowledge.slice(-this.maxGlobalKnowledge);
     }
 
+    // Phase 3: Abstention gate
+    let abstained = false;
+    let abstentionReason: string | undefined;
+
+    if (confidence < this.abstentionThreshold) {
+      abstained = true;
+      abstentionReason = `Confidence ${confidence} below threshold ${this.abstentionThreshold}`;
+      incCounter('trt_abstained', 'TRT abstentions', 1, { reason: 'low_confidence' });
+      log.info({ id, confidence, threshold: this.abstentionThreshold }, 'TRT abstained — low confidence');
+    } else {
+      // LLM-based abstention check
+      try {
+        const abstResponse = await this.llm.complete([
+          { role: 'system', content: ABSTENTION_PROMPT },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              problem: problem.slice(0, 500),
+              answer: finalAnswer.slice(0, 500),
+              confidence,
+            }),
+          },
+        ], { temperature: 0.1, maxTokens: 200 });
+
+        const jsonMatch = abstResponse.content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const abstParsed = JSON.parse(jsonMatch[0]);
+          if (abstParsed.shouldAbstain === true) {
+            abstained = true;
+            abstentionReason = String(abstParsed.reason ?? 'Abstention gate triggered');
+            incCounter('trt_abstained', 'TRT abstentions', 1, { reason: 'gate' });
+            log.info({ id, reason: abstentionReason }, 'TRT abstained — gate triggered');
+          }
+        }
+      } catch (err) {
+        log.debug({ err, id }, 'abstention gate check failed — proceeding');
+      }
+    }
+
     const result: TRTResult = {
       id,
       problem,
       attempts,
-      finalAnswer,
+      finalAnswer: abstained ? '' : finalAnswer,
       totalRounds: attempts.length,
       converged,
       confidence,
       accumulatedKnowledge,
       durationMs: Date.now() - startedAt,
-      success: converged,
+      success: converged && !abstained,
+      abstained,
+      abstentionReason,
+      solverMode,
     };
 
     this.results.push(result);
@@ -162,8 +276,8 @@ export class TestTimeRecursiveThinking {
       this.results = this.results.slice(-this.maxResults);
     }
 
-    incCounter('trt_solve', 'TRT solves', 1, { converged: converged ? 'true' : 'false' });
-    log.info({ id, converged, rounds: attempts.length, confidence, durationMs: result.durationMs }, 'TRT complete');
+    incCounter('trt_solve', 'TRT solves', 1, { converged: converged ? 'true' : 'false', abstained: abstained ? 'true' : 'false', solver: solverMode });
+    log.info({ id, converged, abstained, rounds: attempts.length, confidence, solverMode, durationMs: result.durationMs }, 'TRT complete');
 
     return result;
   }
@@ -186,12 +300,19 @@ export class TestTimeRecursiveThinking {
       ? Math.round((this.results.reduce((s, r) => s + r.confidence, 0) / total) * 100) / 100
       : 0;
 
+    const abstained = this.results.filter((r) => r.abstained).length;
+    const fastSolves = this.results.filter((r) => r.solverMode === 'fast').length;
+    const slowSolves = this.results.filter((r) => r.solverMode === 'slow').length;
+
     return {
       totalProblems: total,
       avgRounds,
       convergenceRate: total > 0 ? Math.round((converged / total) * 100) : 0,
       avgConfidence: avgConf,
       totalKnowledgeGained: this.globalKnowledge.length,
+      abstentionRate: total > 0 ? Math.round((abstained / total) * 100) : 0,
+      fastSolverUsage: fastSolves,
+      slowSolverUsage: slowSolves,
     };
   }
 
@@ -199,7 +320,7 @@ export class TestTimeRecursiveThinking {
     this.results = [];
   }
 
-  private parseAttempt(content: string, round: number, strategy: string, tokensUsed: number): TRTAttempt {
+  private parseAttempt(content: string, round: number, strategy: string, tokensUsed: number, solverMode: 'fast' | 'slow' = 'slow', depth: number = 0): TRTAttempt {
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('no JSON');
@@ -213,6 +334,8 @@ export class TestTimeRecursiveThinking {
         failureModes: Array.isArray(raw.failureModes) ? raw.failureModes.map(String) : [],
         knowledgeGained: String(raw.knowledgeGained ?? 'none'),
         tokensUsed,
+        solverMode,
+        depth,
       };
     } catch {
       return {
@@ -224,6 +347,8 @@ export class TestTimeRecursiveThinking {
         failureModes: ['Failed to parse response'],
         knowledgeGained: 'none',
         tokensUsed,
+        solverMode,
+        depth,
       };
     }
   }
