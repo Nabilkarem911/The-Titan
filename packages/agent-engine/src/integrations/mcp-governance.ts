@@ -83,6 +83,10 @@ export class MCPGovernanceManager {
     return this.policies.delete(serverId);
   }
 
+  listPolicies(): MCPGovernancePolicy[] {
+    return Array.from(this.policies.values());
+  }
+
   // ===== Permission Checking =====
 
   checkPermission(

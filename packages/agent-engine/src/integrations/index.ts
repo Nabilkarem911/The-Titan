@@ -8,3 +8,4 @@ export * from './skill-md-registry.js';
 export * from './browser-agent.js';
 export * from './web-intelligence.js';
 export * from './web-mcp.js';
+export * from './mcp-governance.js';
