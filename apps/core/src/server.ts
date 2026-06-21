@@ -50,6 +50,7 @@ import { selfForgeRoutes } from './routes/self-forge.js';
 import { autonomousLoopRoutes } from './routes/autonomous-loop.js';
 import { hypothesisRoutes } from './routes/hypothesis.js';
 import { codeArchitectureRoutes } from './routes/code-architecture.js';
+import { crossUserRoutes } from './routes/cross-user.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 
@@ -257,6 +258,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(autonomousLoopRoutes);
   await app.register(hypothesisRoutes);
   await app.register(codeArchitectureRoutes);
+  await app.register(crossUserRoutes);
   await registerTelegramRoutes(app);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));
