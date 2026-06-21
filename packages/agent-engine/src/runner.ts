@@ -25,6 +25,9 @@ import { StrategySelector } from './strategies/strategy-selector.js';
 import type { StrategyName } from './strategies/types.js';
 import type { ExecutionPlan, PlanStep } from './planner/types.js';
 import { buildAdaptivePrompt } from './personality/prompt-builder.js';
+import type { SelfForge } from './self-forge/self-forge.js';
+import type { MetaMonitor } from './metacognition/meta-monitor.js';
+import type { SelfImprover } from './metacognition/self-improver.js';
 
 const log = getLogger().child({ component: 'agent-runner' });
 
@@ -124,6 +127,12 @@ export interface AgentRunnerDeps {
   strategy?: StrategyName;
   /** Enable auto strategy selection based on task classification */
   enableAutoStrategy?: boolean;
+  /** Self-Forge: agent can write its own tools when it detects a capability gap */
+  selfForge?: SelfForge;
+  /** Metacognition: monitor reasoning quality and switch strategies when confidence is low */
+  metaMonitor?: MetaMonitor;
+  /** Self-Improver: analyze runs after completion and propose improvements */
+  selfImprover?: SelfImprover;
 }
 
 export class AgentRunner {
@@ -133,6 +142,9 @@ export class AgentRunner {
   private confidenceScorer?: ConfidenceScorer;
   private retryStrategist?: RetryStrategist;
   private strategySelector?: StrategySelector;
+  private selfForge?: SelfForge;
+  private metaMonitor?: MetaMonitor;
+  private selfImprover?: SelfImprover;
 
   constructor(private deps: AgentRunnerDeps) {
     if (deps.enablePlanning) {
@@ -147,6 +159,9 @@ export class AgentRunner {
       this.strategySelector = new StrategySelector(deps.enableAutoStrategy ? deps.llm : undefined);
       this.retryStrategist = new RetryStrategist(deps.llm);
     }
+    this.selfForge = deps.selfForge;
+    this.metaMonitor = deps.metaMonitor;
+    this.selfImprover = deps.selfImprover;
   }
 
   async run(input: AgentRunInput): Promise<AgentRun> {
@@ -373,6 +388,29 @@ export class AgentRunner {
       }
     }
 
+    // Metacognition: assess reasoning quality (classic ReAct path)
+    if (this.metaMonitor && run.steps.length > 0) {
+      try {
+        const assessment = await this.metaMonitor.assess(run);
+        log.info({ runId: run.id, metaConfidence: assessment.overallConfidence, recommendation: assessment.recommendation }, 'metacognitive assessment');
+        incCounter('meta_monitor_run', 'Metacognitive run assessments', 1, { recommendation: assessment.recommendation });
+      } catch {
+        // metacognition is optional
+      }
+    }
+
+    // Self-Improver: analyze run and propose improvements (classic ReAct path)
+    if (this.selfImprover && run.steps.length > 0) {
+      try {
+        const proposals = await this.selfImprover.analyzeRun(run);
+        if (proposals.length > 0) {
+          log.info({ runId: run.id, proposals: proposals.length }, 'self-improver generated proposals');
+        }
+      } catch {
+        // self-improvement is optional
+      }
+    }
+
     return this.finishRun(run, input);
   }
 
@@ -411,7 +449,26 @@ export class AgentRunner {
       step.status = 'executing';
 
       const toolStart = performance.now();
-      const result = await this.deps.executeTool(call, runId);
+      let result = await this.deps.executeTool(call, runId);
+
+      // Self-Forge: if tool is unknown and self-forge is enabled, try to create it
+      if (!result.success && result.error?.includes('Unknown tool') && this.selfForge) {
+        log.info({ runId, toolName: call.name }, 'self-forge: attempting to create missing tool');
+        try {
+          const forgeResult = await this.selfForge.forgeTool(
+            `Tool named "${call.name}" with params: ${JSON.stringify(call.params)}`,
+            `Agent tried to call "${call.name}" but it does not exist in the registry`,
+          );
+          if (forgeResult.success && forgeResult.toolName) {
+            log.info({ runId, toolName: forgeResult.toolName }, 'self-forge: tool created — retrying execution');
+            // Rebuild tools list and retry with the newly forged tool
+            result = await this.deps.executeTool({ ...call, name: forgeResult.toolName }, runId);
+          }
+        } catch (forgeErr) {
+          log.warn({ runId, err: forgeErr instanceof Error ? forgeErr.message : 'Unknown' }, 'self-forge: failed to create tool');
+        }
+      }
+
       step.observation = result;
       step.latencyMs = (step.latencyMs ?? 0) + Math.round(performance.now() - toolStart);
       step.status = 'observing';

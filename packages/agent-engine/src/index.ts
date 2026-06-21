@@ -20,3 +20,5 @@ export * from './spawner/index.js';
 export * from './voice/index.js';
 export * from './teams/index.js';
 export * from './learning/index.js';
+export * from './self-forge/index.js';
+export * from './metacognition/index.js';
