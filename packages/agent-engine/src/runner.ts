@@ -28,6 +28,7 @@ import { buildAdaptivePrompt } from './personality/prompt-builder.js';
 import type { SelfForge } from './self-forge/self-forge.js';
 import type { MetaMonitor } from './metacognition/meta-monitor.js';
 import type { SelfImprover } from './metacognition/self-improver.js';
+import type { WorldSimulator, EnvironmentGraph } from './world-model/index.js';
 
 const log = getLogger().child({ component: 'agent-runner' });
 
@@ -133,6 +134,10 @@ export interface AgentRunnerDeps {
   metaMonitor?: MetaMonitor;
   /** Self-Improver: analyze runs after completion and propose improvements */
   selfImprover?: SelfImprover;
+  /** World Model: simulate actions before executing dangerous tool calls */
+  worldSimulator?: WorldSimulator;
+  /** Environment Graph: records entities, relations, and events for the world model */
+  environmentGraph?: EnvironmentGraph;
 }
 
 export class AgentRunner {
@@ -145,6 +150,8 @@ export class AgentRunner {
   private selfForge?: SelfForge;
   private metaMonitor?: MetaMonitor;
   private selfImprover?: SelfImprover;
+  private worldSimulator?: WorldSimulator;
+  private environmentGraph?: EnvironmentGraph;
 
   constructor(private deps: AgentRunnerDeps) {
     if (deps.enablePlanning) {
@@ -162,6 +169,8 @@ export class AgentRunner {
     this.selfForge = deps.selfForge;
     this.metaMonitor = deps.metaMonitor;
     this.selfImprover = deps.selfImprover;
+    this.worldSimulator = deps.worldSimulator;
+    this.environmentGraph = deps.environmentGraph;
   }
 
   async run(input: AgentRunInput): Promise<AgentRun> {
@@ -448,8 +457,38 @@ export class AgentRunner {
       step.action = call;
       step.status = 'executing';
 
+      // World Model: simulate action before executing dangerous tools
+      if (this.worldSimulator) {
+        try {
+          const sim = await this.worldSimulator.simulate(call.name, call.name, call.params);
+          if (!sim.shouldProceed) {
+            log.warn({ runId, tool: call.name, risks: sim.risks }, 'world model blocked dangerous action');
+            step.status = 'failed';
+            step.observation = {
+              success: false,
+              error: `Action blocked by world model simulator: ${sim.risks.join(', ')}. Recommendations: ${sim.recommendations.join('; ')}`,
+            };
+            return step;
+          }
+        } catch {
+          // simulation is optional — proceed on failure
+        }
+      }
+
       const toolStart = performance.now();
       let result = await this.deps.executeTool(call, runId);
+
+      // Record event in environment graph
+      if (this.environmentGraph) {
+        this.environmentGraph.recordEvent({
+          actor: call.name,
+          action: call.name,
+          target: String(call.params?.['target'] ?? call.params?.['path'] ?? 'unknown'),
+          result: result.success ? 'success' : 'failure',
+          durationMs: Math.round(performance.now() - toolStart),
+          context: call.params as Record<string, unknown>,
+        });
+      }
 
       // Self-Forge: if tool is unknown and self-forge is enabled, try to create it
       if (!result.success && result.error?.includes('Unknown tool') && this.selfForge) {

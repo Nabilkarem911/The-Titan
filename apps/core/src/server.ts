@@ -47,6 +47,7 @@ import { multiPlatformBotRoutes } from './routes/multi-platform-bots.js';
 import { sandboxRoutes } from './routes/sandbox.js';
 import { insightsRoutes } from './routes/insights.js';
 import { selfForgeRoutes } from './routes/self-forge.js';
+import { autonomousLoopRoutes } from './routes/autonomous-loop.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 
@@ -251,6 +252,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(sandboxRoutes);
   await app.register(insightsRoutes);
   await app.register(selfForgeRoutes);
+  await app.register(autonomousLoopRoutes);
   await registerTelegramRoutes(app);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));

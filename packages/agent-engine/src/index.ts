@@ -22,3 +22,4 @@ export * from './teams/index.js';
 export * from './learning/index.js';
 export * from './self-forge/index.js';
 export * from './metacognition/index.js';
+export * from './world-model/index.js';
