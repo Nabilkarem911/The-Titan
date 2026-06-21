@@ -2,7 +2,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { resetConfigCache } from '@titan/config';
 
 const { mockUsers, mockSessions, mockApiKeys, mockMembers, mockWorkspaces } = vi.hoisted(() => ({
-  mockUsers: { findById: vi.fn(), findByEmail: vi.fn(), create: vi.fn() },
+  mockUsers: { findById: vi.fn(), findByEmail: vi.fn(), create: vi.fn(), count: vi.fn(), findFirst: vi.fn() },
   mockSessions: { create: vi.fn(), atomicConsumeByHash: vi.fn(), findByRefreshHashIncludingRevoked: vi.fn(), getState: vi.fn(), revoke: vi.fn(), revokeAllForUser: vi.fn() },
   mockApiKeys: { findByHash: vi.fn(), touchLastUsed: vi.fn(), create: vi.fn(), revoke: vi.fn() },
   mockMembers: { findMembership: vi.fn() },
@@ -131,6 +131,8 @@ describe('registerUser', () => {
   beforeEach(() => {
     setupEnv();
     vi.clearAllMocks();
+    mockUsers.count.mockResolvedValue(0);
+    mockUsers.findFirst.mockResolvedValue(null);
   });
 
   it('creates a user and returns tokens', async () => {
@@ -360,6 +362,8 @@ describe('resolveAuthFromAccessToken', () => {
   beforeEach(() => {
     setupEnv();
     vi.clearAllMocks();
+    mockUsers.count.mockResolvedValue(1);
+    mockUsers.findFirst.mockResolvedValue(null);
   });
 
   it('resolves auth context from a valid token', async () => {

@@ -32,6 +32,30 @@ vi.mock('@titan/database', () => ({
     write: vi.fn().mockResolvedValue(undefined),
     writeChained: vi.fn().mockResolvedValue(undefined),
   },
+  users: {
+    findById: vi.fn().mockResolvedValue(null),
+    findByEmail: vi.fn().mockResolvedValue(null),
+    create: vi.fn().mockResolvedValue({ id: 'u1', email: 'new@test.com', name: 'New User', isActive: true }),
+    count: vi.fn().mockResolvedValue(0),
+    findFirst: vi.fn().mockResolvedValue(null),
+  },
+  sessions: {
+    create: vi.fn().mockResolvedValue({ id: 's1', userId: 'u1', refreshTokenHash: 'h' }),
+    atomicConsumeByHash: vi.fn().mockResolvedValue(null),
+    findByRefreshHashIncludingRevoked: vi.fn().mockResolvedValue(null),
+    getState: vi.fn().mockResolvedValue(null),
+    revoke: vi.fn().mockResolvedValue(undefined),
+    revokeAllForUser: vi.fn().mockResolvedValue(undefined),
+  },
+  apiKeys: {
+    findByHash: vi.fn().mockResolvedValue(null),
+    touchLastUsed: vi.fn().mockResolvedValue(undefined),
+    create: vi.fn().mockResolvedValue({ id: 'k1', userId: 'u1', name: 'test', keyHash: 'h' }),
+    revoke: vi.fn().mockResolvedValue(undefined),
+  },
+  members: {
+    findMembership: vi.fn().mockResolvedValue(null),
+  },
   agentRuns: {
     findById: vi.fn(),
     create: vi.fn(),
@@ -119,15 +143,11 @@ const MOCK_SESSION_ID = '00000000-0000-0000-0000-000000000099';
 vi.mock('@titan/auth', () => ({
   registerUser: vi.fn().mockResolvedValue({
     user: { id: MOCK_USER_ID, email: 'test@test.com', name: 'Test User' },
-    accessToken: 'at_mock',
-    refreshToken: 'rt_mock',
-    expiresIn: 900,
+    tokens: { accessToken: 'at_mock', refreshToken: 'rt_mock', expiresIn: 900 },
   }),
   loginUser: vi.fn().mockResolvedValue({
     user: { id: MOCK_USER_ID, email: 'test@test.com', name: 'Test User' },
-    accessToken: 'at_mock',
-    refreshToken: 'rt_mock',
-    expiresIn: 900,
+    tokens: { accessToken: 'at_mock', refreshToken: 'rt_mock', expiresIn: 900 },
   }),
   refreshTokens: vi.fn().mockResolvedValue({
     accessToken: 'at_new',
@@ -160,6 +180,14 @@ vi.mock('@titan/memory', () => ({
     search: vi.fn().mockResolvedValue([]),
     upsert: vi.fn().mockResolvedValue(undefined),
   }),
+  KnowledgeBase: class MockKnowledgeBase {
+    addDocument = vi.fn().mockResolvedValue(undefined);
+    search = vi.fn().mockResolvedValue([]);
+    getDocument = vi.fn().mockResolvedValue(null);
+    deleteDocument = vi.fn().mockResolvedValue(true);
+    listDocuments = vi.fn().mockResolvedValue([]);
+    stats = vi.fn().mockReturnValue({ documentCount: 0, totalChunks: 0 });
+  },
 }));
 
 // -- observability ----------------------------------------------------------
@@ -178,30 +206,33 @@ vi.mock('@titan/observability', () => ({
 }));
 
 // -- agent engine -----------------------------------------------------------
-vi.mock('@titan/agent-engine', () => ({
-  createProviderFromEnv: vi.fn().mockReturnValue({
-    complete: vi.fn().mockResolvedValue({ content: 'mock response', toolCalls: [] }),
-  }),
-  AgentRunner: vi.fn().mockImplementation(() => ({
-    run: vi.fn().mockResolvedValue({
-      id: 'run-1', agentId: 'agent-1', prompt: 'test', status: 'completed',
-      maxSteps: 10, currentStep: 1, tokensUsed: 100, steps: [],
-      createdAt: new Date(), updatedAt: new Date(),
+vi.mock('@titan/agent-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@titan/agent-engine')>();
+  return {
+    ...actual,
+    createProviderFromEnv: vi.fn().mockReturnValue({
+      complete: vi.fn().mockResolvedValue({ content: 'mock response', toolCalls: [] }),
     }),
-  })),
-  getGlobalToolRegistry: vi.fn().mockReturnValue({
-    execute: vi.fn().mockResolvedValue({ success: true, data: 'ok' }),
-    list: vi.fn().mockReturnValue([]),
-    size: 0,
-  }),
-  SwarmOrchestrator: vi.fn(),
-  getGlobalPluginRunner: vi.fn().mockReturnValue({
-    load: vi.fn(),
-    unload: vi.fn(),
-    getTools: vi.fn().mockReturnValue([]),
-    listPlugins: vi.fn().mockReturnValue([]),
-  }),
-}));
+    AgentRunner: vi.fn().mockImplementation(() => ({
+      run: vi.fn().mockResolvedValue({
+        id: 'run-1', agentId: 'agent-1', prompt: 'test', status: 'completed',
+        maxSteps: 10, currentStep: 1, tokensUsed: 100, steps: [],
+        createdAt: new Date(), updatedAt: new Date(),
+      }),
+    })),
+    getGlobalToolRegistry: vi.fn().mockReturnValue({
+      execute: vi.fn().mockResolvedValue({ success: true, data: 'ok' }),
+      list: vi.fn().mockReturnValue([]),
+      size: 0,
+    }),
+    getGlobalPluginRunner: vi.fn().mockReturnValue({
+      load: vi.fn(),
+      unload: vi.fn(),
+      getTools: vi.fn().mockReturnValue([]),
+      listPlugins: vi.fn().mockReturnValue([]),
+    }),
+  };
+});
 
 // -- misc -------------------------------------------------------------------
 vi.mock('../../audit-scheduler.js', () => ({

@@ -8,23 +8,8 @@ import type { LlmProvider, LlmMessage, LlmCompletion, ToolCall, ToolResult, LlmT
  * the repeated-tool-call loop breaker.
  */
 class RepeatingToolProvider implements LlmProvider {
-  private callCount = 0;
-
-  async complete(messages: LlmMessage[]): Promise<LlmCompletion> {
-    this.callCount++;
-
-    // Check if the last message is a tool result (reflection phase)
-    const lastMsg = messages[messages.length - 1];
-    if (lastMsg?.role === 'tool' || (lastMsg?.role === 'assistant' && this.callCount % 2 === 0)) {
-      // Reflection: never say FINAL ANSWER so the loop continues
-      return {
-        content: 'Let me try again with the same approach.',
-        tokensUsed: 10,
-        finishReason: 'stop',
-      };
-    }
-
-    // Always request the exact same tool call
+  async complete(): Promise<LlmCompletion> {
+    // Always request the exact same tool call — never return a direct answer
     return {
       content: '',
       toolCalls: [{ name: 'execute_bash', params: { command: 'echo hello' } }],
@@ -53,22 +38,12 @@ class NeverFinishProvider implements LlmProvider {
 
   async complete(): Promise<LlmCompletion> {
     this.callCount++;
-
-    // Even calls are "planning" (tool request), odd calls are "reflection"
-    if (this.callCount % 2 === 1) {
-      return {
-        content: '',
-        // Use different params each time to avoid the repeated-call detector
-        toolCalls: [{ name: 'execute_bash', params: { command: `echo step ${this.callCount}` } }],
-        tokensUsed: 10,
-        finishReason: 'tool_calls',
-      };
-    }
-
+    // Always request a tool call with different params to avoid the loop breaker
     return {
-      content: 'Hmm, I need to try something else.',
+      content: '',
+      toolCalls: [{ name: 'execute_bash', params: { command: `echo step ${this.callCount}` } }],
       tokensUsed: 10,
-      finishReason: 'stop',
+      finishReason: 'tool_calls',
     };
   }
 }

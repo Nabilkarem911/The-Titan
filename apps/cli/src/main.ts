@@ -171,7 +171,7 @@ program
       saveConfig(update as Partial<ReturnType<typeof loadConfig>>);
       printSuccess(`${key} = ${value}`);
     } else if (action === 'get' && key) {
-      const val = (config as Record<string, unknown>)[key];
+      const val = (config as unknown as Record<string, unknown>)[key];
       if (val !== undefined) printKeyValue(key, String(val));
       else printError(`Unknown key: ${key}`);
     }

@@ -95,7 +95,7 @@ describe('Refresh token generation and verification', () => {
 
   it('verifyRefreshToken rejects tampered token', () => {
     const token = generateRefreshToken();
-    const tampered = token.plaintext.slice(0, -1) + 'X';
+    const tampered = token.plaintext.slice(0, -2) + (token.plaintext.slice(-2, -1) === 'X' ? 'Y' : 'X') + token.plaintext.slice(-1);
     expect(verifyRefreshToken(tampered, token.hash)).toBe(false);
   });
 

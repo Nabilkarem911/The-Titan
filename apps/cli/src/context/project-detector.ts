@@ -11,7 +11,7 @@ export interface ProjectInfo {
   mainFiles: string[];
 }
 
-const FRAMEWORK_DETECTORS: Array<{ file: string; framework: string; type: ProjectInfo['type'] }> = [
+const FRAMEWORK_DETECTORS: Array<{ file: string; framework?: string; type: ProjectInfo['type'] }> = [
   { file: 'next.config.js', framework: 'Next.js', type: 'node' },
   { file: 'next.config.ts', framework: 'Next.js', type: 'node' },
   { file: 'nuxt.config.ts', framework: 'Nuxt', type: 'node' },

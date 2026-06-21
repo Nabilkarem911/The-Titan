@@ -11,7 +11,7 @@ import { createRunner } from './create-runner.js';
 import { storeSwarmTask, getSwarmTask } from './swarm-store.js';
 import { getGlobalMemoryClient } from '@titan/memory';
 import { agentRuns, userSecrets, userContext, userProjects } from '@titan/database';
-import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile } from '@titan/tools';
+import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile, pdfCreate, spreadsheetCreate, imageGenerate, imageAnalyze, s3Operations, googleDrive, notionApi, linearApi, rssFeedParse, webMonitor, csvTransform, dataVisualize, slackMessage, smsMessage, textClassify, codeAnalyze, systemMetrics, invoiceGenerate, reportGenerate, jiraApi, seoAnalyze, xmlParse, networkDiagnose, textSummarize, entityExtract, accessibilityCheck, budgetTracker, imageEdit, documentTemplate, slideCreate, gcsOperations, dropboxSync, trelloApi, asanaApi, sitemapCrawl, jsonSchemaValidate, yamlConvert, discordMessage, whatsappMessage, pushNotification, embeddingsGenerate, logSearch, databaseBackup, cronManage, processManager, contractDraft } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 
 const cfg = loadConfig();
@@ -793,6 +793,424 @@ registry.register({
   },
   tags: ['agents', 'management'],
 });
+
+// === V3 Tools (45 additional tools) ===
+
+registry.register({
+  name: 'pdf_create',
+  description: 'Create a PDF document from HTML content. Returns the PDF as base64.',
+  schema: { html: { type: 'string', description: 'HTML content for the PDF' }, title: { type: 'string', description: 'PDF title (optional)' } },
+  requiredParams: ['html'],
+  handler: async (p: unknown) => pdfCreate(p as { html: string; title?: string }),
+  tags: ['document', 'pdf'],
+});
+
+registry.register({
+  name: 'spreadsheet_create',
+  description: 'Create a spreadsheet (CSV/TSV) from 2D array data with optional headers.',
+  schema: { data: { type: 'string', description: '2D array of cell values' }, headers: { type: 'string', description: 'Column headers (optional)' }, format: { type: 'string', description: 'csv or tsv (default csv)' } },
+  requiredParams: ['data'],
+  handler: async (p: unknown) => spreadsheetCreate(p as { data: unknown[][]; headers?: string[]; format?: 'csv' | 'tsv'; title?: string }),
+  tags: ['document', 'spreadsheet'],
+});
+
+registry.register({
+  name: 'image_generate',
+  description: 'Generate an image from a text description using AI. Returns base64 image.',
+  schema: { prompt: { type: 'string', description: 'Text description of the image to generate' }, size: { type: 'string', description: 'Image size (optional)' } },
+  requiredParams: ['prompt'],
+  handler: async (p: unknown) => imageGenerate(p as { prompt: string; size?: string }),
+  tags: ['ai', 'image'],
+});
+
+registry.register({
+  name: 'image_analyze',
+  description: 'Analyze an image and extract information (objects, text, colors, etc.).',
+  schema: { image: { type: 'string', description: 'Image URL or base64 data' }, prompt: { type: 'string', description: 'What to analyze in the image' } },
+  requiredParams: ['image'],
+  handler: async (p: unknown) => imageAnalyze(p as { url: string; question?: string }),
+  tags: ['ai', 'image', 'analysis'],
+});
+
+registry.register({
+  name: 's3_operations',
+  description: 'Upload, download, list, or delete files on AWS S3.',
+  schema: { action: { type: 'string', description: 'upload, download, list, or delete' }, bucket: { type: 'string', description: 'S3 bucket name' }, key: { type: 'string', description: 'Object key (optional)' } },
+  requiredParams: ['action', 'bucket'],
+  handler: async (p: unknown) => s3Operations(p as { action: 'upload' | 'download' | 'list' | 'delete'; bucket: string; key?: string; content?: string; prefix?: string }),
+  tags: ['cloud', 'aws', 'storage'],
+});
+
+registry.register({
+  name: 'google_drive',
+  description: 'Interact with Google Drive: list, upload, download, or search files.',
+  schema: { action: { type: 'string', description: 'list, upload, download, search' }, query: { type: 'string', description: 'Search query (optional)' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => googleDrive(p as { action: 'list' | 'upload' | 'download' | 'search'; query?: string; fileId?: string; content?: string; name?: string; mimeType?: string }),
+  tags: ['cloud', 'google', 'storage'],
+});
+
+registry.register({
+  name: 'notion_api',
+  description: 'Interact with Notion: search, create pages, query databases.',
+  schema: { action: { type: 'string', description: 'search, create_page, query_db, get_page' }, query: { type: 'string', description: 'Search query (optional)' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => notionApi(p as { action: 'search' | 'create_page' | 'query_db' | 'get_page'; query?: string; databaseId?: string; pageId?: string; title?: string; content?: string; properties?: Record<string, unknown> }),
+  tags: ['productivity', 'notion'],
+});
+
+registry.register({
+  name: 'linear_api',
+  description: 'Interact with Linear: create, list, update, or search issues.',
+  schema: { action: { type: 'string', description: 'create_issue, list_issues, update_issue, search' }, title: { type: 'string', description: 'Issue title (for create)' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => linearApi(p as { action: 'create_issue' | 'list_issues' | 'update_issue' | 'search'; teamId?: string; issueId?: string; title?: string; description?: string; status?: string; query?: string; priority?: number }),
+  tags: ['productivity', 'linear', 'issues'],
+});
+
+registry.register({
+  name: 'rss_feed_parse',
+  description: 'Parse an RSS/Atom feed and return entries.',
+  schema: { url: { type: 'string', description: 'RSS feed URL' }, limit: { type: 'number', description: 'Max entries (default 10)' } },
+  requiredParams: ['url'],
+  handler: async (p: unknown) => rssFeedParse(p as { url: string; limit?: number }),
+  tags: ['web', 'rss', 'feed'],
+});
+
+registry.register({
+  name: 'web_monitor',
+  description: 'Monitor a webpage for changes. Check, diff, or get status.',
+  schema: { url: { type: 'string', description: 'URL to monitor' }, action: { type: 'string', description: 'check, diff, or status (default check)' } },
+  requiredParams: ['url'],
+  handler: async (p: unknown) => webMonitor(p as { url: string; action?: 'check' | 'diff' | 'status'; selector?: string }),
+  tags: ['web', 'monitor'],
+});
+
+registry.register({
+  name: 'csv_transform',
+  description: 'Transform CSV data: filter, sort, aggregate, or convert.',
+  schema: { csv: { type: 'string', description: 'CSV content' }, transform: { type: 'string', description: 'Transform operation' } },
+  requiredParams: ['csv'],
+  handler: async (p: unknown) => csvTransform(p as { csv: string; action: 'filter' | 'sort' | 'select' | 'aggregate' | 'pivot'; column?: string; value?: string; columns?: string[]; direction?: 'asc' | 'desc'; groupBy?: string; aggregation?: 'count' | 'sum' | 'avg' | 'min' | 'max' }),
+  tags: ['data', 'csv'],
+});
+
+registry.register({
+  name: 'data_visualize',
+  description: 'Create data visualizations (charts, graphs) from data.',
+  schema: { data: { type: 'string', description: 'Data to visualize' }, type: { type: 'string', description: 'Chart type (bar, line, pie, etc.)' } },
+  requiredParams: ['data'],
+  handler: async (p: unknown) => dataVisualize(p as { data: Array<{ label: string; value: number }>; type?: 'bar' | 'pie' | 'line' | 'table'; title?: string; width?: number }),
+  tags: ['data', 'visualization', 'charts'],
+});
+
+registry.register({
+  name: 'slack_message',
+  description: 'Send, search, or list channels in Slack.',
+  schema: { action: { type: 'string', description: 'send, search, list_channels' }, channel: { type: 'string', description: 'Channel name (for send)' }, text: { type: 'string', description: 'Message text (for send)' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => slackMessage(p as { action: 'send' | 'search' | 'list_channels'; channel?: string; text?: string; query?: string; threadTs?: string }),
+  tags: ['communication', 'slack'],
+});
+
+registry.register({
+  name: 'sms_message',
+  description: 'Send an SMS message via Twilio.',
+  schema: { to: { type: 'string', description: 'Phone number' }, body: { type: 'string', description: 'Message body' } },
+  requiredParams: ['to', 'body'],
+  handler: async (p: unknown) => smsMessage(p as { to: string; body: string; from?: string }),
+  tags: ['communication', 'sms', 'twilio'],
+});
+
+registry.register({
+  name: 'text_classify',
+  description: 'Classify text by sentiment, topic, intent, language, or custom categories.',
+  schema: { text: { type: 'string', description: 'Text to classify' }, type: { type: 'string', description: 'sentiment, topic, intent, language, custom' } },
+  requiredParams: ['text'],
+  handler: async (p: unknown) => textClassify(p as { text: string; categories?: string[]; type?: 'sentiment' | 'topic' | 'intent' | 'language' | 'custom' }),
+  tags: ['ai', 'text', 'classification'],
+});
+
+registry.register({
+  name: 'code_analyze',
+  description: 'Analyze source code for quality, complexity, and potential issues.',
+  schema: { code: { type: 'string', description: 'Source code to analyze' }, language: { type: 'string', description: 'Programming language (optional)' } },
+  requiredParams: ['code'],
+  handler: async (p: unknown) => codeAnalyze(p as { code: string; language?: string }),
+  tags: ['code', 'analysis'],
+});
+
+registry.register({
+  name: 'system_metrics',
+  description: 'Get system metrics: CPU, memory, and system information.',
+  schema: { type: { type: 'string', description: 'all, cpu, memory, or system (default all)' } },
+  requiredParams: [],
+  handler: async (p: unknown) => systemMetrics(p as { type?: 'all' | 'cpu' | 'memory' | 'system' }),
+  tags: ['system', 'metrics'],
+});
+
+registry.register({
+  name: 'invoice_generate',
+  description: 'Generate an invoice PDF from line items and customer data.',
+  schema: { items: { type: 'string', description: 'Array of line items' }, customer: { type: 'string', description: 'Customer info' } },
+  requiredParams: ['items'],
+  handler: async (p: unknown) => invoiceGenerate(p as { from: { name: string; email?: string; address?: string }; to: { name: string; email?: string; address?: string }; items: Array<{ description: string; quantity: number; unitPrice: number }>; tax?: number; currency?: string; notes?: string; dueDate?: string }),
+  tags: ['business', 'invoice'],
+});
+
+registry.register({
+  name: 'report_generate',
+  description: 'Generate a formatted report from sections with headings and data.',
+  schema: { title: { type: 'string', description: 'Report title' }, sections: { type: 'string', description: 'Array of sections' } },
+  requiredParams: ['title', 'sections'],
+  handler: async (p: unknown) => reportGenerate(p as { title: string; sections: Array<{ heading: string; content: string; data?: Array<{ label: string; value: number }> }>; author?: string; format?: 'html' | 'markdown' }),
+  tags: ['business', 'report'],
+});
+
+registry.register({
+  name: 'jira_api',
+  description: 'Interact with Jira: create, search, get, update, or transition issues.',
+  schema: { action: { type: 'string', description: 'create, search, get, update, transition' }, projectKey: { type: 'string', description: 'Jira project key' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => jiraApi(p as { action: 'create' | 'search' | 'get' | 'update' | 'transition'; domain?: string; projectKey?: string; issueKey?: string; summary?: string; description?: string; issueType?: string; jql?: string; statusId?: string }),
+  tags: ['productivity', 'jira', 'issues'],
+});
+
+registry.register({
+  name: 'seo_analyze',
+  description: 'Analyze a webpage for SEO metrics (meta tags, headings, links, etc.).',
+  schema: { url: { type: 'string', description: 'URL to analyze' } },
+  requiredParams: ['url'],
+  handler: async (p: unknown) => seoAnalyze(p as { url: string }),
+  tags: ['web', 'seo', 'analysis'],
+});
+
+registry.register({
+  name: 'xml_parse',
+  description: 'Parse XML and optionally extract data via XPath or convert to JSON.',
+  schema: { xml: { type: 'string', description: 'XML content' }, action: { type: 'string', description: 'parse, to_json, or extract (default parse)' } },
+  requiredParams: ['xml'],
+  handler: async (p: unknown) => xmlParse(p as { xml: string; xpath?: string; action?: 'parse' | 'to_json' | 'extract' }),
+  tags: ['data', 'xml'],
+});
+
+registry.register({
+  name: 'network_diagnose',
+  description: 'Diagnose network issues: ping, port check, headers, or full analysis.',
+  schema: { target: { type: 'string', description: 'Hostname or IP to diagnose' }, action: { type: 'string', description: 'ping, port_check, headers, full (default full)' } },
+  requiredParams: ['target'],
+  handler: async (p: unknown) => networkDiagnose(p as { target: string; action?: 'ping' | 'port_check' | 'headers' | 'full' }),
+  tags: ['network', 'diagnostics'],
+});
+
+registry.register({
+  name: 'text_summarize',
+  description: 'Summarize text into bullets, paragraph, or TL;DR format.',
+  schema: { text: { type: 'string', description: 'Text to summarize' }, style: { type: 'string', description: 'bullets, paragraph, tldr (default paragraph)' } },
+  requiredParams: ['text'],
+  handler: async (p: unknown) => textSummarize(p as { text: string; maxLength?: number; style?: 'bullets' | 'paragraph' | 'tldr' }),
+  tags: ['ai', 'text', 'summary'],
+});
+
+registry.register({
+  name: 'entity_extract',
+  description: 'Extract named entities (people, orgs, dates, locations) from text.',
+  schema: { text: { type: 'string', description: 'Text to extract entities from' } },
+  requiredParams: ['text'],
+  handler: async (p: unknown) => entityExtract(p as { text: string }),
+  tags: ['ai', 'text', 'ner'],
+});
+
+registry.register({
+  name: 'accessibility_check',
+  description: 'Check a webpage for accessibility issues (WCAG compliance).',
+  schema: { url: { type: 'string', description: 'URL to check' } },
+  requiredParams: ['url'],
+  handler: async (p: unknown) => accessibilityCheck(p as { url: string }),
+  tags: ['web', 'accessibility', 'a11y'],
+});
+
+registry.register({
+  name: 'budget_tracker',
+  description: 'Track budget: add expenses, get summary, or set limits.',
+  schema: { action: { type: 'string', description: 'add, summary, limits' }, amount: { type: 'number', description: 'Amount (for add)' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => budgetTracker(p as { action: 'add' | 'summary' | 'forecast'; entries?: Array<{ description: string; amount: number; type: 'income' | 'expense'; category: string; date?: string }>; months?: number }),
+  tags: ['finance', 'budget'],
+});
+
+registry.register({
+  name: 'image_edit',
+  description: 'Edit an image: resize, crop, rotate, filter, or add text overlay.',
+  schema: { image: { type: 'string', description: 'Image URL or base64' }, action: { type: 'string', description: 'resize, crop, rotate, filter, overlay' } },
+  requiredParams: ['image', 'action'],
+  handler: async (p: unknown) => imageEdit(p as { action: 'resize' | 'crop' | 'rotate' | 'watermark' | 'convert' | 'info'; url: string; width?: number; height?: number; angle?: number; text?: string; format?: string }),
+  tags: ['image', 'edit'],
+});
+
+registry.register({
+  name: 'document_template',
+  description: 'Generate a document from a template with variable substitution.',
+  schema: { template: { type: 'string', description: 'Template content with {{variables}}' }, variables: { type: 'string', description: 'JSON object of variable values' } },
+  requiredParams: ['template'],
+  handler: async (p: unknown) => documentTemplate(p as { template: string; variables: Record<string, string>; format?: 'html' | 'markdown' }),
+  tags: ['document', 'template'],
+});
+
+registry.register({
+  name: 'slide_create',
+  description: 'Create a presentation (slides) from an array of slide objects.',
+  schema: { slides: { type: 'string', description: 'Array of slide objects' }, theme: { type: 'string', description: 'Theme name (optional)' } },
+  requiredParams: ['slides'],
+  handler: async (p: unknown) => slideCreate(p as { slides: Array<{ title: string; bullets?: string[]; notes?: string; image?: string }>; theme?: string; title?: string }),
+  tags: ['document', 'presentation', 'slides'],
+});
+
+registry.register({
+  name: 'gcs_operations',
+  description: 'Upload, download, list, or delete files on Google Cloud Storage.',
+  schema: { action: { type: 'string', description: 'upload, download, list, delete' }, bucket: { type: 'string', description: 'GCS bucket name' } },
+  requiredParams: ['action', 'bucket'],
+  handler: async (p: unknown) => gcsOperations(p as { action: 'upload' | 'download' | 'list' | 'delete'; bucket: string; object?: string; content?: string; prefix?: string }),
+  tags: ['cloud', 'gcp', 'storage'],
+});
+
+registry.register({
+  name: 'dropbox_sync',
+  description: 'Sync files with Dropbox: upload, download, list, or share.',
+  schema: { action: { type: 'string', description: 'upload, download, list, share' }, path: { type: 'string', description: 'Dropbox path' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => dropboxSync(p as { action: 'list' | 'upload' | 'download' | 'search'; path?: string; content?: string; query?: string }),
+  tags: ['cloud', 'dropbox', 'storage'],
+});
+
+registry.register({
+  name: 'trello_api',
+  description: 'Interact with Trello: list boards, list cards, create or move cards.',
+  schema: { action: { type: 'string', description: 'list_boards, list_cards, create_card, move_card' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => trelloApi(p as { action: 'list_boards' | 'list_cards' | 'create_card' | 'move_card'; boardId?: string; listId?: string; cardId?: string; name?: string; description?: string }),
+  tags: ['productivity', 'trello'],
+});
+
+registry.register({
+  name: 'asana_api',
+  description: 'Interact with Asana: list projects, create tasks, update tasks.',
+  schema: { action: { type: 'string', description: 'list_projects, create_task, update_task, list_tasks' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => asanaApi(p as { action: 'list_tasks' | 'create_task' | 'update_task' | 'search'; projectId?: string; taskId?: string; name?: string; notes?: string; query?: string; workspaceId?: string }),
+  tags: ['productivity', 'asana'],
+});
+
+registry.register({
+  name: 'sitemap_crawl',
+  description: 'Crawl a sitemap.xml and return all URLs.',
+  schema: { url: { type: 'string', description: 'Website URL or sitemap URL' }, limit: { type: 'number', description: 'Max URLs (default 50)' } },
+  requiredParams: ['url'],
+  handler: async (p: unknown) => sitemapCrawl(p as { url: string; limit?: number }),
+  tags: ['web', 'sitemap', 'crawl'],
+});
+
+registry.register({
+  name: 'json_schema_validate',
+  description: 'Validate data against a JSON Schema.',
+  schema: { data: { type: 'string', description: 'Data to validate' }, schema: { type: 'string', description: 'JSON Schema object' } },
+  requiredParams: ['data', 'schema'],
+  handler: async (p: unknown) => jsonSchemaValidate(p as { data: unknown; schema: Record<string, unknown> }),
+  tags: ['data', 'json', 'validation'],
+});
+
+registry.register({
+  name: 'yaml_convert',
+  description: 'Convert between YAML, JSON, and TOML formats.',
+  schema: { input: { type: 'string', description: 'Input content' }, from: { type: 'string', description: 'yaml, json, or toml' }, to: { type: 'string', description: 'yaml, json, or toml' } },
+  requiredParams: ['input', 'from', 'to'],
+  handler: async (p: unknown) => yamlConvert(p as { input: string; from: 'yaml' | 'json' | 'toml'; to: 'yaml' | 'json' | 'toml' }),
+  tags: ['data', 'yaml', 'convert'],
+});
+
+registry.register({
+  name: 'discord_message',
+  description: 'Send a message to a Discord channel via webhook.',
+  schema: { webhookUrl: { type: 'string', description: 'Discord webhook URL' }, content: { type: 'string', description: 'Message content' } },
+  requiredParams: ['webhookUrl', 'content'],
+  handler: async (p: unknown) => discordMessage(p as { action: 'send' | 'edit' | 'delete' | 'list_channels'; channelId?: string; messageId?: string; content?: string; guildId?: string }),
+  tags: ['communication', 'discord'],
+});
+
+registry.register({
+  name: 'whatsapp_message',
+  description: 'Send a WhatsApp message via WhatsApp Business API.',
+  schema: { to: { type: 'string', description: 'Phone number' }, message: { type: 'string', description: 'Message text' } },
+  requiredParams: ['to', 'message'],
+  handler: async (p: unknown) => whatsappMessage(p as { to: string; message: string; type?: 'text' | 'template' | 'image'; imageUrl?: string; templateName?: string }),
+  tags: ['communication', 'whatsapp'],
+});
+
+registry.register({
+  name: 'push_notification',
+  description: 'Send a push notification via Firebase or Expo.',
+  schema: { token: { type: 'string', description: 'Device token' }, title: { type: 'string', description: 'Notification title' }, body: { type: 'string', description: 'Notification body' } },
+  requiredParams: ['token', 'title', 'body'],
+  handler: async (p: unknown) => pushNotification(p as { token: string; title: string; body: string; data?: Record<string, string>; provider?: 'firebase' | 'expo' }),
+  tags: ['communication', 'push', 'notification'],
+});
+
+registry.register({
+  name: 'embeddings_generate',
+  description: 'Generate vector embeddings for text using an embedding model.',
+  schema: { text: { type: 'string', description: 'Text to embed' }, model: { type: 'string', description: 'Embedding model (optional)' } },
+  requiredParams: ['text'],
+  handler: async (p: unknown) => embeddingsGenerate(p as { texts: string[]; model?: string }),
+  tags: ['ai', 'embeddings', 'vector'],
+});
+
+registry.register({
+  name: 'log_search',
+  description: 'Search log files for a query with optional level and time filter.',
+  schema: { query: { type: 'string', description: 'Search query' }, path: { type: 'string', description: 'Log directory (default /var/log)' } },
+  requiredParams: ['query'],
+  handler: async (p: unknown) => logSearch(p as { query: string; path?: string; level?: string; limit?: number; since?: string }),
+  tags: ['system', 'logs', 'search'],
+});
+
+registry.register({
+  name: 'database_backup',
+  description: 'Create or restore a database backup.',
+  schema: { action: { type: 'string', description: 'create or restore' }, path: { type: 'string', description: 'Backup file path' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => databaseBackup(p as { action: 'backup' | 'list' | 'info'; database?: string; outputPath?: string }),
+  tags: ['database', 'backup'],
+});
+
+registry.register({
+  name: 'cron_manage',
+  description: 'Manage cron jobs: list, create, delete, or update.',
+  schema: { action: { type: 'string', description: 'list, create, delete, update' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => cronManage(p as { action: 'list' | 'create' | 'delete' | 'toggle'; name?: string; schedule?: string; command?: string; jobId?: string; enabled?: boolean }),
+  tags: ['system', 'cron', 'scheduling'],
+});
+
+registry.register({
+  name: 'process_manager',
+  description: 'Manage system processes: list, info, or find by name.',
+  schema: { action: { type: 'string', description: 'list, info, find' }, name: { type: 'string', description: 'Process name (for find)' } },
+  requiredParams: ['action'],
+  handler: async (p: unknown) => processManager(p as { action: 'list' | 'info' | 'find'; name?: string; pid?: number }),
+  tags: ['system', 'process'],
+});
+
+registry.register({
+  name: 'contract_draft',
+  description: 'Generate a legal contract draft from parameters.',
+  schema: { type: { type: 'string', description: 'Contract type (NDA, MSA, SOW, etc.)' }, parties: { type: 'string', description: 'Array of party names' } },
+  requiredParams: ['type'],
+  handler: async (p: unknown) => contractDraft(p as { type: 'nda' | 'freelance' | 'saas' | 'employment' | 'custom'; parties: { partyA: string; partyB: string }; terms?: Record<string, string>; customClauses?: string[] }),
+  tags: ['legal', 'contract'],
+});
+
+log.info({ toolCount: registry.size() }, 'all tools registered in ToolRegistry');
 
 async function executeTool(name: string, params: unknown): Promise<ToolResult> {
   return registry.execute(name, params);
