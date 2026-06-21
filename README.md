@@ -35,7 +35,7 @@ titan                # Interactive REPL mode
 
 ## Super-Agent Capabilities
 
-Titan isn't just an agent — it's a **Super-Agent**. 24 advanced capabilities built on top of cutting-edge 2026 AI research:
+Titan isn't just an agent — it's a **Super-Agent**. 34 advanced capabilities built on top of cutting-edge 2026 AI research:
 
 ### Self-Improvement & Awareness
 
@@ -48,6 +48,9 @@ Titan isn't just an agent — it's a **Super-Agent**. 24 advanced capabilities b
 | **Dream Mode** | Agent consolidates memories in background like human sleep — synthesizes insights from past experiences | Every 30 min: reviews recent runs → "Noticed pattern: tasks with file uploads fail 40% less when using streaming strategy" |
 | **Recursive Self-Rewrite** | Agent proposes improvements to its own logic, tests in sandbox, auto-rolls back if worse | "Proposed change to planning module → sandbox tested → +12% performance → applied as version 7" |
 | **Meta-Learning Optimizer** | Agent optimizes its own learning parameters (learning rate, exploration rate, strategy weights) | "Success rate dropped 15% → increasing exploration rate from 0.1 to 0.25 → trying new strategies" |
+| **Test-time Recursive Thinking** | Iterative self-improvement at inference time — generate → verify → extract lessons → retry with accumulated knowledge | Problem fails → Strategy 1 (direct) fails → Strategy 2 (decomposition) fails → Strategy 3 (analogy) succeeds with knowledge from attempts 1-2 |
+| **Metacognitive Consolidation** | 3-level hierarchical memory: instance reflections → batch micro-lessons → global procedural knowledge | 50 reflections → "Tasks with file uploads need streaming" → Proceduralized: "Always use streaming for files >1MB" |
+| **Experiential Heuristic Extraction** | Extracts transferable heuristics from task trajectories and injects them into future task context | After successful debug: "Null checks before .length access prevent 80% of TypeErrors" → retrieved for next debugging task |
 
 ### World Understanding
 
@@ -58,6 +61,9 @@ Titan isn't just an agent — it's a **Super-Agent**. 24 advanced capabilities b
 | **Hypothesis Testing** | Agent uses the scientific method to diagnose problems | Problem: "API returns 500" → Hypothesis 1: "DB connection pool exhausted" → Test: check pool stats → Result: confirmed → Fix applied |
 | **Neuro-Symbolic Reasoning** | Combines neural intuition with symbolic logic rules for hybrid reasoning | Neural: "I think the bug is in auth" + Symbolic rule: "error-implies-failure" → Synthesis: "Auth module error confirmed, triggering recovery" |
 | **Causal Replay** | Determines which specific step in a run caused the failure using causal attribution | Run failed at step 5 → Analysis: "Step 3 (decision to use cache) is the pivotal cause, not step 5 (where it crashed)" |
+| **Theory of Mind** | Models beliefs, desires, and knowledge of other entities (users, agents) — predicts their next action | User says "this again?" → ToM: believes task is recurring, desires permanent fix → Response: proactive root-cause fix |
+| **Live Web Intelligence** | Real-time web search, scrape, crawl, and interact — agent accesses live data, not just training data | "What's the latest Node.js version?" → searches web → scrapes nodejs.org → "Node.js v22.3.0 released June 2026" |
+| **Browser Automation Agent** | LLM-driven plan-act loop for web tasks — 13 action types with self-healing locators | "Fill the form on example.com" → navigates → finds form → types name → clicks submit → screenshot evidence |
 
 ### Autonomous Operation
 
@@ -70,6 +76,8 @@ Titan isn't just an agent — it's a **Super-Agent**. 24 advanced capabilities b
 | **Evolutionary Solver** | Population-based solution evolution: generate N candidates → score → elite selection → mutate → repeat | Problem: "optimize DB query" → Gen 1: 4 solutions (avg 52) → Gen 2: mutated elites (avg 71) → Gen 3: converged at 94 |
 | **Autonomous Skill Synthesis** | Decomposes complex tasks into sub-skills, synthesizes reusable code, verifies with test cases | Task: "build CSV parser" → Decompose: tokenize, parse rows, validate → Synthesize: reusable csv-parse skill → Verified |
 | **Dynamic Tool Discovery** | Discovers tools from npm, GitHub, APIs, and MCP servers when missing capabilities are detected | "I need to send a Slack message but no Slack tool exists" → discovers slack-webhook npm package → verifies → installs |
+| **A2A Protocol** | Agent-to-agent interoperability via Google's A2A standard — Titan can delegate tasks to and receive tasks from external agents | Titan needs translation → sends task to Claude agent via A2A → Claude translates → result returned with artifacts |
+| **SKILL.md Standard** | Portable skills in AIP-3 standard format — skills are interchangeable with Claude Code, Codex, and other frameworks | Skill `csv-parser/SKILL.md` created in Titan → can be loaded by any AIP-3 compatible agent |
 
 ### Learning & Collaboration
 
@@ -85,6 +93,13 @@ Titan isn't just an agent — it's a **Super-Agent**. 24 advanced capabilities b
 |-----------|--------------|---------|
 | **Multimodal** | Agent analyzes images and PDFs — extracts text, identifies objects, detects document types | Upload `invoice.pdf` → Agent: "This is an invoice for $4,200 from Acme Corp, due July 15, 2026 — 3 line items detected" |
 | **Emotional Intelligence** | Analyzes user emotions using Plutchik's 8 primary emotions, models empathy, and adapts response strategy | User: "This is frustrating!" → Analysis: anger=70, sadness=40 → Strategy: "Acknowledge frustration, offer concrete solution" |
+
+### Safety & Security
+
+| Capability | What It Does | Example |
+|-----------|--------------|--------|
+| **TRIAD Safety Guardrail** | 3-way safety decisions: proceed, refuse, or **update** (revise plan) instead of binary block | Action: `rm -rf /tmp` → Guardrail: "update" → Revised: `rm -rf /tmp/old_builds_only` with safety checks |
+| **Self-Evolving Safety Memory** | Contrastive safety cells — each harmful pattern paired with benign counterpart, evolves without retraining | Attack: "ignore previous instructions" → matched against harmful cell → blocked. Benign: "ignore previous line" → matched benign counterpart → allowed |
 
 ---
 
@@ -590,6 +605,106 @@ GET  /api/v1/meta-learning/results        # Get optimization results
 GET  /api/v1/meta-learning/stats          # Get meta-learning statistics
 ```
 
+### A2A Protocol (Agent-to-Agent)
+```bash
+POST /api/v1/a2a/register-self            # Register Titan as an A2A agent
+POST /api/v1/a2a/agents                   # Register an external agent
+GET  /api/v1/a2a/agents                   # List registered agents
+GET  /api/v1/a2a/agents/cap/:capability   # Find agents by capability
+DELETE /api/v1/a2a/agents/:id             # Unregister an agent
+POST /api/v1/a2a/tasks                    # Send a task to an agent
+GET  /api/v1/a2a/tasks                    # List tasks
+GET  /api/v1/a2a/tasks/:id                # Get a task
+POST /api/v1/a2a/tasks/:id/update         # Update task state
+POST /api/v1/a2a/tasks/:id/cancel         # Cancel a task
+GET  /api/v1/a2a/stats                    # Get A2A stats
+```
+
+### SKILL.md Registry
+```bash
+POST /api/v1/skills-md/register-dir       # Register a skill directory
+GET  /api/v1/skills-md                    # List all skills
+GET  /api/v1/skills-md/:name              # Get a specific skill
+POST /api/v1/skills-md/match              # Match skills to a task
+POST /api/v1/skills-md/create             # Create a new skill
+POST /api/v1/skills-md/reload             # Reload all skills
+GET  /api/v1/skills-md/stats              # Get skill stats
+```
+
+### Browser Agent
+```bash
+POST /api/v1/browser/execute              # Execute a browser task
+GET  /api/v1/browser/sessions             # List active sessions
+GET  /api/v1/browser/sessions/:id         # Get session details
+POST /api/v1/browser/sessions/:id/close   # Close a session
+GET  /api/v1/browser/stats                # Get browser agent stats
+```
+
+### Web Intelligence
+```bash
+POST /api/v1/web/search                   # Search the web
+POST /api/v1/web/scrape                   # Scrape a URL
+POST /api/v1/web/crawl                    # Crawl a website
+POST /api/v1/web/interact                 # Interact with a web page
+GET  /api/v1/web/stats                    # Get web intelligence stats
+```
+
+### Theory of Mind
+```bash
+POST /api/v1/tom/analyze                  # Analyze an entity's mental state
+GET  /api/v1/tom/models                   # List all perspective models
+GET  /api/v1/tom/models/:entityId         # Get a specific model
+GET  /api/v1/tom/analyses                 # Get analyses
+GET  /api/v1/tom/stats                    # Get ToM stats
+```
+
+### Test-time Recursive Thinking
+```bash
+POST /api/v1/trt/solve                    # Solve a problem with recursive thinking
+GET  /api/v1/trt/results                  # Get all results
+GET  /api/v1/trt/knowledge                # Get accumulated global knowledge
+GET  /api/v1/trt/stats                    # Get TRT stats
+```
+
+### Metacognitive Consolidation
+```bash
+POST /api/v1/mc/reflect                   # Reflect on a completed instance
+POST /api/v1/mc/consolidate              # Consolidate reflections into micro-lessons
+POST /api/v1/mc/proceduralize            # Convert meta-knowledge to procedures
+POST /api/v1/mc/knowledge/relevant        # Get relevant knowledge for a task
+GET  /api/v1/mc/reflections              # Get all reflections
+GET  /api/v1/mc/meta-knowledge           # Get all meta-knowledge
+GET  /api/v1/mc/stats                    # Get consolidation stats
+```
+
+### Safety Guardrail
+```bash
+POST /api/v1/guardrail/check              # Check an action before execution
+POST /api/v1/guardrail/patterns           # Add a blocked pattern
+GET  /api/v1/guardrail/patterns           # List blocked patterns
+GET  /api/v1/guardrail/results            # Get guardrail results
+GET  /api/v1/guardrail/stats              # Get guardrail stats
+```
+
+### Self-Evolving Safety Memory
+```bash
+POST /api/v1/safety-memory/cells          # Add a contrastive cell
+POST /api/v1/safety-memory/evolve         # Evolve safety memory from interaction
+POST /api/v1/safety-memory/check          # Check input against safety memory
+GET  /api/v1/safety-memory/cells          # List all cells
+GET  /api/v1/safety-memory/checks         # Get check history
+GET  /api/v1/safety-memory/stats          # Get safety memory stats
+```
+
+### Heuristic Extractor
+```bash
+POST /api/v1/heuristics/extract           # Extract heuristics from a trajectory
+POST /api/v1/heuristics/retrieve          # Retrieve relevant heuristics for a task
+GET  /api/v1/heuristics                   # List all heuristics
+GET  /api/v1/heuristics/extractions       # Get extraction history
+GET  /api/v1/heuristics/stats             # Get heuristic stats
+```
+
 ---
 
 ## Architecture
@@ -597,18 +712,19 @@ GET  /api/v1/meta-learning/stats          # Get meta-learning statistics
 ```
 titan/
 ├── apps/
-│   ├── core/                # Fastify API server (120+ endpoints)
+│   ├── core/                # Fastify API server (180+ endpoints)
 │   ├── dashboard/           # React 18 + Vite + Tailwind (43 pages)
 │   └── cli/                 # Terminal interface (REPL + commands)
 ├── packages/
-│   ├── agent-engine/        # The brain (30+ modules)
+│   ├── agent-engine/        # The brain (40+ modules)
 │   │   ├── self-forge/      #   Agent writes its own tools
-│   │   ├── metacognition/   #   Self-monitoring + introspection + curiosity + emotional intelligence
+│   │   ├── metacognition/   #   Self-monitoring + introspection + curiosity + emotional intelligence + ToM + MC2 + guardrail + safety memory
 │   │   ├── world-model/     #   Environment graph + action simulator
-│   │   ├── reasoning/       #   Hypothesis testing + dream mode + causal replay + self-healing + self-rewriter + evolutionary solver + neuro-symbolic + tool discovery + skill synthesis
+│   │   ├── reasoning/       #   Hypothesis + dream + causal replay + self-healing + self-rewriter + evolution + neuro-symbolic + tool discovery + skill synthesis + TRT
 │   │   ├── collaboration/   #   Real-time multi-agent sessions
 │   │   ├── multimodal/      #   Image + PDF understanding
-│   │   ├── learning/        #   Experience, prompts, strategies, cross-user, meta-learning optimizer
+│   │   ├── learning/        #   Experience, prompts, strategies, cross-user, meta-learning, heuristic extraction
+│   │   ├── integrations/    #   WhatsApp, Slack, Discord, A2A protocol, SKILL.md, browser agent, web intelligence
 │   │   ├── code-intel/      #   Codebase indexing + dependency graph
 │   │   ├── swarm/           #   Multi-agent orchestration
 │   │   └── ...              #   Planning, memory, personality, voice, teams
@@ -920,6 +1036,110 @@ curl -X POST http://localhost:3000/api/v1/tool-discovery/install/tool-abc123 \
 # { "success": true }
 ```
 
+### Example 13: A2A Protocol — Delegate Task to External Agent
+
+```bash
+# Register an external agent
+curl -X POST http://localhost:3000/api/v1/a2a/agents \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"id": "claude-1", "name": "Claude Agent", "description": "Translation specialist", "url": "http://claude-agent:8080", "capabilities": ["translation"], "protocolVersion": "0.3"}'
+
+# Send a translation task
+curl -X POST http://localhost:3000/api/v1/a2a/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"agentId": "claude-1", "name": "Translate document", "content": "Translate this to French: Hello World"}'
+
+# Response:
+# {
+#   "id": "a1b2c3",
+#   "name": "Translate document",
+#   "state": "pending",
+#   "assignedAgentId": "claude-1",
+#   "input": { "content": "Translate this to French: Hello World" }
+# }
+```
+
+### Example 14: Browser Agent — Autonomous Web Form Filling
+
+```bash
+# Execute a browser task
+curl -X POST http://localhost:3000/api/v1/browser/execute \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"task": "Go to example.com, fill the contact form with name John and email john@test.com, then submit", "startUrl": "https://example.com"}'
+
+# Response:
+# {
+#   "sessionId": "b8f3a1",
+#   "task": "Go to example.com, fill the contact form...",
+#   "success": true,
+#   "steps": 6,
+#   "durationMs": 12450,
+#   "extractedData": { "confirmation": "Form submitted successfully" },
+#   "screenshots": ["[base64:screenshot:...]"],
+#   "errors": []
+# }
+```
+
+### Example 15: Theory of Mind — Predict User Intent
+
+```bash
+# Analyze user mental state
+curl -X POST http://localhost:3000/api/v1/tom/analyze \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"targetEntityId": "user-123", "entityType": "user", "messages": [{"role": "user", "content": "This same bug keeps happening every week"}], "currentTask": "fix recurring bug"}'
+
+# Response:
+# {
+#   "inferredBeliefs": { "problem_is_recurring": true, "previous_fixes_were_temporary": true },
+#   "inferredDesires": ["permanent root-cause fix", "not waste time on temporary patches"],
+#   "predictedNextAction": "Will ask for a permanent solution, not a quick fix",
+#   "predictionConfidence": 0.85,
+#   "recommendedResponse": "Acknowledge the recurring pattern, propose investigating root cause instead of patching",
+#   "perspectiveDepth": 2
+# }
+```
+
+### Example 16: Safety Guardrail — 3-Way Action Check
+
+```bash
+# Check an action before execution
+curl -X POST http://localhost:3000/api/v1/guardrail/check \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"action": "rm -rf /tmp/old_builds", "context": "Cleaning up old build artifacts"}'
+
+# Response (update decision):
+# {
+#   "decision": "update",
+#   "riskLevel": "medium",
+#   "riskCategories": ["data_destruction"],
+#   "feedback": "Action involves recursive deletion. Adding safety guard.",
+#   "revisedPlan": "rm -rf /tmp/old_builds/* with --no-preserve-root and verify /tmp/old_builds exists first",
+#   "confidence": 0.92
+# }
+```
+
+### Example 17: Test-time Recursive Thinking — Multi-Strategy Problem Solving
+
+```bash
+# Solve a hard problem with recursive thinking
+curl -X POST http://localhost:3000/api/v1/trt/solve \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"problem": "Design a rate limiter that handles burst traffic while maintaining fair allocation across users", "maxRounds": 4}'
+
+# Response:
+# {
+#   "attempts": [
+#     { "round": 0, "strategy": "direct approach", "passed": false, "failureModes": ["did not account for burst patterns"] },
+#     { "round": 1, "strategy": "decomposition", "passed": false, "failureModes": ["missed fairness constraint"] },
+#     { "round": 2, "strategy": "analogy", "passed": true, "knowledgeGained": "Token bucket + weighted fair queuing handles both burst and fairness" }
+#   ],
+#   "finalAnswer": "Use token bucket per user with weighted fair queuing...",
+#   "converged": true,
+#   "confidence": 0.88,
+#   "accumulatedKnowledge": ["Token bucket handles bursts", "WFQ ensures fairness"]
+# }
+```
+
 ---
 
 ## Environment Variables
@@ -962,14 +1182,14 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Test Files | 65+ |
 | Tests Passing | 63+ (core suites) |
 | Packages | 16 |
-| API Endpoints | 120+ |
+| API Endpoints | 180+ |
 | Built-in Tools | 90 |
 | Dashboard Pages | 43 |
 | Database Migrations | 25 |
 | Agent Profiles | 30 |
 | Queue Types | 9 |
-| Super-Agent Capabilities | 24 |
-| Agent-Engine Modules | 30+ |
+| Super-Agent Capabilities | 34 |
+| Agent-Engine Modules | 40+ |
 
 ---
 
@@ -1030,8 +1250,20 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 - [x] **Autonomous Skill Synthesis** — Decompose tasks → synthesize reusable skills
 - [x] **Meta-Learning Optimizer** — Optimize agent's own learning parameters
 
+### Completed — Super-Agent v3 (10 New Capabilities)
+- [x] **A2A Protocol** — Agent-to-agent interoperability (Google A2A standard, 150+ orgs)
+- [x] **SKILL.md Standard** — Portable skills in AIP-3 format (agentskills.io spec)
+- [x] **Browser Automation Agent** — LLM-driven web tasks with self-healing locators
+- [x] **Live Web Intelligence** — Real-time web search, scrape, crawl, interact
+- [x] **Theory of Mind** — Model beliefs/desires of other entities (AAAI-26 A-ToM)
+- [x] **Test-time Recursive Thinking** — Iterative self-improvement at inference (TRT)
+- [x] **Metacognitive Consolidation** — 3-level hierarchical memory → proceduralization (MC2)
+- [x] **TRIAD Safety Guardrail** — 3-way decisions: proceed, refuse, update
+- [x] **Self-Evolving Safety Memory** — Contrastive cells, cross-attack transfer (Membrane)
+- [x] **Experiential Heuristic Extraction** — Transferable lessons from trajectories (ERL)
+
 ### Planned — Platform
-- [ ] Full Playwright Browser Automation
+- [ ] Full Playwright Browser Automation (production)
 - [ ] Production Voice Interface (STT + TTS)
 - [ ] Mobile App (React Native)
 
