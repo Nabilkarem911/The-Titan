@@ -29,6 +29,7 @@ import type { SelfForge } from './self-forge/self-forge.js';
 import type { MetaMonitor } from './metacognition/meta-monitor.js';
 import type { SelfImprover } from './metacognition/self-improver.js';
 import type { WorldSimulator, EnvironmentGraph } from './world-model/index.js';
+import { ContextOptimizer, type ContextOptimizationOptions } from './providers/context-optimizer.js';
 
 const log = getLogger().child({ component: 'agent-runner' });
 
@@ -70,12 +71,13 @@ function buildMessages(ctx: AgentContext): LlmMessage[] {
       });
       // Tool result must follow immediately after assistant tool_call
       if (step.observation) {
-        const content = step.observation.success
+        const rawContent = step.observation.success
           ? (typeof step.observation.data === 'string' ? step.observation.data : JSON.stringify(step.observation.data))
           : `Error: ${step.observation.error}`;
+        const content = rawContent.slice(0, 4000);
         msgs.push({
           role: 'tool',
-          content: content.slice(0, 4000),
+          content,
           toolResult: step.observation,
         });
       }
@@ -138,6 +140,10 @@ export interface AgentRunnerDeps {
   worldSimulator?: WorldSimulator;
   /** Environment Graph: records entities, relations, and events for the world model */
   environmentGraph?: EnvironmentGraph;
+  /** Context Optimizer: reduce token usage by filtering tools, compacting history, truncating outputs */
+  contextOptimizer?: ContextOptimizer;
+  /** Context optimization options (used if contextOptimizer not provided) */
+  contextOptimization?: ContextOptimizationOptions;
 }
 
 export class AgentRunner {
@@ -152,6 +158,7 @@ export class AgentRunner {
   private selfImprover?: SelfImprover;
   private worldSimulator?: WorldSimulator;
   private environmentGraph?: EnvironmentGraph;
+  private contextOptimizer?: ContextOptimizer;
 
   constructor(private deps: AgentRunnerDeps) {
     if (deps.enablePlanning) {
@@ -171,6 +178,7 @@ export class AgentRunner {
     this.selfImprover = deps.selfImprover;
     this.worldSimulator = deps.worldSimulator;
     this.environmentGraph = deps.environmentGraph;
+    this.contextOptimizer = deps.contextOptimizer ?? (deps.contextOptimization ? new ContextOptimizer(deps.contextOptimization) : undefined);
   }
 
   async run(input: AgentRunInput): Promise<AgentRun> {
@@ -436,9 +444,30 @@ export class AgentRunner {
     };
 
     // 1. Planning / LLM call
-    const messages = buildMessages(ctx);
+    let messages = buildMessages(ctx);
+    let tools = this.deps.tools ?? buildToolsFromRegistry();
+
+    // Apply context optimization if enabled
+    if (this.contextOptimizer) {
+      const originalTokens = this.contextOptimizer.estimateTokens(messages, tools);
+
+      // Compact conversation history
+      const compacted = this.contextOptimizer.compactHistory(messages, ctx.run.steps);
+      messages = compacted.messages;
+
+      // Filter tools based on usage and prompt relevance
+      const filtered = this.contextOptimizer.optimizeTools(tools, ctx.run.steps, ctx.run.prompt);
+      tools = filtered.tools;
+
+      const optimizedTokens = this.contextOptimizer.estimateTokens(messages, tools);
+      const saved = originalTokens - optimizedTokens;
+      if (saved > 0) {
+        this.contextOptimizer.recordOptimization(saved);
+        log.debug({ runId, step: index, tokensSaved: saved }, 'context optimized');
+      }
+    }
+
     const start = performance.now();
-    const tools = this.deps.tools ?? buildToolsFromRegistry();
     const completion = await this.deps.llm.complete(messages, { tools });
     step.latencyMs = Math.round(performance.now() - start);
     step.tokensUsed = completion.tokensUsed;

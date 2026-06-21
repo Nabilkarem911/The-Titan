@@ -13,6 +13,7 @@ export * from './strategies/index.js';
 export * from './workflow/index.js';
 export * from './integrations/index.js';
 export * from './providers/multi-model-router.js';
+export * from './providers/context-optimizer.js';
 export * from './personality/index.js';
 export * from './code-intel/index.js';
 export * from './autonomous/index.js';
