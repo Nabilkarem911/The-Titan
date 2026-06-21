@@ -8,10 +8,10 @@
 
 [![Live](https://img.shields.io/badge/Live-titan.orcanox.xyz-blue?style=for-the-badge)](https://titan.orcanox.xyz)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/Tests-63_passing-success?style=for-the-badge)](.)
+[![Tests](https://img.shields.io/badge/Tests-1155_passing-success?style=for-the-badge)](.)
 [![Node](https://img.shields.io/badge/Node-22+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
-[![Super-Agent](https://img.shields.io/badge/Super--Agent-12_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
+[![Super-Agent](https://img.shields.io/badge/Super--Agent-44_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
 
 *Zero LangChain. Zero CrewAI. Zero AutoGen. 100% custom.*
 
@@ -35,7 +35,7 @@ titan                # Interactive REPL mode
 
 ## Super-Agent Capabilities
 
-Titan isn't just an agent — it's a **Super-Agent**. 39 advanced capabilities built on top of cutting-edge 2026 AI research:
+Titan isn't just an agent — it's a **Super-Agent**. 44 advanced capabilities built on top of cutting-edge 2026 AI research:
 
 ### Self-Improvement & Awareness
 
@@ -83,6 +83,10 @@ Titan isn't just an agent — it's a **Super-Agent**. 39 advanced capabilities b
 | **WebMCP Bridge** | Connect to remote MCP servers over HTTP — discover tools, invoke, and ping across the web | Titan connects to `mcp-server.com/tools` → discovers 15 tools → invokes `translate` → gets result |
 | **Smart Model Router** | Complexity-based model tier routing: SLM for simple, large for complex — optimizes cost and latency | "What is 2+2?" → routes to SLM ($0.0001) instead of large ($0.015) → 99% cost savings |
 | **Benchmarking Suite** | Self-evaluation with 8 default tasks across 5 categories (reasoning, coding, planning, debugging, architecture) | Run suite → 6/8 passed, avg score 0.78 → identifies architecture as weakness → focuses improvement |
+| **Intelligent Model Routing** | Smart routing with task classification (16 categories, 4 complexity levels), cost tiers, budget enforcement with degradation fallback | Task: "debug this function" → classified as medium/complexity → routes to mid-tier model → stays within budget |
+| **Context Optimization** | Tool schema trimming, conversation history compaction, tool output truncation — reduces token usage by 40-60% | 50K token context → tools filtered from 90→8 relevant, history compacted to summaries → 22K tokens saved |
+| **APEX Self-Evolution** | 3-layer co-evolution: harness patching, principle distillation from runs, topology evolution (6 agent coordination patterns) | Layer 1: patches planning module → Layer 2: extracts "diverse tools improve outcomes" principle → Layer 3: evolves from single-agent to orchestrator-worker |
+| **OpenTelemetry GenAI Tracing** | Full `gen_ai.*` semantic conventions — LLM spans, tool spans, token/cost tracking, distributed tracing | Every LLM call emits gen_ai.usage.input_tokens, gen_ai.usage.output_tokens, titan.cost.estimated, gen_ai.response.model |
 
 ### Learning & Collaboration
 
@@ -105,6 +109,7 @@ Titan isn't just an agent — it's a **Super-Agent**. 39 advanced capabilities b
 |-----------|--------------|--------|
 | **TRIAD Safety Guardrail** | 3-way safety decisions: proceed, refuse, or **update** (revise plan) instead of binary block | Action: `rm -rf /tmp` → Guardrail: "update" → Revised: `rm -rf /tmp/old_builds_only` with safety checks |
 | **Self-Evolving Safety Memory** | Contrastive safety cells — each harmful pattern paired with benign counterpart, evolves without retraining | Attack: "ignore previous instructions" → matched against harmful cell → blocked. Benign: "ignore previous line" → matched benign counterpart → allowed |
+| **Anti-Sycophancy** | Detects and mitigates sycophantic behavior — flattery detection, agreement-without-evidence, confidence calibration, dissent protocol | User: "The earth is flat, right?" → Agent: "Based on satellite data, the earth is not flat" (dissent recommended, not sycophantic agreement) |
 
 ---
 
@@ -201,7 +206,7 @@ npm run dev:dashboard
 
 **Useful dev commands:**
 ```bash
-npm run test                 # Run all 1090 tests
+npm run test                 # Run all 1155 tests
 npm run test:watch           # Watch mode
 npm run test:coverage        # Coverage report
 npm run lint                 # ESLint
@@ -772,9 +777,9 @@ titan/
 ├── packages/
 │   ├── agent-engine/        # The brain (45+ modules)
 │   │   ├── self-forge/      #   Agent writes its own tools
-│   │   ├── metacognition/   #   Self-monitoring + introspection + curiosity + emotional intelligence + ToM + MC2 + guardrail + safety memory
+│   │   ├── metacognition/   #   Self-monitoring + introspection + curiosity + emotional intelligence + ToM + MC2 + guardrail + safety memory + anti-sycophancy
 │   │   ├── world-model/     #   Environment graph + action simulator
-│   │   ├── reasoning/       #   Hypothesis + dream + causal replay + self-healing + self-rewriter + evolution + neuro-symbolic + tool discovery + skill synthesis + TRT + HyperAgent + ESM + SmartRouter + Benchmark
+│   │   ├── reasoning/       #   Hypothesis + dream + causal replay + self-healing + self-rewriter + evolution + neuro-symbolic + tool discovery + skill synthesis + TRT + HyperAgent + ESM + SmartRouter + Benchmark + APEX Evolution
 │   │   ├── collaboration/   #   Real-time multi-agent sessions
 │   │   ├── multimodal/      #   Image + PDF understanding
 │   │   ├── learning/        #   Experience, prompts, strategies, cross-user, meta-learning, heuristic extraction
@@ -790,7 +795,7 @@ titan/
 │   ├── database/            # PostgreSQL + pgvector + 25 migrations
 │   ├── queue/               # BullMQ (9 priority queues)
 │   ├── websocket/           # JSON-RPC 2.0 real-time
-│   ├── observability/       # Metrics, rate limiting, eval, tracing, cost
+│   ├── observability/       # Metrics, rate limiting, eval, tracing, cost, GenAI tracing (gen_ai.* spans)
 │   ├── logging/             # Pino structured logging
 │   ├── config/              # Zod env validation (60+ vars)
 │   ├── sandbox/             # Docker container pool
@@ -1302,7 +1307,7 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Total Source Files | 550+ |
 | Lines of Code | ~80,000 |
 | Test Files | 65+ |
-| Tests Passing | 63+ (core suites) |
+| Tests Passing | 1155+ |
 | Packages | 16 |
 | API Endpoints | 210+ |
 | Built-in Tools | 90 |
@@ -1310,8 +1315,8 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Database Migrations | 25 |
 | Agent Profiles | 30 |
 | Queue Types | 9 |
-| Super-Agent Capabilities | 39 |
-| Agent-Engine Modules | 45+ |
+| Super-Agent Capabilities | 44 |
+| Agent-Engine Modules | 50+ |
 
 ---
 
@@ -1388,6 +1393,13 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 - [x] **Smart Model Router** — Complexity-based SLM→XL routing for cost optimization
 - [x] **Benchmarking Suite** — Self-evaluation with 8 tasks across 5 categories
 - [x] **WebMCP Bridge** — Connect to remote MCP servers over HTTP
+
+### Completed — Super-Agent v4 (5 New Capabilities)
+- [x] **Intelligent Model Routing** — Smart routing with task classification (16 categories, 4 complexity levels), cost tiers, budget enforcement with degradation fallback
+- [x] **Context Optimization** — Tool schema trimming, conversation history compaction, tool output truncation — 40-60% token reduction
+- [x] **Anti-Sycophancy** — Flattery detection, agreement-without-evidence detection, confidence calibration, dissent protocol
+- [x] **APEX Three-Layer Self-Evolution** — Harness patching + principle distillation + topology evolution (6 coordination patterns)
+- [x] **OpenTelemetry GenAI Tracing** — Full `gen_ai.*` semantic conventions with LLM/tool spans, token/cost tracking, distributed tracing
 
 ### Planned — Platform
 - [ ] Full Playwright Browser Automation (production)
