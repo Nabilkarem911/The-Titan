@@ -4,3 +4,5 @@ export * from './causal-replay.js';
 export * from './self-healing-debugger.js';
 export * from './self-rewriter.js';
 export * from './evolutionary-solver.js';
+export * from './neuro-symbolic.js';
+export * from './tool-discovery.js';

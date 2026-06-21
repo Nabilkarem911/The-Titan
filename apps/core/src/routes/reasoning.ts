@@ -9,6 +9,9 @@ import {
   EvolutionarySolver,
   IntrospectionModule,
   CuriosityEngine,
+  EmotionalIntelligence,
+  NeuroSymbolicReasoner,
+  DynamicToolDiscovery,
   createProviderFromEnv,
   type BugReport,
 } from '@titan/agent-engine';
@@ -20,6 +23,9 @@ let selfRewriter: SelfRewriter | null = null;
 let evolutionarySolver: EvolutionarySolver | null = null;
 let introspectionModule: IntrospectionModule | null = null;
 let curiosityEngine: CuriosityEngine | null = null;
+let emotionalIntelligence: EmotionalIntelligence | null = null;
+let neuroSymbolicReasoner: NeuroSymbolicReasoner | null = null;
+let toolDiscovery: DynamicToolDiscovery | null = null;
 
 function getDreamMode(): DreamMode | null {
   if (dreamMode) return dreamMode;
@@ -75,6 +81,30 @@ function getCuriosity(): CuriosityEngine | null {
   if (!llm) return null;
   curiosityEngine = new CuriosityEngine(llm);
   return curiosityEngine;
+}
+
+function getEmotionalIntelligence(): EmotionalIntelligence | null {
+  if (emotionalIntelligence) return emotionalIntelligence;
+  const llm = createProviderFromEnv();
+  if (!llm) return null;
+  emotionalIntelligence = new EmotionalIntelligence(llm);
+  return emotionalIntelligence;
+}
+
+function getNeuroSymbolic(): NeuroSymbolicReasoner | null {
+  if (neuroSymbolicReasoner) return neuroSymbolicReasoner;
+  const llm = createProviderFromEnv();
+  if (!llm) return null;
+  neuroSymbolicReasoner = new NeuroSymbolicReasoner(llm);
+  return neuroSymbolicReasoner;
+}
+
+function getToolDiscovery(): DynamicToolDiscovery | null {
+  if (toolDiscovery) return toolDiscovery;
+  const llm = createProviderFromEnv();
+  if (!llm) return null;
+  toolDiscovery = new DynamicToolDiscovery(llm);
+  return toolDiscovery;
 }
 
 export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
@@ -354,5 +384,164 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     const ce = getCuriosity();
     if (!ce) return reply.send({ totalSkills: 0, totalExplorations: 0, successfulExplorations: 0, avgProficiency: 0, topSkills: [], isRunning: false, isExploring: false });
     return reply.send(ce.stats());
+  });
+
+  // === Emotional Intelligence ===
+
+  // POST /api/v1/emotion/analyze — analyze emotion in a message
+  app.post('/api/v1/emotion/analyze', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { message, userId, sessionId, conversationHistory } = req.body as {
+      message: string;
+      userId?: string;
+      sessionId?: string;
+      conversationHistory?: string[];
+    };
+    if (!message) return reply.code(400).send({ error: 'message is required' });
+    const ei = getEmotionalIntelligence();
+    if (!ei) return reply.code(503).send({ error: 'No LLM provider available' });
+    const reading = await ei.analyze(message, { userId, sessionId, conversationHistory });
+    return reply.send(reading);
+  });
+
+  // GET /api/v1/emotion/readings — get recent emotion readings
+  app.get('/api/v1/emotion/readings', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { count } = req.query as { count?: string };
+    const ei = getEmotionalIntelligence();
+    if (!ei) return reply.send({ readings: [] });
+    return reply.send({ readings: ei.getRecentReadings(count ? parseInt(count, 10) : 10) });
+  });
+
+  // GET /api/v1/emotion/profile/:userId — get user emotion profile
+  app.get('/api/v1/emotion/profile/:userId', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { userId } = req.params as { userId: string };
+    const ei = getEmotionalIntelligence();
+    if (!ei) return reply.send({ avgValence: 0, avgArousal: 0, dominantEmotions: [], totalReadings: 0 });
+    return reply.send(ei.getUserEmotionProfile(userId));
+  });
+
+  // GET /api/v1/emotion/stats — get emotion stats
+  app.get('/api/v1/emotion/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ei = getEmotionalIntelligence();
+    if (!ei) return reply.send({ totalReadings: 0, avgValence: 0, avgArousal: 0, avgEmpathy: 0, emotionDistribution: [], topStrategies: [] });
+    return reply.send(ei.stats());
+  });
+
+  // === Neuro-Symbolic Reasoning ===
+
+  // POST /api/v1/neuro-symbolic/reason — run neuro-symbolic reasoning
+  app.post('/api/v1/neuro-symbolic/reason', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { query } = req.body as { query: string };
+    if (!query) return reply.code(400).send({ error: 'query is required' });
+    const ns = getNeuroSymbolic();
+    if (!ns) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await ns.reason(query);
+    return reply.send(result);
+  });
+
+  // POST /api/v1/neuro-symbolic/rules — add a symbolic rule
+  app.post('/api/v1/neuro-symbolic/rules', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { name, condition, action, priority, active } = req.body as {
+      name: string;
+      condition: string;
+      action: string;
+      priority?: number;
+      active?: boolean;
+    };
+    if (!name || !condition || !action) {
+      return reply.code(400).send({ error: 'name, condition, and action are required' });
+    }
+    const ns = getNeuroSymbolic();
+    if (!ns) return reply.code(503).send({ error: 'No LLM provider available' });
+    const rule = ns.addRule({ name, condition, action, priority: priority ?? 5, active: active ?? true });
+    return reply.send(rule);
+  });
+
+  // DELETE /api/v1/neuro-symbolic/rules/:id — remove a rule
+  app.delete('/api/v1/neuro-symbolic/rules/:id', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { id } = req.params as { id: string };
+    const ns = getNeuroSymbolic();
+    if (!ns) return reply.code(503).send({ error: 'No LLM provider available' });
+    const success = ns.removeRule(id);
+    return reply.send({ success });
+  });
+
+  // GET /api/v1/neuro-symbolic/rules — get all rules
+  app.get('/api/v1/neuro-symbolic/rules', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ns = getNeuroSymbolic();
+    if (!ns) return reply.send({ rules: [] });
+    return reply.send({ rules: ns.getRules() });
+  });
+
+  // GET /api/v1/neuro-symbolic/results — get reasoning results
+  app.get('/api/v1/neuro-symbolic/results', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ns = getNeuroSymbolic();
+    if (!ns) return reply.send({ results: [] });
+    return reply.send({ results: ns.getResults() });
+  });
+
+  // GET /api/v1/neuro-symbolic/stats — get neuro-symbolic stats
+  app.get('/api/v1/neuro-symbolic/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const ns = getNeuroSymbolic();
+    if (!ns) return reply.send({ totalResults: 0, totalRules: 0, activeRules: 0, hybridCount: 0, neuralOnlyCount: 0, symbolicOnlyCount: 0, avgConfidence: 0 });
+    return reply.send(ns.stats());
+  });
+
+  // === Dynamic Tool Discovery ===
+
+  // POST /api/v1/tool-discovery/discover — discover tools for a task
+  app.post('/api/v1/tool-discovery/discover', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { taskDescription, missingCapabilities } = req.body as {
+      taskDescription: string;
+      missingCapabilities?: string[];
+    };
+    if (!taskDescription) return reply.code(400).send({ error: 'taskDescription is required' });
+    const td = getToolDiscovery();
+    if (!td) return reply.code(503).send({ error: 'No LLM provider available' });
+    const query = await td.discover(taskDescription, missingCapabilities);
+    return reply.send(query);
+  });
+
+  // POST /api/v1/tool-discovery/install/:toolId — install a discovered tool
+  app.post('/api/v1/tool-discovery/install/:toolId', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { toolId } = req.params as { toolId: string };
+    const td = getToolDiscovery();
+    if (!td) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await td.installTool(toolId);
+    return reply.send(result);
+  });
+
+  // POST /api/v1/tool-discovery/uninstall/:toolId — uninstall a tool
+  app.post('/api/v1/tool-discovery/uninstall/:toolId', { preHandler: [requireAuth] }, async (req, reply) => {
+    requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
+    const { toolId } = req.params as { toolId: string };
+    const td = getToolDiscovery();
+    if (!td) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await td.uninstallTool(toolId);
+    return reply.send(result);
+  });
+
+  // GET /api/v1/tool-discovery/tools — get all discovered tools
+  app.get('/api/v1/tool-discovery/tools', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const td = getToolDiscovery();
+    if (!td) return reply.send({ tools: [] });
+    return reply.send({ tools: td.getDiscoveredTools() });
+  });
+
+  // GET /api/v1/tool-discovery/installed — get installed tools
+  app.get('/api/v1/tool-discovery/installed', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const td = getToolDiscovery();
+    if (!td) return reply.send({ tools: [] });
+    return reply.send({ tools: td.getInstalledTools() });
+  });
+
+  // GET /api/v1/tool-discovery/stats — get discovery stats
+  app.get('/api/v1/tool-discovery/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const td = getToolDiscovery();
+    if (!td) return reply.send({ totalDiscoveries: 0, installedTools: 0, verifiedTools: 0, bySource: [], byCategory: [], avgReliability: 0 });
+    return reply.send(td.stats());
   });
 };
