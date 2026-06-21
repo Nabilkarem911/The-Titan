@@ -724,11 +724,11 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
 
   app.post('/api/v1/trt/solve', { preHandler: [requireAuth] }, async (req, reply) => {
     requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
-    const { problem, maxRounds, strategies } = req.body as { problem: string; maxRounds?: number; strategies?: string[] };
+    const { problem, maxRounds, strategies, fastSolverFirst } = req.body as { problem: string; maxRounds?: number; strategies?: string[]; fastSolverFirst?: boolean };
     if (!problem) return reply.code(400).send({ error: 'problem is required' });
     const trt = getTRT();
     if (!trt) return reply.code(503).send({ error: 'No LLM provider available' });
-    const result = await trt.solve(problem, { maxRounds, strategies });
+    const result = await trt.solve(problem, { maxRounds, strategies, fastSolverFirst });
     return reply.send(result);
   });
 
@@ -746,7 +746,7 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
 
   app.get('/api/v1/trt/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
     const trt = getTRT();
-    if (!trt) return reply.send({ totalProblems: 0, avgRounds: 0, convergenceRate: 0, avgConfidence: 0, totalKnowledgeGained: 0 });
+    if (!trt) return reply.send({ totalProblems: 0, avgRounds: 0, convergenceRate: 0, avgConfidence: 0, totalKnowledgeGained: 0, abstentionRate: 0, fastSolverUsage: 0, slowSolverUsage: 0 });
     return reply.send(trt.stats());
   });
 

@@ -43,15 +43,22 @@ function getWebIntelligence(): WebIntelligence {
 export const integrationsRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // === A2A Protocol ===
 
-  // POST /api/v1/a2a/register-self — register Titan as an A2A agent
+  // POST /api/v1/a2a/register-self — register Titan as an A2A agent (v1.0)
   app.post('/api/v1/a2a/register-self', { preHandler: [requireAuth] }, async (req, reply) => {
     requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
-    const { name, description, url, capabilities, authentication } = req.body as {
+    const { name, description, url, capabilities, authentication, signature, signedBy, tenantId, transports, skills } = req.body as {
       name: string; description: string; url: string; capabilities: string[];
       authentication?: { type: 'none' | 'api_key' | 'oauth2' | 'bearer'; credentials?: string };
+      signature?: string; signedBy?: string; tenantId?: string;
+      transports?: string[]; skills?: Array<{ name: string; description: string; tags?: string[] }>;
     };
     const adapter = getA2AAdapter();
-    const card = adapter.registerSelf({ name, description, url, capabilities, authentication });
+    const card = adapter.registerSelf({
+      name, description, url, capabilities, authentication,
+      signature, signedBy, tenantId,
+      transports: transports as any,
+      skills,
+    });
     return reply.send(card);
   });
 
@@ -69,11 +76,26 @@ export const integrationsRoutes: FastifyPluginAsync = async (app: FastifyInstanc
     return reply.send({ agents: adapter.getRegisteredAgents() });
   });
 
-  // GET /api/v1/a2a/agents/:capability — find agents by capability
+  // GET /api/v1/a2a/agents/cap/:capability — find agents by capability (optional tenant filter)
   app.get('/api/v1/a2a/agents/cap/:capability', { preHandler: [requireAuth] }, async (req, reply) => {
     const { capability } = req.params as { capability: string };
+    const { tenantId } = req.query as { tenantId?: string };
     const adapter = getA2AAdapter();
-    return reply.send({ agents: adapter.findAgentsByCapability(capability) });
+    return reply.send({ agents: adapter.findAgentsByCapability(capability, tenantId) });
+  });
+
+  // GET /api/v1/a2a/agents/tenant/:tenantId — get agents by tenant (v1.0)
+  app.get('/api/v1/a2a/agents/tenant/:tenantId', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { tenantId } = req.params as { tenantId: string };
+    const adapter = getA2AAdapter();
+    return reply.send({ agents: adapter.getAgentsByTenant(tenantId) });
+  });
+
+  // GET /api/v1/a2a/agents/skill/:skillName — find agents by skill (v1.0)
+  app.get('/api/v1/a2a/agents/skill/:skillName', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { skillName } = req.params as { skillName: string };
+    const adapter = getA2AAdapter();
+    return reply.send({ agents: adapter.findAgentsBySkill(skillName) });
   });
 
   // DELETE /api/v1/a2a/agents/:id — unregister an agent
