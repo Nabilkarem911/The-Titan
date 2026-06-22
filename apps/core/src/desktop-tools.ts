@@ -222,10 +222,8 @@ export function registerDesktopTools(registry: ToolRegistry): void {
           if (chatId) {
             try {
               const { readFile } = await import('node:fs/promises');
-              const FormData = (await import('node:buffer')).FormData;
               const formData = new FormData();
               formData.append('chat_id', chatId);
-              formData.append('type', 'photo');
               const fileBuffer = await readFile(filePath);
               const blob = new Blob([fileBuffer], { type: 'image/png' });
               formData.append('photo', blob, filename);
