@@ -681,12 +681,12 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Research basis:** "The Hive Mind is a Single Reinforcement Learning Agent" (2026), Emergence World.
 
-- [ ] **Emergent Collective Intelligence** — multiple Titan instances form a hive mind
-- [ ] **Shared Consciousness** — what one Titan learns, all Titans know instantly
-- [ ] **Collective Decision-Making** — Titans vote, debate, and reach consensus across instances
-- [ ] **Specialization Emergence** — different Titans specialize in different domains automatically
-- [ ] **Swarm Constitution** — Titans write their own governance rules and can amend them
-- [ ] **Inter-Instance Communication** — Titans on different servers collaborate as one organism
+- [x] **Emergent Collective Intelligence** — multiple Titan instances form a hive mind
+- [x] **Shared Consciousness** — what one Titan learns, all Titans know instantly
+- [x] **Collective Decision-Making** — Titans vote, debate, and reach consensus across instances
+- [x] **Specialization Emergence** — different Titans specialize in different domains automatically
+- [x] **Swarm Constitution** — Titans write their own governance rules and can amend them
+- [x] **Inter-Instance Communication** — Titans on different servers collaborate as one organism
 
 **Why it's unprecedented:** No agent framework implements hive mind across distributed instances.
 
