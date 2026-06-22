@@ -379,18 +379,18 @@ After a full codebase audit, Titan already has an impressive foundation:
 - All evolved code must pass `npm run typecheck && npm run lint && npm run test`
 
 #### 5.1 Autonomous Code Improvement
-- [ ] Titan reads its own source code
-- [ ] Identifies improvement opportunities (performance, clarity, bug risks)
-- [ ] Writes improvement → runs tests → commits if passing → rolls back if failing
-- [ ] Fitness function: speed, accuracy, token usage, test coverage
-- [ ] Daily evolution cycle during idle time
+- [x] Titan reads its own source code
+- [x] Identifies improvement opportunities (performance, clarity, bug risks)
+- [x] Writes improvement → runs tests → commits if passing → rolls back if failing
+- [x] Fitness function: speed, accuracy, token usage, test coverage
+- [x] Daily evolution cycle during idle time
 
 #### 5.2 Continuous Evolution Loop
-- [ ] Schedule: every night at 3AM, Titan reviews one module of itself
-- [ ] Proposes 1-3 improvements per cycle
-- [ ] Tests in sandbox, applies if fitness improves
-- [ ] Evolution archive: full history with diffs and fitness scores
-- [ ] Rollback safety: auto-revert if production metrics degrade
+- [x] Schedule: every night at 3AM, Titan reviews one module of itself
+- [x] Proposes 1-3 improvements per cycle
+- [x] Tests in sandbox, applies if fitness improves
+- [x] Evolution archive: full history with diffs and fitness scores
+- [x] Rollback safety: auto-revert if production metrics degrade
 
 ---
 
