@@ -24,6 +24,25 @@ export default function App() {
     (window as any).titan?.onNavigate((page: string) => {
       useAppStore.getState().setPage(page as any);
     });
+
+    // Poll real WebSocket connection status every 3 seconds
+    const pollConnection = setInterval(() => {
+      (window as any).titan?.getConnectionStatus().then((res: any) => {
+        const realConnected = res?.connected ?? false;
+        const storeConnected = useAppStore.getState().connected;
+        if (realConnected !== storeConnected) {
+          useAppStore.getState().setConnected(realConnected);
+        }
+      });
+    }, 3000);
+
+    // Listen for auth-failed event from main process (WS closed with 4401)
+    (window as any).titan?.onAuthFailed?.(() => {
+      useAppStore.getState().setConnected(false);
+      useAppStore.getState().setLoggedIn(false);
+    });
+
+    return () => clearInterval(pollConnection);
   }, [setSystemInfo]);
 
   if (!isLoggedIn) {

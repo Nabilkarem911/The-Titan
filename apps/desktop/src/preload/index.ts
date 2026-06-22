@@ -35,4 +35,8 @@ contextBridge.exposeInMainWorld('titan', {
   // Navigation (from tray)
   onNavigate: (callback: (page: string) => void) =>
     ipcRenderer.on('navigate', (_e, page) => callback(page)),
+
+  // Auth failed (WS closed with 4401)
+  onAuthFailed: (callback: () => void) =>
+    ipcRenderer.on('auth-failed', () => callback()),
 });

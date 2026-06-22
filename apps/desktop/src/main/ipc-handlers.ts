@@ -155,27 +155,11 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
       await activeWsClient.disconnect();
     }
 
-    // Try to refresh the access token before connecting
-    const refreshToken = store.get('refreshToken') as string;
-    if (refreshToken) {
-      try {
-        const refreshRes = await fetch(`${settings.serverUrl}/api/v1/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
-        });
-        if (refreshRes.ok) {
-          const tokens = await refreshRes.json() as { accessToken: string; refreshToken: string };
-          store.set('token', tokens.accessToken);
-          store.set('refreshToken', tokens.refreshToken);
-        }
-      } catch {
-        // ignore — will try with existing token
-      }
-    }
-
-    const freshToken = (store.get('token') as string) || (settings.token as string);
-    activeWsClient = new DesktopWsClient(settings.serverUrl as string, freshToken, {
+    // Use the token directly — do NOT auto-refresh here.
+    // Refreshing causes "refresh token reuse detected" on server.
+    // Token refresh should only happen on 401 response (handled in ChatPanel).
+    const token = (store.get('token') as string) || (settings.token as string);
+    activeWsClient = new DesktopWsClient(settings.serverUrl as string, token, {
       deviceName: (settings.deviceName as string) || hostname(),
       capabilities: settings.capabilities as string[],
     });

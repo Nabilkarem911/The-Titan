@@ -1,6 +1,7 @@
 import WebSocket from 'ws';
 import { randomUUID } from 'crypto';
 import { hostname, platform } from 'os';
+import { BrowserWindow } from 'electron';
 import { getLogger } from './logger.js';
 
 const log = getLogger().child({ component: 'ws-client' });
@@ -83,6 +84,9 @@ export class DesktopWsClient {
       if (code === 4401) {
         log.error('auth failed — stopping reconnect. Please login again.');
         this.destroyed = true;
+        // Notify renderer to show login screen
+        const win = BrowserWindow.getFocusedWindow();
+        if (win) win.webContents.send('auth-failed');
         return;
       }
       this.scheduleReconnect();
