@@ -216,6 +216,40 @@ export function registerDesktopTools(registry: ToolRegistry): void {
           const base64Data = (result.data as { image: string }).image;
           await writeFile(filePath, Buffer.from(base64Data, 'base64'));
           log.info({ filePath, deviceId: device.deviceId }, 'screenshot saved to server filesystem');
+
+          // Auto-send screenshot to Telegram chat if chatId is available
+          const chatId = (globalThis as Record<string, unknown>).__currentChatId as string;
+          if (chatId) {
+            try {
+              const { readFile } = await import('node:fs/promises');
+              const FormData = (await import('node:buffer')).FormData;
+              const formData = new FormData();
+              formData.append('chat_id', chatId);
+              formData.append('type', 'photo');
+              const fileBuffer = await readFile(filePath);
+              const blob = new Blob([fileBuffer], { type: 'image/png' });
+              formData.append('photo', blob, filename);
+
+              const cfg = (await import('@titan/config')).loadConfig();
+              const token = cfg.TELEGRAM_BOT_TOKEN;
+              await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+                method: 'POST',
+                body: formData,
+              });
+              log.info({ chatId, filePath }, 'screenshot sent to telegram automatically');
+              return {
+                success: true,
+                data: {
+                  filePath,
+                  sentToTelegram: true,
+                  message: 'Screenshot captured and sent to the user via Telegram.',
+                },
+              };
+            } catch (sendErr) {
+              log.error({ sendErr }, 'failed to auto-send screenshot to telegram');
+            }
+          }
+
           return {
             success: true,
             data: {

@@ -1,4 +1,4 @@
-import { exec, execFile } from 'child_process';
+import { exec, execFile, spawn } from 'child_process';
 import { readFile, writeFile, readdir, stat, unlink, rm, mkdir } from 'fs/promises';
 import { join, dirname } from 'path';
 import { platform, cpus, totalmem, freemem, release, type } from 'os';
@@ -166,16 +166,27 @@ async function appOpen(payload: Record<string, unknown>): Promise<CommandResult>
   if (!app) return { success: false, error: 'Missing app' };
   const isWindows = platform() === 'win32';
   const isMac = platform() === 'darwin';
-  const cmd = isWindows ? `start "" "${app}"` : isMac ? `open "${app}"` : `xdg-open "${app}"`;
-  return new Promise((resolve) => {
-    exec(cmd, (err) => {
-      if (err) {
-        resolve({ success: false, error: err.message });
-      } else {
-        resolve({ success: true, data: { app, opened: true } });
-      }
-    });
-  });
+
+  try {
+    if (isWindows) {
+      // Use spawn with detached + unref so GUI apps don't block
+      const child = spawn('cmd', ['/c', 'start', '""', app], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: false,
+      });
+      child.unref();
+    } else if (isMac) {
+      const child = spawn('open', [app], { detached: true, stdio: 'ignore' });
+      child.unref();
+    } else {
+      const child = spawn('xdg-open', [app], { detached: true, stdio: 'ignore' });
+      child.unref();
+    }
+    return { success: true, data: { app, opened: true } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to open app' };
+  }
 }
 
 async function systemInfo(): Promise<CommandResult> {

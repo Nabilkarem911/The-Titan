@@ -414,6 +414,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
           }
           if (name.startsWith('desktop_')) {
             (globalThis as Record<string, unknown>).__currentUserId = desktopUserId;
+            (globalThis as Record<string, unknown>).__currentChatId = String(chatId);
           }
           if (name === 'telegram_send_file' && !p.chatId) {
             p.chatId = chatId;
