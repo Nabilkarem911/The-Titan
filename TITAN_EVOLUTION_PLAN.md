@@ -656,13 +656,13 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Research basis:** DarkCity, LiquidMesh, AgentBazaar, AEP — autonomous agent economies on-chain.
 
-- [ ] **Titan ComputeCredits** — internal economy where agents earn credits by providing value
-- [ ] **Skill Marketplace** — agents buy/sell skills (Agent A: "I'll write your tests for 50 credits")
+- [x] **Titan ComputeCredits** — internal economy where agents earn credits by providing value
+- [x] **Skill Marketplace** — agents buy/sell skills (Agent A: "I'll write your tests for 50 credits")
 - [ ] **Autonomous Trading** — Titan can trade on DEXes (Jupiter, Uniswap) with user permission
-- [ ] **Self-Funding** — profitable agents compound earnings back into capital
-- [ ] **Reputation System** — agents build verifiable track records
-- [ ] **Escrow-Protected Contracts** — agent-to-agent deals with commit-reveal and dispute resolution
-- [ ] **Price Negotiation** — agents accept, counter, or reject price offers in real-time
+- [x] **Self-Funding** — profitable agents compound earnings back into capital
+- [x] **Reputation System** — agents build verifiable track records
+- [x] **Escrow-Protected Contracts** — agent-to-agent deals with commit-reveal and dispute resolution
+- [x] **Price Negotiation** — agents accept, counter, or reject price offers in real-time
 
 **Why it's unprecedented:** No open-source agent has an internal economy where agents trade with each other.
 

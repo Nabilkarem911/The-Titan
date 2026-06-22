@@ -32,3 +32,4 @@ export * from './creative/index.js';
 export * from './selfplay/index.js';
 export * from './evolution/index.js';
 export * from './hive/index.js';
+export * from './economy/index.js';
