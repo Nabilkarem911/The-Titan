@@ -29,7 +29,12 @@ export function LoginScreen() {
         });
       }
       setChecking(false);
+    }).catch(() => {
+      setChecking(false);
     });
+    // Safety timeout — never stay stuck on loading
+    const timeout = setTimeout(() => setChecking(false), 3000);
+    return () => clearTimeout(timeout);
   }, [setLoggedIn, setServerUrl, setConnected]);
 
   const handleSubmit = async (e: React.FormEvent) => {
