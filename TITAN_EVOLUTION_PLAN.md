@@ -633,11 +633,11 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Research basis:** worldsim-ai, Emergence World, GeoSim — digital twin simulation platforms.
 
-- [ ] **Environment Digital Twin** — Titan builds a live simulation of your desktop, server, and workflow
-- [ ] **What-If Engine** — "What happens if I restart the DB?" → Titan simulates → predicts outcomes
-- [ ] **Causal Graph** — Titan maps cause-and-effect: "this service depends on that DB, which depends on Redis"
-- [ ] **Anomaly Detection** — autoencoder-based drift detection in your environment
-- [ ] **Predictive Alerts** — "Based on current trends, the server will run out of memory in 4 hours"
+- [x] **Environment Digital Twin** — Titan builds a live simulation of your desktop, server, and workflow
+- [x] **What-If Engine** — "What happens if I restart the DB?" → Titan simulates → predicts outcomes
+- [x] **Causal Graph** — Titan maps cause-and-effect: "this service depends on that DB, which depends on Redis"
+- [x] **Anomaly Detection** — autoencoder-based drift detection in your environment
+- [x] **Predictive Alerts** — "Based on current trends, the server will run out of memory in 4 hours"
 - [ ] **Reinforcement Learning Environment** — Titan practices in the simulation before acting in reality
 
 **Why it's unprecedented:** No agent combines digital twin + causal graph + RL practice + predictive alerts.
