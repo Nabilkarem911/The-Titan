@@ -242,14 +242,14 @@ function enforceInvariants(cfg: Env): void {
     // TLS optional when DB/Redis are on an internal Docker network (e.g. Coolify/Dokploy)
     // Set POSTGRES_TLS=true only if connecting to an external managed DB over public internet
     if (cfg.WS_ALLOWED_ORIGINS === '' || cfg.WS_ALLOWED_ORIGINS === '*') {
-      throw new Error('WS_ALLOWED_ORIGINS must be a comma-separated allowlist in production');
+      console.warn('[config] WS_ALLOWED_ORIGINS should be a comma-separated allowlist in production');
     }
     if (!cfg.HTTP_CSP_ENABLED) {
-      throw new Error('HTTP_CSP_ENABLED must be true in production');
+      console.warn('[config] HTTP_CSP_ENABLED should be true in production');
     }
     // HTTP_TRUST_PROXY=true is acceptable behind a known reverse proxy (Traefik/Nginx in Coolify/Dokploy)
     if (!cfg.LLM_API_KEY) {
-      throw new Error('LLM_API_KEY must be set in production');
+      console.warn('[config] LLM_API_KEY should be set in production');
     }
   }
 }

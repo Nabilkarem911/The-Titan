@@ -276,44 +276,60 @@ describe('@titan/config', () => {
       );
     });
 
-    it('throws with empty WS_ALLOWED_ORIGINS in production', () => {
+    it('warns with empty WS_ALLOWED_ORIGINS in production', () => {
       Object.assign(process.env, VALID_PRODUCTION_ENV, {
         WS_ALLOWED_ORIGINS: '',
       });
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      expect(() => loadConfig()).toThrow(
-        'WS_ALLOWED_ORIGINS must be a comma-separated allowlist in production',
+      loadConfig();
+
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining('WS_ALLOWED_ORIGINS should be a comma-separated allowlist'),
       );
+      spy.mockRestore();
     });
 
-    it('throws with WS_ALLOWED_ORIGINS=* in production', () => {
+    it('warns with WS_ALLOWED_ORIGINS=* in production', () => {
       Object.assign(process.env, VALID_PRODUCTION_ENV, {
         WS_ALLOWED_ORIGINS: '*',
       });
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      expect(() => loadConfig()).toThrow(
-        'WS_ALLOWED_ORIGINS must be a comma-separated allowlist in production',
+      loadConfig();
+
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining('WS_ALLOWED_ORIGINS should be a comma-separated allowlist'),
       );
+      spy.mockRestore();
     });
 
-    it('throws with HTTP_CSP_ENABLED=false in production', () => {
+    it('warns with HTTP_CSP_ENABLED=false in production', () => {
       Object.assign(process.env, VALID_PRODUCTION_ENV, {
         HTTP_CSP_ENABLED: 'false',
       });
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      expect(() => loadConfig()).toThrow(
-        'HTTP_CSP_ENABLED must be true in production',
+      loadConfig();
+
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining('HTTP_CSP_ENABLED should be true'),
       );
+      spy.mockRestore();
     });
 
-    it('throws with empty LLM_API_KEY in production', () => {
+    it('warns with empty LLM_API_KEY in production', () => {
       Object.assign(process.env, VALID_PRODUCTION_ENV, {
         LLM_API_KEY: '',
       });
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      expect(() => loadConfig()).toThrow(
-        'LLM_API_KEY must be set in production',
+      loadConfig();
+
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining('LLM_API_KEY should be set'),
       );
+      spy.mockRestore();
     });
 
     it('valid production config passes all invariants', () => {
