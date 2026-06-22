@@ -102,7 +102,7 @@ export class DesktopWsClient {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify({ type: 'heartbeat' }));
       }
-    }, 30_000);
+    }, 10_000);
   }
 
   private stopHeartbeat(): void {

@@ -9,7 +9,7 @@ import { DesktopWsClient } from './ws-client.js';
 
 let activeWsClient: DesktopWsClient | null = null;
 let activeMainWindow: BrowserWindow | null = null;
-let isConnecting = false;
+let connectPromise: Promise<{ success: boolean; [key: string]: unknown }> | null = null;
 
 export function setWsClient(client: DesktopWsClient | null): void {
   activeWsClient = client;
@@ -94,6 +94,7 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
   ipcMain.handle('auth:logout', async () => {
     store.set('token', '');
     store.set('refreshToken', '');
+    connectPromise = null;
     if (activeWsClient) {
       await activeWsClient.disconnect();
       activeWsClient = null;
@@ -136,36 +137,42 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
 
   // Connect to server (after login or settings change)
   ipcMain.handle('server:connect', async () => {
-    // Prevent duplicate concurrent connections
-    if (isConnecting) {
-      return { success: true, alreadyConnecting: true };
-    }
+    // If already connected, don't create a duplicate connection
     if (activeWsClient && activeWsClient.isConnected()) {
       return { success: true, alreadyConnected: true };
     }
-
-    const settings = store.store;
-    if (!settings.serverUrl || !(settings.token || settings.apiKey)) {
-      return { success: false, error: 'Missing server URL or credentials' };
+    // If a connection attempt is already in progress, return its result
+    if (connectPromise) {
+      return connectPromise;
     }
 
-    isConnecting = true;
+    connectPromise = (async () => {
+      const settings = store.store;
+      if (!settings.serverUrl || !(settings.token || settings.apiKey)) {
+        return { success: false, error: 'Missing server URL or credentials' };
+      }
 
-    if (activeWsClient) {
-      await activeWsClient.disconnect();
+      if (activeWsClient) {
+        await activeWsClient.disconnect();
+      }
+
+      // Use the token directly — do NOT auto-refresh here.
+      // Refreshing causes "refresh token reuse detected" on server.
+      // Token refresh should only happen on 401 response (handled in ChatPanel).
+      const token = (store.get('token') as string) || (settings.token as string);
+      activeWsClient = new DesktopWsClient(settings.serverUrl as string, token, {
+        deviceName: (settings.deviceName as string) || hostname(),
+        capabilities: settings.capabilities as string[],
+      });
+      activeWsClient.connect();
+      return { success: true };
+    })();
+
+    try {
+      return await connectPromise;
+    } finally {
+      connectPromise = null;
     }
-
-    // Use the token directly — do NOT auto-refresh here.
-    // Refreshing causes "refresh token reuse detected" on server.
-    // Token refresh should only happen on 401 response (handled in ChatPanel).
-    const token = (store.get('token') as string) || (settings.token as string);
-    activeWsClient = new DesktopWsClient(settings.serverUrl as string, token, {
-      deviceName: (settings.deviceName as string) || hostname(),
-      capabilities: settings.capabilities as string[],
-    });
-    activeWsClient.connect();
-    isConnecting = false;
-    return { success: true };
   });
 
   // Files

@@ -52,6 +52,7 @@ export class DesktopBridge {
   private devices = new Map<string, ConnectedDevice>();
   private pendingCommands = new Map<string, PendingCommand>();
   private commandTimeoutMs: number;
+  private heartbeatCheckTimer: NodeJS.Timeout | null = null;
 
   constructor(opts: DesktopBridgeOptions = {}) {
     const cfg = loadConfig();
@@ -70,6 +71,21 @@ export class DesktopBridge {
     });
     this.wss.on('connection', (ws, req) => this.onConnection(ws, req));
     log.info({ path: this.path }, 'desktop bridge attached');
+
+    // Check for stale connections every 30s — close if no heartbeat in 90s
+    this.heartbeatCheckTimer = setInterval(() => {
+      const now = Date.now();
+      for (const [key, device] of this.devices.entries()) {
+        const staleMs = now - device.lastHeartbeat.getTime();
+        if (staleMs > 90_000) {
+          log.warn({ deviceKey: key, staleMs }, 'closing stale device connection (no heartbeat)');
+          try { device.ws.close(1001, 'Heartbeat timeout'); } catch {}
+          this.devices.delete(key);
+          const [uid, did] = key.split(':');
+          void desktopDevices.setStatus(uid, did, 'offline');
+        }
+      }
+    }, 30_000);
   }
 
   private async onConnection(ws: WebSocket, req: IncomingMessage): Promise<void> {
@@ -233,6 +249,10 @@ export class DesktopBridge {
   }
 
   async close(): Promise<void> {
+    if (this.heartbeatCheckTimer) {
+      clearInterval(this.heartbeatCheckTimer);
+      this.heartbeatCheckTimer = null;
+    }
     for (const [key, device] of this.devices.entries()) {
       try { device.ws.close(1001, 'Server shutdown'); } catch {}
       const [uid, did] = key.split(':');
