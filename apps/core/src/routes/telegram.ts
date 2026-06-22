@@ -40,6 +40,7 @@ interface TelegramUpdate {
     document?: TelegramFile;
     photo?: Array<{ file_id: string; file_unique_id: string; file_size?: number; width: number; height: number }>;
     caption?: string;
+    voice?: { file_id: string; file_unique_id: string; duration?: number; mime_type?: string };
   };
   callback_query?: CallbackQuery;
 }
@@ -449,6 +450,29 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       if (downloaded) {
         fileInfo = { url: downloaded.url, filename: downloaded.filename, type: 'image', localPath: downloaded.localPath };
         if (!text) text = 'User uploaded an image.';
+      }
+    } else if (msg.voice) {
+      // Voice message — download and transcribe with Whisper
+      const voiceFile = msg.voice;
+      const downloaded = await downloadTelegramFile(cfg.TELEGRAM_BOT_TOKEN, voiceFile.file_id);
+      if (downloaded?.localPath) {
+        try {
+          const { readFile } = await import('node:fs/promises');
+          const audioBuffer = await readFile(downloaded.localPath);
+          const { WhisperSTTProvider } = await import('@titan/agent-engine');
+          const stt = new WhisperSTTProvider();
+          const result = await stt.transcribe(audioBuffer);
+          text = result.text.trim();
+          log.info({ chatId, duration: voiceFile.duration, textLength: text.length }, 'voice message transcribed');
+          if (!text) {
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '🎤 لم أتمكن من سماع الرسالة الصوتية بوضوح. حاول مرة أخرى.');
+            return reply.code(200).send({ ok: true });
+          }
+        } catch (err) {
+          log.error({ chatId, err }, 'voice transcription failed');
+          await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '❌ فشل تحويل الرسالة الصوتية إلى نص. حاول مرة أخرى.');
+          return reply.code(200).send({ ok: true });
+        }
       }
     }
 

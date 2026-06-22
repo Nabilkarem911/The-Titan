@@ -307,9 +307,9 @@ After a full codebase audit, Titan already has an impressive foundation:
 - Never break existing voice routes — only add new providers and endpoints
 
 #### 3.1 Telegram Voice Messages (UPGRADE — wire existing)
-- [ ] Handle voice messages in Telegram webhook → send to Whisper STT → transcribe → process as text
-- [ ] Current: `apps/core/src/routes/voice.ts` has STT/TTS but not connected to Telegram
-- [ ] Add voice message detection in Telegram webhook handler
+- [x] Handle voice messages in Telegram webhook → send to Whisper STT → transcribe → process as text
+- [x] Current: `apps/core/src/routes/voice.ts` has STT/TTS but not connected to Telegram
+- [x] Add voice message detection in Telegram webhook handler
 
 #### 3.2 ElevenLabs TTS (UPGRADE — add provider)
 - [ ] Add ElevenLabs TTS provider alongside OpenAI TTS
