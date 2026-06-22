@@ -412,8 +412,8 @@ After a full codebase audit, Titan already has an impressive foundation:
 - [x] Quick actions: Screenshot, System Info, Deploy, List Devices
 
 #### 6.2 Progress Indicators
-- [ ] Real-time progress updates for long tasks (edit message with progress bar)
-- [ ] Step indicators: "Step 3/7: Running tests..."
+- [x] Real-time progress updates for long tasks (edit message with progress bar)
+- [x] Step indicators: "Step 3/7: Running tests..."
 
 #### 6.3 Rich Formatting
 - [ ] Markdown V2 with structured cards

@@ -75,6 +75,9 @@ export interface CreateRunnerOptions {
 
   /** Enable self-critique of final answers. */
   enableSelfCritique?: boolean;
+
+  /** Optional external step listener — called after internal persistence + broadcast. */
+  onStep?: (step: AgentStep) => void | Promise<void>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -243,6 +246,15 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
             latencyMs: step.latencyMs,
           },
         });
+      }
+
+      // External step listener (e.g. Telegram progress updates)
+      if (opts.onStep) {
+        try {
+          await opts.onStep(step);
+        } catch (err) {
+          log.warn({ err, runId }, 'external onStep callback failed');
+        }
       }
     },
   });

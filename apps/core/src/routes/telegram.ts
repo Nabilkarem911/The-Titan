@@ -10,6 +10,7 @@ import { getDesktopBridge } from '../desktop-bridge-instance.js';
 import {
   type CallbackQuery,
   buildQuickActionsKeyboard,
+  buildProgressBar,
   sendMessageWithOptions,
   editMessageText,
   answerCallbackQuery,
@@ -573,6 +574,18 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         log.info({ ownerId, project: defaultProject.name }, 'default project injected');
       }
 
+      // Progress tracking state — declared before createRunner so onStep closure can access
+      let progressMessageId: number | null = null;
+      let lastProgressEditMs = 0;
+
+      // Send initial progress message
+      const initialProgress = buildProgressBar(0, 10, 'Starting...');
+      const progressResult = await sendMessageWithOptions(cfg.TELEGRAM_BOT_TOKEN, {
+        chatId,
+        text: initialProgress,
+      });
+      progressMessageId = progressResult.messageId ?? null;
+
       const runner = createRunner({
         runId,
         agentId,
@@ -593,6 +606,22 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         memory,
         userContextItems,
         enablePlanning: true,
+        onStep: (step) => {
+          if (progressMessageId === null) return;
+          const now = Date.now();
+          if (now - lastProgressEditMs < 2000) return;
+          lastProgressEditMs = now;
+          const maxSteps = 10;
+          const currentStep = step.index + 1;
+          const actionLabel = step.action?.name ? `Step ${currentStep}: ${step.action.name}` : `Step ${currentStep}`;
+          const bar = buildProgressBar(currentStep, maxSteps, actionLabel);
+          editMessageText(
+            cfg.TELEGRAM_BOT_TOKEN,
+            chatId,
+            progressMessageId,
+            bar,
+          ).catch(() => {});
+        },
       });
 
       // Start background run — do not await so next messages can be processed concurrently
@@ -612,11 +641,33 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         clearInterval(typingInterval);
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إكمال المهمة.';
         await saveChatMessage(sessionId, 'assistant', answer);
+
+        // Remove progress message and send final answer
+        if (progressMessageId !== null) {
+          // Try to delete the progress message via Telegram API
+          try {
+            await fetch(`https://api.telegram.org/bot${cfg.TELEGRAM_BOT_TOKEN}/deleteMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ chat_id: chatId, message_id: progressMessageId }),
+            });
+          } catch {
+            // If deletion fails, edit it to show completion
+            await editMessageText(cfg.TELEGRAM_BOT_TOKEN, chatId, progressMessageId, '✅ Done');
+          }
+        }
+
         await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, answer);
-        log.info({ runId, chatId, steps: result.steps.length, durationMs: Date.now() - Date.now() }, 'background agent run completed');
+        log.info({ runId, chatId, steps: result.steps.length }, 'background agent run completed');
       }).catch(async (err) => {
         clearInterval(typingInterval);
         log.error({ chatId, err }, 'background agent run failed');
+
+        // Update progress message to show error
+        if (progressMessageId !== null) {
+          await editMessageText(cfg.TELEGRAM_BOT_TOKEN, chatId, progressMessageId, '❌ Failed').catch(() => {});
+        }
+
         await sendTelegramMessage(
           cfg.TELEGRAM_BOT_TOKEN,
           chatId,
