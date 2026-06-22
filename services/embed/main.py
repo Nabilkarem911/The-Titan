@@ -8,21 +8,21 @@ from typing import Union
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
+from fastembed import TextEmbedding
 from pydantic import BaseModel, Field
-from sentence_transformers import SentenceTransformer
 
 MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "BAAI/bge-small-en-v1.5")
 
 app = FastAPI(title="Titan Embedding Service", version="1.0.0")
 
 # Load model at startup (already cached in Docker image)
-model: SentenceTransformer | None = None
+model: TextEmbedding | None = None
 
 
 @app.on_event("startup")
 def load_model():
     global model
-    model = SentenceTransformer(MODEL_NAME)
+    model = TextEmbedding(model_name=MODEL_NAME)
 
 
 # ─── Health ───────────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ def load_model():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": MODEL_NAME, "dimensions": model.get_sentence_embedding_dimension() if model else 0}
+    return {"status": "ok", "model": MODEL_NAME, "dimensions": 384}
 
 
 # ─── Simple /embed endpoint ──────────────────────────────────────────────────
@@ -52,10 +52,12 @@ def embed(req: EmbedRequest):
         raise HTTPException(status_code=503, detail="Model not loaded")
 
     if req.text:
-        vec = model.encode([req.text], normalize_embeddings=True)
-        return EmbedResponse(embedding=vec[0].tolist())
+        vec = list(model.embed([req.text]))[0]
+        vec = vec / np.linalg.norm(vec)
+        return EmbedResponse(embedding=vec.tolist())
     elif req.texts:
-        vecs = model.encode(req.texts, normalize_embeddings=True)
+        vecs = list(model.embed(req.texts))
+        vecs = [v / np.linalg.norm(v) for v in vecs]
         return EmbedResponse(embeddings=[v.tolist() for v in vecs])
     else:
         raise HTTPException(status_code=400, detail="Provide 'text' or 'texts'")
@@ -92,7 +94,8 @@ def openai_embeddings(req: OpenAIEmbeddingRequest):
     if not texts:
         raise HTTPException(status_code=400, detail="Empty input")
 
-    vecs = model.encode(texts, normalize_embeddings=True)
+    vecs = list(model.embed(texts))
+    vecs = [v / np.linalg.norm(v) for v in vecs]
 
     data = []
     for i, vec in enumerate(vecs):
