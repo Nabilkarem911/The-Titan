@@ -29,3 +29,4 @@ export * from './collaboration/index.js';
 export * from './multimodal/index.js';
 export * from './mirror/index.js';
 export * from './creative/index.js';
+export * from './selfplay/index.js';

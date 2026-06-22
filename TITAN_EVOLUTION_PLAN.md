@@ -751,12 +751,12 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Research basis:** DeepMind "Generally capable agents emerge from open-ended play", Agent0.
 
-- [ ] **Infinite Curriculum** — Titan generates infinite tasks of increasing difficulty for itself
-- [ ] **Self-Play Arena** — two Titan instances compete (one poses problems, other solves)
-- [ ] **Open-Ended Skill Discovery** — Titan discovers skills no human thought to teach it
-- [ ] **Capability Horizon Expansion** — Titan explores beyond its current capability boundary
-- [ ] **Evolutionary Archive** — every capability gain is recorded, building a growing archive of stepping stones
-- [ ] **No Human Curriculum** — pure self-generated learning, zero human-curated data
+- [x] **Infinite Curriculum** — Titan generates infinite tasks of increasing difficulty for itself
+- [x] **Self-Play Arena** — two Titan instances compete (one poses problems, other solves)
+- [x] **Open-Ended Skill Discovery** — Titan discovers skills no human thought to teach it
+- [x] **Capability Horizon Expansion** — Titan explores beyond its current capability boundary
+- [x] **Evolutionary Archive** — every capability gain is recorded, building a growing archive of stepping stones
+- [x] **No Human Curriculum** — pure self-generated learning, zero human-curated data
 
 **Why it's unprecedented:** No agent combines infinite self-play + open-ended skill discovery + evolutionary archive.
 
