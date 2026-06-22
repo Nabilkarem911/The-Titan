@@ -705,13 +705,13 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Research basis:** Sogni Creative Agent, Sinter, SoundX, VisionCreator.
 
-- [ ] **`creative_generate_image`** — Titan generates images from text descriptions
-- [ ] **`creative_generate_music`** — Titan composes music (full songs with lyrics, instrumentals)
-- [ ] **`creative_generate_video`** — Titan creates videos from text or images
-- [ ] **`creative_code`** — Titan writes p5.js, GLSL, Three.js for generative art
+- [x] **`creative_generate_image`** — Titan generates images from text descriptions
+- [x] **`creative_generate_music`** — Titan composes music (full songs with lyrics, instrumentals)
+- [x] **`creative_generate_video`** — Titan creates videos from text or images
+- [x] **`creative_code`** — Titan writes p5.js, GLSL, Three.js for generative art
 - [ ] **Autonomous Gardener** — background creative steward that manages taste and emergence
-- [ ] **Multi-Agent Critique** — multiple agents critique and vote on creative output
-- [ ] **Style Learning** — Titan learns your aesthetic preferences over time
+- [x] **Multi-Agent Critique** — multiple agents critique and vote on creative output
+- [x] **Style Learning** — Titan learns your aesthetic preferences over time
 
 **Why it's unprecedented:** No agent combines coding + desktop control + creative generation in one system.
 
