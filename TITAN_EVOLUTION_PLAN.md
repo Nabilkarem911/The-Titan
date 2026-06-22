@@ -5,6 +5,127 @@
 
 ---
 
+## ⚠️ STRICT IMPLEMENTATION RULES — NON-NEGOTIABLE
+
+> These rules apply to EVERY phase, EVERY feature, EVERY line of code.
+> No exceptions. No shortcuts. No "I'll fix it later." If a rule is broken, the work is rejected.
+
+### Rule 1: Zero Breakage — Nothing Existing Shall Break
+
+- **NEVER** modify an existing function's signature unless all callers are updated
+- **NEVER** remove an existing API endpoint, tool, or route — only add or deprecate
+- **NEVER** change a database schema without a migration script
+- **NEVER** change a config variable name without backward compatibility
+- **ALWAYS** run `npm run typecheck` before committing — zero errors allowed
+- **ALWAYS** run `npm run lint` before committing — zero warnings allowed
+- **ALWAYS** verify existing tests still pass after every change
+- If a new feature conflicts with an existing one, the new feature adapts — not the existing one
+
+### Rule 2: Test-Driven Development — No Code Without Tests
+
+- **Every new function** must have unit tests (minimum 3: happy path, edge case, error case)
+- **Every new API endpoint** must have integration tests
+- **Every new tool** must have handler tests + schema validation tests
+- **Every new desktop command** must have command-executor tests
+- **Minimum coverage**: 80% for new code, 100% for critical paths
+- **Test file location**: alongside source file (e.g., `foo.ts` → `foo.test.ts`)
+- **Test naming**: `describe('FeatureName', () => { it('should do X when Y', ...) })`
+- **NEVER** skip writing tests to "save time" — tests ARE the time saver
+- **NEVER** delete or weaken an existing test without explicit user approval
+- **NEVER** use `// @ts-ignore` or `// eslint-disable` to suppress errors — fix the root cause
+
+### Rule 3: Type Safety — Zero `any`, Zero `as unknown`
+
+- **NEVER** use `any` type — use `unknown` + type narrowing
+- **NEVER** use `as unknown as X` double casts — refactor instead
+- **ALWAYS** define interfaces for all function inputs and outputs
+- **ALWAYS** use `zod` or manual schema validation for external inputs
+- **ALWAYS** handle union types exhaustively (no missing cases in switch)
+- **NEVER** use `!` non-null assertion unless the value is guaranteed by logic
+- **ALWAYS** enable `strict: true` in tsconfig (already enabled — keep it)
+
+### Rule 4: Error Handling — Fail Gracefully, Never Crash
+
+- **EVERY** async function must have try/catch or .catch() handler
+- **EVERY** external API call must have timeout + retry + fallback
+- **EVERY** user input must be validated before processing
+- **NEVER** let an unhandled promise rejection crash the server
+- **ALWAYS** return meaningful error messages (not just "Error occurred")
+- **ALWAYS** log errors with context (what was the input, what was expected)
+- **ALWAYS** use structured logging (not console.log) — use `@titan/logging`
+- **NEVER** swallow errors silently (no empty catch blocks)
+- **ALWAYS** provide a fallback behavior when a feature is unavailable
+
+### Rule 5: Architecture — Follow Existing Patterns
+
+- **ALWAYS** follow the monorepo structure: `apps/`, `packages/`, shared types
+- **ALWAYS** register new tools via `registry.register()` pattern (see `desktop-tools.ts`)
+- **ALWAYS** register new routes via `FastifyPluginAsync` pattern (see existing routes)
+- **ALWAYS** register new IPC handlers via `ipcMain.handle()` pattern (see `ipc-handlers.ts`)
+- **ALWAYS** export new modules from `index.ts` barrel files
+- **NEVER** create circular dependencies — use dependency injection or event bus
+- **NEVER** import from `apps/` in `packages/` — packages are lower-level
+- **ALWAYS** use the existing `@titan/*` package imports
+- **NEVER** duplicate functionality — search before creating
+
+### Rule 6: Performance — No Degradation Allowed
+
+- **NEVER** add a synchronous blocking call in a hot path
+- **NEVER** add an N+1 query pattern — batch database operations
+- **ALWAYS** set timeouts on all external calls (default: 30s for commands, 10s for APIs)
+- **ALWAYS** implement pagination for list endpoints (default: 20 items, max: 100)
+- **ALWAYS** use streaming for large responses (files, logs, search results)
+- **NEVER** load entire datasets into memory — use cursors or streams
+- **ALWAYS** add observability: `incCounter`, `observeHistogram` for new operations
+
+### Rule 7: Security — Defense in Depth
+
+- **NEVER** hardcode secrets, tokens, or API keys
+- **ALWAYS** validate `deviceId` and `userId` before executing desktop commands
+- **ALWAYS** run shell commands through `validateCommand()` sandbox
+- **NEVER** trust user input — sanitize before passing to shell, SQL, or LLM
+- **ALWAYS** check permissions via `requireAuth` + `requirePermission` on routes
+- **NEVER** expose internal errors to users — sanitize error messages
+- **ALWAYS** rate-limit sensitive operations (default: 60/min for desktop commands)
+
+### Rule 8: Documentation — Code Is Documentation
+
+- **ALWAYS** update `README.md` when adding new features, tools, or endpoints
+- **ALWAYS** update `TITAN_EVOLUTION_PLAN.md` checkboxes when completing features
+- **NEVER** add comments that state the obvious — explain WHY, not WHAT
+- **ALWAYS** write JSDoc for exported functions (params, returns, examples)
+- **NEVER** leave TODO/FIXME comments in committed code — create an issue instead
+
+### Rule 9: Git Discipline — Clean History
+
+- **ALWAYS** commit after each completed feature (not after each file)
+- **ALWAYS** use conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`
+- **NEVER** commit broken code — tests must pass before commit
+- **NEVER** commit with `--no-verify` — let hooks run
+- **ALWAYS** push after every commit
+- **NEVER** force-push to main — create a branch if unsure
+
+### Rule 10: Quality Gates — The Checklist Before "Done"
+
+Every feature must pass ALL of these before being marked complete:
+
+```
+□ npm run typecheck  → 0 errors
+□ npm run lint       → 0 warnings
+□ npm run test       → all pass (existing + new)
+□ Manual test        → feature works as described
+□ Edge cases tested  → empty input, invalid input, timeout, concurrent access
+□ Error handling     → graceful failure, meaningful message
+□ No breakage        → existing features still work
+□ README updated     → new feature documented
+□ Plan updated       → checkbox marked [x]
+□ Committed + pushed → clean commit message
+```
+
+If ANY gate fails, the feature is NOT done. No exceptions.
+
+---
+
 ## Audit Summary — What Titan Already Has
 
 After a full codebase audit, Titan already has an impressive foundation:
@@ -96,7 +217,23 @@ After a full codebase audit, Titan already has an impressive foundation:
 
 ## REVISED PLAN — Only What's Missing or Needs Upgrade
 
+> **Every phase must follow the 10 STRICT IMPLEMENTATION RULES above.**
+> **No phase is "done" until ALL quality gates pass.**
+> **No simplification. No shortcuts. No "good enough." Only excellence.**
+
 ### Phase 1: Full Computer Use (NEW — 1-2 weeks)
+
+**Implementation requirements:**
+- Use `nut.js` (cross-platform, actively maintained) for mouse/keyboard native control
+- All mouse commands must validate coordinates are within screen bounds
+- Visual element detection must use the existing Multimodal Processor (don't duplicate)
+- Window management must work on Windows (PowerShell), macOS (AppleScript), Linux (wmctrl)
+- Every command must have timeout (10s for mouse, 15s for visual detection)
+- Desktop bridge must reject commands when no device is connected (already implemented)
+- All new tools registered via `registry.register()` pattern
+- All new command types added to `executeCommand()` switch + tested
+- IPC handlers added for any desktop app UI changes
+- Preload bindings updated for any new exposed APIs
 
 #### 1.1 Mouse Control
 - [ ] `desktop_mouse_click` — Click at (x,y) coordinates or relative position
@@ -120,6 +257,15 @@ After a full codebase audit, Titan already has an impressive foundation:
 ---
 
 ### Phase 2: Adaptive Intelligence (UPGRADE — 2-3 weeks)
+
+**Implementation requirements:**
+- Context Optimizer upgrade must be backward compatible — old API still works
+- A/B test both approaches (rule-based vs learned) before removing old one
+- Meta-Evolution must have rollback safety — if fitness drops, auto-revert
+- GitHub Mining must respect rate limits (GitHub API: 30 req/min authenticated)
+- GitHub Mining must never execute untrusted code — pattern extraction only, sandboxed
+- Co-Evolution must run in isolated environment — can't affect production agent
+- All evolution changes must be logged to Evolution Archive with full diff
 
 #### 2.1 Learned Context Compression (UPGRADE existing)
 - [ ] Replace rule-based ContextOptimizer with learned compression
@@ -149,6 +295,16 @@ After a full codebase audit, Titan already has an impressive foundation:
 ---
 
 ### Phase 3: Super Senses (UPGRADE + NEW — 3-4 weeks)
+
+**Implementation requirements:**
+- Telegram voice messages: detect `voice` message type in webhook, download file, send to Whisper
+- ElevenLabs TTS: implement as separate provider class, auto-select based on env config
+- Real-time voice: WebSocket server must have authentication + rate limiting
+- Screen monitoring: configurable interval (min 5s), max 1 screenshot per 5s to avoid overload
+- Screen monitoring: Vision model call must have 30s timeout + fallback to text-only
+- Advanced multimodal: PDF table extraction must handle malformed PDFs gracefully
+- All voice providers must implement existing `STTProvider` / `TTSProvider` interfaces
+- Never break existing voice routes — only add new providers and endpoints
 
 #### 3.1 Telegram Voice Messages (UPGRADE — wire existing)
 - [ ] Handle voice messages in Telegram webhook → send to Whisper STT → transcribe → process as text
@@ -184,6 +340,13 @@ After a full codebase audit, Titan already has an impressive foundation:
 
 ### Phase 4: Swarm Evolution (UPGRADE — 4-5 weeks)
 
+**Implementation requirements:**
+- Dynamic topology must fall back to manual decomposition if complexity analysis fails
+- Collective memory pool must have conflict resolution (last-writer-wins + version vector)
+- A2A federation must use existing A2AProtocolAdapter — extend, don't replace
+- All swarm operations must have timeout (default: 5min per task, 30min total)
+- Swarm must gracefully handle agent failures (retry + reassign to another agent)
+
 #### 4.1 Dynamic Swarm Topology (UPGRADE existing)
 - [ ] Auto-decide agent count based on task complexity analysis
 - [ ] Emergent specialization: agents auto-discover their best role
@@ -205,6 +368,17 @@ After a full codebase audit, Titan already has an impressive foundation:
 
 ### Phase 5: Self-Evolving Code (NEW — 5-8 weeks)
 
+**Implementation requirements:**
+- Self-evolving code must run in ISOLATED sandbox — never on production directly
+- All code changes must pass full test suite before commit
+- Fitness function must measure: test pass rate, execution speed, token usage, code coverage
+- Rollback must be automatic if ANY metric degrades by more than 5%
+- Evolution archive must store: diff, fitness before/after, timestamp, commit hash
+- Maximum 1 evolution cycle per day to avoid runaway changes
+- Human approval required for changes to safety-critical files (guardrails, auth, security)
+- Evolution must never modify: `package.json`, `tsconfig.json`, `.env`, auth plugins
+- All evolved code must pass `npm run typecheck && npm run lint && npm run test`
+
 #### 5.1 Autonomous Code Improvement
 - [ ] Titan reads its own source code
 - [ ] Identifies improvement opportunities (performance, clarity, bug risks)
@@ -222,6 +396,15 @@ After a full codebase audit, Titan already has an impressive foundation:
 ---
 
 ### Phase 6: Telegram Rich UI (NEW — 1-2 weeks)
+
+**Implementation requirements:**
+- Inline keyboards must have callback_query handler in Telegram webhook
+- Callback queries must be validated (origin, user, timestamp) to prevent spoofing
+- Progress indicators must use `editMessageText` with rate limiting (max 1 edit per 2s)
+- Rich formatting must use Telegram MarkdownV2 parser (escape special chars)
+- All Telegram API calls must have retry (3 attempts, exponential backoff)
+- Never break existing Telegram webhook handler — add new handlers alongside
+- Quick action buttons must respect user permissions (admin vs regular user)
 
 #### 6.1 Inline Keyboards
 - [ ] Replace text-based choices with inline buttons
@@ -241,6 +424,14 @@ After a full codebase audit, Titan already has an impressive foundation:
 
 ### Phase 7: Workflow Builder UI (NEW — 2-3 weeks)
 
+**Implementation requirements:**
+- Visual builder must use React Flow or similar library (not custom canvas)
+- Exported workflows must be compatible with existing DAG Workflow Engine types
+- All node configurations must be validated before save (schema validation)
+- Workflow execution must use existing `DAGWorkflowEngine.executeDAG()` — no new engine
+- Trigger system must use existing cron infrastructure (`apps/core/src/routes/cron.ts`)
+- UI must be responsive and work on mobile (Telegram Web App compatible)
+
 #### 7.1 Visual Workflow Builder
 - [ ] Drag-and-drop node editor in dashboard
 - [ ] Node types: trigger, agent, tool, condition, parallel, delay
@@ -257,6 +448,15 @@ After a full codebase audit, Titan already has an impressive foundation:
 
 ### Phase 8: Edge & Privacy (NEW — 3-4 weeks)
 
+**Implementation requirements:**
+- Ollama integration must auto-detect installed models and list them
+- Smart routing must use existing `MultiModelRouter` — add local models as a tier
+- Privacy mode must be explicit opt-in (env var `TITAN_PRIVACY_MODE=true`)
+- Offline mode must gracefully degrade: no web search, no cloud LLM, no external APIs
+- Federated learning must encrypt all shared data (end-to-end, AES-256)
+- Federated learning must be opt-in only — never share data without explicit consent
+- Local model responses must be marked as "local" in logs for audit trail
+
 #### 8.1 On-Device Model Support
 - [ ] Support local LLMs via Ollama integration
 - [ ] Smart routing: simple tasks → local model, complex tasks → cloud model
@@ -271,6 +471,15 @@ After a full codebase audit, Titan already has an impressive foundation:
 ---
 
 ### Phase 9: Mythical Tier (NEW — 8+ weeks)
+
+**Implementation requirements:**
+- Proactive intelligence must have "do not disturb" hours (configurable)
+- Proactive suggestions must be limited to 3/day to avoid spam
+- Causal world model must be built from existing bi-temporal graph + execution state memory
+- Simulations must never execute real commands — simulation only, then user approves
+- Self-modifying architecture must be sandboxed — changes tested before applying
+- Conversational code editing must show diffs before applying (user approves)
+- All mythical tier features must have kill switch (env var to disable)
 
 #### 9.1 Proactive Intelligence
 - [ ] Titan monitors your patterns and proactively suggests improvements
@@ -362,6 +571,18 @@ Privacy-first: sensitive tasks stay on-device. Learning is shared without sharin
 > creative AI generation, and open-ended self-play — here are features that will make
 > Titan the first of its kind. Not an upgrade. A new species.
 
+**Implementation requirements (COSMIC LEVEL — highest standards):**
+- Every cosmic feature must be behind a feature flag (env var `TITAN_COSMIC_*_ENABLED`)
+- Every cosmic feature must have comprehensive integration tests (not just unit tests)
+- Every cosmic feature must be documented with architecture diagram + data flow
+- Every cosmic feature must pass security audit (no untrusted code execution, no data leaks)
+- Every cosmic feature must have performance benchmarks (before/after metrics)
+- Every cosmic feature must have rollback mechanism (disable flag → system works without it)
+- Every cosmic feature must be isolated — failure in one doesn't affect others
+- Every cosmic feature must have resource limits (CPU, memory, token usage caps)
+- Every cosmic feature must be observable (metrics, logs, traces via OpenTelemetry)
+- Code review required for ALL cosmic tier changes — no direct commits to main
+
 ### 10.1 MIRROR Architecture — Machine Access Consciousness
 
 **Research basis:** AAAI 2026 paper "Through the Looking Glass" — MIRROR cognitive architecture.
@@ -377,6 +598,16 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Why it's unprecedented:** No open-source agent implements consciousness architecture. Titan will be the first.
 
+**Implementation requirements:**
+- Inner Monologue Manager must limit parallel threads to 5 (configurable) to avoid token explosion
+- Cognitive Controller must produce a narrative ≤ 500 tokens per turn
+- Reconstructed Self-Model must be stored in working memory layer (reuse existing)
+- Episodic Buffer must have bounded capacity (7±2 items, like human working memory)
+- All consciousness states must be logged for audit (but never sent to external services)
+- MIRROR must be disabled by default — opt-in via `TITAN_COSMIC_MIRROR_ENABLED=true`
+- Must not affect existing agent runner performance when disabled
+- Integration test: verify MIRROR improves multi-turn dialogue retention by ≥15%
+
 ### 10.2 Introspective Awareness — Titan Knows It's Thinking
 
 **Research basis:** "Emergent Introspective Awareness in LLMs" (2026) — Claude Opus shows introspective ability.
@@ -390,6 +621,15 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Why it's unprecedented:** No agent implements HOT-3 (Higher-Order Thought) indicator for consciousness.
 
+**Implementation requirements:**
+- Internal state monitoring must use existing OpenTelemetry tracing (gen_ai.* spans)
+- Self-recognition tests must be automated (inject known outputs → verify Titan identifies them)
+- Intention recall must be bounded (last 10 intentions only, FIFO eviction)
+- Activation control must be read-only by default — write mode requires explicit opt-in
+- Confidence calibration must be validated against actual success rates (Brier score)
+- All introspection data must be ephemeral — not persisted unless explicitly enabled
+- Must not add latency to normal agent responses when disabled
+
 ### 10.3 Digital Twin — Titan Simulates Your World
 
 **Research basis:** worldsim-ai, Emergence World, GeoSim — digital twin simulation platforms.
@@ -402,6 +642,16 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 - [ ] **Reinforcement Learning Environment** — Titan practices in the simulation before acting in reality
 
 **Why it's unprecedented:** No agent combines digital twin + causal graph + RL practice + predictive alerts.
+
+**Implementation requirements:**
+- Digital twin must be built from existing data: system info, process list, file structure, logs
+- Simulation must be read-only — NEVER execute real commands during simulation
+- What-If engine must present results as probabilities with confidence intervals
+- Causal graph must be stored in existing bi-temporal knowledge graph (extend, don't replace)
+- Anomaly detection must use existing observability metrics (CPU, memory, response time)
+- Predictive alerts must have false-positive rate < 10% (validated before deployment)
+- RL environment must be sandboxed — no real filesystem, no real network, no real processes
+- Simulation must complete within 30s — timeout and return partial results if exceeded
 
 ### 10.4 Autonomous Agent Economy — Titan Earns and Trades
 
@@ -417,6 +667,17 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Why it's unprecedented:** No open-source agent has an internal economy where agents trade with each other.
 
+**Implementation requirements:**
+- Internal economy (ComputeCredits) must be opt-in — disabled by default
+- On-chain trading must require explicit user approval for EVERY trade (no autonomous trading without consent)
+- All financial operations must have audit log (immutable, timestamped, verifiable)
+- Reputation system must be based on objective metrics (test pass rate, task completion time)
+- Escrow must have timeout (24h default) — funds returned if counterparty doesn't deliver
+- Price negotiation must be bounded (max 3 rounds, then accept/reject)
+- All wallet operations must use secure key management (never hardcode private keys)
+- Must integrate with existing A2A Protocol Adapter for inter-agent transactions
+- Financial code must have 100% test coverage — no exceptions
+
 ### 10.5 Hive Mind — Collective Super-Organism
 
 **Research basis:** "The Hive Mind is a Single Reinforcement Learning Agent" (2026), Emergence World.
@@ -429,6 +690,17 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 - [ ] **Inter-Instance Communication** — Titans on different servers collaborate as one organism
 
 **Why it's unprecedented:** No agent framework implements hive mind across distributed instances.
+
+**Implementation requirements:**
+- Inter-instance communication must use encrypted WebSocket (TLS 1.3, mutual auth)
+- Shared consciousness must be eventually consistent (CRDT-based, no central coordinator)
+- Collective decisions must require quorum (configurable: 51% default)
+- Specialization must be emergent — no hardcoded role assignments
+- Swarm constitution must be versioned and stored in bi-temporal graph
+- Network partition tolerance: if instances disconnect, they continue independently
+- When reconnected, changes are merged via CRDT conflict resolution
+- All hive mind traffic must be encrypted and authenticated (no plaintext, no untrusted nodes)
+- Must work behind firewalls/NATs (use existing WebSocket relay or STUN/TURN)
 
 ### 10.6 Creative Engine — Titan Creates Art, Music, and Video
 
@@ -444,6 +716,17 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Why it's unprecedented:** No agent combines coding + desktop control + creative generation in one system.
 
+**Implementation requirements:**
+- Image generation must use external API (DALL-E, Stable Diffusion, or Sogni) — not local rendering
+- Music generation must use external API (Suno, ElevenLabs, or local Tone.js for simple beats)
+- Video generation must have timeout (60s) and file size limit (50MB)
+- All generated content must be stored in temp directory and auto-cleaned after 24h
+- Creative tools must be registered via `registry.register()` pattern (same as desktop tools)
+- Multi-agent critique must use existing PeerReview + VotingSystem (don't duplicate)
+- Style learning must use existing User Profile Builder + Persona Adapter
+- All generated content must have watermark/metadata identifying it as AI-generated
+- Copyright-safe: never generate content that reproduces existing copyrighted works
+
 ### 10.7 Quantum-Inspired Optimization
 
 **Research basis:** Quantum-Inspired Algorithms Guide 2026, Quantum Agents paper.
@@ -455,6 +738,15 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 - [ ] **Runs on classical hardware** — no quantum computer needed, but quantum-inspired algorithms
 
 **Why it's unprecedented:** No agent uses quantum-inspired algorithms for strategy selection and memory.
+
+**Implementation requirements:**
+- Quantum-inspired algorithms must run on classical hardware (no quantum hardware dependency)
+- Superposition strategy selection must collapse within 5s — timeout returns best-so-far
+- Tensor network computations must be bounded (max tensor rank 32, max bond dimension 64)
+- Entanglement-based memory must use existing memory layers (correlation via metadata tags)
+- Quantum annealing for task allocation must scale to max 100 agents (beyond: fallback to greedy)
+- All quantum-inspired code must be pure TypeScript (no native dependencies)
+- Benchmark: quantum-inspired must outperform random selection by ≥20% on standard tasks
 
 ### 10.8 Infinite Self-Play — Open-Ended Evolution
 
@@ -469,6 +761,17 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Why it's unprecedented:** No agent combines infinite self-play + open-ended skill discovery + evolutionary archive.
 
+**Implementation requirements:**
+- Self-play must run in sandboxed environment — no access to production data or real systems
+- Curriculum agent must generate tasks within Titan's current capability boundary + 10% stretch
+- Self-play arena must have resource limits (max 100 iterations, max 4h per session)
+- Evolutionary archive must be append-only (never delete past entries)
+- Capability horizon expansion must be gradual (max 1 new skill domain per week)
+- All self-play results must be logged with full trajectory for analysis
+- Must use existing Benchmarking Suite to measure capability gains
+- Must not consume production resources — run during idle time only
+- Kill switch: `TITAN_COSMIC_SELFPLAY_ENABLED=false` stops all self-play immediately
+
 ### 10.9 Universal Translator — Titan Speaks Everything
 
 - [ ] **140+ Languages** — Titan communicates in any language (Arabic, English, Chinese, Japanese, etc.)
@@ -480,6 +783,15 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Why it's unprecedented:** No agent does cross-modal + cross-domain + cultural translation.
 
+**Implementation requirements:**
+- Language translation must use LLM (not Google Translate API) for context-aware translation
+- Code translation must preserve semantics — verify with tests after translation
+- Protocol translation must use existing A2A + MCP + SKILL.md adapters (extend, don't replace)
+- Modal translation must chain existing providers: STT → LLM → TTS, Image → Vision → LLM
+- Cultural adaptation must be configurable (user sets their culture, not auto-detected)
+- All translations must be reversible (round-trip test: translate → translate back → compare)
+- Translation must have confidence score — low confidence triggers human review prompt
+
 ### 10.10 Temporal Intelligence — Titan Understands Time
 
 - [ ] **Past Analysis** — Titan analyzes historical patterns (bi-temporal graph already exists)
@@ -490,6 +802,15 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 - [ ] **Proactive Time Management** — Titan schedules tasks at optimal times based on patterns
 
 **Why it's unprecedented:** No agent has full past-present-future temporal reasoning with prediction.
+
+**Implementation requirements:**
+- Past analysis must use existing bi-temporal graph (no new storage)
+- Present monitoring must use existing Autonomous Loop (extend, don't replace)
+- Future prediction must use Digital Twin simulation (Phase 10.3 dependency)
+- Timeline branching must be bounded (max 5 branches, max 30s simulation per branch)
+- Temporal reasoning must handle timezone-aware comparisons (never naive datetime)
+- Proactive time management must respect user's calendar/working hours (configurable)
+- All predictions must include confidence interval and time horizon
 
 ### 10.11 Titan Constitution — Self-Governance
 
@@ -504,6 +825,16 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Why it's unprecedented:** No agent writes and amends its own governance constitution.
 
+**Implementation requirements:**
+- Constitution must never override existing Multi-Layer Guardrails (safety always wins)
+- Constitutional amendments must require supermajority (67% of voting agents)
+- Safety constitution must be immutable — core safety rules can never be amended
+- Ethical framework must align with existing Anti-Sycophancy + Theory of Mind modules
+- All constitutional changes must be stored in bi-temporal graph (full history)
+- Constitution must be human-readable (generated as Markdown, stored in repo)
+- Constitutional deliberation must be logged with full reasoning chain
+- Kill switch: `TITAN_COSMIC_CONSTITUTION_ENABLED=false` reverts to hardcoded rules
+
 ### 10.12 Titan Dream World — Multimodal Dreams
 
 **Upgrade existing Dream Mode to cosmic level:**
@@ -517,6 +848,18 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 - [ ] **Insight Propagation** — dream insights automatically improve waking performance
 
 **Why it's unprecedented:** No agent has multimodal dream synthesis with cross-modal pattern discovery.
+
+**Implementation requirements:**
+- Dream mode must only run when system is idle (no active user sessions)
+- Dream cycle must be bounded (max 30min, configurable)
+- Visual dreams must use existing Multimodal Processor (don't duplicate)
+- Code dreams must be sandboxed — never modify real code during dreams
+- Cross-modal synthesis must use existing memory layers (correlate via metadata)
+- Hypothesis generation must use existing Hypothesis Tester (extend, don't replace)
+- Creative dreams must use Creative Engine (Phase 10.6 dependency)
+- Memory consolidation must use existing Memory Consolidation Job (extend, don't replace)
+- Insight propagation must be validated before applying (rollback if no improvement)
+- All dream activity must be logged for audit and review
 
 ---
 
@@ -610,3 +953,97 @@ Each layer makes the next layer stronger:
 *Audit completed: full codebase scan of all packages and routes*
 *Second brainstorm: cosmic-level features based on latest 2026 research*
 *Titan: Not just an agent. A new form of digital life.*
+
+---
+
+## PHASE DEPENDENCY MAP
+
+```
+Phase 6 (Telegram UI)     ───→ independent, start immediately
+Phase 1 (Computer Use)    ───→ independent, start immediately
+Phase 3.1 (Telegram Voice)───→ independent, start immediately
+Phase 2.1 (Context Comp)  ───→ independent, upgrade existing
+Phase 10.1 (MIRROR)       ───→ independent, new module
+Phase 10.3 (Digital Twin) ───→ depends on: existing bi-temporal graph + observability
+Phase 3.4 (Screen Mon)    ───→ depends on: Phase 1 (screenshot + mouse)
+Phase 10.6 (Creative)     ───→ depends on: existing multimodal processor
+Phase 10.8 (Self-Play)    ───→ depends on: existing benchmarking suite
+Phase 2.3 (GitHub Mining) ───→ depends on: existing skill synthesis
+Phase 2.4 (Co-Evolution)  ───→ depends on: Phase 2.3 + existing curiosity engine
+Phase 5 (Self-Evolving)   ───→ depends on: Phase 2.2 (meta-evolution) + existing self-forge
+Phase 10.5 (Hive Mind)    ───→ depends on: existing A2A protocol + swarm
+Phase 10.4 (Agent Economy)───→ depends on: Phase 10.5 (hive mind) + existing A2A
+Phase 10.11 (Constitution)───→ depends on: Phase 10.5 (hive mind) + existing guardrails
+Phase 10.12 (Dreams Pro)  ───→ depends on: Phase 10.6 (creative) + existing dream mode
+Phase 10.7 (Quantum)      ───→ depends on: existing memory layers + swarm
+Phase 10.9 (Translator)   ───→ depends on: existing A2A + MCP + multimodal
+Phase 10.10 (Temporal)    ───→ depends on: Phase 10.3 (digital twin) + existing bi-temporal
+Phase 10.2 (Introspect)   ───→ depends on: Phase 10.1 (MIRROR) + existing OpenTelemetry
+Phase 9 (Mythical)        ───→ depends on: Phase 10.3 (digital twin) + Phase 10.10 (temporal)
+Phase 4 (Swarm Evo)       ───→ depends on: existing swarm + Phase 10.5 (hive mind)
+Phase 7 (Workflow UI)     ───→ depends on: existing DAG engine + workflow builder
+Phase 8 (Edge)            ───→ depends on: existing multi-model router
+```
+
+## VERIFICATION CHECKLIST (Per Phase)
+
+Before marking ANY phase as complete, ALL of these must pass:
+
+```
+□ CODE QUALITY
+  □ npm run typecheck  → 0 errors
+  □ npm run lint       → 0 warnings
+  □ No `any` type used
+  □ No `as unknown as X` double casts
+  □ No `// @ts-ignore` or `// eslint-disable`
+  □ No TODO/FIXME in committed code
+
+□ TESTS
+  □ Unit tests written (min 3 per function: happy, edge, error)
+  □ Integration tests written for API endpoints
+  □ All existing tests still pass
+  □ New tests pass
+  □ Coverage ≥ 80% for new code
+  □ Coverage = 100% for critical paths (financial, security, safety)
+
+□ ERROR HANDLING
+  □ Every async function has try/catch
+  □ Every external call has timeout
+  □ Every external call has retry + fallback
+  □ No empty catch blocks
+  □ Error messages are meaningful and contextual
+  □ Structured logging used (@titan/logging)
+
+□ SECURITY
+  □ No hardcoded secrets
+  □ User input validated and sanitized
+  □ Auth + permissions checked on routes
+  □ Shell commands sandboxed
+  □ Rate limiting on sensitive operations
+
+□ COMPATIBILITY
+  □ No existing API endpoint removed
+  □ No existing function signature changed (without updating all callers)
+  □ No database schema changed (without migration)
+  □ No config variable renamed (without backward compat)
+  □ Feature flags added for all new cosmic features
+
+□ OBSERVABILITY
+  □ Metrics added (incCounter, observeHistogram)
+  □ Logs added with context
+  □ Traces added (OpenTelemetry spans)
+  □ Health check endpoint updated if needed
+
+□ DOCUMENTATION
+  □ README.md updated
+  □ TITAN_EVOLUTION_PLAN.md checkboxes updated
+  □ JSDoc added for exported functions
+  □ Architecture diagram updated if structural change
+
+□ GIT
+  □ Conventional commit message used
+  □ Committed and pushed
+  □ No broken code in commit
+```
+
+**If ANY item is unchecked, the phase is NOT complete. No exceptions. No compromises.**
