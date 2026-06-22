@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Server, Key, Monitor, Shield, Sun, Moon, Power, RefreshCw } from 'lucide-react';
+import { Server, Key, Monitor, Shield, Sun, Moon, Power, RefreshCw, Send, CheckCircle2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore } from '../stores/app-store.js';
 
 export function SettingsPanel() {
   const [settings, setSettings] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [telegramId, setTelegramId] = useState('');
+  const [telegramLinked, setTelegramLinked] = useState(false);
+  const [telegramLoading, setTelegramLoading] = useState(false);
   const setServerUrl = useAppStore((s) => s.setServerUrl);
   const setDeviceName = useAppStore((s) => s.setDeviceName);
   const setTheme = useAppStore((s) => s.setTheme);
@@ -17,6 +20,11 @@ export function SettingsPanel() {
       if (s.deviceName) setDeviceName(s.deviceName);
       if (s.theme) setTheme(s.theme);
       setLoading(false);
+    });
+    // Check Telegram link status
+    (window as any).titan?.getTelegramStatus().then((res: { linked: boolean; telegramId?: string }) => {
+      setTelegramLinked(res?.linked ?? false);
+      if (res?.telegramId) setTelegramId(res.telegramId);
     });
   }, [setServerUrl, setDeviceName, setTheme]);
 
@@ -154,6 +162,56 @@ export function SettingsPanel() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Telegram Link */}
+        <section>
+          <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Send size={14} /> Telegram Link
+          </h3>
+          <div className="space-y-3 bg-bg-secondary rounded-xl p-4 border border-border">
+            {telegramLinked ? (
+              <div className="flex items-center gap-2 text-success text-sm">
+                <CheckCircle2 size={16} />
+                <span>Linked to Telegram ID: {telegramId}</span>
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted">
+                Link your Telegram account to control this device from Telegram chat.
+                Enter your Telegram chat ID (numeric).
+              </p>
+            )}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={telegramId}
+                onChange={(e) => setTelegramId(e.target.value)}
+                placeholder="e.g. 495185511"
+                className="flex-1 bg-bg-tertiary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent"
+              />
+              <button
+                onClick={async () => {
+                  if (!telegramId.trim()) {
+                    toast.error('Enter your Telegram chat ID');
+                    return;
+                  }
+                  setTelegramLoading(true);
+                  const res = await (window as any).titan?.linkTelegram(telegramId.trim());
+                  setTelegramLoading(false);
+                  if (res?.success) {
+                    setTelegramLinked(true);
+                    toast.success('Telegram linked successfully!');
+                  } else {
+                    toast.error(res?.error || 'Failed to link Telegram');
+                  }
+                }}
+                disabled={telegramLoading}
+                className="flex items-center gap-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                <Link2 size={14} /> {telegramLoading ? 'Linking...' : 'Link'}
+              </button>
             </div>
           </div>
         </section>

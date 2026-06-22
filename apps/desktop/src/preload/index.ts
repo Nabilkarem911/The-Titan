@@ -33,6 +33,10 @@ contextBridge.exposeInMainWorld('titan', {
   getSystemInfo: () => ipcRenderer.invoke('system:info'),
   getHomeDir: () => ipcRenderer.invoke('system:homedir'),
 
+  // Telegram linking
+  linkTelegram: (telegramId: string) => ipcRenderer.invoke('telegram:link', telegramId),
+  getTelegramStatus: () => ipcRenderer.invoke('telegram:status'),
+
   // Navigation (from tray)
   onNavigate: (callback: (page: string) => void) =>
     ipcRenderer.on('navigate', (_e, page) => callback(page)),

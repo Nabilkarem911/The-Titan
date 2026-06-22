@@ -305,4 +305,50 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
     const { homedir } = require('os') as typeof import('os');
     return homedir();
   });
+
+  // Telegram — Link account
+  ipcMain.handle('telegram:link', async (_e: unknown, telegramId: string) => {
+    const serverUrl = store.get('serverUrl') as string;
+    const token = store.get('token') as string;
+    if (!serverUrl || !token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/user-context/link-telegram`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ telegramId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Link failed' })) as Record<string, unknown>;
+        return { success: false, error: (err.error as string) ?? 'Link failed' };
+      }
+      const data = await res.json() as { linked: boolean };
+      return { success: true, linked: data.linked };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Link failed' };
+    }
+  });
+
+  // Telegram — Check link status
+  ipcMain.handle('telegram:status', async () => {
+    const serverUrl = store.get('serverUrl') as string;
+    const token = store.get('token') as string;
+    if (!serverUrl || !token) {
+      return { linked: false };
+    }
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/user-context/telegram-status`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json() as { linked: boolean; telegramId?: string };
+        return data;
+      }
+    } catch {}
+    return { linked: false };
+  });
 }
