@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Folder, File, ChevronRight, ChevronDown, ArrowLeft, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -12,12 +12,19 @@ interface FileItem {
 }
 
 export function FileExplorer() {
-  const [currentPath, setCurrentPath] = useState<string>(require('os').homedir());
+  const [currentPath, setCurrentPath] = useState<string>('');
   const [items, setItems] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
   const [showPreview, setShowPreview] = useState(false);
+
+  useEffect(() => {
+    // Load home directory on mount
+    (window as any).titan?.getHomeDir().then((dir: string) => {
+      if (dir) loadDir(dir);
+    });
+  }, []);
 
   const loadDir = async (path: string) => {
     setLoading(true);
@@ -60,9 +67,11 @@ export function FileExplorer() {
   };
 
   const goUp = () => {
-    const parts = currentPath.split(require('path').sep);
+    if (!currentPath) return;
+    const sep = currentPath.includes('\\') ? '\\' : '/';
+    const parts = currentPath.split(sep);
     parts.pop();
-    const parent = parts.join(require('path').sep) || (process.platform === 'win32' ? '\\' : '/');
+    const parent = parts.join(sep) || (currentPath.includes('\\') ? '\\' : '/');
     loadDir(parent);
   };
 
@@ -132,7 +141,7 @@ export function FileExplorer() {
         <div className="w-1/2 flex flex-col">
           <div className="h-12 border-b border-border flex items-center px-4 gap-2 glass">
             <File size={14} className="text-text-muted" />
-            <span className="text-sm truncate flex-1">{selectedFile?.split(require('path').sep).pop()}</span>
+            <span className="text-sm truncate flex-1">{selectedFile?.split(/[\\/]/).pop()}</span>
             <button
               onClick={() => setShowPreview(false)}
               className="text-xs text-text-muted hover:text-text-primary"

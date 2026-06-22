@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Monitor, Cpu, CheckCircle2, XCircle } from 'lucide-react';
+import { Monitor, Cpu, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 
 interface Device {
   deviceId: string;
@@ -15,16 +15,43 @@ export function DeviceManager() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // TODO: Fetch from server API
+  const fetchDevices = async () => {
+    try {
+      const settings = await (window as any).titan?.getSettings();
+      const token = settings?.token;
+      const serverUrl = settings?.serverUrl;
+      if (!token || !serverUrl) {
+        setLoading(false);
+        return;
+      }
+      const res = await fetch(`${serverUrl}/api/v1/desktop/devices`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json() as { devices: Device[] };
+        setDevices(data.devices);
+      }
+    } catch {
+      // ignore — keep last state
+    }
     setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchDevices();
+    const interval = setInterval(fetchDevices, 10_000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="flex flex-col h-full bg-bg-primary overflow-y-auto">
-      <div className="h-12 border-b border-border flex items-center px-4 glass">
+      <div className="h-12 border-b border-border flex items-center px-4 gap-2 glass">
         <Monitor size={16} className="text-accent" />
         <span className="font-semibold text-sm">Device Manager</span>
+        <div className="flex-1" />
+        <button onClick={fetchDevices} className="p-1.5 rounded hover:bg-bg-tertiary transition-colors">
+          <RefreshCw size={14} className="text-text-muted" />
+        </button>
       </div>
 
       <div className="max-w-2xl w-full mx-auto p-6">
@@ -67,6 +94,9 @@ export function DeviceManager() {
                   </div>
                   <div className="text-xs text-text-muted mt-1">
                     {device.platform} {device.hostname && `· ${device.hostname}`}
+                  </div>
+                  <div className="text-[10px] text-text-muted mt-1 font-mono">
+                    ID: {device.deviceId}
                   </div>
                   <div className="flex gap-1 mt-2">
                     {device.capabilities.map((cap) => (

@@ -14,7 +14,7 @@ import { getLogger } from '@titan/logging';
 import { TitanError, InsufficientPermissionsError } from '@titan/shared';
 import { ZodError } from 'zod';
 import { requestContextPlugin } from './plugins/request-context.js';
-import { authPlugin } from './plugins/auth.js';
+import { authPlugin, requireAuth } from './plugins/auth.js';
 import { healthRoutes } from './routes/health.js';
 import { authRoutes } from './routes/auth.js';
 import { workspaceRoutes } from './routes/workspaces.js';
@@ -58,6 +58,7 @@ import { integrationsRoutes } from './routes/integrations-v2.js';
 import { v5Routes } from './routes/v5.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
+import { getDesktopBridge } from './desktop-bridge-instance.js';
 
 export async function buildServer(): Promise<FastifyInstance> {
   const cfg = loadConfig();
@@ -282,6 +283,27 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(integrationsRoutes);
   await app.register(v5Routes);
   await registerTelegramRoutes(app);
+
+  // Desktop devices API — list online devices for authenticated user
+  app.get('/api/v1/desktop/devices', async (req, reply) => {
+    await requireAuth(req);
+    const userId = req.auth?.userId;
+    if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+    const bridge = getDesktopBridge();
+    if (!bridge) return reply.send({ devices: [], count: 0 });
+    const devices = bridge.listOnlineDevices(userId);
+    return reply.send({
+      devices: devices.map((d) => ({
+        deviceId: d.deviceId,
+        deviceName: d.deviceName,
+        platform: d.platform,
+        hostname: d.hostname,
+        capabilities: d.capabilities,
+        status: 'online',
+      })),
+      count: devices.length,
+    });
+  });
 
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const dashboardDist = resolve(__dirname, '..', '..', '..', 'apps', 'dashboard', 'dist');

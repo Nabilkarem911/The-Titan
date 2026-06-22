@@ -299,4 +299,10 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
       },
     };
   });
+
+  // System — Home directory
+  ipcMain.handle('system:homedir', () => {
+    const { homedir } = require('os') as typeof import('os');
+    return homedir();
+  });
 }

@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('titan', {
 
   // System
   getSystemInfo: () => ipcRenderer.invoke('system:info'),
+  getHomeDir: () => ipcRenderer.invoke('system:homedir'),
 
   // Navigation (from tray)
   onNavigate: (callback: (page: string) => void) =>
