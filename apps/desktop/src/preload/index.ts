@@ -7,6 +7,15 @@ contextBridge.exposeInMainWorld('titan', {
 
   // Connection
   getConnectionStatus: () => ipcRenderer.invoke('connection:status'),
+  connectToServer: () => ipcRenderer.invoke('server:connect'),
+
+  // Auth
+  login: (serverUrl: string, email: string, password: string) =>
+    ipcRenderer.invoke('auth:login', serverUrl, email, password),
+  register: (serverUrl: string, email: string, name: string, password: string) =>
+    ipcRenderer.invoke('auth:register', serverUrl, email, name, password),
+  logout: () => ipcRenderer.invoke('auth:logout'),
+  checkAuth: () => ipcRenderer.invoke('auth:check'),
 
   // Files
   listDir: (path: string) => ipcRenderer.invoke('files:list', path),

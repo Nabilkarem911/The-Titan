@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from './stores/app-store.js';
+import { LoginScreen } from './components/LoginScreen.js';
 import { Sidebar } from './components/Sidebar.js';
 import { StatusBar } from './components/StatusBar.js';
 import { ChatPanel } from './components/ChatPanel.js';
@@ -13,19 +14,26 @@ import { Toaster } from 'sonner';
 
 export default function App() {
   const currentPage = useAppStore((s) => s.currentPage);
+  const isLoggedIn = useAppStore((s) => s.isLoggedIn);
   const setSystemInfo = useAppStore((s) => s.setSystemInfo);
 
   useEffect(() => {
-    // Load system info on mount
     (window as any).titan?.getSystemInfo().then((res: any) => {
       if (res?.success) setSystemInfo(res.data);
     });
-
-    // Listen for tray navigation
     (window as any).titan?.onNavigate((page: string) => {
       useAppStore.getState().setPage(page as any);
     });
   }, [setSystemInfo]);
+
+  if (!isLoggedIn) {
+    return (
+      <>
+        <LoginScreen />
+        <Toaster position="bottom-right" theme="dark" toastOptions={{ style: { background: '#1c2333', border: '1px solid #2a3447', color: '#e2e8f0' } }} />
+      </>
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen bg-bg-primary text-text-primary overflow-hidden">
@@ -52,17 +60,7 @@ export default function App() {
         </div>
         <StatusBar />
       </div>
-      <Toaster
-        position="bottom-right"
-        theme="dark"
-        toastOptions={{
-          style: {
-            background: '#1c2333',
-            border: '1px solid #2a3447',
-            color: '#e2e8f0',
-          },
-        }}
-      />
+      <Toaster position="bottom-right" theme="dark" toastOptions={{ style: { background: '#1c2333', border: '1px solid #2a3447', color: '#e2e8f0' } }} />
     </div>
   );
 }

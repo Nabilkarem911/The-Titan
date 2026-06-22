@@ -1,15 +1,27 @@
-import { ipcMain } from 'electron';
+import { ipcMain, type BrowserWindow } from 'electron';
 import type Store from 'electron-store';
 import { exec } from 'child_process';
 import { readFile, writeFile, readdir, stat, unlink } from 'fs/promises';
 import { join } from 'path';
 import { platform, cpus, totalmem, freemem, release, type, hostname } from 'os';
 import { executeCommand } from './command-executor.js';
+import { DesktopWsClient } from './ws-client.js';
+
+let activeWsClient: DesktopWsClient | null = null;
+let activeMainWindow: BrowserWindow | null = null;
+
+export function setWsClient(client: DesktopWsClient | null): void {
+  activeWsClient = client;
+}
+
+export function setMainWindowRef(win: BrowserWindow | null): void {
+  activeMainWindow = win;
+}
 
 export function registerIpcHandlers(store: Store<Record<string, unknown>>): void {
   // Settings
   ipcMain.handle('settings:get', () => store.store);
-  ipcMain.handle('settings:set', (_e, settings) => {
+  ipcMain.handle('settings:set', (_e, settings: Record<string, unknown>) => {
     for (const [key, value] of Object.entries(settings)) {
       store.set(key, value);
     }
@@ -18,11 +30,102 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
 
   // Connection status
   ipcMain.handle('connection:status', () => {
-    return { connected: false };
+    return { connected: activeWsClient?.isConnected() ?? false };
+  });
+
+  // Auth — Login
+  ipcMain.handle('auth:login', async (_e, serverUrl: string, email: string, password: string) => {
+    try {
+      const url = `${serverUrl}/api/v1/auth/login`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Login failed' })) as Record<string, unknown>;
+        return { success: false, error: (err.message as string) ?? (err.error as string) ?? 'Login failed' };
+      }
+      const data = await res.json() as {
+        user: { id: string; email: string; name: string };
+        accessToken: string;
+        refreshToken: string;
+      };
+      store.set('serverUrl', serverUrl);
+      store.set('token', data.accessToken);
+      store.set('refreshToken', data.refreshToken);
+      store.set('authMethod', 'jwt');
+      return { success: true, user: data.user };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Connection failed — is the server running?' };
+    }
+  });
+
+  // Auth — Register
+  ipcMain.handle('auth:register', async (_e, serverUrl: string, email: string, name: string, password: string) => {
+    try {
+      const url = `${serverUrl}/api/v1/auth/register`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, password }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Registration failed' })) as Record<string, unknown>;
+        return { success: false, error: (err.message as string) ?? (err.error as string) ?? 'Registration failed' };
+      }
+      const data = await res.json() as {
+        user: { id: string; email: string; name: string };
+        accessToken: string;
+        refreshToken: string;
+      };
+      store.set('serverUrl', serverUrl);
+      store.set('token', data.accessToken);
+      store.set('refreshToken', data.refreshToken);
+      store.set('authMethod', 'jwt');
+      return { success: true, user: data.user };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Connection failed — is the server running?' };
+    }
+  });
+
+  // Auth — Logout
+  ipcMain.handle('auth:logout', async () => {
+    store.set('token', '');
+    store.set('refreshToken', '');
+    if (activeWsClient) {
+      await activeWsClient.disconnect();
+      activeWsClient = null;
+    }
+    return { success: true };
+  });
+
+  // Auth — Check if logged in
+  ipcMain.handle('auth:check', () => {
+    const token = store.get('token') as string;
+    const serverUrl = store.get('serverUrl') as string;
+    return { loggedIn: !!token, serverUrl };
+  });
+
+  // Connect to server (after login or settings change)
+  ipcMain.handle('server:connect', async () => {
+    const settings = store.store;
+    if (!settings.serverUrl || !(settings.token || settings.apiKey)) {
+      return { success: false, error: 'Missing server URL or credentials' };
+    }
+    if (activeWsClient) {
+      await activeWsClient.disconnect();
+    }
+    activeWsClient = new DesktopWsClient(settings.serverUrl, settings.token || settings.apiKey, {
+      deviceName: settings.deviceName || hostname(),
+      capabilities: settings.capabilities as string[],
+    });
+    activeWsClient.connect();
+    return { success: true };
   });
 
   // Files
-  ipcMain.handle('files:list', async (_e, dirPath: string) => {
+  ipcMain.handle('files:list', async (_e: unknown, dirPath: string) => {
     try {
       const entries = await readdir(dirPath, { withFileTypes: true });
       const items = await Promise.all(
@@ -51,7 +154,7 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
     }
   });
 
-  ipcMain.handle('files:read', async (_e, filePath: string) => {
+  ipcMain.handle('files:read', async (_e: unknown, filePath: string) => {
     try {
       const content = await readFile(filePath, 'utf-8');
       return { success: true, content };
@@ -60,7 +163,7 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
     }
   });
 
-  ipcMain.handle('files:write', async (_e, filePath: string, content: string) => {
+  ipcMain.handle('files:write', async (_e: unknown, filePath: string, content: string) => {
     try {
       await writeFile(filePath, content, 'utf-8');
       return { success: true };
@@ -70,7 +173,7 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
   });
 
   // Shell
-  ipcMain.handle('shell:execute', async (_e, cmd: string) => {
+  ipcMain.handle('shell:execute', async (_e: unknown, cmd: string) => {
     return new Promise((resolve) => {
       const isWindows = platform() === 'win32';
       const shell = isWindows ? 'cmd' : 'sh';

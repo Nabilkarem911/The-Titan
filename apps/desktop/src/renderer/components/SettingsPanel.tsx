@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Server, Key, Monitor, Shield, Sun, Moon, Power } from 'lucide-react';
+import { Server, Key, Monitor, Shield, Sun, Moon, Power, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore } from '../stores/app-store.js';
 
@@ -27,6 +27,16 @@ export function SettingsPanel() {
     if (key === 'serverUrl') setServerUrl(value);
     if (key === 'deviceName') setDeviceName(value);
     if (key === 'theme') setTheme(value);
+  };
+
+  const handleReconnect = async () => {
+    toast.loading('Connecting to server...');
+    const res = await (window as any).titan?.connectToServer();
+    if (res?.success) {
+      toast.success('Connected to Titan Server');
+    } else {
+      toast.error(res?.error || 'Failed to connect');
+    }
   };
 
   if (loading) {
@@ -79,12 +89,12 @@ export function SettingsPanel() {
             </div>
             {settings.authMethod === 'jwt' ? (
               <div>
-                <label className="text-xs text-text-muted block mb-1">JWT Token</label>
+                <label className="text-xs text-text-muted block mb-1">JWT Token (auto-filled on login)</label>
                 <input
                   type="password"
                   value={settings.token || ''}
                   onChange={(e) => update('token', e.target.value)}
-                  placeholder="Paste your JWT token"
+                  placeholder="Auto-filled after login"
                   className="w-full bg-bg-tertiary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent"
                 />
               </div>
@@ -100,6 +110,12 @@ export function SettingsPanel() {
                 />
               </div>
             )}
+            <button
+              onClick={handleReconnect}
+              className="w-full flex items-center justify-center gap-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+            >
+              <RefreshCw size={14} /> Reconnect to Server
+            </button>
           </div>
         </section>
 

@@ -2,9 +2,10 @@ import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import Store from 'electron-store';
+import { hostname } from 'os';
 import { createWindow, getMainWindow } from './window.js';
 import { createTray } from './tray.js';
-import { registerIpcHandlers } from './ipc-handlers.js';
+import { registerIpcHandlers, setWsClient } from './ipc-handlers.js';
 import { DesktopWsClient } from './ws-client.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -12,6 +13,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const store = new Store<{
   serverUrl: string;
   token: string;
+  refreshToken: string;
   apiKey: string;
   authMethod: 'jwt' | 'apiKey';
   deviceName: string;
@@ -23,6 +25,7 @@ const store = new Store<{
   defaults: {
     serverUrl: 'http://localhost:3000',
     token: '',
+    refreshToken: '',
     apiKey: '',
     authMethod: 'jwt',
     deviceName: '',
@@ -44,11 +47,12 @@ app.whenReady().then(() => {
 
   const settings = store.store;
   if (settings.serverUrl && (settings.token || settings.apiKey)) {
-    wsClient = new DesktopWsClient(settings.serverUrl, settings.token || settings.apiKey, {
-      deviceName: settings.deviceName || require('os').hostname(),
+    const client = new DesktopWsClient(settings.serverUrl, settings.token || settings.apiKey, {
+      deviceName: settings.deviceName || hostname(),
       capabilities: settings.capabilities,
     });
-    wsClient.connect();
+    setWsClient(client);
+    client.connect();
   }
 
   app.on('activate', () => {
@@ -65,9 +69,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', async () => {
-  if (wsClient) {
-    await wsClient.disconnect();
-  }
+  // wsClient is managed by ipc-handlers now
 });
 
-export { store, wsClient, tray };
+export { store, tray };

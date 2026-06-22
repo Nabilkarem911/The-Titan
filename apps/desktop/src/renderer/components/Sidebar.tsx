@@ -1,4 +1,4 @@
-import { MessageSquare, FolderTree, TerminalSquare, Camera, Settings, Monitor } from 'lucide-react';
+import { MessageSquare, FolderTree, TerminalSquare, Camera, Settings, Monitor, LogOut } from 'lucide-react';
 import { useAppStore, type Page } from '../stores/app-store.js';
 
 const navItems: { page: Page; icon: typeof MessageSquare; label: string }[] = [
@@ -14,6 +14,12 @@ export function Sidebar() {
   const currentPage = useAppStore((s) => s.currentPage);
   const setPage = useAppStore((s) => s.setPage);
   const connected = useAppStore((s) => s.connected);
+  const setLoggedIn = useAppStore((s) => s.setLoggedIn);
+
+  const handleLogout = async () => {
+    await (window as any).titan?.logout();
+    setLoggedIn(false);
+  };
 
   return (
     <div className="w-16 h-full bg-bg-secondary border-r border-border flex flex-col items-center py-4 gap-1">
@@ -47,6 +53,15 @@ export function Sidebar() {
           title={connected ? 'Connected' : 'Disconnected'}
         />
       </div>
+
+      {/* Logout */}
+      <button
+        onClick={handleLogout}
+        title="Logout"
+        className="w-12 h-12 rounded-lg flex items-center justify-center text-text-muted hover:bg-danger/20 hover:text-danger transition-all duration-200"
+      >
+        <LogOut size={20} />
+      </button>
     </div>
   );
 }
