@@ -815,12 +815,12 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 **Research basis:** Emergence World — agents write and amend their own constitution.
 
-- [ ] **Titan writes its own operating principles** — not hardcoded, but evolved
-- [ ] **Constitutional Amendments** — Titan can propose and vote on changes to its own rules
-- [ ] **Safety Constitution** — self-imposed safety limits that Titan enforces on itself
-- [ ] **Ethical Framework** — Titan develops its own ethical guidelines through experience
-- [ ] **Conflict Resolution** — when principles conflict, Titan resolves through deliberation
-- [ ] **Transparent Reasoning** — every constitutional decision is logged and auditable
+- [x] **Titan writes its own operating principles** — not hardcoded, but evolved
+- [x] **Constitutional Amendments** — Titan can propose and vote on changes to its own rules
+- [x] **Safety Constitution** — self-imposed safety limits that Titan enforces on itself
+- [x] **Ethical Framework** — Titan develops its own ethical guidelines through experience
+- [x] **Conflict Resolution** — when principles conflict, Titan resolves through deliberation
+- [x] **Transparent Reasoning** — every constitutional decision is logged and auditable
 
 **Why it's unprecedented:** No agent writes and amends its own governance constitution.
 
