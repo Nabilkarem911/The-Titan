@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Monitor, Cpu, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { Monitor, Cpu, CheckCircle2, XCircle, RefreshCw, Copy } from 'lucide-react';
 
 interface Device {
   deviceId: string;
@@ -95,8 +95,17 @@ export function DeviceManager() {
                   <div className="text-xs text-text-muted mt-1">
                     {device.platform} {device.hostname && `· ${device.hostname}`}
                   </div>
-                  <div className="text-[10px] text-text-muted mt-1 font-mono">
-                    ID: {device.deviceId}
+                  <div className="text-[10px] text-text-muted mt-1 font-mono flex items-center gap-1">
+                    <span>ID: {device.deviceId}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(device.deviceId);
+                      }}
+                      className="text-text-muted hover:text-accent transition-colors"
+                      title="Copy device ID"
+                    >
+                      <Copy size={10} />
+                    </button>
                   </div>
                   <div className="flex gap-1 mt-2">
                     {device.capabilities.map((cap) => (

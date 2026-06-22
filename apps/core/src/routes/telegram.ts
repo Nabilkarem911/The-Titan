@@ -316,6 +316,14 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       const agentId = cfg.TELEGRAM_AGENT_ID;
       const sessionId = `tg:${chatId}`;
 
+      // Resolve the real database userId linked to this Telegram chatId
+      // Desktop devices are registered with the DB userId, not the chatId
+      const linkedUserId = await userContext.findOwnerByKey('telegram_id', String(chatId));
+      const desktopUserId = linkedUserId ?? ownerId;
+      if (linkedUserId) {
+        log.info({ chatId, linkedUserId }, 'telegram chat linked to database user');
+      }
+
       // Load user context and recent history
       const [ctx, history] = await Promise.all([
         userContext.getAll(ownerId),
@@ -405,7 +413,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
             p.ownerId = ownerId;
           }
           if (name.startsWith('desktop_')) {
-            (globalThis as Record<string, unknown>).__currentUserId = ownerId;
+            (globalThis as Record<string, unknown>).__currentUserId = desktopUserId;
           }
           if (name === 'telegram_send_file' && !p.chatId) {
             p.chatId = chatId;

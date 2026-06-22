@@ -105,6 +105,14 @@ export const userContext = {
   async delete(ownerId: string, key: string): Promise<void> {
     await query(`DELETE FROM user_context WHERE owner_id = $1 AND key = $2`, [ownerId, key]);
   },
+
+  async findOwnerByKey(key: string, value: string): Promise<string | null> {
+    const r = await query<{ owner_id: string }>(
+      `SELECT owner_id FROM user_context WHERE key = $1 AND value = $2 LIMIT 1`,
+      [key, value],
+    );
+    return r.rows[0]?.owner_id ?? null;
+  },
 };
 
 export async function getChatHistory(sessionId: string, limit = 50): Promise<Array<{ role: string; content: string }>> {
