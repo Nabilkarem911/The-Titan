@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Camera, Cpu, FolderOpen, Trash2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAppStore } from '../stores/app-store.js';
 
 interface Message {
   id: string;
@@ -16,7 +15,6 @@ export function ChatPanel() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const serverUrl = useAppStore((s) => s.serverUrl);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
 
   useEffect(() => {
@@ -39,8 +37,12 @@ export function ChatPanel() {
     try {
       const settings = await (window as any).titan?.getSettings();
       let token = settings?.token;
+      const serverUrl = settings?.serverUrl;
       if (!token) {
         throw new Error('Not authenticated — please log in again');
+      }
+      if (!serverUrl) {
+        throw new Error('No server URL configured');
       }
 
       let res = await fetch(`${serverUrl}/api/v1/chat`, {
@@ -62,7 +64,7 @@ export function ChatPanel() {
         if (refreshResult?.success) {
           const freshSettings = await (window as any).titan?.getSettings();
           token = freshSettings?.token;
-          res = await fetch(`${serverUrl}/api/v1/chat`, {
+          res = await fetch(`${settings?.serverUrl}/api/v1/chat`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

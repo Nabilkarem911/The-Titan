@@ -105,8 +105,20 @@ export async function buildServer(): Promise<FastifyInstance> {
   } else {
     await app.register(helmet, { ...helmetOptions, contentSecurityPolicy: false });
   }
+  // Build CORS origin list — include configured origins + Electron dev server ports
+  const configuredOrigins = cfg.CORS_ORIGIN === '*'
+    ? true
+    : [
+        ...cfg.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean),
+        // Electron dev server origins (desktop app)
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:5174',
+      ];
+
   await app.register(cors, {
-    origin: cfg.CORS_ORIGIN === '*' ? false : cfg.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean),
+    origin: configuredOrigins,
     credentials: cfg.CORS_CREDENTIALS,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-Id'],
