@@ -107,6 +107,32 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
     return { loggedIn: !!token, serverUrl };
   });
 
+  // Auth — Refresh token
+  ipcMain.handle('auth:refresh', async () => {
+    const serverUrl = store.get('serverUrl') as string;
+    const refreshToken = store.get('refreshToken') as string;
+    if (!serverUrl || !refreshToken) {
+      return { success: false, error: 'No refresh token' };
+    }
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Refresh failed' })) as Record<string, unknown>;
+        return { success: false, error: (err.message as string) ?? (err.error as string) ?? 'Refresh failed' };
+      }
+      const data = await res.json() as { accessToken: string; refreshToken: string };
+      store.set('token', data.accessToken);
+      store.set('refreshToken', data.refreshToken);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Refresh failed' };
+    }
+  });
+
   // Connect to server (after login or settings change)
   ipcMain.handle('server:connect', async () => {
     const settings = store.store;
@@ -120,8 +146,29 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
     if (activeWsClient) {
       await activeWsClient.disconnect();
     }
-    activeWsClient = new DesktopWsClient(settings.serverUrl, settings.token || settings.apiKey, {
-      deviceName: settings.deviceName || hostname(),
+
+    // Try to refresh the access token before connecting
+    const refreshToken = store.get('refreshToken') as string;
+    if (refreshToken) {
+      try {
+        const refreshRes = await fetch(`${settings.serverUrl}/api/v1/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (refreshRes.ok) {
+          const tokens = await refreshRes.json() as { accessToken: string; refreshToken: string };
+          store.set('token', tokens.accessToken);
+          store.set('refreshToken', tokens.refreshToken);
+        }
+      } catch {
+        // ignore — will try with existing token
+      }
+    }
+
+    const freshToken = (store.get('token') as string) || (settings.token as string);
+    activeWsClient = new DesktopWsClient(settings.serverUrl as string, freshToken, {
+      deviceName: (settings.deviceName as string) || hostname(),
       capabilities: settings.capabilities as string[],
     });
     activeWsClient.connect();

@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('titan', {
     ipcRenderer.invoke('auth:register', serverUrl, email, name, password),
   logout: () => ipcRenderer.invoke('auth:logout'),
   checkAuth: () => ipcRenderer.invoke('auth:check'),
+  refreshToken: () => ipcRenderer.invoke('auth:refresh'),
 
   // Files
   listDir: (path: string) => ipcRenderer.invoke('files:list', path),

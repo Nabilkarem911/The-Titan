@@ -75,10 +75,16 @@ export class DesktopWsClient {
       }
     });
 
-    this.ws.on('close', () => {
-      log.info('ws disconnected');
+    this.ws.on('close', (code: number, reason: Buffer) => {
+      log.info({ code, reason: reason.toString() }, 'ws disconnected');
       this.connected = false;
       this.stopHeartbeat();
+      // 4401 = auth failed — don't reconnect with expired token
+      if (code === 4401) {
+        log.error('auth failed — stopping reconnect. Please login again.');
+        this.destroyed = true;
+        return;
+      }
       this.scheduleReconnect();
     });
 

@@ -38,12 +38,12 @@ export function ChatPanel() {
 
     try {
       const settings = await (window as any).titan?.getSettings();
-      const token = settings?.token;
+      let token = settings?.token;
       if (!token) {
         throw new Error('Not authenticated — please log in again');
       }
 
-      const res = await fetch(`${serverUrl}/api/v1/chat`, {
+      let res = await fetch(`${serverUrl}/api/v1/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,6 +55,27 @@ export function ChatPanel() {
           stream: false,
         }),
       });
+
+      // If token expired, try refreshing and retry once
+      if (res.status === 401) {
+        const refreshResult = await (window as any).titan?.refreshToken();
+        if (refreshResult?.success) {
+          const freshSettings = await (window as any).titan?.getSettings();
+          token = freshSettings?.token;
+          res = await fetch(`${serverUrl}/api/v1/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              prompt,
+              sessionId: sessionIdRef.current,
+              stream: false,
+            }),
+          });
+        }
+      }
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Request failed' }));

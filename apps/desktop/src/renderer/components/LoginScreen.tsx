@@ -19,14 +19,19 @@ export function LoginScreen() {
 
   useEffect(() => {
     // Check if already logged in
-    (window as any).titan?.checkAuth().then((res: any) => {
+    (window as any).titan?.checkAuth().then(async (res: any) => {
       if (res?.loggedIn) {
-        setLoggedIn(true);
-        setServerUrl(res.serverUrl);
-        // Connect to server
-        (window as any).titan?.connectToServer().then(() => {
+        // Try to refresh token first, then connect
+        await (window as any).titan?.refreshToken();
+        const connectRes = await (window as any).titan?.connectToServer();
+        if (connectRes?.success) {
+          setLoggedIn(true);
+          setServerUrl(res.serverUrl);
           setConnected(true);
-        });
+        } else {
+          // Token expired and refresh failed — need to login again
+          setUrl(res.serverUrl || 'http://localhost:3000');
+        }
       }
       setChecking(false);
     }).catch(() => {
