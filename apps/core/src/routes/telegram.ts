@@ -7,6 +7,15 @@ import { getGlobalMemoryClient } from '@titan/memory';
 import { createRunner } from '../create-runner.js';
 import { detectLanguage } from '../lang-detect.js';
 import { getDesktopBridge } from '../desktop-bridge-instance.js';
+import {
+  type CallbackQuery,
+  buildQuickActionsKeyboard,
+  sendMessageWithOptions,
+  editMessageText,
+  answerCallbackQuery,
+  parseCallbackData,
+  validateCallbackOrigin,
+} from '../telegram-ui.js';
 
 const log = getLogger().child({ component: 'telegram' });
 
@@ -30,6 +39,7 @@ interface TelegramUpdate {
     photo?: Array<{ file_id: string; file_unique_id: string; file_size?: number; width: number; height: number }>;
     caption?: string;
   };
+  callback_query?: CallbackQuery;
 }
 
 function markdownToTelegramHtml(text: string): string {
@@ -169,6 +179,156 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
     }
 
     const update = req.body as TelegramUpdate;
+
+    // ── Handle callback queries (inline keyboard button presses) ──
+    if (update.callback_query) {
+      const cq = update.callback_query;
+      reply.code(200).send({ ok: true });
+
+      const chatId = cq.message?.chat?.id;
+      if (!chatId) {
+        await answerCallbackQuery(cfg.TELEGRAM_BOT_TOKEN, cq.id, 'Error: chat not found');
+        return;
+      }
+
+      if (allowedIds.length > 0 && !allowedIds.includes(chatId)) {
+        log.warn({ chatId }, 'callback query from unauthorized chat id');
+        await answerCallbackQuery(cfg.TELEGRAM_BOT_TOKEN, cq.id);
+        return;
+      }
+
+      const data = cq.data ?? '';
+      const { prefix, value } = parseCallbackData(data);
+      log.info({ chatId, prefix, value, userId: cq.from.id }, 'callback query received');
+
+      // Validate origin — only the user who triggered the keyboard can press buttons
+      if (!validateCallbackOrigin(cq, cq.from.id)) {
+        await answerCallbackQuery(cfg.TELEGRAM_BOT_TOKEN, cq.id, 'Unauthorized');
+        return;
+      }
+
+      // Handle different callback prefixes
+      if (prefix === 'action') {
+        await answerCallbackQuery(cfg.TELEGRAM_BOT_TOKEN, cq.id);
+
+        if (value === 'screenshot') {
+          // Trigger screenshot via desktop tools
+          const bridge = getDesktopBridge();
+          const ownerId = String(chatId);
+          const linkedUserId = await userContext.findOwnerByKey('telegram_id', String(chatId));
+          const desktopUserId = linkedUserId ?? ownerId;
+          const devices = bridge?.listOnlineDevices(desktopUserId) ?? [];
+          if (devices.length === 0) {
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '❌ مفيش جهاز متصل. شغل الـ desktop app الأول.');
+          } else {
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '📸 بتصور الشاشة...');
+            try {
+              (globalThis as Record<string, unknown>).__currentUserId = desktopUserId;
+              (globalThis as Record<string, unknown>).__currentChatId = String(chatId);
+              const result = await registry.execute('desktop_screenshot', {});
+              if (!result.success) {
+                await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, `❌ فشل التصوير: ${result.error ?? 'unknown error'}`);
+              }
+            } catch (err) {
+              await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, `❌ خطأ: ${(err as Error).message}`);
+            }
+          }
+          return;
+        }
+
+        if (value === 'status') {
+          // Reuse /status logic
+          try {
+            const { execSync } = await import('node:child_process');
+            const uptime = execSync('uptime -p 2>/dev/null || uptime', { timeout: 5000 }).toString().trim();
+            const mem = execSync('free -h 2>/dev/null || echo "N/A"', { timeout: 5000 }).toString().trim();
+            const disk = execSync('df -h / 2>/dev/null | tail -1 || echo "N/A"', { timeout: 5000 }).toString().trim();
+            const dockerPs = execSync('docker ps --format "{{.Names}}: {{.Status}}" 2>/dev/null || echo "Docker not available"', { timeout: 5000 }).toString().trim();
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId,
+              `🖥️ Server Status\n\n⏱ ${uptime}\n\n💾 Memory:\n${mem}\n\n💿 Disk:\n${disk}\n\n🐳 Docker:\n${dockerPs}`);
+          } catch (err) {
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, `❌ Failed to get status: ${(err as Error).message}`);
+          }
+          return;
+        }
+
+        if (value === 'devices') {
+          const bridge = getDesktopBridge();
+          const ownerId = String(chatId);
+          const linkedUserId = await userContext.findOwnerByKey('telegram_id', String(chatId));
+          const desktopUserId = linkedUserId ?? ownerId;
+          const devices = bridge?.listOnlineDevices(desktopUserId) ?? [];
+          if (devices.length === 0) {
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '🖥️ مفيش أجهزة متصلة.');
+          } else {
+            const lines = devices.map((d: { deviceName: string; platform: string; capabilities: string[] }) =>
+              `• ${d.deviceName} (${d.platform}) — ${d.capabilities.join(', ')}`);
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, `🖥️ الأجهزة المتصلة (${devices.length}):\n\n${lines.join('\n')}`);
+          }
+          return;
+        }
+
+        if (value === 'memory') {
+          try {
+            const ownerId = String(chatId);
+            const ctx = await userContext.getAll(ownerId);
+            const entries = Object.entries(ctx);
+            if (entries.length === 0) {
+              await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '🧠 الذاكرة فاضية.');
+            } else {
+              const lines = entries.map(([k, v]) => `• ${k}: ${String(v).substring(0, 100)}`);
+              await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, `🧠 الذاكرة (${entries.length} عنصر):\n\n${lines.join('\n')}`);
+            }
+          } catch {
+            await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, '❌ فشل قراءة الذاكرة.');
+          }
+          return;
+        }
+
+        if (value === 'help') {
+          const helpText = `🤖 أوامر تيتان:\n\n` +
+            `/status — حالة السيرفر\n` +
+            `/memory — عرض الذاكرة\n` +
+            `/forget — مسح الذاكرة\n` +
+            `/servers — السيرفرات المحفوظة\n` +
+            `/reset — مسح كل البيانات\n` +
+            `/menu — القائمة السريعة\n` +
+            `/help — عرض الأوامر`;
+          await sendMessageWithOptions(cfg.TELEGRAM_BOT_TOKEN, {
+            chatId,
+            text: helpText,
+            replyMarkup: buildQuickActionsKeyboard(),
+          });
+          return;
+        }
+      }
+
+      if (prefix === 'confirm') {
+        if (value === 'cancel') {
+          await answerCallbackQuery(cfg.TELEGRAM_BOT_TOKEN, cq.id, 'Cancelled');
+          if (cq.message?.message_id) {
+            await editMessageText(cfg.TELEGRAM_BOT_TOKEN, chatId, cq.message.message_id, '✖️ Action cancelled.');
+          }
+          return;
+        }
+        // For confirm actions, answer and let the caller handle
+        await answerCallbackQuery(cfg.TELEGRAM_BOT_TOKEN, cq.id, `Confirmed: ${value}`);
+        return;
+      }
+
+      if (prefix === 'choice') {
+        await answerCallbackQuery(cfg.TELEGRAM_BOT_TOKEN, cq.id, `Selected: ${value}`);
+        // Send the choice as a user message for the agent to process
+        const choiceText = value === 'yes' ? 'Yes' : value === 'no' ? 'No' : `Option ${value.toUpperCase()}`;
+        await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, `👤 You selected: ${choiceText}`);
+        return;
+      }
+
+      // Unknown callback — just answer
+      await answerCallbackQuery(cfg.TELEGRAM_BOT_TOKEN, cq.id);
+      return;
+    }
+
     const msg = update.message;
 
     if (!msg || !msg.from) {
@@ -255,7 +415,16 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
 
       if (cmd === '/help') {
         await sendTelegramMessage(cfg.TELEGRAM_BOT_TOKEN, chatId,
-          `🤖 أوامر تيتان:\n\n/status — حالة السيرفر\n/memory — عرض الذاكرة\n/forget — مسح الذاكرة\n/servers — السيرفرات المحفوظة\n/reset — مسح كل البيانات\n/help — عرض الأوامر`);
+          `🤖 أوامر تيتان:\n\n/status — حالة السيرفر\n/memory — عرض الذاكرة\n/forget — مسح الذاكرة\n/servers — السيرفرات المحفوظة\n/reset — مسح كل البيانات\n/menu — القائمة السريعة\n/help — عرض الأوامر`);
+        return;
+      }
+
+      if (cmd === '/menu') {
+        await sendMessageWithOptions(cfg.TELEGRAM_BOT_TOKEN, {
+          chatId,
+          text: '🤖 Quick Actions Menu\n\nاختر عملية:',
+          replyMarkup: buildQuickActionsKeyboard(),
+        });
         return;
       }
 

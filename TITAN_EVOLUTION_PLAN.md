@@ -407,9 +407,9 @@ After a full codebase audit, Titan already has an impressive foundation:
 - Quick action buttons must respect user permissions (admin vs regular user)
 
 #### 6.1 Inline Keyboards
-- [ ] Replace text-based choices with inline buttons
-- [ ] Yes/No, A/B/C/D selection
-- [ ] Quick actions: Screenshot, System Info, Deploy, List Devices
+- [x] Replace text-based choices with inline buttons
+- [x] Yes/No, A/B/C/D selection
+- [x] Quick actions: Screenshot, System Info, Deploy, List Devices
 
 #### 6.2 Progress Indicators
 - [ ] Real-time progress updates for long tasks (edit message with progress bar)
