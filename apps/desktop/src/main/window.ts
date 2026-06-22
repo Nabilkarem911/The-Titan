@@ -17,7 +17,7 @@ export function createWindow(): BrowserWindow {
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#0a0e1a',
     webPreferences: {
-      preload: join(__dirname, '..', 'preload', 'index.js'),
+      preload: join(__dirname, '..', 'preload', 'index.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
