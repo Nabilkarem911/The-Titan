@@ -74,6 +74,8 @@ export function ChatPanel() {
               stream: false,
             }),
           });
+        } else {
+          throw new Error('Session expired — please log out and log in again');
         }
       }
 

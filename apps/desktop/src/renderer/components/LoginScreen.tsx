@@ -21,8 +21,7 @@ export function LoginScreen() {
     // Check if already logged in
     (window as any).titan?.checkAuth().then(async (res: any) => {
       if (res?.loggedIn) {
-        // Try to refresh token first, then connect
-        await (window as any).titan?.refreshToken();
+        // connectToServer will refresh token internally
         const connectRes = await (window as any).titan?.connectToServer();
         if (connectRes?.success) {
           setLoggedIn(true);

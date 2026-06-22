@@ -9,6 +9,7 @@ import { DesktopWsClient } from './ws-client.js';
 
 let activeWsClient: DesktopWsClient | null = null;
 let activeMainWindow: BrowserWindow | null = null;
+let isConnecting = false;
 
 export function setWsClient(client: DesktopWsClient | null): void {
   activeWsClient = client;
@@ -135,14 +136,21 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
 
   // Connect to server (after login or settings change)
   ipcMain.handle('server:connect', async () => {
+    // Prevent duplicate concurrent connections
+    if (isConnecting) {
+      return { success: true, alreadyConnecting: true };
+    }
+    if (activeWsClient && activeWsClient.isConnected()) {
+      return { success: true, alreadyConnected: true };
+    }
+
     const settings = store.store;
     if (!settings.serverUrl || !(settings.token || settings.apiKey)) {
       return { success: false, error: 'Missing server URL or credentials' };
     }
-    // If already connected, don't create a duplicate connection
-    if (activeWsClient && activeWsClient.isConnected()) {
-      return { success: true, alreadyConnected: true };
-    }
+
+    isConnecting = true;
+
     if (activeWsClient) {
       await activeWsClient.disconnect();
     }
@@ -172,6 +180,7 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
       capabilities: settings.capabilities as string[],
     });
     activeWsClient.connect();
+    isConnecting = false;
     return { success: true };
   });
 
