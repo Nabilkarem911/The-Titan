@@ -5,12 +5,14 @@ import { initializeQueues, closeAllQueues, getQueueStats, pingRedis, closeRedis,
 import { QUEUE_NAMES, type QueueName } from '@titan/shared';
 import { runMigrations, closePool, ping as dbPing, verifyTlsOnStartup } from '@titan/database';
 import { RpcRouter, TitanWebSocketServer } from '@titan/websocket';
+import { DesktopBridge } from '@titan/websocket';
 import { z } from 'zod';
 import { buildServer } from './server.js';
 import { registerAllQueueSchemas, registerAllWorkers, closeAllWorkers } from './queue-bootstrap.js';
 import { startAuditSchedulers, stopAuditSchedulers } from './audit-scheduler.js';
 import { startCronScheduler, stopCronScheduler } from './cron-scheduler.js';
 import { setWsServer } from './ws-instance.js';
+import { setDesktopBridge } from './desktop-bridge-instance.js';
 import { registerTelegramWebhook } from './routes/telegram.js';
 
 async function ensureSshKey(): Promise<void> {
@@ -142,6 +144,14 @@ async function main(): Promise<void> {
   wsServer.attach(app.server);
   setWsServer(wsServer);
 
+  let desktopBridge: DesktopBridge | null = null;
+  if (cfg.DESKTOP_BRIDGE_ENABLED) {
+    desktopBridge = new DesktopBridge({ path: cfg.DESKTOP_WS_PATH });
+    desktopBridge.attach(app.server);
+    setDesktopBridge(desktopBridge);
+    log.info({ path: cfg.DESKTOP_WS_PATH }, 'desktop bridge ws server attached');
+  }
+
   await app.listen({ host: cfg.HTTP_HOST, port: cfg.HTTP_PORT });
   log.info({ host: cfg.HTTP_HOST, port: cfg.HTTP_PORT, ws: cfg.WS_PATH }, 'http+ws server listening');
 
@@ -158,6 +168,7 @@ async function main(): Promise<void> {
     log.info({ signal }, 'shutting down');
     try {
       await wsServer.close();
+      if (desktopBridge) await desktopBridge.close();
       await app.close();
       stopAuditSchedulers();
       stopCronScheduler();

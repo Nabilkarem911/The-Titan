@@ -1,0 +1,50 @@
+{
+  "name": "@titan/desktop",
+  "version": "0.1.0",
+  "description": "Titan Desktop Agent — bridge between Titan Server and your local machine",
+  "private": true,
+  "type": "module",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "package": "electron-vite build && electron-builder",
+    "package:win": "electron-vite build && electron-builder --win",
+    "package:mac": "electron-vite build && electron-builder --mac",
+    "package:linux": "electron-vite build && electron-builder --linux",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0",
+    "screenshot-desktop": "^1.15.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/ws": "^8.5.13",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "postcss": "^8.4.49",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.6.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "5.6.3",
+    "vite": "^6.0.5",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.2",
+    "xterm-addon-web-links": "^0.9.0",
+    "zustand": "^5.0.2",
+    "lucide-react": "^0.468.0",
+    "framer-motion": "^12.40.0",
+    "sonner": "^2.0.7",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
+  }
+}

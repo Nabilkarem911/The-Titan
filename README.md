@@ -1428,6 +1428,116 @@ See [TITAN_SUPER_AGENT_V2_PROPOSAL.md](TITAN_SUPER_AGENT_V2_PROPOSAL.md) for det
 
 ---
 
+## 🖥️ Titan Desktop Agent (TDA)
+
+The Titan Desktop Agent is an Electron-based desktop application that bridges the Titan Server with your local machine. It enables Titan to execute commands, manage files, take screenshots, and open applications on your computer — all through natural language via Telegram or the Desktop UI.
+
+### Architecture
+
+```
+┌─────────────┐     Telegram      ┌─────────────┐     WebSocket      ┌──────────────────┐
+│   Telegram   │ ──────────────→  │  Titan Server │ ────────────────→  │  Desktop Client  │
+│   (User)     │                  │  (Agent + AI) │  ←──────────────  │  (Electron App)   │
+└─────────────┘                  └─────────────┘     Results          └──────────────────┘
+```
+
+### Features
+
+- **Shell Access** — Execute terminal commands on your machine from Telegram or the Desktop UI
+- **File Manager** — Browse, read, write, and delete files on your local filesystem
+- **Screenshot Capture** — Take screenshots and send them to Titan for analysis
+- **App Automation** — Open applications on your desktop
+- **System Info** — Get CPU, memory, and OS information
+- **Multi-Device Support** — Connect multiple devices to the same Titan account
+- **Professional UI/UX** — Dark-themed Electron app with Chat, File Explorer, Terminal, Screenshot Viewer, Settings, and Device Manager
+
+### Server-Side Components
+
+| Component | Location | Description |
+|-----------|----------|-------------|
+| Desktop Bridge | `packages/websocket/src/desktop-bridge.ts` | WebSocket server managing connected desktop clients |
+| Device Repository | `packages/database/src/desktopDevices.ts` | Database layer for device registration and status |
+| Desktop Tools | `apps/core/src/desktop-tools.ts` | 9 agent tools for desktop operations |
+| DB Migration | `packages/database/migrations/0028_desktop_devices.sql` | `desktop_devices` table |
+
+### Agent Tools
+
+| Tool | Description |
+|------|-------------|
+| `desktop_execute` | Execute a shell command on the user's device |
+| `desktop_read_file` | Read a file from the user's device |
+| `desktop_write_file` | Write a file on the user's device |
+| `desktop_list_dir` | List directory contents on the user's device |
+| `desktop_delete_file` | Delete a file on the user's device |
+| `desktop_screenshot` | Capture a screenshot from the user's device |
+| `desktop_open_app` | Open an application on the user's device |
+| `desktop_system_info` | Get system information from the user's device |
+| `desktop_list_devices` | List all online desktop devices |
+
+### Configuration
+
+Add these environment variables to your `.env` (all optional — defaults shown):
+
+```env
+DESKTOP_BRIDGE_ENABLED=true
+DESKTOP_COMMAND_TIMEOUT_MS=30000
+DESKTOP_MAX_COMMANDS_PER_MIN=60
+DESKTOP_WS_PATH=/ws-desktop
+```
+
+### Desktop App Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Build the server packages
+npm run build
+
+# Run database migration
+npm run db:migrate
+
+# Start the Titan Server
+npm run start:core
+
+# In another terminal — run the Desktop App in dev mode
+npm run dev:desktop
+
+# Or build the Desktop App for distribution
+npm run package:desktop
+```
+
+### How It Works
+
+1. Start the Titan Server — the Desktop Bridge WebSocket endpoint is available at `/ws-desktop`
+2. Launch the Titan Desktop App — it connects to the server via WebSocket and registers your device
+3. Send a message to Titan via Telegram or the Desktop Chat UI (e.g., "list files in my Desktop")
+4. Titan's agent recognizes the request as a local machine task and calls the appropriate `desktop_*` tool
+5. The Desktop Bridge forwards the command to your connected device via WebSocket
+6. The Desktop App executes the command locally and returns the result
+7. Titan responds with the result — everything is stored in Titan's memory system
+
+### Security
+
+- All desktop commands go through the same `validateCommand()` sandbox validation as server-side `execute_bash`
+- Additional forbidden patterns for desktop: `format`, `diskpart`, `reg delete`, `cipher /w`
+- Authentication via JWT or API key — no anonymous connections
+- Device registration required before commands are accepted
+- Graceful fallback — if no device is connected, tools return a clear error message
+
+### No Breaking Changes
+
+The Desktop Agent is fully additive:
+- All new env vars have defaults — the server works without them
+- Desktop bridge is a separate WebSocket path (`/ws-desktop`) — doesn't affect existing WS
+- All new tools are registered alongside existing ones — no modifications
+- Telegram integration only adds context when devices are online — no changes to existing flow
+- The Electron app is a separate workspace — doesn't affect server builds
+
+See [TITAN_DESKTOP_AGENT_PLAN.md](TITAN_DESKTOP_AGENT_PLAN.md) for the full implementation plan.
+
+---
+
 <div align="center">
 
 **Built with obsession by [Nabil Karem](https://github.com/Nabilkarem911)**

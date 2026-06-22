@@ -1,4 +1,5 @@
 export * from './toolExecutor.js';
+export { validateCommand, validateCwd, truncateOutput } from './sandbox.js';
 export { executeBash } from './tools/bash.js';
 export { patchFile } from './tools/patch.js';
 export { readFileContent, readFileAst } from './tools/readFile.js';

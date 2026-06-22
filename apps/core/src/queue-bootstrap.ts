@@ -13,6 +13,7 @@ import { getGlobalMemoryClient } from '@titan/memory';
 import { agentRuns, userSecrets, userContext, userProjects } from '@titan/database';
 import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile, pdfCreate, spreadsheetCreate, imageGenerate, imageAnalyze, s3Operations, googleDrive, notionApi, linearApi, rssFeedParse, webMonitor, csvTransform, dataVisualize, slackMessage, smsMessage, textClassify, codeAnalyze, systemMetrics, invoiceGenerate, reportGenerate, jiraApi, seoAnalyze, xmlParse, networkDiagnose, textSummarize, entityExtract, accessibilityCheck, budgetTracker, imageEdit, documentTemplate, slideCreate, gcsOperations, dropboxSync, trelloApi, asanaApi, sitemapCrawl, jsonSchemaValidate, yamlConvert, discordMessage, whatsappMessage, pushNotification, embeddingsGenerate, logSearch, databaseBackup, cronManage, processManager, contractDraft } from '@titan/tools';
 import { loadConfig } from '@titan/config';
+import { registerDesktopTools } from './desktop-tools.js';
 
 const cfg = loadConfig();
 
@@ -1209,6 +1210,11 @@ registry.register({
   handler: async (p: unknown) => contractDraft(p as { type: 'nda' | 'freelance' | 'saas' | 'employment' | 'custom'; parties: { partyA: string; partyB: string }; terms?: Record<string, string>; customClauses?: string[] }),
   tags: ['legal', 'contract'],
 });
+
+// === Desktop Agent Tools === (additive — registered if bridge is enabled)
+if (cfg.DESKTOP_BRIDGE_ENABLED) {
+  registerDesktopTools(registry);
+}
 
 log.info({ toolCount: registry.size() }, 'all tools registered in ToolRegistry');
 

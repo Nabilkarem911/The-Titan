@@ -44,6 +44,7 @@ function createWorkspaceToolExecutor(
   registry: ReturnType<typeof getGlobalToolRegistry>,
   workspaceRoot: string,
   log: ReturnType<typeof getLogger>,
+  userId?: string,
 ) {
   return async (name: string, params: unknown): Promise<ToolResult> => {
     if (FILE_TOOLS.has(name) && typeof params === 'object' && params !== null) {
@@ -63,6 +64,9 @@ function createWorkspaceToolExecutor(
           log.info({ tool: name, original, rewritten: p['filePath'] }, 'rewrote file path to workspace');
         }
       }
+    }
+    if (name.startsWith('desktop_') && userId) {
+      (globalThis as Record<string, unknown>).__currentUserId = userId;
     }
     return registry.execute(name, params);
   };
@@ -239,7 +243,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
             const registry = getGlobalToolRegistry();
             const memory = await getGlobalMemoryClient();
             const tgWorkspaceRoot = getWorkspaceRoot(userId);
-            const tgExecuteTool = createWorkspaceToolExecutor(registry, tgWorkspaceRoot, log);
+            const tgExecuteTool = createWorkspaceToolExecutor(registry, tgWorkspaceRoot, log, userId);
 
             // Setup SSE headers if streaming
             if (input.stream) {
@@ -381,7 +385,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
       const registry = getGlobalToolRegistry();
       const memory = await getGlobalMemoryClient();
-      const wrappedExecuteTool = createWorkspaceToolExecutor(registry, workspaceRoot, log);
+      const wrappedExecuteTool = createWorkspaceToolExecutor(registry, workspaceRoot, log, userId);
 
       // Setup SSE headers if streaming
       if (input.stream) {

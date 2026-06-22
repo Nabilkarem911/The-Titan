@@ -168,6 +168,14 @@ const EnvSchema = z.object({
     .union([z.literal('true'), z.literal('false')])
     .transform((v) => v === 'true')
     .default('false'),
+
+  DESKTOP_BRIDGE_ENABLED: z
+    .union([z.literal('true'), z.literal('false')])
+    .transform((v) => v === 'true')
+    .default('true'),
+  DESKTOP_COMMAND_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  DESKTOP_MAX_COMMANDS_PER_MIN: z.coerce.number().int().positive().default(60),
+  DESKTOP_WS_PATH: z.string().default('/ws-desktop'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

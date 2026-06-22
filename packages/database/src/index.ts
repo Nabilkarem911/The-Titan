@@ -9,3 +9,4 @@ export { userSecrets, userContext, getChatHistory, saveChatMessage } from './use
 export { userProjects, type UserProject } from './userProjects.js';
 export { agentProfiles, type AgentProfile } from './agentProfiles.js';
 export { webhooks, type WebhookRecord } from './webhooks.js';
+export { desktopDevices, type DesktopDevice } from './desktopDevices.js';

@@ -6,6 +6,7 @@ import { getGlobalToolRegistry } from '@titan/agent-engine';
 import { getGlobalMemoryClient } from '@titan/memory';
 import { createRunner } from '../create-runner.js';
 import { detectLanguage } from '../lang-detect.js';
+import { getDesktopBridge } from '../desktop-bridge-instance.js';
 
 const log = getLogger().child({ component: 'telegram' });
 
@@ -342,6 +343,14 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
         fileContext,
         `\n\nWhen using remember/recall/set_secret/list_secrets tools, always pass ownerId="${ownerId}".`,
+        (() => {
+          const bridge = getDesktopBridge();
+          if (!bridge) return '';
+          const devices = bridge.listOnlineDevices(ownerId);
+          if (devices.length === 0) return '';
+          const deviceLines = devices.map((d: { deviceName: string; platform: string; capabilities: string[] }) => `- ${d.deviceName} (${d.platform}) — capabilities: ${d.capabilities.join(', ')}`);
+          return `\n\nDesktop devices online (${devices.length}):\n${deviceLines.join('\n')}\nYou can use desktop_* tools to interact with the user's local machine. The user's device is connected and ready.`;
+        })(),
         `\n\nPersonality reminder:
 - You are Titan — a friend, not a bot. Talk like a real person (WhatsApp style, not essay style).
 - Feel the mood before responding. Is the user frustrated? Happy? Testing you?
@@ -394,6 +403,9 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
           const p = params as Record<string, unknown>;
           if (['remember', 'recall', 'set_secret', 'list_secrets', 'set_project', 'get_project'].includes(name)) {
             p.ownerId = ownerId;
+          }
+          if (name.startsWith('desktop_')) {
+            (globalThis as Record<string, unknown>).__currentUserId = ownerId;
           }
           return registry.execute(name, p);
         },
