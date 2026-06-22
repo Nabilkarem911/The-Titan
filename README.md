@@ -1445,10 +1445,13 @@ The Titan Desktop Agent is an Electron-based desktop application that bridges th
 
 - **Shell Access** — Execute terminal commands on your machine from Telegram or the Desktop UI
 - **File Manager** — Browse, read, write, and delete files on your local filesystem
-- **Screenshot Capture** — Take screenshots and send them to Titan for analysis
-- **App Automation** — Open applications on your desktop
+- **Screenshot Capture** — Take screenshots and auto-send them to Telegram chat
+- **App Automation** — Open and close applications on your desktop
+- **Keyboard Simulation** — Type text and press keys into GUI applications
+- **Clipboard Control** — Read from and write to the clipboard
 - **System Info** — Get CPU, memory, and OS information
 - **Multi-Device Support** — Connect multiple devices to the same Titan account
+- **Telegram Linking** — Link your Telegram account from the Desktop Settings panel (no CLI/curl needed)
 - **Professional UI/UX** — Dark-themed Electron app with Chat, File Explorer, Terminal, Screenshot Viewer, Settings, and Device Manager
 
 ### Server-Side Components
@@ -1457,7 +1460,7 @@ The Titan Desktop Agent is an Electron-based desktop application that bridges th
 |-----------|----------|-------------|
 | Desktop Bridge | `packages/websocket/src/desktop-bridge.ts` | WebSocket server managing connected desktop clients |
 | Device Repository | `packages/database/src/desktopDevices.ts` | Database layer for device registration and status |
-| Desktop Tools | `apps/core/src/desktop-tools.ts` | 9 agent tools for desktop operations |
+| Desktop Tools | `apps/core/src/desktop-tools.ts` | 12 agent tools for desktop operations |
 | DB Migration | `packages/database/migrations/0028_desktop_devices.sql` | `desktop_devices` table |
 
 ### Agent Tools
@@ -1471,6 +1474,9 @@ The Titan Desktop Agent is an Electron-based desktop application that bridges th
 | `desktop_delete_file` | Delete a file on the user's device |
 | `desktop_screenshot` | Capture a screenshot from the user's device |
 | `desktop_open_app` | Open an application on the user's device |
+| `desktop_close_app` | Close an application by process name |
+| `desktop_type_keys` | Type text or press keys (Enter, Tab, Escape, etc.) — simulate keyboard input into GUI apps |
+| `desktop_clipboard` | Read from or write to the clipboard |
 | `desktop_system_info` | Get system information from the user's device |
 | `desktop_list_devices` | List all online desktop devices |
 

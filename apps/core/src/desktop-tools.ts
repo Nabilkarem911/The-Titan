@@ -350,5 +350,93 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     },
   });
 
-  log.info(`registered ${9} desktop tools`);
+  registry.register({
+    name: 'desktop_type_keys',
+    description: 'Type text or press keys on the user\'s local desktop machine. Useful for typing into GUI applications that were opened with desktop_open_app. Supports plain text and special key names (e.g. Enter, Tab, Escape, Backspace).',
+    schema: {
+      text: { type: 'string', description: 'Text to type or special key name (Enter, Tab, Escape, Backspace, Space, etc.)' },
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    requiredParams: ['text'],
+    tags: ['desktop', 'keyboard'],
+    handler: async (params: unknown) => {
+      const p = params as { text: string; deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+
+      const device = p.deviceId
+        ? { deviceId: p.deviceId, userId }
+        : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+
+      return bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'keys.type',
+        payload: { text: p.text },
+      });
+    },
+  });
+
+  registry.register({
+    name: 'desktop_close_app',
+    description: 'Close an application on the user\'s local desktop machine by process name.',
+    schema: {
+      app: { type: 'string', description: 'Application process name to close (e.g. calc, notepad, code)' },
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    requiredParams: ['app'],
+    tags: ['desktop', 'apps'],
+    handler: async (params: unknown) => {
+      const p = params as { app: string; deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+
+      const device = p.deviceId
+        ? { deviceId: p.deviceId, userId }
+        : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+
+      return bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'app.close',
+        payload: { app: p.app },
+      });
+    },
+  });
+
+  registry.register({
+    name: 'desktop_clipboard',
+    description: 'Read from or write to the clipboard on the user\'s local desktop machine.',
+    schema: {
+      action: { type: 'string', description: 'Either "read" to get clipboard content or "write" to set it' },
+      text: { type: 'string', description: 'Text to write to clipboard (only needed for action=write)' },
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    requiredParams: ['action'],
+    tags: ['desktop', 'clipboard'],
+    handler: async (params: unknown) => {
+      const p = params as { action: string; text?: string; deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+
+      const device = p.deviceId
+        ? { deviceId: p.deviceId, userId }
+        : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+
+      return bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'clipboard',
+        payload: { action: p.action, text: p.text },
+      });
+    },
+  });
+
+  log.info(`registered ${12} desktop tools`);
 }

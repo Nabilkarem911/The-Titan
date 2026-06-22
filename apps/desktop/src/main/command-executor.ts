@@ -30,6 +30,12 @@ export async function executeCommand(command: { type: string; payload: Record<st
       return screenshotCapture();
     case 'app.open':
       return appOpen(command.payload);
+    case 'app.close':
+      return appClose(command.payload);
+    case 'keys.type':
+      return keysType(command.payload);
+    case 'clipboard':
+      return clipboardAction(command.payload);
     case 'system.info':
       return systemInfo();
     default:
@@ -186,6 +192,97 @@ async function appOpen(payload: Record<string, unknown>): Promise<CommandResult>
     return { success: true, data: { app, opened: true } };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Failed to open app' };
+  }
+}
+
+async function appClose(payload: Record<string, unknown>): Promise<CommandResult> {
+  const app = payload.app as string;
+  if (!app) return { success: false, error: 'Missing app' };
+  const isWindows = platform() === 'win32';
+  const isMac = platform() === 'darwin';
+  const cmd = isWindows ? `taskkill /F /IM ${app}.exe 2>nul & taskkill /F /IM ${app} 2>nul` : isMac ? `pkill -f "${app}"` : `pkill -f "${app}"`;
+  return new Promise((resolve) => {
+    exec(cmd, (err, stdout, stderr) => {
+      if (err) {
+        resolve({ success: false, error: `Failed to close ${app}: ${err.message}` });
+      } else {
+        resolve({ success: true, data: { app, closed: true, output: stdout.toString() || stderr.toString() } });
+      }
+    });
+  });
+}
+
+async function keysType(payload: Record<string, unknown>): Promise<CommandResult> {
+  const text = payload.text as string;
+  if (!text) return { success: false, error: 'Missing text' };
+  const isWindows = platform() === 'win32';
+  const isMac = platform() === 'darwin';
+
+  const specialKeys: Record<string, string> = {
+    'Enter': isWindows ? '{ENTER}' : 'Return',
+    'Tab': isWindows ? '{TAB}' : 'Tab',
+    'Escape': isWindows ? '{ESC}' : 'Escape',
+    'Backspace': isWindows ? '{BACKSPACE}' : 'Delete',
+    'Space': isWindows ? '{SPACE}' : 'space',
+    'Up': isWindows ? '{UP}' : 'Up',
+    'Down': isWindows ? '{DOWN}' : 'Down',
+    'Left': isWindows ? '{LEFT}' : 'Left',
+    'Right': isWindows ? '{RIGHT}' : 'Right',
+  };
+
+  try {
+    if (isWindows) {
+      const textToType = specialKeys[text] ?? text.replace(/[+^%{}~]/g, '{$&}');
+      const script = `Set WshShell = CreateObject("WScript.Shell")\nWshShell.SendKeys "${textToType.replace(/"/g, '""')}"`;
+      const { writeFile, unlink } = await import('fs/promises');
+      const { join } = await import('path');
+      const { tmpdir } = await import('os');
+      const scriptPath = join(tmpdir(), `titan-keys-${Date.now()}.vbs`);
+      await writeFile(scriptPath, script, 'utf-8');
+      await new Promise<void>((resolve) => {
+        exec(`cscript //nologo "${scriptPath}"`, { timeout: 10_000 }, () => resolve());
+      });
+      await unlink(scriptPath).catch(() => {});
+    } else if (isMac) {
+      const textToType = specialKeys[text] ?? text;
+      exec(`osascript -e 'tell application "System Events" to keystroke "${textToType.replace(/"/g, '\\"')}"'`, { timeout: 10_000 });
+    } else {
+      const textToType = specialKeys[text] ?? text;
+      exec(`xdotool type -- "${textToType.replace(/"/g, '\\"')}"`, { timeout: 10_000 });
+    }
+    return { success: true, data: { typed: text } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to type keys' };
+  }
+}
+
+async function clipboardAction(payload: Record<string, unknown>): Promise<CommandResult> {
+  const action = payload.action as string;
+  const text = payload.text as string | undefined;
+  const isWindows = platform() === 'win32';
+  const isMac = platform() === 'darwin';
+
+  try {
+    if (action === 'read') {
+      const cmd = isWindows ? 'powershell -command "Get-Clipboard"' : isMac ? 'pbpaste' : 'xclip -selection clipboard -o';
+      const result = await new Promise<string>((resolve) => {
+        exec(cmd, { timeout: 5_000 }, (err, stdout) => {
+          resolve(err ? '' : stdout.toString().trim());
+        });
+      });
+      return { success: true, data: { content: result } };
+    } else if (action === 'write') {
+      if (!text) return { success: false, error: 'Missing text for write action' };
+      const cmd = isWindows ? `powershell -command "Set-Clipboard -Value '${text.replace(/'/g, "''")}'"` : isMac ? `printf '%s' '${text.replace(/'/g, "'\\''")}' | pbcopy` : `printf '%s' '${text.replace(/'/g, "'\\''")}' | xclip -selection clipboard`;
+      await new Promise<void>((resolve) => {
+        exec(cmd, { timeout: 5_000 }, () => resolve());
+      });
+      return { success: true, data: { written: text } };
+    } else {
+      return { success: false, error: `Unknown clipboard action: ${action}` };
+    }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Clipboard operation failed' };
   }
 }
 
