@@ -349,7 +349,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
           const devices = bridge.listOnlineDevices(ownerId);
           if (devices.length === 0) return '';
           const deviceLines = devices.map((d: { deviceName: string; platform: string; capabilities: string[] }) => `- ${d.deviceName} (${d.platform}) — capabilities: ${d.capabilities.join(', ')}`);
-          return `\n\nDesktop devices online (${devices.length}):\n${deviceLines.join('\n')}\nYou can use desktop_* tools to interact with the user's local machine. The user's device is connected and ready.`;
+          return `\n\nDesktop devices online (${devices.length}):\n${deviceLines.join('\n')}\nYou can use desktop_* tools to interact with the user's local machine. The user's device is connected and ready.\nWhen you take a screenshot with desktop_screenshot, it returns a filePath. Use telegram_send_file with type=photo and that filePath to send the image to the user. Do NOT try to send image data as text.`;
         })(),
         `\n\nPersonality reminder:
 - You are Titan — a friend, not a bot. Talk like a real person (WhatsApp style, not essay style).
@@ -406,6 +406,9 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
           }
           if (name.startsWith('desktop_')) {
             (globalThis as Record<string, unknown>).__currentUserId = ownerId;
+          }
+          if (name === 'telegram_send_file' && !p.chatId) {
+            p.chatId = chatId;
           }
           return registry.execute(name, p);
         },

@@ -180,7 +180,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
 
   registry.register({
     name: 'desktop_screenshot',
-    description: 'Capture a screenshot from the user\'s local desktop machine.',
+    description: 'Capture a screenshot from the user\'s local desktop machine. Returns the local file path of the saved screenshot on the server. Use telegram_send_file with type=photo to send it to the user.',
     schema: {
       deviceId: { type: 'string', description: 'Optional device ID' },
     },
@@ -198,10 +198,38 @@ export function registerDesktopTools(registry: ToolRegistry): void {
         : bridge.getFirstOnlineDevice(userId);
       if (!device) return { success: false, error: 'No desktop device connected' };
 
-      return bridge.sendCommand(device.userId, device.deviceId, {
+      const result = await bridge.sendCommand(device.userId, device.deviceId, {
         type: 'screenshot.capture',
         payload: {},
       });
+
+      // If screenshot succeeded, save base64 to file on server
+      if (result.success && (result.data as { image?: string })?.image) {
+        try {
+          const { writeFile, mkdir } = await import('node:fs/promises');
+          const { join } = await import('node:path');
+          const { randomUUID } = await import('node:crypto');
+          const dir = '/tmp/titan-screenshots';
+          await mkdir(dir, { recursive: true });
+          const filename = `screenshot-${randomUUID()}.png`;
+          const filePath = join(dir, filename);
+          const base64Data = (result.data as { image: string }).image;
+          await writeFile(filePath, Buffer.from(base64Data, 'base64'));
+          log.info({ filePath, deviceId: device.deviceId }, 'screenshot saved to server filesystem');
+          return {
+            success: true,
+            data: {
+              filePath,
+              message: `Screenshot saved at ${filePath}. Use telegram_send_file with type=photo, filePath=${filePath} to send it to the user.`,
+            },
+          };
+        } catch (err) {
+          log.error({ err }, 'failed to save screenshot to file');
+          return { success: false, error: 'Screenshot captured but failed to save on server' };
+        }
+      }
+
+      return result;
     },
   });
 
