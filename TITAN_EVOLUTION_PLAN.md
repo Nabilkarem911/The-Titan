@@ -267,11 +267,11 @@ After a full codebase audit, Titan already has an impressive foundation:
 - All evolution changes must be logged to Evolution Archive with full diff
 
 #### 2.1 Learned Context Compression (UPGRADE existing)
-- [ ] Replace rule-based ContextOptimizer with learned compression
-- [ ] Information Bottleneck approach: LLM scores each piece of context for relevance
-- [ ] Context Budget Manager: dynamic allocation (code 40%, history 30%, tools 20%, reserve 10%)
+- [x] Replace rule-based ContextOptimizer with learned compression
+- [x] Information Bottleneck approach: LLM scores each piece of context for relevance
+- [x] Context Budget Manager: dynamic allocation (code 40%, history 30%, tools 20%, reserve 10%)
 - [ ] A/B test: rule-based vs learned, keep winner
-- Current: `packages/agent-engine/src/providers/context-optimizer.ts` (heuristic only)
+- Current: `packages/agent-engine/src/providers/context-optimizer.ts` (heuristic + learned)
 
 #### 2.2 Meta-Evolution Layer (UPGRADE existing)
 - [ ] Upgrade Self-Improver to modify its own improvement prompt

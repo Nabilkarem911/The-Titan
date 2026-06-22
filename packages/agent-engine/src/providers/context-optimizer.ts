@@ -1,6 +1,6 @@
 import { getLogger } from '@titan/logging';
 import { incCounter, observeHistogram } from '@titan/observability';
-import type { LlmMessage, LlmToolDefinition, ToolCall, AgentStep } from '../types.js';
+import type { LlmMessage, LlmToolDefinition, ToolCall, AgentStep, LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'context-optimizer' });
 
@@ -11,6 +11,15 @@ export interface ContextOptimizationOptions {
   enableToolFiltering?: boolean;
   enableHistoryCompaction?: boolean;
   enableOutputTruncation?: boolean;
+  enableLearnedCompression?: boolean;
+  budget?: ContextBudget;
+}
+
+export interface ContextBudget {
+  code: number;       // percentage for code/file context
+  history: number;    // percentage for conversation history
+  tools: number;      // percentage for tool definitions
+  reserve: number;    // percentage reserved for response
 }
 
 export interface ContextStats {
@@ -28,6 +37,21 @@ export interface ToolUsageStats {
   lastUsedStep: number;
 }
 
+export interface ContextItem {
+  id: string;
+  type: 'code' | 'history' | 'tool' | 'system' | 'memory';
+  content: string;
+  tokenEstimate: number;
+  relevanceScore?: number;
+}
+
+export interface LearnedCompressionResult {
+  items: ContextItem[];
+  tokensSaved: number;
+  tokensUsed: number;
+  budgetAllocation: ContextBudget;
+}
+
 const DEFAULTS: Required<ContextOptimizationOptions> = {
   maxContextTokens: 32000,
   maxToolOutputTokens: 2000,
@@ -35,7 +59,22 @@ const DEFAULTS: Required<ContextOptimizationOptions> = {
   enableToolFiltering: true,
   enableHistoryCompaction: true,
   enableOutputTruncation: true,
+  enableLearnedCompression: false,
+  budget: { code: 40, history: 30, tools: 20, reserve: 10 },
 };
+
+const DEFAULT_BUDGET: ContextBudget = { code: 40, history: 30, tools: 20, reserve: 10 };
+
+const SCORING_PROMPT = `You are a context relevance scorer for an AI agent. Score each context item for relevance to the current task.
+
+For each item, return a relevance score from 0.0 to 1.0:
+- 1.0 = Critical, directly needed for the task
+- 0.7 = Important, likely needed
+- 0.4 = Somewhat relevant, might be useful
+- 0.1 = Not relevant, can be safely removed
+
+Respond in JSON:
+{"scores": [{"id": "item-id", "score": 0.0-1.0}]}`;
 
 export class ContextOptimizer {
   private opts: Required<ContextOptimizationOptions>;
@@ -259,5 +298,203 @@ export class ContextOptimizer {
     this.totalTokensSaved += tokensSaved;
     this.totalOptimizations++;
     observeHistogram('ctx_tokens_saved', 'Tokens saved by context optimization', tokensSaved);
+  }
+
+  // ── Learned Context Compression ──
+
+  getBudget(): ContextBudget {
+    return { ...this.opts.budget };
+  }
+
+  setBudget(budget: ContextBudget): void {
+    const total = budget.code + budget.history + budget.tools + budget.reserve;
+    if (Math.abs(total - 100) > 1) {
+      log.warn({ total }, 'budget percentages do not sum to 100, normalizing');
+      const factor = 100 / total;
+      this.opts.budget = {
+        code: Math.round(budget.code * factor),
+        history: Math.round(budget.history * factor),
+        tools: Math.round(budget.tools * factor),
+        reserve: Math.round(budget.reserve * factor),
+      };
+    } else {
+      this.opts.budget = { ...budget };
+    }
+  }
+
+  calculateBudgetAllocation(totalTokens: number): { code: number; history: number; tools: number; reserve: number } {
+    const b = this.opts.budget;
+    return {
+      code: Math.floor(totalTokens * b.code / 100),
+      history: Math.floor(totalTokens * b.history / 100),
+      tools: Math.floor(totalTokens * b.tools / 100),
+      reserve: Math.floor(totalTokens * b.reserve / 100),
+    };
+  }
+
+  async scoreContextItems(
+    llm: LlmProvider,
+    items: ContextItem[],
+    taskPrompt: string,
+  ): Promise<ContextItem[]> {
+    if (items.length === 0) return [];
+
+    try {
+      const itemsJson = items.map((i) => ({
+        id: i.id,
+        type: i.type,
+        preview: i.content.slice(0, 200),
+      }));
+
+      const response = await llm.complete([
+        { role: 'system', content: SCORING_PROMPT },
+        {
+          role: 'user',
+          content: `Task: ${taskPrompt.slice(0, 500)}\n\nContext items:\n${JSON.stringify(itemsJson, null, 2)}`,
+        },
+      ], { temperature: 0.1, maxTokens: 800 });
+
+      const scores = this.parseScores(response.content);
+      const scored = items.map((item) => {
+        const scoreEntry = scores.find((s) => s.id === item.id);
+        return { ...item, relevanceScore: scoreEntry?.score ?? 0.5 };
+      });
+
+      incCounter('ctx_learned_scoring', 'Learned context scoring calls', 1);
+      return scored;
+    } catch (err) {
+      log.warn({ err }, 'learned context scoring failed — using default scores');
+      return items.map((i) => ({ ...i, relevanceScore: 0.5 }));
+    }
+  }
+
+  async compressContext(
+    llm: LlmProvider,
+    items: ContextItem[],
+    taskPrompt: string,
+  ): Promise<LearnedCompressionResult> {
+    const totalBudget = this.opts.maxContextTokens;
+    const allocation = this.calculateBudgetAllocation(totalBudget);
+
+    // Score items if learned compression is enabled
+    let scoredItems: ContextItem[];
+    if (this.opts.enableLearnedCompression) {
+      scoredItems = await this.scoreContextItems(llm, items, taskPrompt);
+    } else {
+      // Preserve existing scores, default to 0.5 if not set
+      scoredItems = items.map((i) => ({ ...i, relevanceScore: i.relevanceScore ?? 0.5 }));
+    }
+
+    // Group by type and sort by relevance score
+    const byType = new Map<ContextItem['type'], ContextItem[]>();
+    for (const item of scoredItems) {
+      const group = byType.get(item.type) ?? [];
+      group.push(item);
+      byType.set(item.type, group);
+    }
+
+    const budgetMap: Record<string, number> = {
+      code: allocation.code,
+      history: allocation.history,
+      tool: allocation.tools,
+      system: allocation.reserve,
+      memory: allocation.reserve,
+    };
+
+    const result: ContextItem[] = [];
+    let tokensUsed = 0;
+
+    for (const [type, group] of byType) {
+      const budget = budgetMap[type] ?? allocation.reserve;
+      const sorted = group.sort((a, b) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0));
+
+      let typeTokens = 0;
+      for (const item of sorted) {
+        if (typeTokens + item.tokenEstimate > budget) break;
+        result.push(item);
+        typeTokens += item.tokenEstimate;
+        tokensUsed += item.tokenEstimate;
+      }
+    }
+
+    const originalTokens = items.reduce((s, i) => s + i.tokenEstimate, 0);
+    const tokensSaved = originalTokens - tokensUsed;
+
+    incCounter('ctx_learned_compressions', 'Learned context compressions', 1);
+    observeHistogram('ctx_learned_tokens_saved', 'Tokens saved by learned compression', tokensSaved);
+
+    log.info({
+      itemCount: items.length,
+      keptCount: result.length,
+      tokensSaved,
+      tokensUsed,
+      budget: this.opts.budget,
+    }, 'learned context compression completed');
+
+    return {
+      items: result,
+      tokensSaved,
+      tokensUsed,
+      budgetAllocation: this.opts.budget,
+    };
+  }
+
+  buildContextItems(
+    messages: LlmMessage[],
+    tools: LlmToolDefinition[],
+    steps: AgentStep[],
+  ): ContextItem[] {
+    const items: ContextItem[] = [];
+
+    for (const msg of messages) {
+      const type: ContextItem['type'] = msg.role === 'system' ? 'system' : 'history';
+      items.push({
+        id: `msg-${items.length}`,
+        type,
+        content: msg.content,
+        tokenEstimate: Math.ceil(msg.content.length / 4),
+      });
+    }
+
+    for (const tool of tools) {
+      items.push({
+        id: `tool-${tool.name}`,
+        type: 'tool',
+        content: `${tool.name}: ${tool.description}`,
+        tokenEstimate: Math.ceil((tool.description.length + JSON.stringify(tool.parameters).length) / 4),
+      });
+    }
+
+    for (const step of steps) {
+      if (step.thought) {
+        items.push({
+          id: `step-${step.index}`,
+          type: 'history',
+          content: step.thought,
+          tokenEstimate: Math.ceil(step.thought.length / 4),
+        });
+      }
+    }
+
+    return items;
+  }
+
+  private parseScores(content: string): Array<{ id: string; score: number }> {
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return [];
+
+      const parsed = JSON.parse(jsonMatch[0]) as { scores?: Array<{ id?: string; score?: number }> };
+      if (!Array.isArray(parsed.scores)) return [];
+
+      return parsed.scores
+        .filter((s) => s.id !== undefined)
+        .map((s) => ({
+          id: s.id!,
+          score: Math.max(0, Math.min(1, s.score ?? 0.5)),
+        }));
+    } catch {
+      return [];
+    }
   }
 }
