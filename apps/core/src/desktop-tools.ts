@@ -24,11 +24,8 @@ function validateDesktopCommand(command: string): void {
 }
 
 export function registerDesktopTools(registry: ToolRegistry): void {
-  const bridge = getDesktopBridge();
-  if (!bridge) {
-    log.warn('desktop bridge not available — desktop tools not registered');
-    return;
-  }
+  // Always register tools — bridge availability is checked at execution time
+  // (bridge may be set after tools are registered due to bootstrap order)
 
   registry.register({
     name: 'desktop_execute',
@@ -47,6 +44,9 @@ export function registerDesktopTools(registry: ToolRegistry): void {
 
       const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
       if (!userId) return { success: false, error: 'No user context' };
+
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
 
       const device = p.deviceId
         ? { deviceId: p.deviceId, userId }
@@ -75,6 +75,9 @@ export function registerDesktopTools(registry: ToolRegistry): void {
       const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
       if (!userId) return { success: false, error: 'No user context' };
 
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+
       const device = p.deviceId
         ? { deviceId: p.deviceId, userId }
         : bridge.getFirstOnlineDevice(userId);
@@ -102,6 +105,9 @@ export function registerDesktopTools(registry: ToolRegistry): void {
       const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
       if (!userId) return { success: false, error: 'No user context' };
 
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+
       const device = p.deviceId
         ? { deviceId: p.deviceId, userId }
         : bridge.getFirstOnlineDevice(userId);
@@ -127,6 +133,9 @@ export function registerDesktopTools(registry: ToolRegistry): void {
       const p = params as { path: string; deviceId?: string };
       const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
       if (!userId) return { success: false, error: 'No user context' };
+
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
 
       const device = p.deviceId
         ? { deviceId: p.deviceId, userId }
@@ -154,6 +163,9 @@ export function registerDesktopTools(registry: ToolRegistry): void {
       const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
       if (!userId) return { success: false, error: 'No user context' };
 
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+
       const device = p.deviceId
         ? { deviceId: p.deviceId, userId }
         : bridge.getFirstOnlineDevice(userId);
@@ -177,6 +189,9 @@ export function registerDesktopTools(registry: ToolRegistry): void {
       const p = params as { deviceId?: string };
       const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
       if (!userId) return { success: false, error: 'No user context' };
+
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
 
       const device = p.deviceId
         ? { deviceId: p.deviceId, userId }
@@ -204,6 +219,9 @@ export function registerDesktopTools(registry: ToolRegistry): void {
       const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
       if (!userId) return { success: false, error: 'No user context' };
 
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+
       const device = p.deviceId
         ? { deviceId: p.deviceId, userId }
         : bridge.getFirstOnlineDevice(userId);
@@ -228,6 +246,9 @@ export function registerDesktopTools(registry: ToolRegistry): void {
       const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
       if (!userId) return { success: false, error: 'No user context' };
 
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+
       const device = p.deviceId
         ? { deviceId: p.deviceId, userId }
         : bridge.getFirstOnlineDevice(userId);
@@ -248,6 +269,9 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     handler: async () => {
       const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
       if (!userId) return { success: false, error: 'No user context' };
+
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, data: { count: 0, devices: [] } };
 
       const devices = bridge.listOnlineDevices(userId);
       return {
