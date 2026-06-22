@@ -97,6 +97,48 @@ export class DesktopWsClient {
     });
   }
 
+  connectAsync(timeoutMs = 10_000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.connected) {
+        resolve();
+        return;
+      }
+      if (this.destroyed) {
+        reject(new Error('Client destroyed'));
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        reject(new Error('WS connect timeout'));
+      }, timeoutMs);
+
+      const onOpen = () => {
+        clearTimeout(timeout);
+        this.ws?.off('close', onClose);
+        this.ws?.off('error', onError);
+        resolve();
+      };
+
+      const onClose = (code: number) => {
+        clearTimeout(timeout);
+        this.ws?.off('open', onOpen);
+        this.ws?.off('error', onError);
+        reject(new Error(`WS closed with code ${code}`));
+      };
+
+      const onError = (err: Error) => {
+        clearTimeout(timeout);
+        this.ws?.off('open', onOpen);
+        this.ws?.off('close', onClose);
+        reject(new Error(`WS error: ${err.message}`));
+      };
+
+      this.ws?.once('open', onOpen);
+      this.ws?.once('close', onClose);
+      this.ws?.once('error', onError);
+    });
+  }
+
   private startHeartbeat(): void {
     this.heartbeatTimer = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {

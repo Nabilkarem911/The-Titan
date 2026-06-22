@@ -21,12 +21,19 @@ export function LoginScreen() {
     // Check if already logged in
     (window as any).titan?.checkAuth().then(async (res: any) => {
       if (res?.loggedIn) {
-        // connectToServer will refresh token internally
-        const connectRes = await (window as any).titan?.connectToServer();
-        if (connectRes?.success) {
-          setLoggedIn(true);
-          setServerUrl(res.serverUrl);
-          setConnected(true);
+        // Refresh token once before connecting to ensure it's fresh
+        const refreshRes = await (window as any).titan?.refreshToken();
+        if (refreshRes?.success) {
+          // Token refreshed — now connect with fresh token
+          const connectRes = await (window as any).titan?.connectToServer();
+          if (connectRes?.success) {
+            setLoggedIn(true);
+            setServerUrl(res.serverUrl);
+            setConnected(true);
+          } else {
+            // Connection failed — show login
+            setUrl(res.serverUrl || 'http://localhost:3000');
+          }
         } else {
           // Token expired and refresh failed — need to login again
           setUrl(res.serverUrl || 'http://localhost:3000');
@@ -37,7 +44,7 @@ export function LoginScreen() {
       setChecking(false);
     });
     // Safety timeout — never stay stuck on loading
-    const timeout = setTimeout(() => setChecking(false), 3000);
+    const timeout = setTimeout(() => setChecking(false), 5000);
     return () => clearTimeout(timeout);
   }, [setLoggedIn, setServerUrl, setConnected]);
 

@@ -10,6 +10,7 @@ import { DesktopWsClient } from './ws-client.js';
 let activeWsClient: DesktopWsClient | null = null;
 let activeMainWindow: BrowserWindow | null = null;
 let connectPromise: Promise<{ success: boolean; [key: string]: unknown }> | null = null;
+let refreshPromise: Promise<{ success: boolean; error?: string }> | null = null;
 
 export function setWsClient(client: DesktopWsClient | null): void {
   activeWsClient = client;
@@ -95,6 +96,7 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
     store.set('token', '');
     store.set('refreshToken', '');
     connectPromise = null;
+    refreshPromise = null;
     if (activeWsClient) {
       await activeWsClient.disconnect();
       activeWsClient = null;
@@ -109,29 +111,42 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
     return { loggedIn: !!token, serverUrl };
   });
 
-  // Auth — Refresh token
+  // Auth — Refresh token (with dedup guard to prevent concurrent refresh calls)
   ipcMain.handle('auth:refresh', async () => {
-    const serverUrl = store.get('serverUrl') as string;
-    const refreshToken = store.get('refreshToken') as string;
-    if (!serverUrl || !refreshToken) {
-      return { success: false, error: 'No refresh token' };
+    // If a refresh is already in progress, return its result
+    if (refreshPromise) {
+      return refreshPromise;
     }
-    try {
-      const res = await fetch(`${serverUrl}/api/v1/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Refresh failed' })) as Record<string, unknown>;
-        return { success: false, error: (err.message as string) ?? (err.error as string) ?? 'Refresh failed' };
+
+    refreshPromise = (async () => {
+      const serverUrl = store.get('serverUrl') as string;
+      const refreshToken = store.get('refreshToken') as string;
+      if (!serverUrl || !refreshToken) {
+        return { success: false, error: 'No refresh token' };
       }
-      const data = await res.json() as { accessToken: string; refreshToken: string };
-      store.set('token', data.accessToken);
-      store.set('refreshToken', data.refreshToken);
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err instanceof Error ? err.message : 'Refresh failed' };
+      try {
+        const res = await fetch(`${serverUrl}/api/v1/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Refresh failed' })) as Record<string, unknown>;
+          return { success: false, error: (err.message as string) ?? (err.error as string) ?? 'Refresh failed' };
+        }
+        const data = await res.json() as { accessToken: string; refreshToken: string };
+        store.set('token', data.accessToken);
+        store.set('refreshToken', data.refreshToken);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'Refresh failed' };
+      }
+    })();
+
+    try {
+      return await refreshPromise;
+    } finally {
+      refreshPromise = null;
     }
   });
 
@@ -165,6 +180,12 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
         capabilities: settings.capabilities as string[],
       });
       activeWsClient.connect();
+      // Wait for WS to actually open before returning success
+      try {
+        await activeWsClient.connectAsync();
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'WS connection failed' };
+      }
       return { success: true };
     })();
 
