@@ -34,3 +34,8 @@ export * from './evolution/index.js';
 export * from './hive/index.js';
 export * from './economy/index.js';
 export * from './constitution/index.js';
+export * from './dream/index.js';
+export * from './quantum/index.js';
+export * from './translator/index.js';
+export * from './temporal/index.js';
+export * from './introspection/index.js';
