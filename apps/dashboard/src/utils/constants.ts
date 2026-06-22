@@ -35,6 +35,7 @@ export interface NavItem {
   path: string;
   icon: LucideIcon;
   badge?: string;
+  hidden?: boolean;
 }
 
 export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
@@ -52,8 +53,8 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: 'Workspace',
     items: [
       { label: 'Files', path: '/files', icon: FolderTree },
-      { label: 'Terminal', path: '/terminal', icon: TerminalSquare },
-      { label: 'Git', path: '/git', icon: GitBranch },
+      { label: 'Terminal', path: '/terminal', icon: TerminalSquare, hidden: true },
+      { label: 'Git', path: '/git', icon: GitBranch, hidden: true },
       { label: 'Code Intel', path: '/code-intel', icon: Code2 },
       { label: 'Marketplace', path: '/marketplace', icon: Store },
       { label: 'Skill Builder', path: '/skill-builder', icon: Wrench },

@@ -41,7 +41,7 @@ export function Sidebar() {
               </p>
             )}
             <div className="space-y-0.5">
-              {group.items.map((item) => (
+              {group.items.filter((item) => !item.hidden).map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}

@@ -11,7 +11,7 @@
 [![Tests](https://img.shields.io/badge/Tests-1196_passing-success?style=for-the-badge)](.)
 [![Node](https://img.shields.io/badge/Node-22+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
-[![Super-Agent](https://img.shields.io/badge/Super--Agent-51_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
+[![Super-Agent](https://img.shields.io/badge/Super--Agent-58_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
 
 *Zero LangChain. Zero CrewAI. Zero AutoGen. 100% custom.*
 
@@ -35,7 +35,7 @@ titan                # Interactive REPL mode
 
 ## Super-Agent Capabilities
 
-Titan isn't just an agent — it's a **Super-Agent**. 44 advanced capabilities built on top of cutting-edge 2026 AI research:
+Titan isn't just an agent — it's a **Super-Agent**. 58 advanced capabilities built on top of cutting-edge 2026 AI research:
 
 ### Self-Improvement & Awareness
 
@@ -155,14 +155,14 @@ docker compose up -d
 #   - PostgreSQL 16 + pgvector  (port 55432)
 #   - Redis 7.4                 (port 6379)
 #   - Embedding service         (port 8100)
-#   - Titan Core API            (port 3000)
+#   - Titan Core API            (port 3001)
 #   - Titan Worker              (background queue processor)
 
 # 4. Open dashboard
-# http://localhost:3000
+# http://localhost:3001
 
 # 5. Check health
-curl http://localhost:3000/api/v1/health/live
+curl http://localhost:3001/api/v1/health/live
 
 # 6. View logs
 docker compose logs -f core
@@ -202,7 +202,7 @@ npm run build
 
 # 6. Start the API server (with hot reload)
 npm run dev:core
-# Server runs on http://localhost:3000
+# Server runs on http://localhost:3001
 
 # 7. Start the dashboard (separate terminal)
 npm run dev:dashboard
@@ -304,18 +304,20 @@ nano .env
 #   POSTGRES_PASSWORD=<strong password>
 #   REDIS_PASSWORD=<strong password>
 #   CORS_ORIGIN=https://your-domain.com
+#   WS_ALLOWED_ORIGINS=https://your-domain.com  (recommended for production)
+#   HTTP_CSP_ENABLED=true                       (recommended for production)
+#   POSTGRES_ALLOW_NO_TLS=true                  (if DB is on internal Docker network)
 
 # 4. Build and start
 docker compose up -d --build
 
 # 5. Set up reverse proxy (Nginx/Caddy/Traefik)
-# Point your domain to port 3000
+# Point your domain to port 3001
 
 # For Dokploy specifically:
-# - Create a new application
-# - Set build method: Dockerfile
-# - Set Dockerfile path: apps/core/Dockerfile
-# - Add environment variables in Dokploy UI
+# - Create a new application pointing to the repo
+# - Use docker-compose as the compose type
+# - Set environment variables in Dokploy UI or .env file
 # - Set domain in Dokploy
 # - Deploy
 ```
@@ -430,12 +432,13 @@ console.log(swarm.finalAnswer);
 - **Voting System** — weighted confidence-based decisions
 - **Collaboration Sessions** — live multi-agent sessions with real-time messaging
 
-### Web Dashboard (43 Pages)
-**Core:** Chat, Agents, Playground, Swarm, Workflow Designer, Terminal, Editor, Files, Git, Projects, Templates, Teams, Settings, Getting Started, Login
-**Operations:** Run History, Queues, Metrics, Cron, Logs, Webhooks, Audit Logs, System Health
-**Analytics:** Analytics, Cost Dashboard, Trace Viewer, Agent Performance, Model Comparison, Tool Stats
-**Advanced:** Knowledge Base, User Profile, Integration Hub, Marketplace, Learning Dashboard, Error Explorer, Notification Center, Workspace Insights
-**Docs:** API Docs, 404 Page
+### Web Dashboard (40+ Pages)
+**Core:** Dashboard, Chat, Agents, Agent Profiles, Runs, Files, Code Intel, Marketplace, Skill Builder
+**AI Operations:** Swarm, Playground, Knowledge, Workflows, Learning, Autonomous, Teams
+**V5 Capabilities:** MCP Governance, DAG Workflow, Guardrails, Bi-Temporal Graph
+**Infrastructure:** Queue, Health, Metrics
+**Management:** API Keys, Webhooks, Cron Jobs, Plugins, Workspaces, Memory, Audit Logs, Settings
+*(Terminal & Git pages are temporarily hidden — will return with improvements)*
 
 ---
 
@@ -807,7 +810,7 @@ titan/
 │   ├── sandbox/             # Docker container pool
 │   └── telemetry/           # OpenTelemetry
 ├── services/
-│   └── embed/               # Self-hosted embeddings (BGE-small-en-v1.5)
+│   └── embed/               # Self-hosted embeddings (BGE-small-en-v1.5 via fastembed/ONNX)
 └── docker/                  # PostgreSQL + Redis configs
 ```
 
@@ -1295,9 +1298,9 @@ curl -X POST http://localhost:3000/api/v1/esm/resume/cp1a2b3 \
 | `REDIS_HOST` | Redis host | No | `localhost` |
 | `REDIS_PORT` | Redis port | No | `6379` |
 | `REDIS_PASSWORD` | Redis password | **Yes** (prod) | `titan_dev_redis...` |
-| `EMBEDDING_BASE_URL` | Embedding service URL | No | `http://localhost:8100/v1` |
+| `EMBEDDING_BASE_URL` | Embedding service URL | No | `http://embed:8000/v1` |
 | `EMBEDDING_DIMENSIONS` | Embedding vector size | No | `384` |
-| `HTTP_PORT` | API server port | No | `3000` |
+| `HTTP_PORT` | API server port | No | `3001` |
 | `CORS_ORIGIN` | Allowed CORS origins | No | `*` |
 | `NODE_ENV` | Environment | No | `development` |
 | `AUTONOMOUS_LOOP_ENABLED` | Auto-start autonomous loop | No | `false` |
@@ -1316,12 +1319,12 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Tests Passing | 1196+ |
 | Packages | 16 |
 | API Endpoints | 210+ |
-| Built-in Tools | 90 |
-| Dashboard Pages | 43 |
+| Built-in Tools | 93 |
+| Dashboard Pages | 40+ |
 | Database Migrations | 25 |
 | Agent Profiles | 30 |
 | Queue Types | 9 |
-| Super-Agent Capabilities | 51 |
+| Super-Agent Capabilities | 58 |
 | Agent-Engine Modules | 55+ |
 
 ---

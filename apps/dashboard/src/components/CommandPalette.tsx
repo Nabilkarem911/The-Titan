@@ -21,7 +21,7 @@ export function CommandPalette() {
   // Flatten nav items
   const allItems: CommandItem[] = useMemo(() => {
     return NAV_GROUPS.flatMap((group) =>
-      group.items.map((item) => ({
+      group.items.filter((item) => !item.hidden).map((item) => ({
         label: item.label,
         path: item.path,
         group: group.label,
