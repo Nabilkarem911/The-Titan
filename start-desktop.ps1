@@ -3,6 +3,7 @@
 # Or:  powershell -ExecutionPolicy Bypass -File start-desktop.ps1
 
 $ErrorActionPreference = "Continue"
+Set-Location -Path $PSScriptRoot
 Write-Host ""
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host "   TITAN DESKTOP AGENT - Setup & Launch" -ForegroundColor Cyan
@@ -17,7 +18,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 }
 Write-Host "  [OK] Node.js found." -ForegroundColor Green
 
-# Check Docker
+# Check Docker (only needed if running server locally)
 if (Get-Command docker -ErrorAction SilentlyContinue) {
     Write-Host "  [1/5] Starting Docker containers..." -ForegroundColor Yellow
     docker compose up -d 2>$null
@@ -27,7 +28,9 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
         Write-Host "        [WARNING] Docker compose failed." -ForegroundColor DarkYellow
     }
 } else {
-    Write-Host "  [WARNING] Docker not found. Make sure PostgreSQL is running." -ForegroundColor DarkYellow
+    Write-Host "  [INFO] Docker not found. Skipping local DB setup." -ForegroundColor DarkGray
+    Write-Host "         If the server is on another machine, this is fine." -ForegroundColor DarkGray
+    Write-Host "         If running server locally, start PostgreSQL manually." -ForegroundColor DarkGray
 }
 
 # Install

@@ -1,5 +1,6 @@
 @echo off
 title Titan Desktop Agent - Setup
+cd /d "%~dp0"
 
 echo.
 echo  ============================================
@@ -16,10 +17,12 @@ if %errorlevel% neq 0 (
 )
 echo  [OK] Node.js found.
 
-REM Check Docker
+REM Check Docker (only needed if running server locally)
 where docker >nul 2>nul
 if %errorlevel% neq 0 (
-    echo  [WARNING] Docker not found. Make sure PostgreSQL is running manually.
+    echo  [INFO] Docker not found. Skipping local DB setup.
+    echo         If the server is on another machine, this is fine.
+    echo         If running server locally, start PostgreSQL manually.
     goto :install
 )
 
