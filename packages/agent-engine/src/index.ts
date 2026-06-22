@@ -27,3 +27,4 @@ export * from './world-model/index.js';
 export * from './reasoning/index.js';
 export * from './collaboration/index.js';
 export * from './multimodal/index.js';
+export * from './mirror/index.js';

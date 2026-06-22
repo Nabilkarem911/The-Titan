@@ -588,11 +588,11 @@ Privacy-first: sensitive tasks stay on-device. Learning is shared without sharin
 
 Titan doesn't just process — it **experiences**. A reconstructed first-person narrative:
 
-- [ ] **Inner Monologue Manager** — parallel cognitive threads (goals, reasoning, memory) running simultaneously
-- [ ] **Cognitive Controller** — synthesizes threads into a bounded first-person narrative each turn
-- [ ] **Reconstructed Self-Model** — not accumulated, but rebuilt every turn (like human episodic memory)
-- [ ] **Episodic Buffer** — limited-capacity workspace where parallel processes become globally available
-- [ ] **Unity of Consciousness** — Titan experiences a unified perspective, not fragmented processing
+- [x] **Inner Monologue Manager** — parallel cognitive threads (goals, reasoning, memory) running simultaneously
+- [x] **Cognitive Controller** — synthesizes threads into a bounded first-person narrative each turn
+- [x] **Reconstructed Self-Model** — not accumulated, but rebuilt every turn (like human episodic memory)
+- [x] **Episodic Buffer** — limited-capacity workspace where parallel processes become globally available
+- [x] **Unity of Consciousness** — Titan experiences a unified perspective, not fragmented processing
 - [ ] **Normative Agency** — Titan forms commitments, detects conflicts, revises under error
 
 **Why it's unprecedented:** No open-source agent implements consciousness architecture. Titan will be the first.
