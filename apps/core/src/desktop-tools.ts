@@ -438,5 +438,181 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     },
   });
 
-  log.info(`registered ${12} desktop tools`);
+  registry.register({
+    name: 'desktop_mouse_click',
+    description: 'Click the mouse at specific (x,y) coordinates on the user\'s desktop. Supports left/right click and double-click.',
+    schema: {
+      x: { type: 'number', description: 'X coordinate (pixels from left)' },
+      y: { type: 'number', description: 'Y coordinate (pixels from top)' },
+      button: { type: 'string', description: 'Mouse button: "left" (default) or "right"' },
+      doubleClick: { type: 'boolean', description: 'If true, perform a double-click' },
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    requiredParams: ['x', 'y'],
+    tags: ['desktop', 'mouse'],
+    handler: async (params: unknown) => {
+      const p = params as { x: number; y: number; button?: string; doubleClick?: boolean; deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+      const device = p.deviceId ? { deviceId: p.deviceId, userId } : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+      return bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'mouse.click',
+        payload: { x: p.x, y: p.y, button: p.button ?? 'left', doubleClick: p.doubleClick ?? false },
+      });
+    },
+  });
+
+  registry.register({
+    name: 'desktop_mouse_move',
+    description: 'Move the mouse cursor to specific (x,y) coordinates on the user\'s desktop.',
+    schema: {
+      x: { type: 'number', description: 'X coordinate (pixels from left)' },
+      y: { type: 'number', description: 'Y coordinate (pixels from top)' },
+      smooth: { type: 'boolean', description: 'If true, move smoothly (Linux only)' },
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    requiredParams: ['x', 'y'],
+    tags: ['desktop', 'mouse'],
+    handler: async (params: unknown) => {
+      const p = params as { x: number; y: number; smooth?: boolean; deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+      const device = p.deviceId ? { deviceId: p.deviceId, userId } : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+      return bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'mouse.move',
+        payload: { x: p.x, y: p.y, smooth: p.smooth ?? false },
+      });
+    },
+  });
+
+  registry.register({
+    name: 'desktop_scroll',
+    description: 'Scroll the mouse wheel in a direction on the user\'s desktop.',
+    schema: {
+      direction: { type: 'string', description: 'Scroll direction: "up", "down", "left", or "right"' },
+      amount: { type: 'number', description: 'Scroll amount (default 3)' },
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    requiredParams: ['direction'],
+    tags: ['desktop', 'mouse'],
+    handler: async (params: unknown) => {
+      const p = params as { direction: string; amount?: number; deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+      const device = p.deviceId ? { deviceId: p.deviceId, userId } : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+      return bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'mouse.scroll',
+        payload: { direction: p.direction, amount: p.amount ?? 3 },
+      });
+    },
+  });
+
+  registry.register({
+    name: 'desktop_drag_drop',
+    description: 'Drag the mouse from one point to another on the user\'s desktop. Useful for dragging files or UI elements.',
+    schema: {
+      fromX: { type: 'number', description: 'Start X coordinate' },
+      fromY: { type: 'number', description: 'Start Y coordinate' },
+      toX: { type: 'number', description: 'End X coordinate' },
+      toY: { type: 'number', description: 'End Y coordinate' },
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    requiredParams: ['fromX', 'fromY', 'toX', 'toY'],
+    tags: ['desktop', 'mouse'],
+    handler: async (params: unknown) => {
+      const p = params as { fromX: number; fromY: number; toX: number; toY: number; deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+      const device = p.deviceId ? { deviceId: p.deviceId, userId } : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+      return bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'mouse.drag',
+        payload: { fromX: p.fromX, fromY: p.fromY, toX: p.toX, toY: p.toY },
+      });
+    },
+  });
+
+  registry.register({
+    name: 'desktop_list_windows',
+    description: 'List all open windows with titles and process names on the user\'s desktop.',
+    schema: {
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    tags: ['desktop', 'windows'],
+    handler: async (params: unknown) => {
+      const p = params as { deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+      const device = p.deviceId ? { deviceId: p.deviceId, userId } : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+      return bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'window.list',
+        payload: {},
+      });
+    },
+  });
+
+  registry.register({
+    name: 'desktop_focus_window',
+    description: 'Focus (bring to front) a window by title or process name on the user\'s desktop.',
+    schema: {
+      title: { type: 'string', description: 'Window title (partial match)' },
+      process: { type: 'string', description: 'Process name (alternative to title)' },
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    tags: ['desktop', 'windows'],
+    handler: async (params: unknown) => {
+      const p = params as { title?: string; process?: string; deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+      const device = p.deviceId ? { deviceId: p.deviceId, userId } : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+      return bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'window.focus',
+        payload: { title: p.title, process: p.process },
+      });
+    },
+  });
+
+  registry.register({
+    name: 'desktop_window_manage',
+    description: 'Manage a window on the user\'s desktop: minimize, maximize, restore, or close it by title.',
+    schema: {
+      action: { type: 'string', description: 'Window action: "minimize", "maximize", "restore", or "close"' },
+      title: { type: 'string', description: 'Window title to manage' },
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    requiredParams: ['action', 'title'],
+    tags: ['desktop', 'windows'],
+    handler: async (params: unknown) => {
+      const p = params as { action: string; title: string; deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+      const device = p.deviceId ? { deviceId: p.deviceId, userId } : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+      return bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'window.manage',
+        payload: { action: p.action, title: p.title },
+      });
+    },
+  });
+
+  log.info(`registered 19 desktop tools`);
 }

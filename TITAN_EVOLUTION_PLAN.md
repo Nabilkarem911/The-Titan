@@ -236,11 +236,11 @@ After a full codebase audit, Titan already has an impressive foundation:
 - Preload bindings updated for any new exposed APIs
 
 #### 1.1 Mouse Control
-- [ ] `desktop_mouse_click` — Click at (x,y) coordinates or relative position
-- [ ] `desktop_mouse_move` — Move mouse to position
-- [ ] `desktop_scroll` — Scroll up/down/left/right
-- [ ] `desktop_drag_drop` — Drag from point A to point B
-- Implementation: `robotjs` or `nut.js` (cross-platform native mouse control)
+- [x] `desktop_mouse_click` — Click at (x,y) coordinates or relative position
+- [x] `desktop_mouse_move` — Move mouse to position
+- [x] `desktop_scroll` — Scroll up/down/left/right
+- [x] `desktop_drag_drop` — Drag from point A to point B
+- Implementation: PowerShell on Windows, cliclick on macOS, xdotool on Linux
 
 #### 1.2 Visual Element Detection
 - [ ] `desktop_find_element` — Describe element → Vision model finds it on screenshot → returns coordinates
@@ -249,9 +249,9 @@ After a full codebase audit, Titan already has an impressive foundation:
 - [ ] Chain with mouse_click: "find the Save button → click it"
 
 #### 1.3 Window Management
-- [ ] `desktop_list_windows` — List all open windows with titles and positions
-- [ ] `desktop_focus_window` — Focus a window by title or process name
-- [ ] `desktop_window_manage` — Minimize, maximize, restore, close, move
+- [x] `desktop_list_windows` — List all open windows with titles and positions
+- [x] `desktop_focus_window` — Focus a window by title or process name
+- [x] `desktop_window_manage` — Minimize, maximize, restore, close, move
 - Implementation: PowerShell on Windows, AppleScript on macOS, wmctrl on Linux
 
 ---

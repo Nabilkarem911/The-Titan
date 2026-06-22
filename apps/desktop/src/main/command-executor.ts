@@ -36,6 +36,20 @@ export async function executeCommand(command: { type: string; payload: Record<st
       return keysType(command.payload);
     case 'clipboard':
       return clipboardAction(command.payload);
+    case 'mouse.click':
+      return mouseClick(command.payload);
+    case 'mouse.move':
+      return mouseMove(command.payload);
+    case 'mouse.scroll':
+      return mouseScroll(command.payload);
+    case 'mouse.drag':
+      return mouseDrag(command.payload);
+    case 'window.list':
+      return windowList();
+    case 'window.focus':
+      return windowFocus(command.payload);
+    case 'window.manage':
+      return windowManage(command.payload);
     case 'system.info':
       return systemInfo();
     default:
@@ -283,6 +297,310 @@ async function clipboardAction(payload: Record<string, unknown>): Promise<Comman
     }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Clipboard operation failed' };
+  }
+}
+
+async function mouseClick(payload: Record<string, unknown>): Promise<CommandResult> {
+  const x = payload.x as number;
+  const y = payload.y as number;
+  const button = (payload.button as string) ?? 'left';
+  const doubleClick = (payload.doubleClick as boolean) ?? false;
+
+  if (typeof x !== 'number' || typeof y !== 'number') {
+    return { success: false, error: 'Missing or invalid x/y coordinates' };
+  }
+
+  const isWindows = platform() === 'win32';
+  const isMac = platform() === 'darwin';
+
+  try {
+    if (isWindows) {
+      // Use PowerShell with System.Windows.Forms for mouse control
+      const clickCount = doubleClick ? 2 : 1;
+      const buttonFlag = button === 'right' ? 0x0008 : 0x0002; // RightDown : LeftDown
+      const script = `Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(${Math.round(x)}, ${Math.round(y)})
+Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class Mouse { [DllImport("user32.dll")] public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint cButtons, uint dwExtraInfo); }'
+$down = ${buttonFlag}
+$up = ${button === 'right' ? 0x0010 : 0x0004}
+for ($i = 0; $i -lt ${clickCount}; $i++) {
+  [Mouse]::mouse_event($down, 0, 0, 0, 0)
+  Start-Sleep -Milliseconds 50
+  [Mouse]::mouse_event($up, 0, 0, 0, 0)
+  if (${clickCount} -gt 1) { Start-Sleep -Milliseconds 50 }
+}`;
+      await execPowerShell(script, 10_000);
+    } else if (isMac) {
+      const btn = button === 'right' ? 'right click' : 'click';
+      const cmd = doubleClick ? `cliclick dd:${x},${y} dd:${x},${y}` : `cliclick ${btn}:${x},${y}`;
+      await execCommand(cmd, 10_000);
+    } else {
+      const btn = button === 'right' ? 'click --right' : 'click';
+      const cmd = doubleClick ? `xdotool click --repeat 2 1` : `xdotool ${btn}`;
+      await execShell(`xdotool mousemove ${Math.round(x)} ${Math.round(y)} && ${cmd}`, 10_000);
+    }
+    return { success: true, data: { x, y, button, doubleClick } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Mouse click failed' };
+  }
+}
+
+async function mouseMove(payload: Record<string, unknown>): Promise<CommandResult> {
+  const x = payload.x as number;
+  const y = payload.y as number;
+  const smooth = (payload.smooth as boolean) ?? false;
+
+  if (typeof x !== 'number' || typeof y !== 'number') {
+    return { success: false, error: 'Missing or invalid x/y coordinates' };
+  }
+
+  const isWindows = platform() === 'win32';
+  const isMac = platform() === 'darwin';
+
+  try {
+    if (isWindows) {
+      const script = `Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(${Math.round(x)}, ${Math.round(y)})`;
+      await execPowerShell(script, 5_000);
+    } else if (isMac) {
+      await execCommand(`cliclick m:${x},${y}`, 5_000);
+    } else {
+      const smoothFlag = smooth ? '--smooth' : '';
+      await execShell(`xdotool mousemove ${smoothFlag} ${Math.round(x)} ${Math.round(y)}`, 5_000);
+    }
+    return { success: true, data: { x, y, smooth } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Mouse move failed' };
+  }
+}
+
+async function mouseScroll(payload: Record<string, unknown>): Promise<CommandResult> {
+  const direction = (payload.direction as string) ?? 'down';
+  const amount = (payload.amount as number) ?? 3;
+
+  if (!['up', 'down', 'left', 'right'].includes(direction)) {
+    return { success: false, error: `Invalid scroll direction: ${direction}` };
+  }
+
+  const isWindows = platform() === 'win32';
+  const isMac = platform() === 'darwin';
+
+  try {
+    if (isWindows) {
+      const wheel = direction === 'up' || direction === 'down' ? 0x0800 : 0x1000;
+      const delta = direction === 'up' || direction === 'left' ? -Math.abs(amount) * 120 : Math.abs(amount) * 120;
+      const script = `Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class Mouse { [DllImport("user32.dll")] public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint cButtons, uint dwExtraInfo); }'
+[Mouse]::mouse_event(${wheel}, 0, ${delta}, 0, 0)`;
+      await execPowerShell(script, 5_000);
+    } else if (isMac) {
+      const dy = direction === 'up' ? amount : direction === 'down' ? -amount : 0;
+      const dx = direction === 'left' ? -amount : direction === 'right' ? amount : 0;
+      await execCommand(`cliclick scroll:${dx},${dy}`, 5_000);
+    } else {
+      const button = direction === 'up' ? 4 : direction === 'down' ? 5 : 0;
+      if (button > 0) {
+        for (let i = 0; i < amount; i++) {
+          await execShell(`xdotool click ${button}`, 5_000);
+        }
+      }
+    }
+    return { success: true, data: { direction, amount } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Scroll failed' };
+  }
+}
+
+async function mouseDrag(payload: Record<string, unknown>): Promise<CommandResult> {
+  const fromX = payload.fromX as number;
+  const fromY = payload.fromY as number;
+  const toX = payload.toX as number;
+  const toY = payload.toY as number;
+
+  if (typeof fromX !== 'number' || typeof fromY !== 'number' || typeof toX !== 'number' || typeof toY !== 'number') {
+    return { success: false, error: 'Missing or invalid coordinates (fromX, fromY, toX, toY required)' };
+  }
+
+  const isWindows = platform() === 'win32';
+  const isMac = platform() === 'darwin';
+
+  try {
+    if (isWindows) {
+      const script = `Add-Type -AssemblyName System.Windows.Forms
+Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class Mouse { [DllImport("user32.dll")] public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint cButtons, uint dwExtraInfo); }'
+[System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(${Math.round(fromX)}, ${Math.round(fromY)})
+Start-Sleep -Milliseconds 100
+[Mouse]::mouse_event(0x0002, 0, 0, 0, 0)
+Start-Sleep -Milliseconds 100
+[System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(${Math.round(toX)}, ${Math.round(toY)})
+Start-Sleep -Milliseconds 100
+[Mouse]::mouse_event(0x0004, 0, 0, 0, 0)`;
+      await execPowerShell(script, 15_000);
+    } else if (isMac) {
+      await execCommand(`cliclick dd:${fromX},${fromY} du:${toX},${toY}`, 15_000);
+    } else {
+      await execShell(
+        `xdotool mousemove ${Math.round(fromX)} ${Math.round(fromY)} mousedown 1 mousemove ${Math.round(toX)} ${Math.round(toY)} mouseup 1`,
+        15_000,
+      );
+    }
+    return { success: true, data: { fromX, fromY, toX, toY } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Drag failed' };
+  }
+}
+
+async function windowList(): Promise<CommandResult> {
+  const isWindows = platform() === 'win32';
+  const isMac = platform() === 'darwin';
+
+  try {
+    if (isWindows) {
+      const script = `Add-Type -AssemblyName System.Windows.Forms
+$windows = [System.Diagnostics.Process]::GetProcesses() | Where-Object { $_.MainWindowTitle -ne "" } | Select-Object Id, ProcessName, MainWindowTitle
+$windows | ConvertTo-Json`;
+      const output = await execPowerShell(script, 10_000);
+      const windows = parseWindowsJson(output);
+      return { success: true, data: { windows } };
+    } else if (isMac) {
+      const output = await execCommand(`osascript -e 'tell application "System Events" to get name of every window of every process whose visible is true'`, 10_000);
+      const windows = output.split(',').map((title: string) => ({ title: title.trim(), process: '' })).filter((w: { title: string }) => w.title);
+      return { success: true, data: { windows } };
+    } else {
+      const output = await execShell(`wmctrl -l 2>/dev/null || xdotool search "" 2>/dev/null`, 10_000);
+      const windows = output.split('\n').filter(Boolean).map((line: string) => {
+        const parts = line.split(/\s+/);
+        return { id: parts[0], title: parts.slice(3).join(' ') || line };
+      });
+      return { success: true, data: { windows } };
+    }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Window list failed' };
+  }
+}
+
+async function windowFocus(payload: Record<string, unknown>): Promise<CommandResult> {
+  const title = payload.title as string;
+  const processName = payload.process as string;
+
+  if (!title && !processName) {
+    return { success: false, error: 'Missing title or process name' };
+  }
+
+  const isWindows = platform() === 'win32';
+  const isMac = platform() === 'darwin';
+
+  try {
+    if (isWindows) {
+      const match = title ? title : processName;
+      const script = `Add-Type -AssemblyName System.Windows.Forms
+$proc = Get-Process | Where-Object { $_.MainWindowTitle -like "*${match.replace(/"/g, '""')}*" -or $_.ProcessName -like "*${match.replace(/"/g, '""')}*" } | Select-Object -First 1
+if ($proc) { [void][Win32]::SetForegroundWindow($proc.MainWindowHandle) }
+Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class Win32 { [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd); }'`;
+      await execPowerShell(script, 10_000);
+    } else if (isMac) {
+      const app = title ?? processName;
+      await execCommand(`osascript -e 'tell application "${app.replace(/"/g, '\\"')}" to activate'`, 10_000);
+    } else {
+      await execShell(`wmctrl -a "${(title ?? processName).replace(/"/g, '\\"')}" 2>/dev/null || xdotool search --name "${(title ?? processName).replace(/"/g, '\\"')}" windowactivate`, 10_000);
+    }
+    return { success: true, data: { title, process: processName } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Window focus failed' };
+  }
+}
+
+async function windowManage(payload: Record<string, unknown>): Promise<CommandResult> {
+  const action = payload.action as string;
+  const title = payload.title as string;
+
+  if (!action || !['minimize', 'maximize', 'restore', 'close'].includes(action)) {
+    return { success: false, error: `Invalid window action: ${action}` };
+  }
+  if (!title) {
+    return { success: false, error: 'Missing window title' };
+  }
+
+  const isWindows = platform() === 'win32';
+  const isMac = platform() === 'darwin';
+
+  try {
+    if (isWindows) {
+      const actionMap: Record<string, string> = {
+        minimize: '$sw_minimize = 0x0112; $wparam = 6',
+        maximize: '$sw_maximize = 0x0112; $wparam = 3',
+        restore: '$sw_restore = 0x0112; $wparam = 9',
+        close: '$sw_close = 0x0010; $wparam = 0',
+      };
+      const script = `Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class Win32 { [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam); [DllImport("user32.dll")] public static extern IntPtr FindWindow(string lpClassName, string lpWindowName); }'
+$hwnd = [Win32]::FindWindow($null, "${title.replace(/"/g, '""')}")
+if ($hwnd -ne [IntPtr]::Zero) { ${actionMap[action]} [Win32]::PostMessage($hwnd, 0x0112, [IntPtr]$wparam, [IntPtr]::Zero) }`;
+      await execPowerShell(script, 10_000);
+    } else if (isMac) {
+      if (action === 'close') {
+        await execCommand(`osascript -e 'tell application "${title.replace(/"/g, '\\"')}" to quit'`, 10_000);
+      } else {
+        const actionMap: Record<string, string> = { minimize: 'minimize', maximize: 'zoom', restore: ' AXRaise' };
+        await execCommand(`osascript -e 'tell application "System Events" to ${actionMap[action]} window "${title.replace(/"/g, '\\"')}"'`, 10_000);
+      }
+    } else {
+      const actionMap: Record<string, string> = { minimize: 'iconic', maximize: 'maximized', restore: 'normal', close: 'close' };
+      await execShell(`wmctrl -r "${title.replace(/"/g, '\\"')}" -b ${actionMap[action]} 2>/dev/null`, 10_000);
+    }
+    return { success: true, data: { action, title } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Window manage failed' };
+  }
+}
+
+// ── Helper functions for command execution ──
+
+async function execPowerShell(script: string, timeoutMs: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = exec('powershell -NoProfile -Command "' + script.replace(/"/g, '\\"') + '"', { timeout: timeoutMs, maxBuffer: 1024 * 1024 }, (err, stdout) => {
+      if (err) reject(err);
+      else resolve(stdout.toString());
+    });
+    child.unref?.();
+  });
+}
+
+async function execCommand(cmd: string, timeoutMs: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { timeout: timeoutMs, maxBuffer: 1024 * 1024 }, (err, stdout) => {
+      if (err) reject(err);
+      else resolve(stdout.toString());
+    });
+  });
+}
+
+async function execShell(cmd: string, timeoutMs: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { timeout: timeoutMs, maxBuffer: 1024 * 1024 }, (err, stdout) => {
+      if (err) reject(err);
+      else resolve(stdout.toString());
+    });
+  });
+}
+
+function parseWindowsJson(output: string): Array<{ id: number; process: string; title: string }> {
+  try {
+    const trimmed = output.trim();
+    if (!trimmed) return [];
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed.map((p: { Id?: number; ProcessName?: string; MainWindowTitle?: string }) => ({
+        id: p.Id ?? 0,
+        process: p.ProcessName ?? '',
+        title: p.MainWindowTitle ?? '',
+      }));
+    }
+    return [{
+      id: parsed.Id ?? 0,
+      process: parsed.ProcessName ?? '',
+      title: parsed.MainWindowTitle ?? '',
+    }];
+  } catch {
+    return [];
   }
 }
 
