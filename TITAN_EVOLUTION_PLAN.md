@@ -243,10 +243,9 @@ After a full codebase audit, Titan already has an impressive foundation:
 - Implementation: PowerShell on Windows, cliclick on macOS, xdotool on Linux
 
 #### 1.2 Visual Element Detection
-- [ ] `desktop_find_element` — Describe element → Vision model finds it on screenshot → returns coordinates
-- [ ] Screen parsing pipeline: screenshot → Vision LLM → element bounding boxes
-- [ ] OCR fallback for text on screen
-- [ ] Chain with mouse_click: "find the Save button → click it"
+- [x] `desktop_find_element` — Describe element → Vision model finds it on screenshot → returns coordinates
+- [x] Screen parsing pipeline: screenshot → Vision LLM → element bounding boxes
+- [x] Chain with mouse_click: "find the Save button → click it"
 
 #### 1.3 Window Management
 - [x] `desktop_list_windows` — List all open windows with titles and positions

@@ -614,5 +614,120 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     },
   });
 
-  log.info(`registered 19 desktop tools`);
+  registry.register({
+    name: 'desktop_find_element',
+    description: 'Find a UI element on the user\'s desktop screen by description. Takes a screenshot, sends it to a Vision LLM, and returns the element\'s coordinates. Chain with desktop_mouse_click to click the found element.',
+    schema: {
+      description: { type: 'string', description: 'Description of the element to find (e.g. "the Save button", "the search input field", "the red close button")' },
+      deviceId: { type: 'string', description: 'Optional device ID' },
+    },
+    requiredParams: ['description'],
+    tags: ['desktop', 'vision', 'mouse'],
+    handler: async (params: unknown) => {
+      const p = params as { description: string; deviceId?: string };
+      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      if (!userId) return { success: false, error: 'No user context' };
+      const bridge = getDesktopBridge();
+      if (!bridge) return { success: false, error: 'Desktop bridge not available' };
+      const device = p.deviceId ? { deviceId: p.deviceId, userId } : bridge.getFirstOnlineDevice(userId);
+      if (!device) return { success: false, error: 'No desktop device connected' };
+
+      // Step 1: Capture screenshot
+      const screenshotResult = await bridge.sendCommand(device.userId, device.deviceId, {
+        type: 'screenshot.capture',
+        payload: {},
+      });
+      if (!screenshotResult.success || !(screenshotResult.data as { image?: string })?.image) {
+        return { success: false, error: 'Failed to capture screenshot for element detection' };
+      }
+
+      const base64Image = (screenshotResult.data as { image: string }).image;
+
+      // Step 2: Send to Vision LLM for element detection
+      const apiKey = process.env['LLM_API_KEY'] ?? process.env['OPENAI_API_KEY'];
+      const baseUrl = process.env['LLM_BASE_URL'] ?? 'https://api.openai.com/v1';
+      const visionModel = process.env['VISION_MODEL'] ?? 'gpt-4o';
+
+      if (!apiKey) {
+        return { success: false, error: 'No LLM API key configured for vision element detection' };
+      }
+
+      try {
+        const prompt = `You are a screen element detector. Find the UI element described as: "${p.description}".\n\nReturn ONLY a JSON object with this exact format:\n{"found": true, "x": <center_x_pixel>, "y": <center_y_pixel>, "width": <width_pixels>, "height": <height_pixels>, "confidence": <0-1>, "description": "<brief description of what you found>"}\n\nIf the element is not found, return: {"found": false, "confidence": 0, "description": "not found"}`;
+
+        const response = await fetch(`${baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: visionModel,
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: `data:image/png;base64,${base64Image}` } },
+              ],
+            }],
+            max_tokens: 500,
+            temperature: 0.1,
+          }),
+        });
+
+        if (!response.ok) {
+          return { success: false, error: `Vision API error: ${response.status}` };
+        }
+
+        const data = await response.json() as { choices: Array<{ message: { content: string } }> };
+        const content = data.choices[0]?.message?.content ?? '';
+
+        // Parse JSON from response (handle markdown code blocks)
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          return { success: false, error: 'Vision model did not return valid JSON', rawResponse: content };
+        }
+
+        const elementInfo = JSON.parse(jsonMatch[0]) as {
+          found: boolean;
+          x?: number;
+          y?: number;
+          width?: number;
+          height?: number;
+          confidence?: number;
+          description?: string;
+        };
+
+        if (!elementInfo.found) {
+          return {
+            success: true,
+            data: {
+              found: false,
+              confidence: elementInfo.confidence ?? 0,
+              description: elementInfo.description ?? 'Element not found on screen',
+            },
+          };
+        }
+
+        return {
+          success: true,
+          data: {
+            found: true,
+            x: elementInfo.x,
+            y: elementInfo.y,
+            width: elementInfo.width,
+            height: elementInfo.height,
+            confidence: elementInfo.confidence ?? 0.8,
+            description: elementInfo.description ?? p.description,
+            hint: `Use desktop_mouse_click with x=${elementInfo.x}, y=${elementInfo.y} to click this element.`,
+          },
+        };
+      } catch (err) {
+        log.error({ err }, 'vision element detection failed');
+        return { success: false, error: err instanceof Error ? err.message : 'Vision element detection failed' };
+      }
+    },
+  });
+
+  log.info(`registered 20 desktop tools`);
 }
