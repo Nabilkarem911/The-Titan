@@ -74,10 +74,10 @@ export function escapeMarkdownV2(text: string): string {
  */
 export function markdownToMarkdownV2(text: string): string {
   // Extract code blocks first to preserve them
+  // In MarkdownV2, content inside ``` is treated as literal — no escaping needed
   const codeBlocks: string[] = [];
   let working = text.replace(/```[\w]*\n?([\s\S]*?)```/g, (_match, code: string) => {
-    const escaped = escapeMarkdownV2(code.replace(/\n$/, ''));
-    codeBlocks.push(escaped);
+    codeBlocks.push(code.replace(/\n$/, ''));
     return `\x00BLOCK${codeBlocks.length - 1}\x00`;
   });
 
@@ -322,6 +322,71 @@ export async function answerCallbackQuery(
   if (showAlert) body.show_alert = true;
 
   const result = await telegramApiCall(token, 'answerCallbackQuery', body);
+  return result.ok;
+}
+
+/**
+ * Send a photo to a chat. Supports both file paths and URLs.
+ */
+export async function sendTelegramPhoto(
+  token: string,
+  chatId: number,
+  photo: string,
+  caption?: string,
+  parseMode?: 'HTML' | 'MarkdownV2',
+): Promise<{ ok: boolean; messageId?: number; description?: string }> {
+  const body: Record<string, unknown> = {
+    chat_id: chatId,
+    photo,
+  };
+  if (caption) body.caption = caption;
+  if (parseMode) body.parse_mode = parseMode;
+
+  const result = await telegramApiCall(token, 'sendPhoto', body);
+  if (result.ok && result.result) {
+    const msg = result.result as { message_id?: number };
+    return { ok: true, messageId: msg.message_id };
+  }
+  return { ok: false, description: result.description };
+}
+
+/**
+ * Send multiple photos as a media group (carousel).
+ * @param photoInfos - array of { photo, caption } objects
+ */
+export async function sendMediaGroup(
+  token: string,
+  chatId: number,
+  photoInfos: Array<{ photo: string; caption?: string }>,
+): Promise<boolean> {
+  if (photoInfos.length === 0) return false;
+  // Telegram limits media groups to 10 items
+  const limited = photoInfos.slice(0, 10);
+  const media = limited.map((info) => ({
+    type: 'photo',
+    media: info.photo,
+    ...(info.caption ? { caption: info.caption } : {}),
+  }));
+
+  const result = await telegramApiCall(token, 'sendMediaGroup', {
+    chat_id: chatId,
+    media: JSON.stringify(media),
+  });
+  return result.ok;
+}
+
+/**
+ * Delete a message from a chat.
+ */
+export async function deleteMessage(
+  token: string,
+  chatId: number,
+  messageId: number,
+): Promise<boolean> {
+  const result = await telegramApiCall(token, 'deleteMessage', {
+    chat_id: chatId,
+    message_id: messageId,
+  });
   return result.ok;
 }
 

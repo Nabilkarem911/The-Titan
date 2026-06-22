@@ -16,7 +16,6 @@ import {
   validateCallbackOrigin,
   type CallbackQuery,
 } from './telegram-ui.js';
-
 describe('escapeMarkdownV2', () => {
   it('should escape all special characters', () => {
     const input = 'Hello _world_ [test] (paren) ~tilde~ `code` > quote #hash +plus -minus =eq |pipe {br} .dot !bang';
@@ -252,5 +251,38 @@ describe('validateCallbackOrigin', () => {
   it('should return false when from is missing', () => {
     const query: CallbackQuery = { id: '123', from: undefined as unknown as CallbackQuery['from'], data: 'test' };
     expect(validateCallbackOrigin(query, 123456)).toBe(false);
+  });
+});
+
+describe('Rich formatting helpers', () => {
+  it('markdownToMarkdownV2 should handle code blocks with language', () => {
+    const result = markdownToMarkdownV2('```typescript\nconst x = 1;\n```');
+    expect(result).toContain('```');
+    expect(result).toContain('const x = 1');
+  });
+
+  it('markdownToMarkdownV2 should handle nested bold and code', () => {
+    const result = markdownToMarkdownV2('**Bold** and `code` and *italic*');
+    expect(result).toContain('*Bold*');
+    expect(result).toContain('`code`');
+    expect(result).toContain('_italic_');
+  });
+
+  it('markdownToMarkdownV2 should handle multiple bold sections', () => {
+    const result = markdownToMarkdownV2('**First** and **Second**');
+    expect(result).toContain('*First*');
+    expect(result).toContain('*Second*');
+  });
+
+  it('escapeMarkdownV2 should handle strings with only special chars', () => {
+    expect(escapeMarkdownV2('***')).toBe('\\*\\*\\*');
+    expect(escapeMarkdownV2('___')).toBe('\\_\\_\\_');
+  });
+
+  it('buildProgressBar should handle large totals', () => {
+    const bar = buildProgressBar(50, 100, 'Processing');
+    expect(bar).toContain('50%');
+    expect(bar).toContain('(50/100)');
+    expect(bar).toContain('Processing');
   });
 });

@@ -416,9 +416,9 @@ After a full codebase audit, Titan already has an impressive foundation:
 - [x] Step indicators: "Step 3/7: Running tests..."
 
 #### 6.3 Rich Formatting
-- [ ] Markdown V2 with structured cards
-- [ ] Code blocks with syntax highlighting
-- [ ] Image carousels for multiple screenshots
+- [x] Markdown V2 with structured cards
+- [x] Code blocks with syntax highlighting
+- [x] Image carousels for multiple screenshots
 
 ---
 

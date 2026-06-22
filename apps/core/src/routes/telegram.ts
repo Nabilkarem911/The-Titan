@@ -16,6 +16,7 @@ import {
   answerCallbackQuery,
   parseCallbackData,
   validateCallbackOrigin,
+  deleteMessage,
 } from '../telegram-ui.js';
 
 const log = getLogger().child({ component: 'telegram' });
@@ -644,16 +645,9 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
 
         // Remove progress message and send final answer
         if (progressMessageId !== null) {
-          // Try to delete the progress message via Telegram API
-          try {
-            await fetch(`https://api.telegram.org/bot${cfg.TELEGRAM_BOT_TOKEN}/deleteMessage`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ chat_id: chatId, message_id: progressMessageId }),
-            });
-          } catch {
-            // If deletion fails, edit it to show completion
-            await editMessageText(cfg.TELEGRAM_BOT_TOKEN, chatId, progressMessageId, '✅ Done');
+          const deleted = await deleteMessage(cfg.TELEGRAM_BOT_TOKEN, chatId, progressMessageId);
+          if (!deleted) {
+            await editMessageText(cfg.TELEGRAM_BOT_TOKEN, chatId, progressMessageId, '✅ Done').catch(() => {});
           }
         }
 
