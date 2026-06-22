@@ -113,6 +113,10 @@ export function registerIpcHandlers(store: Store<Record<string, unknown>>): void
     if (!settings.serverUrl || !(settings.token || settings.apiKey)) {
       return { success: false, error: 'Missing server URL or credentials' };
     }
+    // If already connected, don't create a duplicate connection
+    if (activeWsClient && activeWsClient.isConnected()) {
+      return { success: true, alreadyConnected: true };
+    }
     if (activeWsClient) {
       await activeWsClient.disconnect();
     }

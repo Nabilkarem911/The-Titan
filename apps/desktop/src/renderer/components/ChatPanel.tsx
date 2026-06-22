@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Camera, Cpu, FolderOpen, Trash2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAppStore } from '../stores/app-store.js';
 
 interface Message {
   id: string;
@@ -15,6 +16,8 @@ export function ChatPanel() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const serverUrl = useAppStore((s) => s.serverUrl);
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -29,21 +32,57 @@ export function ChatPanel() {
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMsg]);
+    const prompt = input.trim();
     setInput('');
     setLoading(true);
 
-    // TODO: Send to Titan Server via REST API
-    // For now, simulate response
-    setTimeout(() => {
+    try {
+      const settings = await (window as any).titan?.getSettings();
+      const token = settings?.token;
+      if (!token) {
+        throw new Error('Not authenticated — please log in again');
+      }
+
+      const res = await fetch(`${serverUrl}/api/v1/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          prompt,
+          sessionId: sessionIdRef.current,
+          stream: false,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(err.error || err.message || `Server error (${res.status})`);
+      }
+
+      const data = await res.json() as { answer?: string; sessionId?: string };
+      if (data.sessionId) sessionIdRef.current = data.sessionId;
+
       const assistantMsg: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: 'I received your message. Connect to a Titan Server to get full responses.',
+        content: data.answer || 'No response received',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMsg]);
-      setLoading(false);
-    }, 1000);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to send message';
+      const assistantMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `Error: ${errorMsg}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+      toast.error(errorMsg);
+    }
+    setLoading(false);
   };
 
   const quickAction = (action: string) => {

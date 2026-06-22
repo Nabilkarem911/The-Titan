@@ -45,15 +45,8 @@ app.whenReady().then(() => {
   createWindow();
   tray = createTray();
 
-  const settings = store.store;
-  if (settings.serverUrl && (settings.token || settings.apiKey)) {
-    const client = new DesktopWsClient(settings.serverUrl, settings.token || settings.apiKey, {
-      deviceName: settings.deviceName || hostname(),
-      capabilities: settings.capabilities,
-    });
-    setWsClient(client);
-    client.connect();
-  }
+  // Note: WebSocket connection is established after login via IPC server:connect
+  // Do NOT auto-connect here to avoid duplicate connections
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -56,7 +56,7 @@ export const desktopDevices = {
 
   async setStatus(userId: string, deviceId: string, status: 'online' | 'offline'): Promise<void> {
     await query(
-      `UPDATE desktop_devices SET status = $3, last_seen_at = CASE WHEN $3 = 'online' THEN now() ELSE last_seen_at END, updated_at = now()
+      `UPDATE desktop_devices SET status = $3::text, last_seen_at = CASE WHEN $3::text = 'online' THEN now() ELSE last_seen_at END, updated_at = now()
        WHERE user_id = $1 AND device_id = $2`,
       [userId, deviceId, status],
     );

@@ -19,6 +19,7 @@ export class DesktopWsClient {
   private reconnectAttempts = 0;
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private connected = false;
+  private destroyed = false;
 
   constructor(serverUrl: string, token: string, opts: DesktopWsClientOptions) {
     this.serverUrl = serverUrl;
@@ -28,6 +29,7 @@ export class DesktopWsClient {
   }
 
   connect(): void {
+    if (this.connected || this.destroyed) return;
     const wsUrl = this.serverUrl.replace(/^http/, 'ws') + '/ws-desktop?token=' + encodeURIComponent(this.token);
     log.info({ wsUrl, deviceId: this.deviceId }, 'connecting to titan server');
 
@@ -100,12 +102,15 @@ export class DesktopWsClient {
     }
   }
 
+  private reconnectTimer: NodeJS.Timeout | null = null;
+
   private scheduleReconnect(): void {
+    if (this.destroyed) return;
     this.reconnectAttempts++;
     const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 30_000);
     log.info({ delay, attempt: this.reconnectAttempts }, 'scheduling reconnect');
-    setTimeout(() => {
-      if (!this.connected) {
+    this.reconnectTimer = setTimeout(() => {
+      if (!this.connected && !this.destroyed) {
         this.connect();
       }
     }, delay);
@@ -134,7 +139,12 @@ export class DesktopWsClient {
   }
 
   async disconnect(): Promise<void> {
+    this.destroyed = true;
     this.stopHeartbeat();
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.ws) {
       this.ws.close(1001, 'Client disconnect');
       this.ws = null;
