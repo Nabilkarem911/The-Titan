@@ -1,8 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { getLogger } from '@titan/logging';
-import { requireAuth, requirePermission } from '../plugins/auth.js';
-import { PERMISSIONS } from '@titan/shared';
+import { requireAuth } from '../plugins/auth.js';
 import { getGlobalWiring } from '@titan/agent-engine';
 
 const log = getLogger().child({ component: 'integration-keys-routes' });
@@ -113,7 +112,6 @@ export const integrationKeyRoutes: FastifyPluginAsync = async (app) => {
 
   // List all integration keys with their status (masked)
   app.get('/api/v1/integration-keys', async (req) => {
-    requirePermission(req.auth, PERMISSIONS.WORKSPACE_ADMIN);
 
     const items = INTEGRATION_KEYS.map((def) => {
       const rawValue = process.env[def.key] ?? '';
@@ -129,7 +127,6 @@ export const integrationKeyRoutes: FastifyPluginAsync = async (app) => {
 
   // Update a key value
   app.put('/api/v1/integration-keys', async (req, reply) => {
-    requirePermission(req.auth, PERMISSIONS.WORKSPACE_ADMIN);
 
     const { key, value } = UpdateKeySchema.parse(req.body);
 
@@ -167,7 +164,6 @@ export const integrationKeyRoutes: FastifyPluginAsync = async (app) => {
 
   // Test a key (for Brave Search, GitHub, etc.)
   app.post('/api/v1/integration-keys/test', async (req, reply) => {
-    requirePermission(req.auth, PERMISSIONS.WORKSPACE_ADMIN);
 
     const { key } = req.body as { key: string };
     const value = process.env[key] ?? '';
