@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Info, X, Lightbulb } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { useI18n } from '../i18n/I18nContext';
 
 interface PageHeaderProps {
   icon: LucideIcon;
@@ -15,6 +16,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ icon: Icon, title, subtitle, description, tips, accent = 'text-accent-primary', actions }: PageHeaderProps) {
   const [showInfo, setShowInfo] = useState(true);
+  const { t } = useI18n();
 
   return (
     <div className="space-y-3">
@@ -38,7 +40,7 @@ export function PageHeader({ icon: Icon, title, subtitle, description, tips, acc
           <div className="flex items-start gap-3">
             <div className="flex items-center gap-2 shrink-0">
               <Info className="w-4 h-4 text-accent-primary" />
-              <span className="text-sm font-semibold text-text-primary">What is this?</span>
+              <span className="text-sm font-semibold text-text-primary">{t('whatIsThis')}</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm text-text-secondary leading-relaxed">{description}</p>
@@ -56,7 +58,7 @@ export function PageHeader({ icon: Icon, title, subtitle, description, tips, acc
             <button
               onClick={() => setShowInfo(false)}
               className="btn-icon !w-7 !h-7 shrink-0 text-text-muted hover:text-text-primary"
-              title="Dismiss"
+              title={t('dismiss')}
             >
               <X className="w-4 h-4" />
             </button>

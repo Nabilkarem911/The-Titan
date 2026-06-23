@@ -5,12 +5,15 @@ import { TitanLogo } from '../TitanLogo';
 import { NAV_GROUPS } from '../../utils/constants';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../utils/cn';
+import { useI18n } from '../../i18n/I18nContext';
+import type { TranslationKey } from '../../i18n/translations';
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const handleLogout = async () => {
     await logout();
@@ -37,7 +40,7 @@ export function Sidebar() {
           <div key={group.label}>
             {!collapsed && (
               <p className="px-3 mb-2 text-caption text-text-muted uppercase tracking-wider font-medium">
-                {group.label}
+                {group.labelKey ? t(group.labelKey as TranslationKey) : group.label}
               </p>
             )}
             <div className="space-y-0.5">
@@ -56,7 +59,7 @@ export function Sidebar() {
                         : 'text-text-secondary hover:bg-elevated hover:text-text-primary',
                     )
                   }
-                  title={collapsed ? item.label : undefined}
+                  title={collapsed ? (item.labelKey ? t(item.labelKey as TranslationKey) : item.label) : undefined}
                 >
                   {({ isActive }) => (
                     <>
@@ -64,7 +67,7 @@ export function Sidebar() {
                         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-accent-primary" />
                       )}
                       <item.icon className="w-5 h-5 shrink-0" />
-                      {!collapsed && <span>{item.label}</span>}
+                      {!collapsed && <span>{item.labelKey ? t(item.labelKey as TranslationKey) : item.label}</span>}
                     </>
                   )}
                 </NavLink>
@@ -79,18 +82,18 @@ export function Sidebar() {
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="btn-ghost w-full !justify-center"
-          title={collapsed ? 'Expand' : 'Collapse'}
+          title={collapsed ? t('expand') : t('collapse')}
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          {!collapsed && <span>Collapse</span>}
+          {!collapsed && <span>{t('collapse')}</span>}
         </button>
         <button
           onClick={handleLogout}
           className="btn-ghost w-full !justify-center text-error hover:text-error mt-1"
-          title="Logout"
+          title={t('logout')}
         >
           <LogOut className="w-4 h-4" />
-          {!collapsed && <span>Logout</span>}
+          {!collapsed && <span>{t('logout')}</span>}
         </button>
       </div>
     </>
@@ -102,7 +105,7 @@ export function Sidebar() {
       <button
         onClick={() => setMobileOpen(true)}
         className="lg:hidden fixed top-3 left-3 z-40 w-10 h-10 rounded-btn bg-surface border border-border-subtle flex items-center justify-center text-text-secondary"
-        title="Open menu"
+        title={t('openMenu')}
       >
         <Menu className="w-5 h-5" />
       </button>

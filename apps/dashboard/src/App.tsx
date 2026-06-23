@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { I18nProvider } from './i18n/I18nContext';
 import { Layout } from './components/layout/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PageSkeleton } from './components/LoadingSkeleton';
@@ -81,7 +82,8 @@ function ProtectedLayout() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
+      <I18nProvider>
+        <AuthProvider>
         <Suspense fallback={<PageSkeleton />}>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -139,7 +141,8 @@ export default function App() {
           theme={localStorage.getItem('titan:theme') === 'light' ? 'light' : 'dark'}
           position="bottom-right"
         />
-      </AuthProvider>
+        </AuthProvider>
+      </I18nProvider>
     </ErrorBoundary>
   );
 }

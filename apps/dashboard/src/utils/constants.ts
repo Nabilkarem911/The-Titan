@@ -38,96 +38,105 @@ import {
 
 export interface NavItem {
   label: string;
+  labelKey?: string;
   path: string;
   icon: LucideIcon;
   badge?: string;
   hidden?: boolean;
 }
 
-export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+export const NAV_GROUPS: { label: string; labelKey?: string; items: NavItem[] }[] = [
   {
     label: 'Overview',
+    labelKey: 'navOverview',
     items: [
-      { label: 'Dashboard', path: '/', icon: LayoutDashboard },
-      { label: 'Chat', path: '/chat', icon: MessageSquare },
-      { label: 'Agents', path: '/agents', icon: Bot },
-      { label: 'Profiles', path: '/agent-profiles', icon: Users },
-      { label: 'Runs', path: '/runs', icon: Activity },
+      { label: 'Dashboard', labelKey: 'navDashboard', path: '/', icon: LayoutDashboard },
+      { label: 'Chat', labelKey: 'navChat', path: '/chat', icon: MessageSquare },
+      { label: 'Agents', labelKey: 'navAgents', path: '/agents', icon: Bot },
+      { label: 'Profiles', labelKey: 'navProfiles', path: '/agent-profiles', icon: Users },
+      { label: 'Runs', labelKey: 'navRuns', path: '/runs', icon: Activity },
     ],
   },
   {
     label: 'Workspace',
+    labelKey: 'navWorkspace',
     items: [
-      { label: 'Files', path: '/files', icon: FolderTree },
-      { label: 'Terminal', path: '/terminal', icon: TerminalSquare, hidden: true },
-      { label: 'Git', path: '/git', icon: GitBranch, hidden: true },
-      { label: 'Code Intel', path: '/code-intel', icon: Code2 },
-      { label: 'Marketplace', path: '/marketplace', icon: Store },
-      { label: 'Skill Builder', path: '/skill-builder', icon: Wrench },
+      { label: 'Files', labelKey: 'navFiles', path: '/files', icon: FolderTree },
+      { label: 'Terminal', labelKey: 'navTerminal', path: '/terminal', icon: TerminalSquare, hidden: true },
+      { label: 'Git', labelKey: 'navGit', path: '/git', icon: GitBranch, hidden: true },
+      { label: 'Code Intel', labelKey: 'navCodeIntel', path: '/code-intel', icon: Code2 },
+      { label: 'Marketplace', labelKey: 'navMarketplace', path: '/marketplace', icon: Store },
+      { label: 'Skill Builder', labelKey: 'navSkillBuilder', path: '/skill-builder', icon: Wrench },
     ],
   },
   {
     label: 'AI Operations',
+    labelKey: 'navAIOperations',
     items: [
-      { label: 'Swarm', path: '/swarm', icon: Network },
-      { label: 'Playground', path: '/playground', icon: FlaskConical },
-      { label: 'Knowledge', path: '/knowledge', icon: Brain },
-      { label: 'Workflows', path: '/workflows', icon: Workflow },
-      { label: 'Learning', path: '/learning', icon: GraduationCap },
-      { label: 'Autonomous', path: '/autonomous', icon: Bot },
-      { label: 'Teams', path: '/teams', icon: Users },
+      { label: 'Swarm', labelKey: 'navSwarm', path: '/swarm', icon: Network },
+      { label: 'Playground', labelKey: 'navPlayground', path: '/playground', icon: FlaskConical },
+      { label: 'Knowledge', labelKey: 'navKnowledge', path: '/knowledge', icon: Brain },
+      { label: 'Workflows', labelKey: 'navWorkflows', path: '/workflows', icon: Workflow },
+      { label: 'Learning', labelKey: 'navLearning', path: '/learning', icon: GraduationCap },
+      { label: 'Autonomous', labelKey: 'navAutonomous', path: '/autonomous', icon: Bot },
+      { label: 'Teams', labelKey: 'navTeams', path: '/teams', icon: Users },
     ],
   },
   {
     label: 'V5 Capabilities',
+    labelKey: 'navV5Capabilities',
     items: [
-      { label: 'MCP Governance', path: '/mcp-governance', icon: ShieldCheck },
-      { label: 'DAG Workflow', path: '/dag-workflow', icon: Workflow },
-      { label: 'Guardrails', path: '/guardrails', icon: Shield },
-      { label: 'Bi-Temporal Graph', path: '/bi-temporal-graph', icon: GitGraph },
+      { label: 'MCP Governance', labelKey: 'navMCPGovernance', path: '/mcp-governance', icon: ShieldCheck },
+      { label: 'DAG Workflow', labelKey: 'navDAGWorkflow', path: '/dag-workflow', icon: Workflow },
+      { label: 'Guardrails', labelKey: 'navGuardrails', path: '/guardrails', icon: Shield },
+      { label: 'Bi-Temporal Graph', labelKey: 'navBiTemporalGraph', path: '/bi-temporal-graph', icon: GitGraph },
     ],
   },
   {
     label: 'Cognitive Systems',
+    labelKey: 'navCognitiveSystems',
     items: [
-      { label: 'Dream Lab', path: '/dream-lab', icon: Moon },
-      { label: 'Safety', path: '/safety', icon: Shield },
-      { label: 'MIRROR', path: '/mirror', icon: Brain },
-      { label: 'Evolution', path: '/evolution', icon: Sparkles },
-      { label: 'Meta-Learning', path: '/meta-learning', icon: GraduationCap },
+      { label: 'Dream Lab', labelKey: 'navDreamLab', path: '/dream-lab', icon: Moon },
+      { label: 'Safety', labelKey: 'navSafety', path: '/safety', icon: Shield },
+      { label: 'MIRROR', labelKey: 'navMirror', path: '/mirror', icon: Brain },
+      { label: 'Evolution', labelKey: 'navEvolution', path: '/evolution', icon: Sparkles },
+      { label: 'Meta-Learning', labelKey: 'navMetaLearning', path: '/meta-learning', icon: GraduationCap },
     ],
   },
   {
     label: 'Integrations',
+    labelKey: 'navIntegrations',
     items: [
-      { label: 'Browser Agent', path: '/browser-agent', icon: Globe },
-      { label: 'Agent Network', path: '/agent-network', icon: Network },
-      { label: 'Self-Forge', path: '/self-forge', icon: Wrench },
-      { label: 'World Model', path: '/world-model', icon: Orbit },
-      { label: 'Hive Mind', path: '/hive-mind', icon: Network },
-      { label: 'Economy', path: '/economy', icon: Coins },
-      { label: 'Constitution', path: '/constitution', icon: Scroll },
+      { label: 'Browser Agent', labelKey: 'navBrowserAgent', path: '/browser-agent', icon: Globe },
+      { label: 'Agent Network', labelKey: 'navAgentNetwork', path: '/agent-network', icon: Network },
+      { label: 'Self-Forge', labelKey: 'navSelfForge', path: '/self-forge', icon: Wrench },
+      { label: 'World Model', labelKey: 'navWorldModel', path: '/world-model', icon: Orbit },
+      { label: 'Hive Mind', labelKey: 'navHiveMind', path: '/hive-mind', icon: Network },
+      { label: 'Economy', labelKey: 'navEconomy', path: '/economy', icon: Coins },
+      { label: 'Constitution', labelKey: 'navConstitution', path: '/constitution', icon: Scroll },
     ],
   },
   {
     label: 'Infrastructure',
+    labelKey: 'navInfrastructure',
     items: [
-      { label: 'Queue', path: '/queue', icon: Layers },
-      { label: 'Health', path: '/health', icon: HeartPulse },
-      { label: 'Metrics', path: '/metrics', icon: BarChart3 },
+      { label: 'Queue', labelKey: 'navQueue', path: '/queue', icon: Layers },
+      { label: 'Health', labelKey: 'navHealth', path: '/health', icon: HeartPulse },
+      { label: 'Metrics', labelKey: 'navMetrics', path: '/metrics', icon: BarChart3 },
     ],
   },
   {
     label: 'Management',
+    labelKey: 'navManagement',
     items: [
-      { label: 'API Keys', path: '/api-keys', icon: KeyRound },
-      { label: 'Webhooks', path: '/webhooks', icon: Webhook },
-      { label: 'Cron Jobs', path: '/cron', icon: Clock },
-      { label: 'Plugins', path: '/plugins', icon: Puzzle },
-      { label: 'Workspaces', path: '/workspaces', icon: Building2 },
-      { label: 'Memory', path: '/memory', icon: Brain },
-      { label: 'Audit Logs', path: '/audit-logs', icon: ShieldCheck },
-      { label: 'Settings', path: '/settings', icon: Settings },
+      { label: 'API Keys', labelKey: 'navApiKeys', path: '/api-keys', icon: KeyRound },
+      { label: 'Webhooks', labelKey: 'navWebhooks', path: '/webhooks', icon: Webhook },
+      { label: 'Cron Jobs', labelKey: 'navCronJobs', path: '/cron', icon: Clock },
+      { label: 'Plugins', labelKey: 'navPlugins', path: '/plugins', icon: Puzzle },
+      { label: 'Workspaces', labelKey: 'navWorkspaces', path: '/workspaces', icon: Building2 },
+      { label: 'Memory', labelKey: 'navMemory', path: '/memory', icon: Brain },
+      { label: 'Audit Logs', labelKey: 'navAuditLogs', path: '/audit-logs', icon: ShieldCheck },
+      { label: 'Settings', labelKey: 'navSettings', path: '/settings', icon: Settings },
     ],
   },
 ];

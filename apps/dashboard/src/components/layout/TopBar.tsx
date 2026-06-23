@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, ChevronDown, CheckCircle2, AlertCircle, Info, Sun, Moon } from 'lucide-react';
+import { Search, Bell, User, ChevronDown, CheckCircle2, AlertCircle, Info, Sun, Moon, Languages } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../utils/cn';
 import { formatRelativeTime } from '../../utils/format';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface Notification {
   id: string;
@@ -18,6 +19,7 @@ interface Notification {
 export function TopBar() {
   const { userId, logout } = useAuth();
   const navigate = useNavigate();
+  const { t, lang, toggleLang } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => {
@@ -81,7 +83,7 @@ export function TopBar() {
           className="relative w-full flex items-center gap-2 px-3 h-9 rounded-btn bg-elevated border border-border-subtle text-text-muted hover:border-border-default transition-colors"
         >
           <Search className="w-4 h-4 shrink-0" />
-          <span className="text-sm">Search pages...</span>
+          <span className="text-sm">{t('search')}</span>
           <kbd className="ml-auto text-caption bg-surface px-1.5 py-0.5 rounded border border-border-subtle">⌘K</kbd>
         </button>
       </div>
@@ -89,7 +91,13 @@ export function TopBar() {
       {/* Right actions */}
       <div className="flex items-center gap-2">
         {/* Theme toggle */}
-        <button onClick={toggleTheme} className="btn-icon" title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+        <button onClick={toggleLang} className="btn-icon" title={lang === 'en' ? t('switchToArabic') : t('switchToEnglish')}>
+          <Languages className="w-4 h-4" />
+          <span className="text-caption ml-1">{lang === 'en' ? 'ع' : 'EN'}</span>
+        </button>
+
+        {/* Theme toggle */}
+        <button onClick={toggleTheme} className="btn-icon" title={isDark ? t('switchToLight') : t('switchToDark')}>
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
@@ -111,12 +119,12 @@ export function TopBar() {
           {notifOpen && (
             <div className="absolute right-0 top-full mt-1 w-80 card shadow-lg py-1 animate-scale-in origin-top-right z-50 max-h-96 overflow-y-auto">
               <div className="px-3 py-2 border-b border-border-subtle flex items-center justify-between">
-                <span className="text-sm font-medium text-text-primary">Notifications</span>
-                <span className="text-caption text-text-muted">{notifications.length} recent</span>
+                <span className="text-sm font-medium text-text-primary">{t('notifications')}</span>
+                <span className="text-caption text-text-muted">{notifications.length} {t('recent')}</span>
               </div>
               {notifications.length === 0 ? (
                 <div className="px-3 py-8 text-center">
-                  <p className="text-small text-text-secondary">No notifications</p>
+                  <p className="text-small text-text-secondary">{t('noNotifications')}</p>
                 </div>
               ) : (
                 notifications.map(n => (
@@ -165,14 +173,14 @@ export function TopBar() {
                 onClick={() => { setMenuOpen(false); navigate('/settings'); }}
                 className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-elevated hover:text-text-primary transition-colors"
               >
-                Settings
+                {t('settings')}
               </button>
               <div className="h-px bg-border-subtle my-1" />
               <button
                 onClick={handleLogout}
                 className="w-full px-3 py-2 text-left text-sm text-error hover:bg-elevated transition-colors"
               >
-                Logout
+                {t('logout')}
               </button>
             </div>
           )}
