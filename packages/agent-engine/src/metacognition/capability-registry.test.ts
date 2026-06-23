@@ -70,9 +70,66 @@ describe('CapabilityRegistry', () => {
 
   it('should generate system prompt section', () => {
     const section = registry.generateSystemPromptSection();
-    expect(section).toContain('Titan Capabilities');
-    expect(section).toContain('Self-Forge');
+    expect(section).toContain('Titan');
+    expect(section).toContain('capabilities');
+  });
+
+  it('should generate compact prompt section (~100 tokens)', () => {
+    const section = registry.generateCompactPromptSection();
+    expect(section).toContain('Titan');
+    expect(section).toContain('capabilities');
+    // Compact should be short — less than 500 chars
+    expect(section.length).toBeLessThan(500);
+  });
+
+  it('should generate summary prompt section with names only', () => {
+    const section = registry.generateSummaryPromptSection();
     expect(section).toContain('REASONING');
+    expect(section).toContain('Self-Forge');
+    // Should NOT contain full descriptions
+    expect(section).not.toContain('Agent writes its own tools');
+  });
+
+  it('should generate summary for specific categories only', () => {
+    const section = registry.generateSummaryPromptSection(['reasoning', 'memory']);
+    expect(section).toContain('REASONING');
+    expect(section).toContain('MEMORY');
+    expect(section).not.toContain('VOICE');
+  });
+
+  it('should generate full prompt section with descriptions', () => {
+    const section = registry.generateFullPromptSection();
+    expect(section).toContain('Self-Awareness');
+    expect(section).toContain('Self-Forge');
+    expect(section).toContain('Agent writes its own tools');
+    // Full should be long
+    expect(section.length).toBeGreaterThan(2000);
+  });
+
+  it('should generate task-aware section for code tasks', () => {
+    const section = registry.generateTaskAwareSection('fix this bug in the code');
+    expect(section).toContain('REASONING');
+    expect(section).toContain('CODE-INTEL');
+  });
+
+  it('should generate task-aware section for voice tasks', () => {
+    const section = registry.generateTaskAwareSection('transcribe this audio file');
+    expect(section).toContain('VOICE');
+  });
+
+  it('should fall back to compact for generic messages', () => {
+    const section = registry.generateTaskAwareSection('hello');
+    // Should be compact (short)
+    expect(section.length).toBeLessThan(500);
+  });
+
+  it('should classify task categories correctly', () => {
+    const cats1 = (registry as any).classifyTaskCategories('translate this to French');
+    expect(cats1).toContain('communication');
+
+    const cats2 = (registry as any).classifyTaskCategories('generate an image of a cat');
+    expect(cats2).toContain('creative');
+    expect(cats2).toContain('multimodal');
   });
 
   it('should check if has capability', () => {

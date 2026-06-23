@@ -302,10 +302,10 @@ export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string): st
     getToneMemorySection(effectiveLang),
   ];
 
-  // Inject capability self-awareness
+  // Inject capability self-awareness (task-aware to save tokens)
   try {
     const capRegistry = getGlobalCapabilityRegistry();
-    const capSection = capRegistry.generateSystemPromptSection();
+    const capSection = capRegistry.generateTaskAwareSection(userMessage ?? '');
     sections.push(capSection);
   } catch {
     // Capability registry might not be initialized in test contexts

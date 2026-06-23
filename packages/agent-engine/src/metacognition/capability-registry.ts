@@ -370,6 +370,64 @@ export class CapabilityRegistry {
   }
 
   generateSystemPromptSection(): string {
+    return this.generateCompactPromptSection();
+  }
+
+  /**
+   * COMPACT — ~100 tokens. Default for system prompt injection.
+   * Only category names + counts, no individual capability descriptions.
+   */
+  generateCompactPromptSection(): string {
+    const snapshot = this.getSnapshot();
+    const enabled = snapshot.capabilities.filter((c) => c.enabled);
+
+    const byCat: Record<string, number> = {};
+    for (const cap of enabled) {
+      byCat[cap.category] = (byCat[cap.category] ?? 0) + 1;
+    }
+
+    const catList = Object.entries(byCat)
+      .map(([cat, count]) => `${cat}(${count})`)
+      .join(', ');
+
+    return [
+      `You are Titan — ${enabled.length} capabilities [${catList}], ${snapshot.toolsCount} tools.`,
+      'If asked what you can do, use the `list_capabilities` tool for details.',
+      'If you need a missing capability, use Self-Forge to create it.',
+    ].join(' ');
+  }
+
+  /**
+   * SUMMARY — ~300 tokens. For when Titan needs to know capability names
+   * but not full descriptions. Triggered by task classification.
+   */
+  generateSummaryPromptSection(relevantCategories?: string[]): string {
+    const snapshot = this.getSnapshot();
+    const enabled = snapshot.capabilities.filter((c) => c.enabled);
+
+    const byCat: Record<string, Capability[]> = {};
+    for (const cap of enabled) {
+      if (relevantCategories && !relevantCategories.includes(cap.category)) continue;
+      if (!byCat[cap.category]) byCat[cap.category] = [];
+      byCat[cap.category].push(cap);
+    }
+
+    const lines: string[] = [
+      `--- Titan Capabilities (${enabled.length} total, ${snapshot.toolsCount} tools) ---`,
+    ];
+
+    for (const [cat, caps] of Object.entries(byCat)) {
+      lines.push(`[${cat.toUpperCase()}] ${caps.map((c) => c.name).join(', ')}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * FULL — ~3000+ tokens. Only for explicit "what can you do?" queries
+   * or when the `list_capabilities` tool is called.
+   */
+  generateFullPromptSection(): string {
     const snapshot = this.getSnapshot();
     const enabled = snapshot.capabilities.filter((c) => c.enabled);
 
@@ -399,6 +457,51 @@ export class CapabilityRegistry {
     lines.push('If you need a capability you don\'t have, use Self-Forge to create a new tool.');
 
     return lines.join('\n');
+  }
+
+  /**
+   * TASK-AWARE — injects only capabilities relevant to the current task.
+   * Uses keyword matching to determine relevant categories.
+   * ~200-400 tokens depending on task.
+   */
+  generateTaskAwareSection(userMessage: string): string {
+    const relevantCats = this.classifyTaskCategories(userMessage);
+    if (relevantCats.length === 0) {
+      return this.generateCompactPromptSection();
+    }
+    return this.generateSummaryPromptSection(relevantCats);
+  }
+
+  private classifyTaskCategories(message: string): string[] {
+    const lower = message.toLowerCase();
+    const cats: string[] = [];
+
+    const patterns: Array<[string, RegExp]> = [
+      ['reasoning', /\b(think|reason|plan|analyz|solve|decid|strateg|hypothes|debug|fix|bug)/],
+      ['memory', /\b(remember|recall|memory|history|past|forget|knowledge)/],
+      ['code-intel', /\b(code|function|class|module|import|refactor|architect|dependency)/],
+      ['multimodal', /\b(image|pdf|screenshot|chart|diagram|table|visual|picture|photo)/],
+      ['voice', /\b(voice|audio|speak|talk|listen|transcri|tts|stt|sound)/],
+      ['swarm', /\b(agent|swarm|parallel|delegate|collaborat|team|spawn|multi-agent)/],
+      ['learning', /\b(learn|improve|optimi|train|feedback|experience|adapt)/],
+      ['safety', /\b(safe|guard|protect|secur|danger|risk|harm|destruct)/],
+      ['consciousness', /\b(self|aware|introspect|metacogn|think about|reflect|conscious)/],
+      ['creative', /\b(creat|generat|art|music|image|video|design|aesthetic)/],
+      ['economy', /\b(trad|credit|economy|market|buy|sell|price|escrow|reputation)/],
+      ['evolution', /\b(evolv|self-improv|mutat|fitness|github|mine|co-evol|curriculum)/],
+      ['communication', /\b(translat|language|message|chat|communicat|protocol)/],
+      ['autonomous', /\b(autonom|proactive|schedule|automat|loop|self-run|causal)/],
+      ['privacy', /\b(privat|local|offline|ollama|sensitive|confidential|encrypt)/],
+      ['workflow', /\b(workflow|trigger|cron|webhook|pipeline|dag|flow|automat)/],
+      ['integrations', /\b(telegram|whatsapp|slack|discord|integration|bot|webhook)/],
+      ['tools', /\b(tool|forge|mcp|browser|marketplace|plugin|execute)/],
+    ];
+
+    for (const [cat, regex] of patterns) {
+      if (regex.test(lower)) cats.push(cat);
+    }
+
+    return cats;
   }
 
   hasCapability(name: string): boolean {
