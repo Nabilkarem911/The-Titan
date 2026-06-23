@@ -350,28 +350,34 @@ export class WebIntelligence extends EventEmitter {
   }
 
   private async executeApiSearch(query: string, maxResults: number, source?: string): Promise<WebSearchResult[]> {
-    const url = `${this.config.baseUrl}/search`;
-    const response = await fetch(url, {
-      method: 'POST',
+    const searchUrl = new URL('https://api.search.brave.com/res/v1/web/search');
+    searchUrl.searchParams.set('q', query);
+    searchUrl.searchParams.set('count', String(maxResults));
+
+    const response = await fetch(searchUrl.toString(), {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`,
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip',
+        'X-Subscription-Token': this.config.apiKey ?? '',
       },
-      body: JSON.stringify({ query, maxResults, source }),
       signal: AbortSignal.timeout(this.config.timeout),
     });
 
-    if (!response.ok) throw new Error(`Search API returned ${response.status}`);
-    const data = await response.json() as { results: Array<Record<string, unknown>> };
+    if (!response.ok) throw new Error(`Brave Search API returned ${response.status}`);
+    const data = await response.json() as {
+      web?: { results?: Array<{ title?: string; url?: string; description?: string; age?: string }> };
+    };
 
-    return data.results.map((r) => ({
-      id: String(r.id ?? randomUUID().slice(0, 8)),
+    const results = data.web?.results ?? [];
+    return results.map((r, i) => ({
+      id: randomUUID().slice(0, 8),
       title: String(r.title ?? ''),
       url: String(r.url ?? ''),
-      snippet: String(r.snippet ?? ''),
-      score: Number(r.score ?? 0),
-      publishedAt: r.publishedAt ? new Date(String(r.publishedAt)) : undefined,
-      source: String(r.source ?? 'api'),
+      snippet: String(r.description ?? ''),
+      score: 1 - i * 0.1,
+      publishedAt: r.age ? new Date(r.age) : undefined,
+      source: source ?? 'brave',
     }));
   }
 
@@ -381,37 +387,75 @@ export class WebIntelligence extends EventEmitter {
     extractImages?: boolean;
   }): Promise<ScrapeResult> {
     const startedAt = Date.now();
-    const apiUrl = `${this.config.baseUrl}/scrape`;
-    const response = await fetch(apiUrl, {
-      method: 'POST',
+    const response = await fetch(url, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`,
+        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent': 'TitanBot/1.0',
       },
-      body: JSON.stringify({
-        url,
-        formats: [opts?.format ?? 'markdown'],
-        extractLinks: opts?.extractLinks ?? true,
-        extractImages: opts?.extractImages ?? false,
-      }),
       signal: AbortSignal.timeout(this.config.timeout),
     });
 
-    if (!response.ok) throw new Error(`Scrape API returned ${response.status}`);
-    const data = await response.json() as Record<string, unknown>;
+    if (!response.ok) throw new Error(`Scrape failed: HTTP ${response.status}`);
+    const html = await response.text();
+    const loadTimeMs = Date.now() - startedAt;
+
+    const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : '';
+
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    const bodyHtml = bodyMatch ? bodyMatch[1] : html;
+
+    const text = bodyHtml
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const links: Array<{ text: string; url: string }> = [];
+    if (opts?.extractLinks !== false) {
+      const linkRegex = /<a\s+[^>]*href=["']([^"']+)["'][^>]*>([^<]*)<\/a>/gi;
+      let match;
+      while ((match = linkRegex.exec(html)) && links.length < 100) {
+        const href = match[1];
+        if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+          links.push({ text: match[2].trim(), url: href });
+        }
+      }
+    }
+
+    const images: Array<{ alt: string; url: string }> = [];
+    if (opts?.extractImages) {
+      const imgRegex = /<img\s+[^>]*src=["']([^"']+)["'][^>]*alt=["']([^"']*)["'][^>]*>/gi;
+      let match;
+      while ((match = imgRegex.exec(html)) && images.length < 50) {
+        images.push({ alt: match[2].trim(), url: match[1] });
+      }
+    }
+
+    const descMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']*)["']/i);
+    const keywordsMatch = html.match(/<meta\s+name=["']keywords["']\s+content=["']([^"']*)["']/i);
 
     return {
       id: randomUUID().slice(0, 8),
       url,
-      title: String(data.title ?? ''),
-      content: String(data.content ?? ''),
-      markdown: String(data.markdown ?? data.content ?? ''),
-      links: Array.isArray(data.links) ? data.links as Array<{ text: string; url: string }> : [],
-      images: Array.isArray(data.images) ? data.images as Array<{ alt: string; url: string }> : [],
-      metadata: (data.metadata as ScrapeResult['metadata']) ?? {},
+      title,
+      content: text.slice(0, 10000),
+      markdown: text.slice(0, 10000),
+      links,
+      images,
+      metadata: {
+        description: descMatch ? descMatch[1] : undefined,
+        keywords: keywordsMatch ? keywordsMatch[1] : undefined,
+      },
       success: true,
       fetchedAt: new Date(),
-      loadTimeMs: Date.now() - startedAt,
+      loadTimeMs,
     };
   }
 

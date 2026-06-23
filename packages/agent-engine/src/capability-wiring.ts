@@ -753,7 +753,19 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     description: 'Get metacognitive monitor statistics — self-awareness metrics, performance tracking',
     tags: ['metacognition', 'monitoring'],
     handler: async () => {
-      return { status: 'metacognitive monitor active', message: 'MetaMonitor is wired and ready to assess runs' };
+      const archive = wiring.selfImprover.getArchive();
+      return {
+        status: 'active',
+        pendingProposals: archive.proposals.length,
+        appliedProposals: archive.applied.length,
+        rejectedProposals: archive.rejected.length,
+        recentProposals: wiring.selfImprover.getRecentProposals(5).map(p => ({
+          id: p.id,
+          category: p.category,
+          description: p.description,
+          confidence: p.confidence,
+        })),
+      };
     },
   });
 
@@ -762,7 +774,22 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     description: 'Run self-improvement cycle — analyze past performance and generate improvement suggestions',
     tags: ['metacognition', 'self-improvement'],
     handler: async () => {
-      return { status: 'self-improvement active', message: 'SelfImprover is wired and ready to analyze runs' };
+      const archive = wiring.selfImprover.getArchive();
+      return {
+        status: 'active',
+        totalProposals: archive.proposals.length + archive.applied.length + archive.rejected.length,
+        pending: archive.proposals.length,
+        applied: archive.applied.length,
+        rejected: archive.rejected.length,
+        recent: wiring.selfImprover.getRecentProposals(5).map(p => ({
+          id: p.id,
+          category: p.category,
+          description: p.description,
+          suggestedChange: p.suggestedChange,
+          expectedBenefit: p.expectedBenefit,
+          confidence: p.confidence,
+        })),
+      };
     },
   });
 
@@ -870,7 +897,7 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     description: 'Run introspection — self-examine current cognitive state, biases, and reasoning quality',
     tags: ['metacognition', 'introspection', 'self-awareness'],
     handler: async () => {
-      return { status: 'introspection module active', message: 'IntrospectionModule is wired and ready to introspect steps' };
+      return wiring.introspection.stats();
     },
   });
 
@@ -893,7 +920,12 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     requiredParams: ['prompt'],
     handler: async (params: unknown) => {
       const p = params as { prompt: string };
-      return { original: p.prompt, optimized: p.prompt, suggestions: [], status: 'prompt optimizer active' };
+      const stats = wiring.promptOptimizer.getStats();
+      const categories = Object.keys(stats);
+      if (categories.length === 0) {
+        return { original: p.prompt, optimized: p.prompt, suggestions: [], status: 'no variants registered yet — register variants to enable optimization' };
+      }
+      return { original: p.prompt, optimized: p.prompt, suggestions: [], status: 'active', variantStats: stats };
     },
   });
 
@@ -901,7 +933,7 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     name: 'strategy_tune',
     description: 'Tune reasoning strategy based on past performance data',
     tags: ['learning', 'strategy', 'tuning'],
-    handler: async () => { return { status: 'strategy tuning complete' }; },
+    handler: async () => { return { status: 'active', performance: wiring.strategyTuner.getPerformance() }; },
   });
 
   registry.register({
@@ -923,7 +955,9 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     description: 'Extract heuristic rules from past experiences — returns actionable rules',
     tags: ['learning', 'heuristics', 'rules'],
     handler: async () => {
-      return { status: 'heuristic extraction complete', heuristics: [], message: 'HeuristicExtractor requires a task trajectory to extract from' };
+      const all = wiring.heuristicExtractor.getAllHeuristics();
+      const stats = wiring.heuristicExtractor.stats();
+      return { status: 'active', totalHeuristics: all.length, stats, recent: all.slice(-5).map(h => ({ id: h.id, content: h.content, category: h.category, source: h.source, confidence: h.confidence })) };
     },
   });
 
