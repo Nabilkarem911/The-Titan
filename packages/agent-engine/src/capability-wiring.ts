@@ -284,7 +284,13 @@ export function wireCapabilities(llm: LlmProvider): WiredCapabilities {
 
     // Integrations
     a2aProtocol: new A2AProtocolAdapter(),
-    webIntelligence: new WebIntelligence(),
+    webIntelligence: new WebIntelligence({
+      apiKey: process.env['BRAVE_SEARCH_API_KEY'] ?? '',
+      baseUrl: process.env['BRAVE_SEARCH_API_KEY'] ? 'https://api.search.brave.com' : '',
+      maxResults: 10,
+      maxPages: 20,
+      timeout: 30000,
+    }),
     webMCPBridge: new WebMCPBridge(),
     skillMdRegistry: new SkillMdRegistry(),
     browserAgent: new BrowserAgent(llm),

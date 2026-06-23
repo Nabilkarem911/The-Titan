@@ -471,4 +471,9 @@ export class WebIntelligence extends EventEmitter {
   clear(): void {
     this.recentUrls = [];
   }
+
+  updateConfig(config: Partial<WebIntelligenceConfig>): void {
+    this.config = { ...this.config, ...config };
+    log.info({ hasApiKey: !!this.config.apiKey, hasBaseUrl: !!this.config.baseUrl }, 'web intelligence config updated');
+  }
 }

@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, User, Key, Bell, Palette, MessageCircle, Link2, Check, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, User, Key, Bell, Palette, MessageCircle, Link2, Check, Loader2, Plug, ExternalLink, TestTube } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
 import { PageHeader } from '../components/PageHeader';
 
-type Tab = 'profile' | 'keys' | 'notifications' | 'appearance';
+type Tab = 'profile' | 'keys' | 'integrations' | 'notifications' | 'appearance';
+
+interface IntegrationKey {
+  key: string;
+  label: string;
+  description: string;
+  category: string;
+  link?: string;
+  isSet: boolean;
+  maskedValue: string;
+}
 
 export default function Settings() {
   const { userId, logoutAll } = useAuth();
@@ -15,6 +25,7 @@ export default function Settings() {
   const tabs: { id: Tab; label: string; icon: typeof User }[] = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'keys', label: 'Provider Keys', icon: Key },
+    { id: 'integrations', label: 'Integrations', icon: Plug },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'appearance', label: 'Appearance', icon: Palette },
   ];
@@ -56,6 +67,7 @@ export default function Settings() {
         <div className="flex-1">
           {tab === 'profile' && <ProfileTab userId={userId} onLogoutAll={logoutAll} />}
           {tab === 'keys' && <ProviderKeysTab />}
+          {tab === 'integrations' && <IntegrationsTab />}
           {tab === 'notifications' && <NotificationsTab />}
           {tab === 'appearance' && <AppearanceTab />}
         </div>
@@ -210,6 +222,142 @@ function ProviderKeysTab() {
       <div className="pt-2">
         <button onClick={handleSave} className="btn-primary">Save Keys</button>
       </div>
+    </div>
+  );
+}
+
+function IntegrationsTab() {
+  const [keys, setKeys] = useState<IntegrationKey[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Record<string, string>>({});
+  const [testing, setTesting] = useState<string | null>(null);
+  const [showValues, setShowValues] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get<{ items: IntegrationKey[] }>('/integration-keys');
+        setKeys(res.items ?? []);
+      } catch {
+        toast.error('Failed to load integration keys');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const handleSave = async (key: string) => {
+    const value = editing[key] ?? '';
+    try {
+      await api.put('/integration-keys', { key, value });
+      toast.success(`${key} updated`);
+      setEditing(prev => { const next = { ...prev }; delete next[key]; return next; });
+      const res = await api.get<{ items: IntegrationKey[] }>('/integration-keys');
+      setKeys(res.items ?? []);
+    } catch (err) {
+      toast.error('Failed to update key', { description: err instanceof Error ? err.message : undefined });
+    }
+  };
+
+  const handleTest = async (key: string) => {
+    setTesting(key);
+    try {
+      const res = await api.post<{ success: boolean; message: string }>('/integration-keys/test', { key });
+      if (res.success) {
+        toast.success(res.message);
+      } else {
+        toast.error(res.message);
+      }
+    } catch (err) {
+      toast.error('Test failed', { description: err instanceof Error ? err.message : undefined });
+    } finally {
+      setTesting(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-small text-text-muted">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Loading integration keys...
+      </div>
+    );
+  }
+
+  const categories = Array.from(new Set(keys.map(k => k.category)));
+
+  return (
+    <div className="space-y-4">
+      <div className="card p-6">
+        <h2 className="text-h3 text-text-primary">Integration Keys</h2>
+        <p className="text-small text-text-secondary mt-1">
+          Configure API keys for external services. These are applied at runtime — no server restart needed.
+          Keys set here override values from the .env file.
+        </p>
+      </div>
+
+      {categories.map(cat => (
+        <div key={cat} className="card p-6 space-y-3">
+          <h3 className="text-label text-text-secondary uppercase tracking-wider">{cat}</h3>
+          {keys.filter(k => k.category === cat).map(k => (
+            <div key={k.key} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-text-primary font-medium">{k.label}</span>
+                  {k.isSet ? (
+                    <span className="text-caption text-success flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Set
+                    </span>
+                  ) : (
+                    <span className="text-caption text-text-muted">Not set</span>
+                  )}
+                </div>
+                {k.link && (
+                  <a href={k.link} target="_blank" rel="noopener noreferrer" className="text-caption text-accent-primary hover:underline flex items-center gap-1">
+                    Get key <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+              <p className="text-caption text-text-muted">{k.description}</p>
+              {k.isSet && !editing[k.key] && (
+                <p className="text-caption text-text-secondary font-mono">{k.maskedValue}</p>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type={showValues[k.key] ? 'text' : 'password'}
+                  value={editing[k.key] ?? ''}
+                  onChange={(e) => setEditing(prev => ({ ...prev, [k.key]: e.target.value }))}
+                  placeholder={k.isSet ? 'Enter new value to replace...' : 'Enter API key...'}
+                  className="input flex-1 font-mono text-small"
+                />
+                <button
+                  onClick={() => setShowValues(prev => ({ ...prev, [k.key]: !prev[k.key] }))}
+                  className="btn-ghost text-small"
+                >
+                  {showValues[k.key] ? 'Hide' : 'Show'}
+                </button>
+                <button
+                  onClick={() => handleSave(k.key)}
+                  disabled={!editing[k.key]}
+                  className="btn-primary text-small"
+                >
+                  Save
+                </button>
+                {k.isSet && (
+                  <button
+                    onClick={() => handleTest(k.key)}
+                    disabled={testing === k.key}
+                    className="btn-ghost text-small flex items-center gap-1"
+                  >
+                    {testing === k.key ? <Loader2 className="w-3 h-3 animate-spin" /> : <TestTube className="w-3 h-3" />}
+                    Test
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

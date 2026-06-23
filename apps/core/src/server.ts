@@ -31,6 +31,7 @@ import { agentProfileRoutes } from './routes/agent-profiles.js';
 import { registerTelegramRoutes } from './routes/telegram.js';
 import { fileRoutes } from './routes/files.js';
 import { userKeyRoutes } from './routes/user-keys.js';
+import { integrationKeyRoutes } from './routes/integration-keys.js';
 import { terminalRoutes } from './routes/terminal.js';
 import { gitRoutes } from './routes/git.js';
 import { userContextRoutes } from './routes/user-context.js';
@@ -257,6 +258,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(agentProfileRoutes);
   await app.register(fileRoutes);
   await app.register(userKeyRoutes);
+  await app.register(integrationKeyRoutes);
   await app.register(terminalRoutes);
   await app.register(gitRoutes);
   await app.register(userContextRoutes);
