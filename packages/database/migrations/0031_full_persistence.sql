@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS curiosity_explorations (
   status TEXT NOT NULL DEFAULT 'pending',
   proficiency REAL NOT NULL DEFAULT 0,
   findings TEXT DEFAULT NULL,
-  created_at TIMESTAMGTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_ce_skill ON curiosity_explorations(skill_name);
 
