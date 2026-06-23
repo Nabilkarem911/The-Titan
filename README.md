@@ -8,10 +8,10 @@
 
 [![Live](https://img.shields.io/badge/Live-titan.orcanox.xyz-blue?style=for-the-badge)](https://titan.orcanox.xyz)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/Tests-1670_passing-success?style=for-the-badge)](.)
+[![Tests](https://img.shields.io/badge/Tests-1805_passing-success?style=for-the-badge)](.)
 [![Node](https://img.shields.io/badge/Node-22+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
-[![Super-Agent](https://img.shields.io/badge/Super--Agent-100+_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
+[![Super-Agent](https://img.shields.io/badge/Super--Agent-160+_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
 [![Cosmic](https://img.shields.io/badge/Cosmic_Phase-ALL_Done-gold?style=for-the-badge)](TITAN_EVOLUTION_PLAN.md)
 
 *Zero LangChain. Zero CrewAI. Zero AutoGen. 100% custom.*
@@ -458,9 +458,11 @@ console.log(swarm.finalAnswer);
 - **Voting System** — weighted confidence-based decisions
 - **Collaboration Sessions** — live multi-agent sessions with real-time messaging
 
-### Web Dashboard (40+ Pages)
+### Web Dashboard (51+ Pages)
 **Core:** Dashboard, Chat, Agents, Agent Profiles, Runs, Files, Code Intel, Marketplace, Skill Builder
 **AI Operations:** Swarm, Playground, Knowledge, Workflows, Learning, Autonomous, Teams
+**Cognitive Systems:** Dream Lab, Safety, MIRROR, Evolution, Meta-Learning
+**Integrations:** Browser Agent, Agent Network, Self-Forge, World Model, Hive Mind, Economy, Constitution
 **V5 Capabilities:** MCP Governance, DAG Workflow, Guardrails, Bi-Temporal Graph
 **Infrastructure:** Queue, Health, Metrics
 **Management:** API Keys, Webhooks, Cron Jobs, Plugins, Workspaces, Memory, Audit Logs, Settings
@@ -1323,6 +1325,114 @@ curl -X POST http://localhost:3000/api/v1/esm/resume/cp1a2b3 \
 
 ---
 
+## Using Titan Features — Chat & Dashboard Guide
+
+Every Titan capability is accessible from **both** the chat interface (natural language) and the dashboard UI (visual pages). Here's how to use each one:
+
+### Self-Improvement & Awareness
+
+| Feature | From Chat (CLI/Telegram/Web Chat) | From Dashboard |
+|---------|-----------------------------------|----------------|
+| **Self-Forge** | `titan chat "I need a tool to convert CSV to Parquet"` — Titan auto-generates, validates, and registers the tool | **Self-Forge Page** (`/self-forge`) — View forged tools, forge new tools from capability descriptions, browse SKILL.md registry |
+| **Dream Mode** | `titan chat "start dreaming"` or `"show me dream insights"` | **Dream Lab Page** (`/dream-lab`) — View stats, insights, reports; start/stop/trigger dream sessions with buttons |
+| **Self-Healing Debugger** | `titan chat "debug this error: TypeError in parser.ts"` | **Code Intel Page** (`/code-intel`) — View debugger stats (lessons, attempts, success rate) |
+| **HyperAgent** | `titan chat "run a hyper-agent cycle"` | **Autonomous Page** (`/autonomous`) — Click "Run Cycle" button; view cycles, improvements, evaluations |
+| **Curiosity Engine** | `titan chat "explore Kubernetes topic"` | **Autonomous Page** (`/autonomous`) — View curiosity stats (questions, explored, unanswered) |
+| **Meta-Learning** | `titan chat "optimize my learning parameters"` | **Meta-Learning Page** (`/meta-learning`) — View stats, cross-user insights, prompt optimization variants |
+| **Self-Rewriter** | `titan chat "diagnose and propose improvements to the runner"` | **Evolution Page** (`/evolution`) — View self-rewriter stats |
+| **Evolutionary Solver** | `titan chat "evolve solutions for: optimize this function"` | **Evolution Page** (`/evolution`) — View meta-evolution stats |
+
+### World Understanding
+
+| Feature | From Chat | From Dashboard |
+|---------|-----------|----------------|
+| **World Model** | `titan chat "simulate: what happens if I restart the DB?"` | **World Model Page** (`/world-model`) — View graph stats, digital twin state, run simulations |
+| **Neuro-Symbolic Reasoning** | `titan chat "reason about: why is the API slow?"` | **Code Intel Page** (`/code-intel`) — Enter query in Neuro-Symbolic Reasoner section |
+| **Hypothesis Testing** | `titan chat "generate hypotheses for: API returns 500"` | API: `POST /api/v1/hypothesis/generate` |
+| **Causal Replay** | `titan chat "analyze what caused the failure in run-123"` | API: `POST /api/v1/causal-replay/analyze` |
+| **Theory of Mind** | `titan chat "analyze user mental state: they seem frustrated"` | **Playground Page** (`/playground`) — Click "Theory of Mind" quick action |
+| **Browser Agent** | `titan chat "go to example.com and fill the contact form"` | **Browser Agent Page** (`/browser-agent`) — View sessions, stats; use web search interface |
+| **Web Intelligence** | `titan chat "search the web for latest Node.js version"` | **Browser Agent Page** (`/browser-agent`) — Use web search interface with results display |
+
+### Autonomous Operation
+
+| Feature | From Chat | From Dashboard |
+|---------|-----------|----------------|
+| **Autonomous Loop** | `titan chat "start autonomous monitoring"` | **Autonomous Page** (`/autonomous`) — Quick verify, run tasks with auto-fix toggle, view task history |
+| **Tool Discovery** | `titan chat "I need a Slack messaging tool"` | API: `POST /api/v1/tool-discovery/discover` |
+| **Skill Synthesis** | `titan chat "synthesize a skill for CSV parsing"` | API: `POST /api/v1/skill-synthesis/synthesize` |
+| **A2A Protocol** | `titan chat "send a translation task to Claude agent"` | **Agent Network Page** (`/agent-network`) — View A2A stats, send messages to agents, browse capabilities |
+| **SKILL.md Registry** | `titan chat "list all available skills"` | **Self-Forge Page** (`/self-forge`) — Browse SKILL.md registry section |
+| **Benchmarking** | `titan chat "run a benchmark suite"` | API: `POST /api/v1/benchmark/run` |
+
+### Safety & Security
+
+| Feature | From Chat | From Dashboard |
+|---------|-----------|----------------|
+| **Safety Guardrail** | `titan chat "check safety of action: rm -rf /tmp/old_builds"` | **Safety Page** (`/safety`) — View safety memory stats, run manual safety checks |
+| **Safety Memory** | `titan chat "show safety memory stats"` | **Safety Page** (`/safety`) — View contrastive cells and check history |
+| **Constitution** | `titan chat "read the Titan Constitution"` | **Constitution Page** (`/constitution`) — View normative stats, compliance rate, conflicts, revisions |
+
+### Cognitive Systems
+
+| Feature | From Chat | From Dashboard |
+|---------|-----------|----------------|
+| **MIRROR (Inner Monologue)** | `titan chat "show me your inner monologue"` | **MIRROR Page** (`/mirror`) — View inner monologue threads, episodic buffer, self-model, narrative synthesis |
+| **Introspection** | `titan chat "introspect your last run"` | API: `POST /api/v1/introspection/run` |
+| **Emotional Intelligence** | `titan chat "analyze emotion: I'm feeling frustrated"` | **Playground Page** (`/playground`) — Click "Emotion Analysis" quick action |
+| **Universal Translator** | `titan chat "translate 'Hello World' to Arabic"` | **Playground Page** (`/playground`) — Click "Translate" quick action |
+| **Temporal Intelligence** | `titan chat "analyze temporal patterns in this data"` | **Playground Page** (`/playground`) — Click "Temporal Analysis" quick action |
+
+### Cosmic Intelligence
+
+| Feature | From Chat | From Dashboard |
+|---------|-----------|----------------|
+| **Hive Mind** | `titan chat "show hive mind stats"` | **Hive Mind Page** (`/hive-mind`) — View topology stats, launch swarm tasks, view task history |
+| **Agent Economy** | `titan chat "show economy stats"` | **Economy Page** (`/economy`) — View RL training stats, convergence status, Q-table metrics |
+| **Creative Engine** | `titan chat "generate an image of a sunset"` | API: `POST /api/v1/creative/generate` |
+| **Quantum Optimizer** | `titan chat "optimize this scheduling problem"` | API: `POST /api/v1/quantum/optimize` |
+| **Self-Evolving Code** | `titan chat "evolve the runner.ts module"` | API: `POST /api/v1/evolution/evolve-code` |
+| **Self-Play** | `titan chat "run a self-play session"` | API: `POST /api/v1/selfplay/session` |
+| **Proactive Intelligence** | `titan chat "give me proactive suggestions"` | API: `POST /api/v1/proactive/suggest` |
+
+### Learning & Collaboration
+
+| Feature | From Chat | From Dashboard |
+|---------|-----------|----------------|
+| **Cross-User Learning** | `titan chat "show cross-user insights"` | **Meta-Learning Page** (`/meta-learning`) — View cross-user insights section |
+| **Experience Insights** | `titan chat "show experience insights"` | **Learning Page** (`/learning`) — View agent insights, feedback analysis |
+| **Strategy Optimization** | `titan chat "optimize strategies for debugging tasks"` | **Learning Page** (`/learning`) — View strategy optimization section |
+| **Prompt Optimization** | `titan chat "show prompt variants"` | **Learning Page** (`/learning`) — View prompt variants; **Meta-Learning Page** for optimization results |
+| **Collaboration** | `titan chat "start a collaboration session for auth design"` | API: `POST /api/v1/collaboration/sessions` |
+
+### Quick Start for New Users
+
+```bash
+# 1. Start Titan
+docker compose up -d
+
+# 2. Open the dashboard
+#    http://localhost:3001
+
+# 3. Register / Login
+
+# 4. Start chatting from the dashboard Chat page
+#    Or from terminal: titan chat "hello"
+
+# 5. Explore capabilities:
+#    - Dream Lab: See Titan's dream insights and memory consolidation
+#    - Safety: Check safety guardrails and memory
+#    - MIRROR: View Titan's inner monologue and self-model
+#    - Evolution: Track self-rewriter and debugger stats
+#    - Hive Mind: Launch swarm tasks
+#    - Constitution: View compliance and normative stats
+#    - Playground: Test AI capabilities (translate, emotion, ToM, temporal)
+#    - Autonomous: Run verification, tasks, and hyper-agent cycles
+#    - Code Intel: Index codebase, search symbols, run neuro-symbolic reasoning
+```
+
+---
+
 ## Environment Variables
 
 | Variable | Description | Required | Default |
@@ -1361,15 +1471,15 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Total Source Files | 800+ |
 | Lines of Code | ~83,000 |
 | Test Files | 97+ |
-| Tests Passing | 1670+ |
+| Tests Passing | 1805+ |
 | Packages | 14 |
-| API Endpoints | 365+ |
-| Built-in Tools | 107 |
-| Dashboard Pages | 39 |
+| API Endpoints | 380+ |
+| Built-in Tools | 166 |
+| Dashboard Pages | 51 |
 | Database Migrations | 29 |
 | Agent Profiles | 21 |
 | Queue Types | 9 |
-| Super-Agent Capabilities | 100+ |
+| Super-Agent Capabilities | 160+ |
 | Agent-Engine Modules | 178 |
 | Cosmic Phase Modules | 22 |
 | Evolution Plan | 100% Complete |
@@ -1523,6 +1633,24 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 - [x] **RL Environment** — Q-learning, episodic training, convergence detection, sandboxed practice
 - [x] **Autonomous Trading** — RL-based trading simulation with user permission
 - [x] **Autonomous Gardener** — Background creative steward, taste evolution, seed planting, harvesting
+
+### Completed — Dashboard Integration (53 Chat Tools + 12 New Pages + 3 Expanded Pages)
+- [x] **53 Capability Tools Registered** — All Super-Agent capabilities now accessible from chat via natural language
+- [x] **Dream Lab Page** — Dream mode stats, insights, reports, and controls (start/stop/trigger)
+- [x] **Safety Page** — Safety memory stats, guardrail checks, manual safety action checks
+- [x] **MIRROR Page** — Inner monologue threads, episodic buffer, self-model, narrative synthesis
+- [x] **Evolution Page** — Meta-evolution, self-rewriter, and self-healing debugger stats
+- [x] **Browser Agent Page** — Web intelligence search, browser session stats, web search interface
+- [x] **Agent Network Page** — A2A protocol stats, agent messaging, capability discovery
+- [x] **Self-Forge Page** — Forged tools list, Skill.md registry, forge new tools from descriptions
+- [x] **World Model Page** — Environment graph stats, digital twin state, world simulation interface
+- [x] **Meta-Learning Page** — Meta-learning stats, cross-user insights, prompt optimization variants
+- [x] **Hive Mind Page** — Swarm evolution stats, swarm task launch, topology management
+- [x] **Economy Page** — RL training stats, convergence status, Q-table metrics
+- [x] **Constitution Page** — Normative stats, compliance rate, conflict detection, revisions
+- [x] **Autonomous Page Expanded** — HyperAgent cycle control + Curiosity Engine stats
+- [x] **Playground Page Expanded** — Quick Actions for Translate, Emotion Analysis, Theory of Mind, Temporal Analysis
+- [x] **Code Intel Page Expanded** — Self-Healing Debugger stats + Neuro-Symbolic Reasoner interface
 
 ### Planned — Platform
 - [ ] Full Playwright Browser Automation (production)
