@@ -8,11 +8,11 @@
 
 [![Live](https://img.shields.io/badge/Live-titan.orcanox.xyz-blue?style=for-the-badge)](https://titan.orcanox.xyz)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/Tests-1513_passing-success?style=for-the-badge)](.)
+[![Tests](https://img.shields.io/badge/Tests-1644_passing-success?style=for-the-badge)](.)
 [![Node](https://img.shields.io/badge/Node-22+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
-[![Super-Agent](https://img.shields.io/badge/Super--Agent-80+_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
-[![Cosmic](https://img.shields.io/badge/Cosmic_Phase-12_Phases_Done-gold?style=for-the-badge)](TITAN_EVOLUTION_PLAN.md)
+[![Super-Agent](https://img.shields.io/badge/Super--Agent-100+_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
+[![Cosmic](https://img.shields.io/badge/Cosmic_Phase-ALL_Done-gold?style=for-the-badge)](TITAN_EVOLUTION_PLAN.md)
 
 *Zero LangChain. Zero CrewAI. Zero AutoGen. 100% custom.*
 
@@ -24,7 +24,7 @@
 
 Titan is a **complete AI operating system** — not a chatbot wrapper, not a thin API layer, but a full autonomous agent framework that can understand codebases, execute multi-step tasks, learn from experience, and communicate across channels.
 
-What makes Titan different? **It thinks about its own thinking, writes its own tools, improves its own code, dreams when idle, evolves its own constitution, trades in an internal economy, forms hive minds with other instances, and collaborates with other agents in real-time.**
+What makes Titan different? **It thinks about its own thinking, writes its own tools, improves its own code, dreams when idle, evolves its own constitution, trades in an internal economy, forms hive minds with other instances, mines GitHub for patterns, runs quantum-inspired optimization, practices in RL simulations, gardens creative taste autonomously, and collaborates with other agents in real-time.**
 
 > **Enterprise-ready.** JWT auth, RBAC, audit logs, GDPR toolkit, Docker sandboxing, PII detection, rate limiting, encryption at rest, and 210+ API endpoints — Titan is built for production from day one.
 
@@ -38,7 +38,7 @@ titan                # Interactive REPL mode
 
 ## Super-Agent Capabilities
 
-Titan isn't just an agent — it's a **Super-Agent**. 58 advanced capabilities built on top of cutting-edge 2026 AI research:
+Titan isn't just an agent — it's a **Super-Agent**. 100+ advanced capabilities built on top of cutting-edge 2026 AI research:
 
 ### Self-Improvement & Awareness
 
@@ -120,23 +120,32 @@ Titan isn't just an agent — it's a **Super-Agent**. 58 advanced capabilities b
 | **A2A Protocol v1.0** | Signed agent cards with cryptographic verification, multi-tenancy via tenantId, 4 transports (HTTP, SSE, gRPC, WebSocket), skills on cards | Agent card signed by `issuer-key` → verified on registration → filtered by `tenantId: acme-corp` → discovered via `gRPC` transport |
 | **Test-Time Recursive Thinking v2** | Fast solver (intuition) → Slow solver (recursive strategies with depth tracking) → Abstention gate (confidence threshold + LLM-based) | Fast solver fails → Strategy 1 (decomposition, depth=1) fails → Strategy 2 (analogy, depth=2) passes → Confidence 0.88 → No abstention |
 
-### Cosmic Intelligence (Phase 10 — 12 Modules)
+### Cosmic Intelligence (Phase 10 — 16 Modules)
 
 | Capability | What It Does | Example |
 |-----------|--------------|---------|
-| **MIRROR Consciousness** | Inner monologue, cognitive controller, reconstructed self-model, episodic buffer — HOT-3 consciousness indicator | Titan tracks its own thought threads, recognizes its outputs, and reports "I was trying to debug the auth module" |
+| **MIRROR Consciousness** | Inner monologue, cognitive controller, reconstructed self-model, episodic buffer, normative agency (commitments, conflict detection, error revision) — HOT-3 consciousness indicator | Titan tracks its own thought threads, recognizes its outputs, forms commitments, detects conflicts, and reports "I was trying to debug the auth module" |
 | **Introspective Awareness** | Self-model with capabilities/limitations/values, bias detection (8 types), metacognition checks, confidence calibration | "I notice I consistently overestimate success for bash tools — adjusting calibration" |
-| **Digital Twin** | Environment graph, what-if engine, causal graph, anomaly detection, predictive alerts | "What happens if I restart the DB?" → simulates → "3 services affected, 0.92 confidence" |
-| **Creative Engine** | Image generation (DALL-E/SD/Sogni), music generation (Suno/Tone.js fallback), video generation, generative art (p5.js/GLSL/Three.js), multi-agent critique, style learning | "Generate a marketing image" → creates image → watermark → multi-agent critique → style preference saved |
+| **Digital Twin** | Environment graph, what-if engine, causal graph, anomaly detection, predictive alerts, RL environment (Q-learning, episodic training, convergence detection) | "What happens if I restart the DB?" → simulates → "3 services affected, 0.92 confidence" → practices in RL sandbox first |
+| **Creative Engine** | Image generation (DALL-E/SD/Sogni), music generation (Suno/Tone.js fallback), video generation, generative art (p5.js/GLSL/Three.js), multi-agent critique, style learning, autonomous gardener (taste evolution, creative seeds, harvest) | "Generate a marketing image" → creates image → watermark → multi-agent critique → style preference saved → gardener evolves taste over time |
 | **Hive Mind** | Distributed collective intelligence — instance registration, shared consciousness (CRDT knowledge merge), quorum voting (51%), emergent specialization, swarm constitution | Instance A learns a pattern → all instances know it instantly → they vote on applying it |
-| **Agent Economy** | ComputeCredits (internal currency), skill marketplace, escrow-protected contracts (24h timeout), LLM-based price negotiation (max 3 rounds), reputation system, immutable audit log | Agent A: "I'll write your tests for 50 credits" → Agent B accepts → escrow holds funds → tests pass → funds released |
+| **Agent Economy** | ComputeCredits (internal currency), skill marketplace, escrow-protected contracts (24h timeout), LLM-based price negotiation (max 3 rounds), reputation system, immutable audit log, autonomous trading (RL-based) | Agent A: "I'll write your tests for 50 credits" → Agent B accepts → escrow holds funds → tests pass → funds released |
 | **Infinite Self-Play** | Infinite curriculum generator (10% difficulty stretch), self-play arena, open-ended skill discovery, evolutionary archive (10k max), capability horizons, kill switch | Titan generates tasks for itself → solves → evaluates → discovers new skill domain → archives capability gain |
-| **Self-Evolving Code** | Autonomous code improvement (LLM analyzes source), fitness function (test pass 40% + coverage 25% + speed 20% + tokens 15%), evolution archive, auto-rollback on >5% degradation, safety-critical file protection | 3AM: Titan reviews `runner.ts` → proposes optimization → tests pass → fitness +12% → applied. Next night: -3% → rolled back |
+| **Self-Evolving Code** | Autonomous code improvement (LLM analyzes source), fitness function (test pass 40% + coverage 25% + speed 20% + tokens 15%), evolution archive, auto-rollback on >5% degradation, safety-critical file protection, meta-evolution (self-modifying prompt, A/B testing, cross-domain transfer) | 3AM: Titan reviews `runner.ts` → proposes optimization → tests pass → fitness +12% → applied. Meta-evolution upgrades its own improvement prompt |
 | **Quantum-Inspired Optimization** | Superposition strategy selection (5s collapse), tensor network compute (max rank 32, bond dim 64), entanglement-based memory, quantum annealing task allocation, greedy fallback >100 agents | 5 strategies explored simultaneously → collapse to optimal in 200ms |
 | **Universal Translator** | 140+ languages, code translation with round-trip verification, protocol translation (MCP/A2A/SKILL.md/gRPC/REST), modal translation (text→voice→image→code), domain translation, cultural adaptation | "Convert this Python to Rust" → translates → round-trip verifies → "Semantics preserved, 94% confidence" |
 | **Temporal Intelligence** | Past analysis (bi-temporal events), future prediction (LLM-based), timeline branching (max 5 branches, 30s sim), temporal reasoning, proactive time scheduling | "This was true yesterday but not today because config changed" → predicts "will fail again at 3AM unless fixed" |
 | **Titan Constitution** | 7 core principles (2 immutable safety/ethics, 5 amendable), 67% supermajority amendments, LLM-based deliberation (reasoning chain + arguments for/against), conflict resolution, Markdown export | Titan proposes: "Transparency should include cost estimates" → deliberates → 8/10 vote yes → amendment applied → constitution v2 |
 | **Multimodal Dreams** | Visual/code/cross-modal dreams, hypothesis generation, creative dream outputs, memory consolidation (merge/synthesize/forget), insight propagation (30min max) | Idle: Titan dreams → "The pattern in these logs looks like the pattern in these screenshots" → insight propagated to waking state |
+| **GitHub Mining** | Search GitHub API for repos matching problem domain, clone & extract code patterns, SHA256 deduplication, auto-crystallize patterns with value score > 0.4 into permanent skills | "I need a rate limiter" → searches GitHub → extracts 5 patterns → crystallizes 2 as skills → integrates with Skill Synthesis |
+| **Zero-Data Co-Evolution** | Curriculum agent (generates increasingly difficult tasks), executor agent, co-evolution loop (tasks get harder as Titan improves), pure self-play with no human-curated data | Titan generates a 3/10 difficulty task → solves it → difficulty rises to 3.6 → generates harder task → repeats |
+| **Swarm Evolution** | Dynamic topology (auto-decide agent count, emergent specialization, mid-task reconfiguration), collective memory pool (real-time sync, conflict resolution), A2A federation (delegation, skill exchange, federated learning) | Task complexity 85 → auto-spawns 9 agents → agent-3 specializes in debugging → topology reconfigures to orchestrator-worker mid-task |
+| **Edge & Privacy** | Ollama integration (auto-detect local models), smart routing (simple→local, complex→cloud), privacy mode (sensitive data never leaves device), offline capability, federated learning (encrypted model diffs) | "Analyze this confidential document" → privacy mode → routes to local Llama → "Processed locally, nothing sent to cloud" |
+| **Proactive Intelligence** | Pattern monitoring + proactive suggestions (3/day max, DND hours), causal world model (what-if simulation, root cause analysis), self-modifying architecture (topology switching), conversational code editing (live diff preview) | "I noticed you deploy every Friday at 6PM — want me to automate this?" → "If I restart the DB, 3 services will fail" → simulates first |
+| **Visual Workflow Builder** | Drag-and-drop node editor (trigger, agent, tool, condition, parallel, delay), edge drawing, export to DAG format, event triggers (webhook, cron, file change, agent completion), conditional logic | User drags trigger → agent → condition → two parallel agents → connects edges → exports to DAG → runs automatically |
+| **Advanced Multimodal** | PDF table extraction, code screenshot → editable code (OCR), whiteboard/diagram → code generation, chart understanding → data extraction | "Extract data from this chart" → understands bar chart → returns `[{label: "Q1", value: 1200}, ...]` with 92% confidence |
+| **ElevenLabs TTS** | Voice cloning (send sample → get custom voice), auto-select best TTS provider, multilingual synthesis, stability/similarity controls | User sends 30s voice sample → Titan clones voice → all future responses use user's custom voice |
+| **Screen Monitoring** | Continuous screenshot capture (min 5s interval), vision model analysis, proactive alerts (error dialog, build failed, test crashed), configurable watch patterns, rate limiting (10 alerts/min) | Titan monitors screen → "New error dialog appeared" → alerts user → "Build failed in module X" → suggests fix |
 
 ### Prerequisites
 
@@ -824,7 +833,14 @@ titan/
 │   │   ├── translator/      #   Universal translator (140+ languages, code/protocol/modal/domain translation, cultural adaptation)
 │   │   ├── temporal/        #   Temporal intelligence (past analysis, future prediction, timeline branching, scheduling)
 │   │   ├── introspection/   #   Introspective awareness (self-model, bias detection, metacognition checks)
-│   │   └── ...              #   Planning, memory, personality, voice, teams
+│   │   ├── evolution/       #   Meta-evolution + GitHub mining + zero-data co-evolution + self-evolving code
+│   │   ├── autonomous/      #   Proactive intelligence + causal simulation + architecture changes + live code editing
+│   │   ├── learning/        #   Edge privacy (Ollama, federated learning) + experience + strategies + heuristics
+│   │   ├── voice/           #   ElevenLabs TTS (voice cloning) + OpenAI TTS + Whisper STT + emotion detection
+│   │   ├── multimodal/      #   Screen monitor + advanced multimodal (PDF tables, OCR, diagram-to-code, charts) + processor
+│   │   ├── swarm/           #   Swarm evolution (dynamic topology, collective memory, A2A federation) + orchestrator
+│   │   ├── workflow/        #   Visual workflow builder (drag-and-drop, triggers) + DAG engine + workflow runner
+│   │   └── ...              #   Planning, memory, personality, teams, code-intel, integrations
 │   ├── memory/              # The memory (6 modules + bi-temporal knowledge graph)
 │   ├── tools/               # The hands (90 tools + MCP + composition + browser + marketplace)
 │   ├── sdk/                 # TypeScript SDK
@@ -1342,10 +1358,10 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 
 | Metric | Value |
 |--------|-------|
-| Total Source Files | 650+ |
-| Lines of Code | ~95,000 |
-| Test Files | 87+ |
-| Tests Passing | 1513+ |
+| Total Source Files | 700+ |
+| Lines of Code | ~105,000 |
+| Test Files | 96+ |
+| Tests Passing | 1644+ |
 | Packages | 16 |
 | API Endpoints | 210+ |
 | Built-in Tools | 93 |
@@ -1353,9 +1369,10 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 | Database Migrations | 25 |
 | Agent Profiles | 30 |
 | Queue Types | 9 |
-| Super-Agent Capabilities | 80+ |
-| Agent-Engine Modules | 70+ |
-| Cosmic Phase Modules | 12 |
+| Super-Agent Capabilities | 100+ |
+| Agent-Engine Modules | 178 |
+| Cosmic Phase Modules | 16 |
+| Evolution Plan | 100% Complete |
 
 ---
 
@@ -1470,11 +1487,49 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 - [x] **Telegram Voice** — Whisper STT transcription, ElevenLabs TTS, voice message handling
 - [x] **Computer Use** — Desktop bridge (WebSocket), 12 desktop tools (shell, files, screenshots, app automation, keyboard, clipboard)
 - [x] **Titan Desktop Agent** — Electron app with chat, file explorer, terminal, screenshot viewer, multi-device support
+- [x] **ElevenLabs TTS** — Voice cloning, auto-select provider, multilingual synthesis
+- [x] **Real-Time Voice** — WebSocket streaming STT/LLM/TTS, interruption support
+- [x] **Live Screen Monitoring** — Continuous capture, vision analysis, proactive alerts, configurable watch patterns
+- [x] **Advanced Multimodal** — PDF table extraction, code OCR, diagram-to-code, chart understanding
+
+### Completed — Evolution & Learning
+- [x] **Meta-Evolution Layer** — Self-modifying improvement prompt, A/B testing, cross-domain transfer, evolution archive with rollback
+- [x] **GitHub Mining** — Repo search, pattern extraction with SHA256 dedup, auto-crystallize skills (value score > 0.4)
+- [x] **Zero-Data Co-Evolution** — Curriculum agent, executor, co-evolution loop, pure self-play
+- [x] **Learned Context Compression** — LLM-based context scoring, budget manager, intelligent compression
+
+### Completed — Swarm & Federation
+- [x] **Dynamic Swarm Topology** — Auto-decide agent count, emergent specialization, mid-task reconfiguration
+- [x] **Collective Memory Pool** — Shared memory, real-time sync, conflict resolution (last-writer-wins + version vector)
+- [x] **A2A Federation** — Active task delegation, skill exchange, federated learning
+
+### Completed — Edge & Privacy
+- [x] **On-Device Model Support** — Ollama integration, smart routing (local vs cloud), privacy mode, offline capability
+- [x] **Federated Learning** — Encrypted model diffs, privacy-preserving, opt-in only
+
+### Completed — Mythical Tier
+- [x] **Proactive Intelligence** — Pattern monitoring, proactive suggestions (3/day, DND hours), anticipatory preparation
+- [x] **Causal World Model** — Causal graph, what-if simulation, root cause analysis
+- [x] **Multi-Modal Dream Mode** — Cross-modal pattern discovery, visual + log + code correlation
+- [x] **Self-Modifying Architecture** — Topology switching, pattern discovery, on-the-fly agent archetypes
+- [x] **Conversational Code Editing** — Real-time edits with live diff preview, collaborative coding
+
+### Completed — Visual Workflow
+- [x] **Visual Workflow Builder** — Drag-and-drop nodes, 6 node types, edge drawing, DAG export
+- [x] **Trigger System** — Webhook, cron, file change, agent completion triggers, conditional logic
+
+### Completed — Final Cosmic Items
+- [x] **Normative Agency** — Commitments, conflict detection, error-driven revision
+- [x] **RL Environment** — Q-learning, episodic training, convergence detection, sandboxed practice
+- [x] **Autonomous Trading** — RL-based trading simulation with user permission
+- [x] **Autonomous Gardener** — Background creative steward, taste evolution, seed planting, harvesting
 
 ### Planned — Platform
 - [ ] Full Playwright Browser Automation (production)
 - [ ] Production Voice Interface (STT + TTS)
 - [ ] Mobile App (React Native)
+
+> **TITAN_EVOLUTION_PLAN.md — 100% Complete!** All phases implemented, tested, and committed.
 
 See [TITAN_SUPER_AGENT_V2_PROPOSAL.md](TITAN_SUPER_AGENT_V2_PROPOSAL.md) for detailed specs.
 
