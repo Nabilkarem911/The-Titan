@@ -57,6 +57,13 @@ import { multimodalRoutes } from './routes/multimodal.js';
 import { reasoningRoutes } from './routes/reasoning.js';
 import { integrationsRoutes } from './routes/integrations-v2.js';
 import { v5Routes } from './routes/v5.js';
+import { analyticsRoutes } from './routes/analytics.js';
+import { searchRoutes } from './routes/search.js';
+import { marketplaceRoutes } from './routes/marketplace.js';
+import { userPreferencesRoutes } from './routes/user-preferences.js';
+import { exportImportRoutes } from './routes/export-import.js';
+import { learningRoutes } from './routes/learning.js';
+import { commandRoutes } from './routes/command.js';
 import { hybridKeyGenerator, recordRateLimitHit } from './plugins/hybrid-rate-limit.js';
 import { getAbuseDetector, incCounter } from '@titan/observability';
 import { getDesktopBridge } from './desktop-bridge-instance.js';
@@ -284,6 +291,13 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(reasoningRoutes);
   await app.register(integrationsRoutes);
   await app.register(v5Routes);
+  await app.register(analyticsRoutes);
+  await app.register(searchRoutes);
+  await app.register(marketplaceRoutes);
+  await app.register(userPreferencesRoutes);
+  await app.register(exportImportRoutes);
+  await app.register(learningRoutes);
+  await app.register(commandRoutes);
   await registerTelegramRoutes(app);
 
   // Desktop devices API — list online devices for authenticated user

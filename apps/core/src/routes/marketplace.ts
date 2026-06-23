@@ -1,34 +1,45 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import { requireAuth } from '../plugins/auth.js';
+import { marketplaceListings, marketplaceReviews } from '@titan/database';
 
-export default async function marketplaceRoutes(app: FastifyInstance): Promise<void> {
-  app.get('/api/v1/marketplace/browse', async (req, reply) => {
+export const marketplaceRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
+  app.get('/api/v1/marketplace/browse', { preHandler: [requireAuth] }, async (req, reply) => {
     const { type, sort, page } = req.query as { type?: string; sort?: string; page?: string };
-    return { listings: [], total: 0, page: Number(page ?? 1), filters: { type, sort } };
+    const result = await marketplaceListings.browse({ type, sort, page: Number(page ?? 1) });
+    return reply.send({ listings: result.listings, total: result.total, page: Number(page ?? 1), filters: { type, sort } });
   });
 
-  app.get('/api/v1/marketplace/:id', async (req, reply) => {
+  app.get('/api/v1/marketplace/:id', { preHandler: [requireAuth] }, async (req, reply) => {
     const { id } = req.params as { id: string };
-    return { id, found: false, note: 'Query marketplace_listings table' };
+    const listing = await marketplaceListings.getById(id);
+    if (!listing) return reply.code(404).send({ error: 'Listing not found' });
+    return reply.send({ id, found: true, listing });
   });
 
-  app.post('/api/v1/marketplace/publish', async (req, reply) => {
+  app.post('/api/v1/marketplace/publish', { preHandler: [requireAuth] }, async (req, reply) => {
     const { type, name, description, manifest } = req.body as { type: string; name: string; description: string; manifest: unknown };
-    return { published: true, type, name, note: 'Insert into marketplace_listings' };
+    const userId = req.auth?.userId ?? null;
+    const listing = await marketplaceListings.insert({ type, name, description, manifest, authorId: userId });
+    return reply.send({ published: true, listing });
   });
 
-  app.post('/api/v1/marketplace/:id/install', async (req, reply) => {
+  app.post('/api/v1/marketplace/:id/install', { preHandler: [requireAuth] }, async (req, reply) => {
     const { id } = req.params as { id: string };
-    return { id, installed: true, note: 'Download and register plugin/agent' };
+    await marketplaceListings.incrementDownloads(id);
+    return reply.send({ id, installed: true });
   });
 
-  app.post('/api/v1/marketplace/:id/rate', async (req, reply) => {
+  app.post('/api/v1/marketplace/:id/rate', { preHandler: [requireAuth] }, async (req, reply) => {
     const { id } = req.params as { id: string };
     const { rating, comment } = req.body as { rating: number; comment?: string };
-    if (!rating || rating < 1 || rating > 5) return reply.status(400).send({ error: 'rating 1-5 required' });
-    return { id, rating, recorded: true, note: 'Insert into marketplace_reviews' };
+    if (!rating || rating < 1 || rating > 5) return reply.code(400).send({ error: 'rating 1-5 required' });
+    const userId = req.auth?.userId ?? null;
+    const review = await marketplaceReviews.insert({ listingId: id, userId, rating, comment });
+    return reply.send({ id, rating, review });
   });
 
-  app.get('/api/v1/marketplace/featured', async (req, reply) => {
-    return { featured: [], trending: [], newest: [] };
+  app.get('/api/v1/marketplace/featured', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const featured = await marketplaceListings.getFeatured();
+    return reply.send(featured);
   });
-}
+};

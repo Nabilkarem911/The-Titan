@@ -32,6 +32,7 @@ import {
   createProviderFromEnv,
   type BugReport,
 } from '@titan/agent-engine';
+import { experiences as experiencesRepo } from '@titan/database';
 
 let dreamMode: DreamMode | null = null;
 let causalReplay: CausalReplay | null = null;
@@ -182,12 +183,18 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
   // POST /api/v1/dream/trigger — manually trigger a dream session
   app.post('/api/v1/dream/trigger', { preHandler: [requireAuth] }, async (req, reply) => {
     requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
-    const { experiences } = req.body as { experiences?: Array<Record<string, unknown>> };
+    const { experiences: bodyExperiences, limit } = req.body as { experiences?: Array<Record<string, unknown>>; limit?: number };
     const dm = getDreamMode();
     if (!dm) return reply.code(503).send({ error: 'No LLM provider available' });
 
-    if (experiences && experiences.length > 0) {
-      const report = await dm.dreamWithData(experiences as any);
+    if (bodyExperiences && bodyExperiences.length > 0) {
+      const report = await dm.dreamWithData(bodyExperiences as any);
+      return reply.send(report);
+    }
+
+    const dbExperiences = await experiencesRepo.getRecent(limit ?? 30);
+    if (dbExperiences.length > 0) {
+      const report = await dm.dreamFromExperiences(dbExperiences as any);
       return reply.send(report);
     }
 
