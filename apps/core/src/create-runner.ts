@@ -9,6 +9,7 @@ import {
   createProviderFromEnv,
   createLlmProvider,
   MultiModelRouter,
+  wireCapabilities,
   type LlmProvider,
   type ToolCall,
   type ToolResult,
@@ -137,6 +138,9 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
     enablePlanning: opts.enablePlanning ?? true,
     enableAutoStrategy: opts.enableAutoStrategy ?? true,
     enableSelfCritique: opts.enableSelfCritique ?? true,
+
+    // Wire all cosmic capabilities into the runner
+    wiredCapabilities: wireCapabilities(llm),
 
     /* ----- persistRun ------------------------------------------------ */
     persistRun: async (run: AgentRun) => {

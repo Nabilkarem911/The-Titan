@@ -39,3 +39,4 @@ export * from './quantum/index.js';
 export * from './translator/index.js';
 export * from './temporal/index.js';
 export * from './introspection/index.js';
+export * from './capability-wiring.js';

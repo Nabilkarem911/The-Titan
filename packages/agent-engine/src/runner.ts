@@ -31,6 +31,21 @@ import type { SelfImprover } from './metacognition/self-improver.js';
 import type { WorldSimulator, EnvironmentGraph } from './world-model/index.js';
 import { ContextOptimizer, type ContextOptimizationOptions } from './providers/context-optimizer.js';
 import type { AntiSycophancyModule } from './metacognition/anti-sycophancy.js';
+import type { DreamMode } from './reasoning/dream-mode.js';
+import type { CausalReplay } from './reasoning/causal-replay.js';
+import type { MetacognitiveConsolidation } from './metacognition/metacognitive-consolidation.js';
+import type { HeuristicExtractor } from './learning/heuristic-extractor.js';
+import type { EmotionalIntelligence } from './metacognition/emotional-intelligence.js';
+import type { TheoryOfMind } from './metacognition/theory-of-mind.js';
+import type { SafetyGuardrail } from './metacognition/safety-guardrail.js';
+import type { ExecutionStateMemory } from './reasoning/execution-state-memory.js';
+import type { HypothesisTester } from './reasoning/hypothesis-tester.js';
+import type { SelfHealingDebugger } from './reasoning/self-healing-debugger.js';
+import type { IntrospectiveAwareness } from './introspection/introspective-awareness.js';
+import type { InnerMonologueManager } from './mirror/inner-monologue.js';
+import type { NormativeAgency } from './mirror/normative-agency.js';
+import type { EdgePrivacy } from './learning/edge-privacy.js';
+import type { WiredCapabilities } from './capability-wiring.js';
 
 const log = getLogger().child({ component: 'agent-runner' });
 
@@ -147,6 +162,36 @@ export interface AgentRunnerDeps {
   contextOptimization?: ContextOptimizationOptions;
   /** Anti-Sycophancy: detect and correct sycophantic behavior in agent responses */
   antiSycophancy?: AntiSycophancyModule;
+  /** Dream Mode: consolidate memories in background after runs */
+  dreamMode?: DreamMode;
+  /** Causal Replay: analyze which step caused a failure */
+  causalReplay?: CausalReplay;
+  /** Metacognitive Consolidation: 3-level hierarchical memory consolidation */
+  metacognitiveConsolidation?: MetacognitiveConsolidation;
+  /** Heuristic Extractor: extract transferable heuristics from runs */
+  heuristicExtractor?: HeuristicExtractor;
+  /** Emotional Intelligence: detect user emotions and adapt response */
+  emotionalIntelligence?: EmotionalIntelligence;
+  /** Theory of Mind: model user beliefs and desires */
+  theoryOfMind?: TheoryOfMind;
+  /** Safety Guardrail: TRIAD safety checks before tool execution */
+  safetyGuardrail?: SafetyGuardrail;
+  /** Execution State Memory: checkpoint/resume for long tasks */
+  executionStateMemory?: ExecutionStateMemory;
+  /** Hypothesis Tester: scientific method for debugging */
+  hypothesisTester?: HypothesisTester;
+  /** Self-Healing Debugger: multi-agent debugging pipeline */
+  selfHealingDebugger?: SelfHealingDebugger;
+  /** Introspective Awareness: self-model with bias detection */
+  introspectiveAwareness?: IntrospectiveAwareness;
+  /** Inner Monologue: MIRROR consciousness thought tracking */
+  innerMonologue?: InnerMonologueManager;
+  /** Normative Agency: commitments and conflict detection */
+  normativeAgency?: NormativeAgency;
+  /** Edge Privacy: route to local models for sensitive data */
+  edgePrivacy?: EdgePrivacy;
+  /** Full capability wiring — wires all cosmic modules at once */
+  wiredCapabilities?: WiredCapabilities;
 }
 
 export class AgentRunner {
@@ -163,6 +208,20 @@ export class AgentRunner {
   private environmentGraph?: EnvironmentGraph;
   private contextOptimizer?: ContextOptimizer;
   private antiSycophancy?: AntiSycophancyModule;
+  private dreamMode?: DreamMode;
+  private causalReplay?: CausalReplay;
+  private metacognitiveConsolidation?: MetacognitiveConsolidation;
+  private heuristicExtractor?: HeuristicExtractor;
+  private emotionalIntelligence?: EmotionalIntelligence;
+  private theoryOfMind?: TheoryOfMind;
+  private safetyGuardrail?: SafetyGuardrail;
+  private executionStateMemory?: ExecutionStateMemory;
+  private hypothesisTester?: HypothesisTester;
+  private selfHealingDebugger?: SelfHealingDebugger;
+  private introspectiveAwareness?: IntrospectiveAwareness;
+  private innerMonologue?: InnerMonologueManager;
+  private normativeAgency?: NormativeAgency;
+  private edgePrivacy?: EdgePrivacy;
 
   constructor(private deps: AgentRunnerDeps) {
     if (deps.enablePlanning) {
@@ -184,6 +243,46 @@ export class AgentRunner {
     this.environmentGraph = deps.environmentGraph;
     this.contextOptimizer = deps.contextOptimizer ?? (deps.contextOptimization ? new ContextOptimizer(deps.contextOptimization) : undefined);
     this.antiSycophancy = deps.antiSycophancy;
+    // Wire extended capabilities (either individually or via full wiring)
+    if (deps.wiredCapabilities) {
+      const wc = deps.wiredCapabilities;
+      this.dreamMode = wc.dreamMode;
+      this.causalReplay = wc.causalReplay;
+      this.metacognitiveConsolidation = wc.metacognitiveConsolidation;
+      this.heuristicExtractor = wc.heuristicExtractor;
+      this.emotionalIntelligence = wc.emotionalIntelligence;
+      this.theoryOfMind = wc.theoryOfMind;
+      this.safetyGuardrail = wc.safetyGuardrail;
+      this.executionStateMemory = wc.executionStateMemory;
+      this.hypothesisTester = wc.hypothesisTester;
+      this.selfHealingDebugger = wc.selfHealingDebugger;
+      this.introspectiveAwareness = wc.introspectiveAwareness;
+      this.innerMonologue = wc.innerMonologue;
+      this.normativeAgency = wc.normativeAgency;
+      this.edgePrivacy = wc.edgePrivacy;
+      // Also wire the base modules if not already provided
+      this.selfForge ??= wc.selfForge;
+      this.metaMonitor ??= wc.metaMonitor;
+      this.selfImprover ??= wc.selfImprover;
+      this.worldSimulator ??= wc.worldSimulator;
+      this.environmentGraph ??= wc.environmentGraph;
+      this.antiSycophancy ??= wc.antiSycophancy;
+    } else {
+      this.dreamMode = deps.dreamMode;
+      this.causalReplay = deps.causalReplay;
+      this.metacognitiveConsolidation = deps.metacognitiveConsolidation;
+      this.heuristicExtractor = deps.heuristicExtractor;
+      this.emotionalIntelligence = deps.emotionalIntelligence;
+      this.theoryOfMind = deps.theoryOfMind;
+      this.safetyGuardrail = deps.safetyGuardrail;
+      this.executionStateMemory = deps.executionStateMemory;
+      this.hypothesisTester = deps.hypothesisTester;
+      this.selfHealingDebugger = deps.selfHealingDebugger;
+      this.introspectiveAwareness = deps.introspectiveAwareness;
+      this.innerMonologue = deps.innerMonologue;
+      this.normativeAgency = deps.normativeAgency;
+      this.edgePrivacy = deps.edgePrivacy;
+    }
   }
 
   async run(input: AgentRunInput): Promise<AgentRun> {
@@ -442,6 +541,117 @@ export class AgentRunner {
         }
       } catch {
         // anti-sycophancy is optional
+      }
+    }
+
+    // Emotional Intelligence: detect user emotion from prompt
+    if (this.emotionalIntelligence && run.prompt) {
+      try {
+        const emotion = await this.emotionalIntelligence.analyze(run.prompt);
+        log.info({ runId: run.id, emotion: emotion.dominantUserEmotion, valence: emotion.valence }, 'emotional intelligence detected user emotion');
+        incCounter('emotion_detected', 'User emotions detected', 1, { emotion: emotion.dominantUserEmotion });
+      } catch {
+        // emotional intelligence is optional
+      }
+    }
+
+    // Theory of Mind: model user beliefs
+    if (this.theoryOfMind && run.prompt) {
+      try {
+        const model = await this.theoryOfMind.analyze('user', { entityType: 'user', messages: [{ role: 'user', content: run.prompt }] });
+        log.info({ runId: run.id, predictedAction: model.predictedNextAction }, 'theory of mind modeled user');
+      } catch {
+        // theory of mind is optional
+      }
+    }
+
+    // Safety Guardrail: check final answer for safety
+    if (this.safetyGuardrail && run.finalAnswer) {
+      try {
+        const check = await this.safetyGuardrail.check(run.finalAnswer, run.prompt);
+        if (check.decision !== 'proceed') {
+          log.warn({ runId: run.id, decision: check.decision }, 'safety guardrail flagged response');
+          incCounter('safety_guardrail_flagged', 'Responses flagged by safety guardrail', 1);
+        }
+      } catch {
+        // safety guardrail is optional
+      }
+    }
+
+    // Heuristic Extractor: extract transferable heuristics from run
+    if (this.heuristicExtractor && run.steps.length > 0) {
+      try {
+        const trajectory = run.steps.map(s => s.thought || s.action?.name || '').join(' -> ');
+        const result = await this.heuristicExtractor.extract(run.id, run.status === 'completed' ? 'success' : 'failure', trajectory);
+        log.info({ runId: run.id, heuristics: result.extractedHeuristics.length }, 'heuristic extractor extracted transferable rules');
+      } catch {
+        // heuristic extraction is optional
+      }
+    }
+
+    // Metacognitive Consolidation: consolidate memory after run
+    if (this.metacognitiveConsolidation && run.steps.length > 0) {
+      try {
+        await this.metacognitiveConsolidation.consolidate();
+        log.info({ runId: run.id }, 'metacognitive consolidation completed');
+      } catch {
+        // consolidation is optional
+      }
+    }
+
+    // Introspective Awareness: self-reflect on the run
+    if (this.introspectiveAwareness && run.steps.length > 0) {
+      try {
+        const reflection = await this.introspectiveAwareness.introspect(`Run ${run.id} with status ${run.status}`);
+        log.info({ runId: run.id, confidence: reflection.confidenceLevel }, 'introspective awareness completed');
+      } catch {
+        // introspection is optional
+      }
+    }
+
+    // Inner Monologue: record thought trace
+    if (this.innerMonologue && run.steps.length > 0) {
+      try {
+        for (const step of run.steps) {
+          if (step.thought) {
+            this.innerMonologue.addThread('reasoning', step.thought);
+          }
+        }
+      } catch {
+        // inner monologue is optional
+      }
+    }
+
+    // Causal Replay: if run failed, analyze root cause
+    if (this.causalReplay && run.status === 'failed' && run.steps.length > 0) {
+      try {
+        const analysis = await this.causalReplay.analyzeRun(run);
+        log.info({ runId: run.id, rootCause: analysis.rootCause }, 'causal replay identified root cause');
+      } catch {
+        // causal replay is optional
+      }
+    }
+
+    // Dream Mode: trigger background consolidation after run
+    if (this.dreamMode && run.steps.length > 0) {
+      try {
+        this.dreamMode.start();
+        log.debug({ runId: run.id }, 'dream mode started for background consolidation');
+      } catch {
+        // dream mode is optional
+      }
+    }
+
+    // Edge Privacy: log if sensitive data was detected
+    if (this.edgePrivacy && run.prompt) {
+      try {
+        const isSensitive = this.edgePrivacy.isPrivacyMode();
+        if (isSensitive) {
+          log.info({ runId: run.id }, 'edge privacy mode active — local model recommended');
+          incCounter('edge_privacy_sensitive', 'Sensitive prompts detected', 1);
+        }
+      } catch {
+        // edge privacy is optional
       }
     }
 

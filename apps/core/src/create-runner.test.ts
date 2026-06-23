@@ -10,6 +10,7 @@ vi.mock('@titan/agent-engine', () => ({
   AgentRunner: class { run = vi.fn(); constructor(public _opts: unknown) {} },
   createProviderFromEnv: (...args: unknown[]) => mockCreateProvider(...args),
   getGlobalToolRegistry: vi.fn(),
+  wireCapabilities: vi.fn().mockReturnValue({ totalWired: 60 }),
 }));
 
 vi.mock('@titan/database', () => ({
