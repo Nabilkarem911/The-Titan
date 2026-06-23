@@ -98,6 +98,7 @@ export default function BiTemporalGraph() {
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="biTemporalGraph"
         icon={Network}
         title="Bi-Temporal Knowledge Graph"
         subtitle="Facts with valid-time + transaction-time, supersession & traversal"

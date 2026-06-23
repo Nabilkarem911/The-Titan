@@ -41,6 +41,7 @@ export default function Swarm() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="swarm"
         icon={Network}
         title="Swarm"
         subtitle="Multi-agent task orchestration"

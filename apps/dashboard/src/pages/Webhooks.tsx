@@ -59,6 +59,7 @@ export default function Webhooks() {
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="webhooks"
         icon={Webhook}
         title="Webhooks"
         subtitle="Manage webhook endpoints for event notifications"

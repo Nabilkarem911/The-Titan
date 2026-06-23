@@ -53,6 +53,7 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="dashboard"
         icon={Zap}
         title="Mission Control"
         subtitle="Overview of your AI operations"

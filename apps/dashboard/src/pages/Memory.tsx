@@ -80,6 +80,7 @@ export default function Memory() {
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="memory"
         icon={Brain}
         title="Memory"
         subtitle="User context and persistent memory"

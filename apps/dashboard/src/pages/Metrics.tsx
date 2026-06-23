@@ -11,6 +11,7 @@ export default function Metrics() {
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="metrics"
         icon={BarChart3}
         title="Metrics"
         subtitle="System metrics and performance data"

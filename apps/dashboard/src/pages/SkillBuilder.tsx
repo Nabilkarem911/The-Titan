@@ -106,6 +106,7 @@ export default function SkillBuilder() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="skillBuilder"
         icon={Wrench}
         title="Custom Skill Builder"
         subtitle="Write custom tools in JavaScript and register them as agent skills"

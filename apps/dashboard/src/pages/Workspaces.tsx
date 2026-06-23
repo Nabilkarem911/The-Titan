@@ -43,6 +43,7 @@ export default function Workspaces() {
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="workspaces"
         icon={Building2}
         title="Workspaces"
         subtitle="Manage your workspaces and team members"

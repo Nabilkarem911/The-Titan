@@ -123,6 +123,7 @@ export default function CodeIntel() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="codeIntel"
         icon={Search}
         title="Code Intelligence"
         subtitle="Index, search, and analyze your codebase"

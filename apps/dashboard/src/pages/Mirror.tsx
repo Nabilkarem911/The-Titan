@@ -43,6 +43,7 @@ export default function Mirror() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="mirror"
         icon={Brain}
         title="MIRROR"
         subtitle="Inner monologue, cognitive control, episodic buffer, digital twin, and normative agency"

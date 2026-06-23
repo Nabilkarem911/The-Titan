@@ -69,6 +69,7 @@ export default function SelfForgePage() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="selfForge"
         icon={Wrench}
         title="Self-Forge & Skills"
         subtitle="Tool forging, skill synthesis, and Skill.md registry"

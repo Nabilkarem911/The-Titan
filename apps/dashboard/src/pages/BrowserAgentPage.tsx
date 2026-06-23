@@ -74,6 +74,7 @@ export default function BrowserAgentPage() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="browserAgent"
         icon={Globe}
         title="Browser Agent"
         subtitle="Web intelligence, browser automation, and screen monitoring"

@@ -54,6 +54,7 @@ export default function ApiKeys() {
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="apiKeys"
         icon={KeyRound}
         title="API Keys"
         subtitle="Manage your API keys for programmatic access"

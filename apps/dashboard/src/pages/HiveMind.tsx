@@ -71,6 +71,7 @@ export default function HiveMind() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="hiveMind"
         icon={Network}
         title="Hive Mind"
         subtitle="Swarm intelligence, collective evolution, topology management, and federation"

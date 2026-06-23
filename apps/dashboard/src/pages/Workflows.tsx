@@ -191,6 +191,7 @@ export default function Workflows() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="workflows"
         icon={Workflow}
         title="Workflows"
         subtitle="Build automated agent pipelines"

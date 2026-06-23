@@ -52,6 +52,7 @@ export default function DAGWorkflow() {
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="dagWorkflow"
         icon={Workflow}
         title="DAG Workflow Engine"
         subtitle="Topological batch execution with parallel branches & retry"

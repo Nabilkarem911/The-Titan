@@ -126,6 +126,7 @@ export default function AgentProfiles() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <PageHeader
+        pageKey="agentProfiles"
         icon={Bot}
         title="Agent Profiles"
         subtitle="Create and manage AI agent personalities"

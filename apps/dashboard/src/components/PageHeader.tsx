@@ -3,6 +3,7 @@ import { Info, X, Lightbulb } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useI18n } from '../i18n/I18nContext';
+import { pageContent } from '../i18n/pageContent';
 
 interface PageHeaderProps {
   icon: LucideIcon;
@@ -12,11 +13,18 @@ interface PageHeaderProps {
   tips?: string[];
   accent?: string;
   actions?: React.ReactNode;
+  pageKey?: string;
 }
 
-export function PageHeader({ icon: Icon, title, subtitle, description, tips, accent = 'text-accent-primary', actions }: PageHeaderProps) {
+export function PageHeader({ icon: Icon, title, subtitle, description, tips, accent = 'text-accent-primary', actions, pageKey }: PageHeaderProps) {
   const [showInfo, setShowInfo] = useState(true);
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+
+  const translated = pageKey ? pageContent[lang][pageKey] : undefined;
+  const displayTitle = translated?.title ?? title;
+  const displaySubtitle = translated?.subtitle ?? subtitle;
+  const displayDescription = translated?.description ?? description;
+  const displayTips = translated?.tips ?? tips;
 
   return (
     <div className="space-y-3">
@@ -26,8 +34,8 @@ export function PageHeader({ icon: Icon, title, subtitle, description, tips, acc
             <Icon className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-h1 text-text-primary">{title}</h1>
-            <p className="text-small text-text-secondary mt-1">{subtitle}</p>
+            <h1 className="text-h1 text-text-primary">{displayTitle}</h1>
+            <p className="text-small text-text-secondary mt-1">{displaySubtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -43,10 +51,10 @@ export function PageHeader({ icon: Icon, title, subtitle, description, tips, acc
               <span className="text-sm font-semibold text-text-primary">{t('whatIsThis')}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-text-secondary leading-relaxed">{description}</p>
-              {tips && tips.length > 0 && (
+              <p className="text-sm text-text-secondary leading-relaxed">{displayDescription}</p>
+              {displayTips && displayTips.length > 0 && (
                 <div className="mt-3 space-y-1.5">
-                  {tips.map((tip, i) => (
+                  {displayTips.map((tip, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <Lightbulb className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
                       <p className="text-small text-text-secondary">{tip}</p>

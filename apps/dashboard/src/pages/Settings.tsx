@@ -22,6 +22,7 @@ export default function Settings() {
   return (
     <div className="p-6 max-w-4xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="settings"
         icon={SettingsIcon}
         title="Settings"
         subtitle="Manage your account and preferences"

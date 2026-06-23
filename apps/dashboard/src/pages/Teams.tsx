@@ -78,6 +78,7 @@ export default function Teams() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="teams"
         icon={Users}
         title="Multi-Agent Teams"
         subtitle="Launch coordinated teams of AI agents for complex tasks"

@@ -61,6 +61,7 @@ export default function MetaLearning() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="metaLearning"
         icon={GraduationCap}
         title="Meta-Learning"
         subtitle="Meta-learning optimization, strategy tuning, prompt optimization, and cross-user learning"

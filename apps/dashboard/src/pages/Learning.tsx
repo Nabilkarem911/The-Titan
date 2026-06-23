@@ -79,6 +79,7 @@ export default function Learning() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="learning"
         icon={GraduationCap}
         title="Learning System"
         subtitle="Agent insights, feedback analysis, and strategy optimization"

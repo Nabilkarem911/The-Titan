@@ -20,6 +20,7 @@ export default function AuditLogs() {
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="auditLogs"
         icon={ShieldCheck}
         title="Audit Logs"
         subtitle="Immutable record of all system actions"

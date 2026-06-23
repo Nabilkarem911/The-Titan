@@ -41,6 +41,7 @@ export default function Economy() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="economy"
         icon={Coins}
         title="Economy & RL"
         subtitle="Reinforcement learning, autonomous trading, and agent economy"

@@ -80,6 +80,7 @@ export default function Terminal() {
     <div className="flex flex-col h-full">
       <div className="px-6 py-4 border-b border-border-subtle">
         <PageHeader
+          pageKey="terminal"
           icon={TerminalSquare}
           title="Terminal"
           subtitle="Interactive shell in your workspace"

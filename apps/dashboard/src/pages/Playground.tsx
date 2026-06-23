@@ -56,6 +56,7 @@ export default function Playground() {
   return (
     <div className="p-6 max-w-4xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="playground"
         icon={FlaskConical}
         title="Playground"
         subtitle="Test API endpoints and AI capabilities directly"

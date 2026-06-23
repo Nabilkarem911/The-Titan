@@ -116,6 +116,7 @@ export default function Autonomous() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="autonomous"
         icon={Bot}
         title="Autonomous Mode"
         subtitle="Automated verification, auto-fix, and task execution"

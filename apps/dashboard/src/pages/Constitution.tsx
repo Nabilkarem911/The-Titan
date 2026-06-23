@@ -43,6 +43,7 @@ export default function Constitution() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="constitution"
         icon={Scroll}
         title="Constitution"
         subtitle="Normative agency, ethical commitments, and conflict detection"

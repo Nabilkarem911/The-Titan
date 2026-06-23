@@ -73,6 +73,7 @@ export default function Guardrails() {
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="guardrails"
         icon={Shield}
         title="Multi-Layer Guardrails"
         subtitle="5-layer defense: input validation → injection → PII → content → output"

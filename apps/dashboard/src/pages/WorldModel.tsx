@@ -70,6 +70,7 @@ export default function WorldModel() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="worldModel"
         icon={Orbit}
         title="World Model"
         subtitle="World simulator, environment graph, digital twin, and causal replay"

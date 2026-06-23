@@ -11,6 +11,7 @@ export default function Health() {
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="health"
         icon={HeartPulse}
         title="Health"
         subtitle="System health and diagnostics"

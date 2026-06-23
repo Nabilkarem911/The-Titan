@@ -35,6 +35,7 @@ export default function Git() {
   return (
     <div className="p-6 max-w-2xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="git"
         icon={GitBranch}
         title="Git"
         subtitle="Push changes to your repository"

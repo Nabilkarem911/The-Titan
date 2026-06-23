@@ -44,6 +44,7 @@ export default function Cron() {
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="cron"
         icon={Clock}
         title="Cron Jobs"
         subtitle="Schedule recurring agent tasks"

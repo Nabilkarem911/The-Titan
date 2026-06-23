@@ -99,6 +99,7 @@ export default function MCPGovernance() {
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="mcpGovernance"
         icon={ShieldCheck}
         title="MCP Governance"
         subtitle="Per-server policies, permissions, rate limiting & audit"

@@ -140,6 +140,7 @@ export default function Plugins() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="plugins"
         icon={Puzzle}
         title="Plugins"
         subtitle="Browse and manage installed plugins"

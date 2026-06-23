@@ -66,6 +66,7 @@ export default function Agents() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
       <PageHeader
+        pageKey="agents"
         icon={Bot}
         title="Agents"
         subtitle="Manage and run AI agent profiles"

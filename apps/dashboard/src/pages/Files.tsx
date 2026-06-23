@@ -139,6 +139,7 @@ export default function Files() {
         <div className="px-4 py-3 border-b border-border-subtle">
           <div className="flex items-center justify-between mb-2">
             <PageHeader
+              pageKey="files"
               icon={Folder}
               title="Files"
               subtitle="Browse and manage workspace files"
