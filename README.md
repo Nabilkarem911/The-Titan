@@ -8,7 +8,7 @@
 
 [![Live](https://img.shields.io/badge/Live-titan.orcanox.xyz-blue?style=for-the-badge)](https://titan.orcanox.xyz)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/Tests-1644_passing-success?style=for-the-badge)](.)
+[![Tests](https://img.shields.io/badge/Tests-1670_passing-success?style=for-the-badge)](.)
 [![Node](https://img.shields.io/badge/Node-22+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
 [![Super-Agent](https://img.shields.io/badge/Super--Agent-100+_Capabilities-purple?style=for-the-badge)](TITAN_SUPER_AGENT_V2_PROPOSAL.md)
@@ -26,7 +26,7 @@ Titan is a **complete AI operating system** — not a chatbot wrapper, not a thi
 
 What makes Titan different? **It thinks about its own thinking, writes its own tools, improves its own code, dreams when idle, evolves its own constitution, trades in an internal economy, forms hive minds with other instances, mines GitHub for patterns, runs quantum-inspired optimization, practices in RL simulations, gardens creative taste autonomously, and collaborates with other agents in real-time.**
 
-> **Enterprise-ready.** JWT auth, RBAC, audit logs, GDPR toolkit, Docker sandboxing, PII detection, rate limiting, encryption at rest, and 210+ API endpoints — Titan is built for production from day one.
+> **Enterprise-ready.** JWT auth, RBAC, audit logs, GDPR toolkit, Docker sandboxing, PII detection, rate limiting, encryption at rest, and 365+ API endpoints — Titan is built for production from day one.
 
 ```bash
 titan chat "deploy the latest version to production"
@@ -120,7 +120,7 @@ Titan isn't just an agent — it's a **Super-Agent**. 100+ advanced capabilities
 | **A2A Protocol v1.0** | Signed agent cards with cryptographic verification, multi-tenancy via tenantId, 4 transports (HTTP, SSE, gRPC, WebSocket), skills on cards | Agent card signed by `issuer-key` → verified on registration → filtered by `tenantId: acme-corp` → discovered via `gRPC` transport |
 | **Test-Time Recursive Thinking v2** | Fast solver (intuition) → Slow solver (recursive strategies with depth tracking) → Abstention gate (confidence threshold + LLM-based) | Fast solver fails → Strategy 1 (decomposition, depth=1) fails → Strategy 2 (analogy, depth=2) passes → Confidence 0.88 → No abstention |
 
-### Cosmic Intelligence (Phase 10 — 16 Modules)
+### Cosmic Intelligence (Phase 10 — 22 Capabilities)
 
 | Capability | What It Does | Example |
 |-----------|--------------|---------|
@@ -133,7 +133,7 @@ Titan isn't just an agent — it's a **Super-Agent**. 100+ advanced capabilities
 | **Infinite Self-Play** | Infinite curriculum generator (10% difficulty stretch), self-play arena, open-ended skill discovery, evolutionary archive (10k max), capability horizons, kill switch | Titan generates tasks for itself → solves → evaluates → discovers new skill domain → archives capability gain |
 | **Self-Evolving Code** | Autonomous code improvement (LLM analyzes source), fitness function (test pass 40% + coverage 25% + speed 20% + tokens 15%), evolution archive, auto-rollback on >5% degradation, safety-critical file protection, meta-evolution (self-modifying prompt, A/B testing, cross-domain transfer) | 3AM: Titan reviews `runner.ts` → proposes optimization → tests pass → fitness +12% → applied. Meta-evolution upgrades its own improvement prompt |
 | **Quantum-Inspired Optimization** | Superposition strategy selection (5s collapse), tensor network compute (max rank 32, bond dim 64), entanglement-based memory, quantum annealing task allocation, greedy fallback >100 agents | 5 strategies explored simultaneously → collapse to optimal in 200ms |
-| **Universal Translator** | 140+ languages, code translation with round-trip verification, protocol translation (MCP/A2A/SKILL.md/gRPC/REST), modal translation (text→voice→image→code), domain translation, cultural adaptation | "Convert this Python to Rust" → translates → round-trip verifies → "Semantics preserved, 94% confidence" |
+| **Universal Translator** | 100+ languages, code translation with round-trip verification, protocol translation (MCP/A2A/SKILL.md/gRPC/REST), modal translation (text→voice→image→code), domain translation, cultural adaptation | "Convert this Python to Rust" → translates → round-trip verifies → "Semantics preserved, 94% confidence" |
 | **Temporal Intelligence** | Past analysis (bi-temporal events), future prediction (LLM-based), timeline branching (max 5 branches, 30s sim), temporal reasoning, proactive time scheduling | "This was true yesterday but not today because config changed" → predicts "will fail again at 3AM unless fixed" |
 | **Titan Constitution** | 7 core principles (2 immutable safety/ethics, 5 amendable), 67% supermajority amendments, LLM-based deliberation (reasoning chain + arguments for/against), conflict resolution, Markdown export | Titan proposes: "Transparency should include cost estimates" → deliberates → 8/10 vote yes → amendment applied → constitution v2 |
 | **Multimodal Dreams** | Visual/code/cross-modal dreams, hypothesis generation, creative dream outputs, memory consolidation (merge/synthesize/forget), insight propagation (30min max) | Idle: Titan dreams → "The pattern in these logs looks like the pattern in these screenshots" → insight propagated to waking state |
@@ -806,11 +806,11 @@ GET  /api/v1/webmcp/stats                 # Get WebMCP stats
 ```
 titan/
 ├── apps/
-│   ├── core/                # Fastify API server (210+ endpoints)
-│   ├── dashboard/           # React 18 + Vite + Tailwind (43 pages)
+│   ├── core/                # Fastify API server (365+ endpoints)
+│   ├── dashboard/           # React 18 + Vite + Tailwind (39 pages)
 │   └── cli/                 # Terminal interface (REPL + commands)
 ├── packages/
-│   ├── agent-engine/        # The brain (70+ modules)
+│   ├── agent-engine/        # The brain (178 modules)
 │   │   ├── self-forge/      #   Agent writes its own tools
 │   │   ├── metacognition/   #   Self-monitoring + introspection + curiosity + emotional intelligence + ToM + MC2 + guardrail + safety memory + anti-sycophancy + multi-layer guardrails
 │   │   ├── world-model/     #   Environment graph + action simulator
@@ -830,7 +830,7 @@ titan/
 │   │   ├── constitution/    #   Titan constitution (7 principles, 67% supermajority amendments, deliberation, conflict resolution)
 │   │   ├── dream/           #   Multimodal dreams (visual/code/cross-modal, memory consolidation, insight propagation)
 │   │   ├── quantum/         #   Quantum-inspired optimization (superposition, tensor networks, entanglement, annealing)
-│   │   ├── translator/      #   Universal translator (140+ languages, code/protocol/modal/domain translation, cultural adaptation)
+│   │   ├── translator/      #   Universal translator (100+ languages, code/protocol/modal/domain translation, cultural adaptation)
 │   │   ├── temporal/        #   Temporal intelligence (past analysis, future prediction, timeline branching, scheduling)
 │   │   ├── introspection/   #   Introspective awareness (self-model, bias detection, metacognition checks)
 │   │   ├── evolution/       #   Meta-evolution + GitHub mining + zero-data co-evolution + self-evolving code
@@ -1358,20 +1358,20 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 
 | Metric | Value |
 |--------|-------|
-| Total Source Files | 700+ |
-| Lines of Code | ~105,000 |
-| Test Files | 96+ |
-| Tests Passing | 1644+ |
-| Packages | 16 |
-| API Endpoints | 210+ |
-| Built-in Tools | 93 |
-| Dashboard Pages | 40+ |
-| Database Migrations | 25 |
-| Agent Profiles | 30 |
+| Total Source Files | 800+ |
+| Lines of Code | ~83,000 |
+| Test Files | 97+ |
+| Tests Passing | 1670+ |
+| Packages | 14 |
+| API Endpoints | 365+ |
+| Built-in Tools | 107 |
+| Dashboard Pages | 39 |
+| Database Migrations | 29 |
+| Agent Profiles | 21 |
 | Queue Types | 9 |
 | Super-Agent Capabilities | 100+ |
 | Agent-Engine Modules | 178 |
-| Cosmic Phase Modules | 16 |
+| Cosmic Phase Modules | 22 |
 | Evolution Plan | 100% Complete |
 
 ---
@@ -1476,7 +1476,7 @@ See `packages/config/src/index.ts` for all 60+ configurable variables.
 - [x] **Infinite Self-Play** — Infinite curriculum generator (10% stretch), self-play arena, open-ended skill discovery, evolutionary archive (10k max), capability horizons, kill switch
 - [x] **Self-Evolving Code** — Autonomous code improvement, fitness function (4 metrics), evolution archive, auto-rollback (>5% degradation), safety-critical file protection, daily cycle limit
 - [x] **Quantum-Inspired Optimization** — Superposition strategy selection (5s collapse), tensor networks (rank 32, bond 64), entanglement-based memory, quantum annealing task allocation, greedy fallback
-- [x] **Universal Translator** — 140+ languages, code translation with round-trip verification, protocol/modal/domain translation, cultural adaptation
+- [x] **Universal Translator** — 100+ languages, code translation with round-trip verification, protocol/modal/domain translation, cultural adaptation
 - [x] **Temporal Intelligence** — Past analysis, future prediction, timeline branching (max 5, 30s sim), temporal reasoning, proactive time scheduling
 - [x] **Titan Constitution** — 7 core principles (2 immutable), 67% supermajority amendments, LLM deliberation, conflict resolution, Markdown export
 - [x] **Multimodal Dreams** — Visual/code/cross-modal dreams, hypothesis generation, creative outputs, memory consolidation, insight propagation (30min max)
@@ -1794,11 +1794,11 @@ Result: Passed SOC2 audit with zero AI-related findings.
 | **Security** | JWT + RBAC + AES-256-GCM encryption + Docker sandbox + PII detection + audit logs + GDPR toolkit |
 | **Scalability** | Multi-agent swarm + queue-based execution + horizontal scaling + hive mind for distributed instances |
 | **Reliability** | Circuit breaker + bulkhead isolation + health aggregation + auto-rollback + checkpoint/resume |
-| **Observability** | OpenTelemetry GenAI tracing + cost tracking + 210+ API endpoints + structured logging |
+| **Observability** | OpenTelemetry GenAI tracing + cost tracking + 365+ API endpoints + structured logging |
 | **Compliance** | Immutable audit logs + GDPR data export/deletion + PII redaction + constitution with immutable safety |
 | **Cost Efficiency** | Smart model router (SLM→XL) + context optimization (40-60% token reduction) + ComputeCredits economy |
 | **Extensibility** | Self-Forge (agent writes own tools) + MCP protocol + A2A protocol + SKILL.md standard + plugin marketplace |
-| **Multilingual** | 140+ languages + cultural adaptation + 7 Arabic dialects + code language translation |
+| **Multilingual** | 100+ languages + cultural adaptation + 7 Arabic dialects + code language translation |
 | **Autonomy** | 24/7 autonomous loop + self-evolving code + infinite self-play + dream mode + curiosity engine |
 | **Safety** | 5-layer guardrails + TRIAD safety + self-evolving safety memory + anti-sycophancy + constitution |
 

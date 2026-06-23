@@ -9,3 +9,4 @@ export * from './safety-guardrail.js';
 export * from './safety-memory.js';
 export * from './anti-sycophancy.js';
 export * from './multi-layer-guardrails.js';
+export * from './capability-registry.js';
