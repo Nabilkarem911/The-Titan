@@ -1,5 +1,6 @@
 import { detectLanguage, isArabicDialect, type DetectedLanguage } from './language-detector.js';
 import type { AgentContext, AgentRule } from '../types.js';
+import { getGlobalCapabilityRegistry } from '../metacognition/capability-registry.js';
 
 // ── Core identity — language-independent ──
 const IDENTITY_CORE = {
@@ -300,6 +301,15 @@ export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string): st
     getForbiddenSection(effectiveLang),
     getToneMemorySection(effectiveLang),
   ];
+
+  // Inject capability self-awareness
+  try {
+    const capRegistry = getGlobalCapabilityRegistry();
+    const capSection = capRegistry.generateSystemPromptSection();
+    sections.push(capSection);
+  } catch {
+    // Capability registry might not be initialized in test contexts
+  }
 
   // Inject rules
   const rules: string[] = [];
