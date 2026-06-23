@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bot, Play, CheckCircle, XCircle, Loader2, AlertTriangle, Clock, Wrench } from 'lucide-react';
+import { Bot, Play, CheckCircle, XCircle, Loader2, AlertTriangle, Clock, Wrench, Sparkles, Brain, Zap } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
@@ -24,6 +24,18 @@ interface AutonomousTask {
   summary?: string;
 }
 
+interface HyperAgentStats {
+  cycles: number;
+  improvements: number;
+  evaluations: number;
+}
+
+interface CuriosityStats {
+  totalQuestions: number;
+  explored: number;
+  unanswered: number;
+}
+
 export default function Autonomous() {
   const [tasks, setTasks] = useState<AutonomousTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,12 +45,21 @@ export default function Autonomous() {
   const [autoFix, setAutoFix] = useState(false);
   const [verifyResults, setVerifyResults] = useState<VerifyResult[] | null>(null);
   const [verifying, setVerifying] = useState(false);
+  const [hyperStats, setHyperStats] = useState<HyperAgentStats | null>(null);
+  const [curiosityStats, setCuriosityStats] = useState<CuriosityStats | null>(null);
+  const [runningHyper, setRunningHyper] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<{ items: AutonomousTask[]; total: number }>('/autonomous/tasks');
-      setTasks(res.items);
+      const [tasksRes, hyperRes, curiosityRes] = await Promise.all([
+        api.get<{ items: AutonomousTask[]; total: number }>('/autonomous/tasks'),
+        api.get<HyperAgentStats>('/hyper-agent/stats').catch(() => null),
+        api.get<CuriosityStats>('/curiosity/stats').catch(() => null),
+      ]);
+      setTasks(tasksRes.items);
+      setHyperStats(hyperRes);
+      setCuriosityStats(curiosityRes);
     } catch {
       toast.error('Failed to load tasks');
     } finally {
@@ -75,6 +96,19 @@ export default function Autonomous() {
       toast.error('Task execution failed');
     } finally {
       setRunning(false);
+    }
+  };
+
+  const handleHyperCycle = async () => {
+    setRunningHyper(true);
+    try {
+      await api.post('/hyper-agent/cycle', {});
+      toast.success('Hyper-agent cycle completed');
+      load();
+    } catch {
+      toast.error('Hyper-agent cycle failed');
+    } finally {
+      setRunningHyper(false);
     }
   };
 
@@ -157,6 +191,47 @@ export default function Autonomous() {
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             Run Task
           </button>
+        </div>
+      </div>
+
+      {/* HyperAgent & Curiosity */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-h3 text-text-primary flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-accent-primary" />
+              Hyper-Agent
+            </h2>
+            <button onClick={handleHyperCycle} disabled={runningHyper} className="btn-secondary text-caption flex items-center gap-1">
+              {runningHyper ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+              Run Cycle
+            </button>
+          </div>
+          {hyperStats ? (
+            <div className="space-y-2">
+              <div className="flex justify-between"><span className="text-small text-text-secondary">Cycles</span><span className="text-sm font-medium text-text-primary">{hyperStats.cycles}</span></div>
+              <div className="flex justify-between"><span className="text-small text-text-secondary">Improvements</span><span className="text-sm font-medium text-success">{hyperStats.improvements}</span></div>
+              <div className="flex justify-between"><span className="text-small text-text-secondary">Evaluations</span><span className="text-sm font-medium text-text-primary">{hyperStats.evaluations}</span></div>
+            </div>
+          ) : (
+            <p className="text-small text-text-muted">No hyper-agent data yet</p>
+          )}
+        </div>
+
+        <div className="card p-5">
+          <h2 className="text-h3 text-text-primary flex items-center gap-2 mb-3">
+            <Brain className="w-4 h-4 text-accent-secondary" />
+            Curiosity Engine
+          </h2>
+          {curiosityStats ? (
+            <div className="space-y-2">
+              <div className="flex justify-between"><span className="text-small text-text-secondary">Total Questions</span><span className="text-sm font-medium text-text-primary">{curiosityStats.totalQuestions}</span></div>
+              <div className="flex justify-between"><span className="text-small text-text-secondary">Explored</span><span className="text-sm font-medium text-success">{curiosityStats.explored}</span></div>
+              <div className="flex justify-between"><span className="text-small text-text-secondary">Unanswered</span><span className="text-sm font-medium text-warning">{curiosityStats.unanswered}</span></div>
+            </div>
+          ) : (
+            <p className="text-small text-text-muted">No curiosity data yet</p>
+          )}
         </div>
       </div>
 

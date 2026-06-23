@@ -31,6 +31,8 @@ import {
   Sparkles,
   Globe,
   Orbit,
+  Coins,
+  Scroll,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -102,6 +104,9 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'Agent Network', path: '/agent-network', icon: Network },
       { label: 'Self-Forge', path: '/self-forge', icon: Wrench },
       { label: 'World Model', path: '/world-model', icon: Orbit },
+      { label: 'Hive Mind', path: '/hive-mind', icon: Network },
+      { label: 'Economy', path: '/economy', icon: Coins },
+      { label: 'Constitution', path: '/constitution', icon: Scroll },
     ],
   },
   {

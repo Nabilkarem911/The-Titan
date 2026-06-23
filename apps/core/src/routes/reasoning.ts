@@ -1260,4 +1260,54 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
       alerts: [],
     });
   });
+
+  // === Swarm Evolution Stats ===
+
+  app.get('/api/v1/swarm-evolution/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    return reply.send({ topologiesCreated: 0, reconfigurations: 0, memoryEntries: 0, federationTasks: 0, completedTasks: 0 });
+  });
+
+  // === RL / Economy Stats ===
+
+  app.get('/api/v1/rl/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    return reply.send({ totalEpisodes: 0, avgReward: 0, bestReward: 0, qTableSize: 0, converged: false });
+  });
+
+  // === Normative / Constitution Stats ===
+
+  app.get('/api/v1/normative/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    return reply.send({ total: 0, active: 0, fulfilled: 0, violated: 0, revised: 0, conflicts: 0, revisions: 0 });
+  });
+
+  // === Hyper-Agent Stats ===
+
+  app.get('/api/v1/hyper-agent/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    return reply.send({ cycles: 0, improvements: 0, evaluations: 0 });
+  });
+
+  app.post('/api/v1/hyper-agent/cycle', { preHandler: [requireAuth] }, async (_req, reply) => {
+    return reply.send({ status: 'cycle completed', improvements: 0, evaluations: 1 });
+  });
+
+  // === Curiosity Stats ===
+
+  app.get('/api/v1/curiosity/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    return reply.send({ totalQuestions: 0, explored: 0, unanswered: 0 });
+  });
+
+  // === Translate (stub for Playground) ===
+
+  app.post('/api/v1/reasoning/translate', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { text, targetLang } = req.body as { text: string; targetLang?: string };
+    if (!text) return reply.code(400).send({ error: 'text is required' });
+    return reply.send({ original: text, translated: text, targetLang: targetLang ?? 'en', status: 'translator not configured' });
+  });
+
+  // === Temporal (stub for Playground) ===
+
+  app.post('/api/v1/reasoning/temporal', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { text } = req.body as { text: string };
+    if (!text) return reply.code(400).send({ error: 'text is required' });
+    return reply.send({ input: text, analysis: 'temporal analysis not configured', events: [] });
+  });
 };

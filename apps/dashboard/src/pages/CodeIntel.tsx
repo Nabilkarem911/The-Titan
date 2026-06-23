@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, FolderTree, Box, Loader2, Database, FileCode } from 'lucide-react';
+import { Search, FolderTree, Box, Loader2, Database, FileCode, Wrench, Brain, Sparkles } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
@@ -52,6 +52,10 @@ export default function CodeIntel() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SymbolResult[] | FileResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [debugStats, setDebugStats] = useState<{ totalLessons: number; totalAttempts: number; successRate: number } | null>(null);
+  const [neuroResult, setNeuroResult] = useState<string | null>(null);
+  const [neuroQuery, setNeuroQuery] = useState('');
+  const [neuroLoading, setNeuroLoading] = useState(false);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -66,6 +70,26 @@ export default function CodeIntel() {
   }, []);
 
   useEffect(() => { loadStats(); }, [loadStats]);
+
+  useEffect(() => {
+    api.get<{ totalLessons: number; totalAttempts: number; successRate: number }>('/debug/stats')
+      .then(setDebugStats)
+      .catch(() => {});
+  }, []);
+
+  const handleNeuroReason = async () => {
+    if (!neuroQuery.trim()) return;
+    setNeuroLoading(true);
+    setNeuroResult(null);
+    try {
+      const res = await api.post<{ result: string }>('/neuro-symbolic/reason', { query: neuroQuery });
+      setNeuroResult(JSON.stringify(res, null, 2));
+    } catch (err) {
+      setNeuroResult(JSON.stringify({ error: err instanceof Error ? err.message : 'Failed' }, null, 2));
+    } finally {
+      setNeuroLoading(false);
+    }
+  };
 
   const handleIndex = async () => {
     setIndexing(true);
@@ -217,6 +241,48 @@ export default function CodeIntel() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Self-Healing Debugger & Neuro-Symbolic */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="card p-5">
+          <h2 className="text-h3 text-text-primary flex items-center gap-2 mb-3">
+            <Wrench className="w-4 h-4 text-accent-primary" />
+            Self-Healing Debugger
+          </h2>
+          {debugStats ? (
+            <div className="space-y-2">
+              <div className="flex justify-between"><span className="text-small text-text-secondary">Total Lessons</span><span className="text-sm font-medium text-text-primary">{debugStats.totalLessons}</span></div>
+              <div className="flex justify-between"><span className="text-small text-text-secondary">Total Attempts</span><span className="text-sm font-medium text-text-primary">{debugStats.totalAttempts}</span></div>
+              <div className="flex justify-between"><span className="text-small text-text-secondary">Success Rate</span><span className="text-sm font-medium text-success">{debugStats.successRate}%</span></div>
+            </div>
+          ) : (
+            <p className="text-small text-text-muted">No debugger data yet</p>
+          )}
+        </div>
+
+        <div className="card p-5">
+          <h2 className="text-h3 text-text-primary flex items-center gap-2 mb-3">
+            <Brain className="w-4 h-4 text-accent-secondary" />
+            Neuro-Symbolic Reasoner
+          </h2>
+          <div className="flex gap-2 mb-3">
+            <input
+              value={neuroQuery}
+              onChange={(e) => setNeuroQuery(e.target.value)}
+              placeholder="Enter a reasoning query..."
+              className="input flex-1"
+              onKeyDown={(e) => e.key === 'Enter' && handleNeuroReason()}
+            />
+            <button onClick={handleNeuroReason} disabled={neuroLoading || !neuroQuery.trim()} className="btn-primary flex items-center gap-2">
+              {neuroLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              Reason
+            </button>
+          </div>
+          {neuroResult && (
+            <pre className="text-small font-mono text-text-primary overflow-x-auto whitespace-pre-wrap bg-elevated p-3 rounded-btn">{neuroResult}</pre>
+          )}
+        </div>
       </div>
 
       {loading && (
