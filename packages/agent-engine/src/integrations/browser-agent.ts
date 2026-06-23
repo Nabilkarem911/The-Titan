@@ -3,6 +3,7 @@ import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import type { LlmProvider } from '../types.js';
+import puppeteer, { type Browser, type Page } from 'puppeteer';
 
 const log = getLogger().child({ component: 'browser-agent' });
 
@@ -110,6 +111,8 @@ const DEFAULT_CONFIG: BrowserAgentConfig = {
 
 export class BrowserAgent extends EventEmitter {
   private sessions: Map<string, BrowserSession> = new Map();
+  private pages: Map<string, Page> = new Map();
+  private browser: Browser | null = null;
   private maxSessions = 20;
 
   constructor(
@@ -117,6 +120,16 @@ export class BrowserAgent extends EventEmitter {
     private config: BrowserAgentConfig = DEFAULT_CONFIG,
   ) {
     super();
+  }
+
+  private async getBrowser(): Promise<Browser> {
+    if (!this.browser || !this.browser.connected) {
+      this.browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      });
+    }
+    return this.browser;
   }
 
   async executeTask(task: string, startUrl?: string): Promise<BrowserTaskResult> {
@@ -269,7 +282,18 @@ export class BrowserAgent extends EventEmitter {
 
     this.emit('action:start', { sessionId, action });
 
-    const observation = await this.simulateAction(session, action);
+    let observation: BrowserObservation;
+    try {
+      observation = await this.executeRealAction(sessionId, session, action);
+    } catch (err) {
+      observation = {
+        url: session.currentUrl,
+        title: '',
+        text: '',
+        success: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
 
     session.actions.push({ action, observation, timestamp: new Date() });
     session.currentUrl = observation.url;
@@ -278,9 +302,21 @@ export class BrowserAgent extends EventEmitter {
     return observation;
   }
 
-  private async simulateAction(session: BrowserSession, action: BrowserAction): Promise<BrowserObservation> {
+  private async executeRealAction(sessionId: string, session: BrowserSession, action: BrowserAction): Promise<BrowserObservation> {
+    const browser = await this.getBrowser();
+    let page = this.pages.get(sessionId);
+
+    if (!page) {
+      page = await browser.newPage();
+      await page.setViewport(this.config.viewport);
+      if (this.config.userAgent) {
+        await page.setUserAgent(this.config.userAgent);
+      }
+      this.pages.set(sessionId, page);
+    }
+
     switch (action.type) {
-      case 'navigate':
+      case 'navigate': {
         if (this.config.allowedDomains && action.url) {
           const domain = new URL(action.url).hostname;
           if (!this.config.allowedDomains.includes(domain)) {
@@ -293,81 +329,100 @@ export class BrowserAgent extends EventEmitter {
             };
           }
         }
-        session.currentUrl = action.url ?? session.currentUrl;
-        return {
-          url: session.currentUrl,
-          title: `Page: ${session.currentUrl}`,
-          text: `[Simulated navigation to ${action.url}]`,
-          success: true,
-        };
+        await page.goto(action.url ?? session.currentUrl, {
+          waitUntil: 'networkidle2',
+          timeout: this.config.timeout,
+        });
+        const url = page.url();
+        const title = await page.title();
+        const text = await page.evaluate('document.body?.innerText?.slice(0, 5000) ?? ""') as string;
+        return { url, title, text, success: true };
+      }
 
-      case 'click':
-        return {
-          url: session.currentUrl,
-          title: '',
-          text: `[Simulated click on ${action.selector}]`,
-          success: true,
-        };
+      case 'click': {
+        if (action.selector) {
+          await page.click(action.selector, { timeout: this.config.timeout } as any);
+        }
+        await page.waitForNetworkIdle({ timeout: 5000 }).catch(() => {});
+        const text = await page.evaluate('document.body?.innerText?.slice(0, 5000) ?? ""') as string;
+        return { url: page.url(), title: await page.title(), text, success: true };
+      }
 
-      case 'type':
-        return {
-          url: session.currentUrl,
-          title: '',
-          text: `[Simulated typing "${action.value?.slice(0, 50)}" into ${action.selector}]`,
-          success: true,
-        };
+      case 'type': {
+        if (action.selector && action.value) {
+          await page.type(action.selector, action.value, { delay: 50 });
+        }
+        return { url: page.url(), title: await page.title(), text: `[Typed "${action.value?.slice(0, 50)}" into ${action.selector}]`, success: true };
+      }
 
-      case 'screenshot':
-        return {
-          url: session.currentUrl,
-          title: '',
-          text: '[Screenshot captured]',
-          screenshot: `[base64:screenshot:${Date.now()}]`,
-          success: true,
-        };
+      case 'scroll': {
+        const direction = action.value ?? 'down';
+        await page.evaluate(`window.scrollBy(0, ${direction === 'up' ? '-window.innerHeight' : 'window.innerHeight'})`);
+        const text = await page.evaluate('document.body?.innerText?.slice(0, 5000) ?? ""') as string;
+        return { url: page.url(), title: await page.title(), text, success: true };
+      }
 
-      case 'extract':
-        return {
-          url: session.currentUrl,
-          title: '',
-          text: action.selector
-            ? `[Extracted content from ${action.selector}]`
-            : '[Extracted full page content]',
-          success: true,
-        };
+      case 'screenshot': {
+        const screenshot = await page.screenshot({ encoding: 'base64' });
+        return { url: page.url(), title: await page.title(), text: '[Screenshot captured]', screenshot: `data:image/png;base64,${screenshot}`, success: true };
+      }
 
-      case 'scroll':
-        return {
-          url: session.currentUrl,
-          title: '',
-          text: `[Scrolled ${action.value ?? 'down'}]`,
-          success: true,
-        };
+      case 'extract': {
+        if (action.selector) {
+          const content = await page.$eval(action.selector, 'el => el.textContent?.slice(0, 5000) ?? ""').catch(() => '') as string;
+          return { url: page.url(), title: await page.title(), text: content, success: true };
+        }
+        const fullText = await page.evaluate('document.body?.innerText?.slice(0, 10000) ?? ""') as string;
+        return { url: page.url(), title: await page.title(), text: fullText, success: true };
+      }
 
-      case 'wait':
-        return {
-          url: session.currentUrl,
-          title: '',
-          text: `[Waited]`,
-          success: true,
-        };
+      case 'wait': {
+        if (action.selector) {
+          await page.waitForSelector(action.selector, { timeout: this.config.timeout });
+        } else {
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+        return { url: page.url(), title: await page.title(), text: '[Waited]', success: true };
+      }
 
-      case 'close':
+      case 'select': {
+        if (action.selector && action.value) {
+          await page.select(action.selector, action.value);
+        }
+        return { url: page.url(), title: await page.title(), text: `[Selected ${action.value} in ${action.selector}]`, success: true };
+      }
+
+      case 'hover': {
+        if (action.selector) {
+          await page.hover(action.selector);
+        }
+        return { url: page.url(), title: await page.title(), text: `[Hovered ${action.selector}]`, success: true };
+      }
+
+      case 'press_key': {
+        if (action.value) {
+          await page.keyboard.press(action.value as any);
+        }
+        return { url: page.url(), title: await page.title(), text: `[Pressed ${action.value}]`, success: true };
+      }
+
+      case 'evaluate': {
+        if (action.value) {
+          const result = await page.evaluate(action.value);
+          return { url: page.url(), title: await page.title(), text: JSON.stringify(result).slice(0, 5000), success: true };
+        }
+        return { url: page.url(), title: await page.title(), text: '[No script provided]', success: false };
+      }
+
+      case 'close': {
+        await page.close();
+        this.pages.delete(sessionId);
         session.status = 'closed';
-        return {
-          url: session.currentUrl,
-          title: '',
-          text: '[Session closed]',
-          success: true,
-        };
+        return { url: session.currentUrl, title: '', text: '[Session closed]', success: true };
+      }
 
       default:
-        return {
-          url: session.currentUrl,
-          title: '',
-          text: `[Simulated ${action.type}]`,
-          success: true,
-        };
+        return { url: page.url(), title: await page.title(), text: `[Unknown action: ${action.type}]`, success: false, error: `Unknown action type: ${action.type}` };
     }
   }
 
@@ -421,6 +476,11 @@ export class BrowserAgent extends EventEmitter {
     const session = this.sessions.get(sessionId);
     if (!session) return false;
     session.status = 'closed';
+    const page = this.pages.get(sessionId);
+    if (page) {
+      page.close().catch(() => {});
+      this.pages.delete(sessionId);
+    }
     this.emit('session:close', sessionId);
     return true;
   }

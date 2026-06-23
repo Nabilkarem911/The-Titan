@@ -454,3 +454,118 @@ export const audit = {
     );
   },
 };
+
+export interface ExperienceRow {
+  id: string;
+  run_id: string;
+  prompt: string;
+  strategy: string;
+  tools_used: string[];
+  success: boolean;
+  user_feedback: string | null;
+  tokens_used: number;
+  duration_ms: number;
+  error_type: string | null;
+  timestamp: Date;
+}
+
+export const experiences = {
+  async insert(exp: {
+    id: string;
+    runId: string;
+    prompt: string;
+    strategy: string;
+    toolsUsed: string[];
+    success: boolean;
+    userFeedback?: string | null;
+    tokensUsed: number;
+    durationMs: number;
+    errorType?: string | null;
+    timestamp: Date;
+  }): Promise<void> {
+    await query(
+      `INSERT INTO experiences (id, run_id, prompt, strategy, tools_used, success, user_feedback, tokens_used, duration_ms, error_type, timestamp)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        exp.id,
+        exp.runId,
+        exp.prompt,
+        exp.strategy,
+        exp.toolsUsed,
+        exp.success,
+        exp.userFeedback ?? null,
+        exp.tokensUsed,
+        exp.durationMs,
+        exp.errorType ?? null,
+        exp.timestamp,
+      ],
+    );
+  },
+
+  async getRecent(limit = 100): Promise<ExperienceRow[]> {
+    const result = await query(
+      `SELECT * FROM experiences ORDER BY timestamp DESC LIMIT $1`,
+      [limit],
+    );
+    return result.rows as ExperienceRow[];
+  },
+
+  async count(): Promise<number> {
+    const result = await query(`SELECT COUNT(*) as cnt FROM experiences`);
+    return Number((result.rows[0] as Record<string, unknown>).cnt ?? 0);
+  },
+};
+
+export interface DreamReportRow {
+  id: string;
+  experiences_reviewed: number;
+  insights: unknown[];
+  patterns: unknown[];
+  recommendations: unknown[];
+  strategy_adjustments: unknown[];
+  health_score: number;
+  created_at: Date;
+}
+
+export const dreamReports = {
+  async insert(report: {
+    id: string;
+    experiencesReviewed: number;
+    insights: unknown[];
+    patterns: unknown[];
+    recommendations: unknown[];
+    strategyAdjustments: unknown[];
+    healthScore: number;
+    createdAt: Date;
+  }): Promise<void> {
+    await query(
+      `INSERT INTO dream_reports (id, experiences_reviewed, insights, patterns, recommendations, strategy_adjustments, health_score, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        report.id,
+        report.experiencesReviewed,
+        JSON.stringify(report.insights),
+        JSON.stringify(report.patterns),
+        JSON.stringify(report.recommendations),
+        JSON.stringify(report.strategyAdjustments),
+        report.healthScore,
+        report.createdAt,
+      ],
+    );
+  },
+
+  async getRecent(limit = 10): Promise<DreamReportRow[]> {
+    const result = await query(
+      `SELECT * FROM dream_reports ORDER BY created_at DESC LIMIT $1`,
+      [limit],
+    );
+    return result.rows.map((row) => ({
+      ...row,
+      insights: JSON.parse(row.insights as string),
+      patterns: JSON.parse(row.patterns as string),
+      recommendations: JSON.parse(row.recommendations as string),
+      strategy_adjustments: JSON.parse(row.strategy_adjustments as string),
+    })) as DreamReportRow[];
+  },
+};

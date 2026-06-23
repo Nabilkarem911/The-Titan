@@ -1,4 +1,5 @@
 import { getLogger } from '@titan/logging';
+import { experiences as experiencesRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'experience-collector' });
 
@@ -32,6 +33,43 @@ export class ExperienceCollector {
     this.experiences.push(exp);
     if (this.experiences.length > this.maxExperiences) {
       this.experiences = this.experiences.slice(-this.maxExperiences);
+    }
+    experiencesRepo.insert({
+      id: exp.id,
+      runId: exp.runId,
+      prompt: exp.prompt,
+      strategy: exp.strategy,
+      toolsUsed: exp.toolsUsed,
+      success: exp.success,
+      userFeedback: exp.userFeedback ?? null,
+      tokensUsed: exp.tokensUsed,
+      durationMs: exp.durationMs,
+      errorType: exp.errorType ?? null,
+      timestamp: exp.timestamp,
+    }).catch((err) => {
+      log.warn({ err, expId: exp.id }, 'failed to persist experience to DB');
+    });
+  }
+
+  async loadFromDB(limit = 5000): Promise<void> {
+    try {
+      const rows = await experiencesRepo.getRecent(limit);
+      this.experiences = rows.map((r) => ({
+        id: r.id,
+        runId: r.run_id,
+        prompt: r.prompt,
+        strategy: r.strategy,
+        toolsUsed: r.tools_used,
+        success: r.success,
+        userFeedback: (r.user_feedback as Experience['userFeedback']) ?? undefined,
+        tokensUsed: r.tokens_used,
+        durationMs: r.duration_ms,
+        errorType: r.error_type ?? undefined,
+        timestamp: r.timestamp,
+      }));
+      log.info({ count: this.experiences.length }, 'experiences loaded from DB');
+    } catch (err) {
+      log.warn({ err }, 'failed to load experiences from DB — starting with empty memory');
     }
   }
 

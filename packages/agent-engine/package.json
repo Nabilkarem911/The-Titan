@@ -24,7 +24,9 @@
     "@titan/queue": "0.1.0",
     "@titan/memory": "0.1.0",
     "@titan/observability": "0.1.0",
-    "zod": "3.23.8"
+    "@titan/database": "0.1.0",
+    "zod": "3.23.8",
+    "puppeteer": "^22.0.0"
   },
   "devDependencies": {
     "typescript": "5.6.3"

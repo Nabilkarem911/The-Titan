@@ -1,6 +1,8 @@
 import { getLogger } from '@titan/logging';
 import { incCounter, setGauge, observeHistogram } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'self-rewriter' });
@@ -543,8 +545,38 @@ export class SelfRewriter {
       }
     }
 
-    // Apply the change
+    // Apply the change to the target module file
     this.currentVersion++;
+    let originalFileContent: string | null = null;
+    let targetFilePath: string | null = null;
+
+    if (proposal.targetModule) {
+      const candidates = [
+        join(process.cwd(), 'packages', 'agent-engine', 'src', ...proposal.targetModule.split('/')) + '.ts',
+        join(process.cwd(), 'packages', 'agent-engine', 'src', ...proposal.targetModule.split('/'), 'index.ts'),
+        join(process.cwd(), proposal.targetModule),
+      ];
+      for (const candidate of candidates) {
+        try {
+          originalFileContent = await readFile(candidate, 'utf-8');
+          targetFilePath = candidate;
+          break;
+        } catch {
+          // try next candidate
+        }
+      }
+    }
+
+    if (targetFilePath && originalFileContent !== null && proposal.proposedCode) {
+      try {
+        await writeFile(targetFilePath, proposal.proposedCode, 'utf-8');
+        log.info({ version: this.currentVersion, file: targetFilePath }, 'rewrite applied to file');
+      } catch (writeErr) {
+        log.warn({ err: writeErr, file: targetFilePath }, 'failed to write rewritten file — continuing in memory only');
+        targetFilePath = null;
+      }
+    }
+
     const version: RewriteVersion = {
       id: randomUUID().slice(0, 8),
       version: this.currentVersion,
@@ -569,7 +601,15 @@ export class SelfRewriter {
     let rolledBack = false;
 
     if (!improved) {
-      // Rollback
+      // Rollback — restore original file content
+      if (targetFilePath && originalFileContent !== null) {
+        try {
+          await writeFile(targetFilePath, originalFileContent, 'utf-8');
+          log.info({ version: version.version, file: targetFilePath }, 'file rolled back to original');
+        } catch (rollbackErr) {
+          log.error({ err: rollbackErr, file: targetFilePath }, 'FAILED to rollback file — manual intervention needed');
+        }
+      }
       version.applied = false;
       version.rolledBack = true;
       this.currentVersion--;

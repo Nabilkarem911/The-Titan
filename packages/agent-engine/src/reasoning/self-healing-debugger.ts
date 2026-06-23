@@ -1,6 +1,8 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'self-healing-debugger' });
@@ -366,9 +368,28 @@ export class SelfHealingDebugger {
       const fixDescription = String(raw.fixDescription ?? '');
       const fixCode = raw.fixCode ? String(raw.fixCode) : undefined;
 
-      // In a real implementation, we'd apply the fix and run tests
-      // For now, we validate the fix description is non-trivial
-      const success = fixDescription.length > 10 && !String(raw.rollbackPlan ?? '').includes('impossible');
+      let success = false;
+      let appliedError: string | undefined;
+
+      if (fixCode && bug.filePath && existsSync(bug.filePath)) {
+        try {
+          const originalContent = await readFile(bug.filePath, 'utf-8');
+          const newContent = this.applyFix(originalContent, fixCode, analysis);
+
+          if (newContent && newContent !== originalContent) {
+            await writeFile(bug.filePath, newContent, 'utf-8');
+            log.info({ bugId: bug.id, file: bug.filePath }, 'fix applied to file');
+            success = true;
+          } else {
+            appliedError = 'Fix did not produce changes — fixCode may not match file content';
+          }
+        } catch (applyErr) {
+          appliedError = applyErr instanceof Error ? applyErr.message : String(applyErr);
+          log.warn({ bugId: bug.id, err: appliedError }, 'failed to apply fix to file');
+        }
+      } else {
+        appliedError = fixCode ? 'File not found or no file path provided' : 'No fix code generated';
+      }
 
       this.attempts.push({
         id: randomUUID().slice(0, 8),
@@ -383,7 +404,7 @@ export class SelfHealingDebugger {
         this.attempts = this.attempts.slice(-this.maxAttempts);
       }
 
-      return { success, fixDescription, fixCode };
+      return { success, fixDescription, fixCode, error: appliedError };
     } catch (err) {
       return {
         success: false,
@@ -391,5 +412,50 @@ export class SelfHealingDebugger {
         error: err instanceof Error ? err.message : 'unknown',
       };
     }
+  }
+
+  private applyFix(
+    originalContent: string,
+    fixCode: string,
+    analysis: { rootCause: string; fixPlan: string; fixCode?: string; needsHuman: boolean },
+  ): string | null {
+    if (!fixCode) return null;
+
+    if (fixCode.startsWith('REPLACE_ALL:')) {
+      const replacement = fixCode.slice('REPLACE_ALL:'.length).trim();
+      return replacement;
+    }
+
+    if (fixCode.startsWith('REPLACE:')) {
+      const parts = fixCode.slice('REPLACE:'.length).split('|||WITH|||');
+      if (parts.length === 2) {
+        const oldText = parts[0].trim();
+        const newText = parts[1].trim();
+        if (originalContent.includes(oldText)) {
+          return originalContent.replace(oldText, newText);
+        }
+      }
+      return null;
+    }
+
+    if (fixCode.startsWith('INSERT_AFTER:')) {
+      const parts = fixCode.slice('INSERT_AFTER:'.length).split('|||INSERT|||');
+      if (parts.length === 2) {
+        const anchor = parts[0].trim();
+        const newCode = parts[1].trim();
+        const idx = originalContent.indexOf(anchor);
+        if (idx >= 0) {
+          const insertPos = idx + anchor.length;
+          return originalContent.slice(0, insertPos) + '\n' + newCode + originalContent.slice(insertPos);
+        }
+      }
+      return null;
+    }
+
+    if (analysis.fixCode && originalContent.includes(analysis.fixCode)) {
+      return originalContent.replace(analysis.fixCode, fixCode);
+    }
+
+    return null;
   }
 }
