@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { visualWorkflows as vwRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'visual-workflow' });
 
@@ -45,6 +46,7 @@ export class VisualWorkflowBuilder {
       exported: false,
     };
     this.workflows.push(workflow);
+    vwRepo.insert(workflow.id, { name: workflow.name, description: '', nodes: JSON.stringify(workflow.nodes), edges: JSON.stringify(workflow.edges), status: 'draft' }).catch(() => {});
     incCounter('workflows_created', 'Visual workflows created', 1);
     return workflow;
   }

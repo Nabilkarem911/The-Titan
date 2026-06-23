@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { metacognitiveReflections as mcRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'metacognitive-consolidation' });
@@ -137,6 +138,7 @@ export class MetacognitiveConsolidation {
       if (this.reflections.length > this.maxReflections) {
         this.reflections = this.reflections.slice(-this.maxReflections);
       }
+      mcRepo.insert(reflection.id, { category: outcome, content: reflection.reasoning, confidence: 0.5, lesson: reflection.lessons.join('; ') }).catch(() => {});
 
       incCounter('mc_reflection', 'Metacognitive reflections', 1, { outcome });
       log.info({ reflectionId, taskId, outcome, lessons: parsed.lessons.length }, 'instance reflection complete');

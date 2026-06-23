@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { metaLearningResults as mlrRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'meta-learning' });
@@ -191,6 +192,7 @@ export class MetaLearningOptimizer {
       if (this.results.length > this.maxResults) {
         this.results = this.results.slice(-this.maxResults);
       }
+      mlrRepo.insert(result.id, { optimization_type: 'meta-learning', target: '', before_score: 0, after_score: 0, improvement: result.improvement, config: JSON.stringify(result.configAfter) }).catch(() => {});
 
       incCounter('meta_learning_optimization', 'Meta-learning optimizations', 1, {
         improved: parsed.improvement > 0 ? 'true' : 'false',

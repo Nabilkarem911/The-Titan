@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { neuroSymbolicResults as nsrRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'neuro-symbolic' });
@@ -121,6 +122,7 @@ export class NeuroSymbolicReasoner {
       if (this.results.length > this.maxResults) {
         this.results = this.results.slice(-this.maxResults);
       }
+      nsrRepo.insert(result.id, { query: result.query, approach: result.hybrid ? 'hybrid' : (result.neuralOnly ? 'neural' : 'symbolic'), result: result.synthesizedConclusion, confidence: result.confidence, rules_used: result.symbolicRulesApplied.map(r => r.name) }).catch(() => {});
 
       incCounter('neuro_symbolic_run', 'Neuro-symbolic reasoning runs', 1, {
         hybrid: result.hybrid ? 'true' : 'false',

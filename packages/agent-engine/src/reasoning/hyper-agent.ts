@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { hyperAgentCycles as hacRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'hyper-agent' });
@@ -138,6 +139,7 @@ export class HyperAgent {
     if (this.cycles.length > this.maxCycles) {
       this.cycles = this.cycles.slice(-this.maxCycles);
     }
+    hacRepo.insert(cycle.id, { cycle: cycle.cycleNumber, improvement: cycle.improvements.map(i => i.change).join('; '), gain: cycle.evaluation.actualGain, kept: cycle.decision === 'keep', config: JSON.stringify(this.currentConfig) }).catch(() => {});
 
     incCounter('hyperagent_cycle', 'HyperAgent cycles', 1, { decision });
     log.info({ cycleId, cycleNumber, decision, gain: evaluation.actualGain, performance: this.currentPerformance }, 'HyperAgent cycle complete');

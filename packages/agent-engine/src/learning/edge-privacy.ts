@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { federatedUpdates as fuRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'edge-privacy' });
 
@@ -154,6 +155,7 @@ export class EdgePrivacy {
     };
 
     this.federatedUpdates.push(update);
+    fuRepo.insert(update.id, { model: '', update_data: JSON.stringify(update), round: 0, source: update.fromInstance }).catch(() => {});
     incCounter('federated_updates_shared', 'Federated updates shared', 1);
     log.info({ fromInstance, encrypted: true }, 'federated update shared');
     return update;

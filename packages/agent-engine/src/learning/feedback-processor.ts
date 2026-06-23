@@ -1,4 +1,6 @@
 import { getLogger } from '@titan/logging';
+import { userFeedback as ufRepo } from '@titan/database';
+import { randomUUID } from 'node:crypto';
 
 const log = getLogger().child({ component: 'feedback-processor' });
 
@@ -23,6 +25,7 @@ export class FeedbackProcessor {
 
   record(feedback: UserFeedback): void {
     this.feedbacks.push(feedback);
+    ufRepo.insert(randomUUID().slice(0, 12), { run_id: feedback.runId, user_id: feedback.userId, rating: feedback.rating, comment: feedback.comment ?? null, tags: [] }).catch(() => {});
     log.info({ runId: feedback.runId, rating: feedback.rating }, 'feedback recorded');
   }
 

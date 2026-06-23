@@ -25,6 +25,10 @@ import {
   SmartModelRouter,
   BenchmarkingSuite,
   WebMCPBridge,
+  NormativeAgency,
+  TemporalIntelligence,
+  SwarmEvolution,
+  RLEnvironment,
   createProviderFromEnv,
   type BugReport,
 } from '@titan/agent-engine';
@@ -52,6 +56,10 @@ let executionStateMemory: ExecutionStateMemory | null = null;
 let smartModelRouter: SmartModelRouter | null = null;
 let benchmarkingSuite: BenchmarkingSuite | null = null;
 let webMCPBridge: WebMCPBridge | null = null;
+let normativeAgency: NormativeAgency | null = null;
+let temporalIntelligence: TemporalIntelligence | null = null;
+let swarmEvolution: SwarmEvolution | null = null;
+let rlEnvironment: RLEnvironment | null = null;
 
 function getDreamMode(): DreamMode | null {
   if (dreamMode) return dreamMode;
@@ -1263,35 +1271,98 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
 
   // === Swarm Evolution Stats ===
 
+  function getSwarmEvolution(): SwarmEvolution {
+    if (swarmEvolution) return swarmEvolution;
+    swarmEvolution = new SwarmEvolution();
+    return swarmEvolution;
+  }
+
   app.get('/api/v1/swarm-evolution/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
-    return reply.send({ topologiesCreated: 0, reconfigurations: 0, memoryEntries: 0, federationTasks: 0, completedTasks: 0 });
+    const swarm = getSwarmEvolution();
+    const stats = swarm.getStats();
+    return reply.send(stats);
   });
 
   // === RL / Economy Stats ===
 
+  function getRLEnvironment(): RLEnvironment {
+    if (rlEnvironment) return rlEnvironment;
+    rlEnvironment = new RLEnvironment();
+    return rlEnvironment;
+  }
+
   app.get('/api/v1/rl/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
-    return reply.send({ totalEpisodes: 0, avgReward: 0, bestReward: 0, qTableSize: 0, converged: false });
+    const rl = getRLEnvironment();
+    const stats = rl.getStats();
+    return reply.send(stats);
   });
 
   // === Normative / Constitution Stats ===
 
+  function getNormativeAgency(): NormativeAgency | null {
+    if (normativeAgency) return normativeAgency;
+    const llm = createProviderFromEnv();
+    if (!llm) return null;
+    normativeAgency = new NormativeAgency(llm);
+    return normativeAgency;
+  }
+
   app.get('/api/v1/normative/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
-    return reply.send({ total: 0, active: 0, fulfilled: 0, violated: 0, revised: 0, conflicts: 0, revisions: 0 });
+    const agency = getNormativeAgency();
+    if (!agency) return reply.code(503).send({ error: 'LLM provider not configured' });
+    const active = agency.getActiveCommitments();
+    const conflicts = agency.getConflicts();
+    return reply.send({
+      total: active.length,
+      active: active.filter(c => c.status === 'active').length,
+      fulfilled: active.filter(c => c.status === 'fulfilled').length,
+      violated: active.filter(c => c.status === 'violated').length,
+      revised: active.filter(c => c.status === 'revised').length,
+      conflicts: conflicts.length,
+      revisions: 0,
+    });
   });
 
-  // === Translate (stub for Playground) ===
+  // === Translate ===
 
   app.post('/api/v1/reasoning/translate', { preHandler: [requireAuth] }, async (req, reply) => {
     const { text, targetLang } = req.body as { text: string; targetLang?: string };
     if (!text) return reply.code(400).send({ error: 'text is required' });
-    return reply.send({ original: text, translated: text, targetLang: targetLang ?? 'en', status: 'translator not configured' });
+    const llm = createProviderFromEnv();
+    if (!llm) return reply.code(503).send({ error: 'LLM provider not configured' });
+    try {
+      const response = await llm.complete([
+        { role: 'system', content: `Translate the following text to ${targetLang ?? 'en'}. Return only the translation.` },
+        { role: 'user', content: text },
+      ], { temperature: 0.2, maxTokens: 2000 });
+      return reply.send({ original: text, translated: response.content, targetLang: targetLang ?? 'en', status: 'ok' });
+    } catch (err) {
+      return reply.code(500).send({ error: 'Translation failed', detail: String(err) });
+    }
   });
 
-  // === Temporal (stub for Playground) ===
+  // === Temporal Analysis ===
+
+  function getTemporalIntelligence(): TemporalIntelligence | null {
+    if (temporalIntelligence) return temporalIntelligence;
+    const llm = createProviderFromEnv();
+    if (!llm) return null;
+    temporalIntelligence = new TemporalIntelligence(llm);
+    return temporalIntelligence;
+  }
 
   app.post('/api/v1/reasoning/temporal', { preHandler: [requireAuth] }, async (req, reply) => {
     const { text } = req.body as { text: string };
     if (!text) return reply.code(400).send({ error: 'text is required' });
-    return reply.send({ input: text, analysis: 'temporal analysis not configured', events: [] });
+    const temporal = getTemporalIntelligence();
+    if (!temporal) return reply.code(503).send({ error: 'LLM provider not configured' });
+    temporal.recordEvent(text, 'user-input');
+    const events = temporal.getEvents();
+    try {
+      const { predictions, patterns } = await temporal.predictFuture();
+      return reply.send({ input: text, analysis: 'temporal analysis complete', events: events.slice(-10), predictions, patterns });
+    } catch {
+      return reply.send({ input: text, analysis: 'temporal analysis complete', events: events.slice(-10), predictions: [], patterns: [] });
+    }
   });
 };

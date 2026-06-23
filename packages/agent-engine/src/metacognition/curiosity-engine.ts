@@ -2,6 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
+import { curiosityExplorations as ceRepo, synthesizedSkills as ssRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'curiosity-engine' });
@@ -168,6 +169,8 @@ export class CuriosityEngine extends EventEmitter {
       if (this.explorations.length > this.maxExplorations) {
         this.explorations = this.explorations.slice(-this.maxExplorations);
       }
+      ceRepo.insert(task.id, { skill_name: skill.name, domain: skill.category, status: task.status, proficiency: skill.proficiency, findings: task.findings ?? '' }).catch(() => {});
+      ssRepo.insert(skill.id, { name: skill.name, description: skill.description, proficiency: skill.proficiency, verified: false, code: skill.knowledge }).catch(() => {});
 
       incCounter('curiosity_explored', 'Topics explored', 1);
       incCounter('curiosity_skill', 'Skills acquired', 1);
@@ -239,6 +242,8 @@ export class CuriosityEngine extends EventEmitter {
       if (this.explorations.length > this.maxExplorations) {
         this.explorations = this.explorations.slice(-this.maxExplorations);
       }
+      ceRepo.insert(task.id, { skill_name: skill.name, domain: skill.category, status: task.status, proficiency: skill.proficiency, findings: task.findings ?? '' }).catch(() => {});
+      ssRepo.insert(skill.id, { name: skill.name, description: skill.description, proficiency: skill.proficiency, verified: false, code: skill.knowledge }).catch(() => {});
 
       incCounter('curiosity_explored', 'Topics explored', 1);
       this.emit('exploration:complete', { task, skill });

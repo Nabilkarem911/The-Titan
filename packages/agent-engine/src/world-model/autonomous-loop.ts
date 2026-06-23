@@ -1,5 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
+import { randomUUID } from 'node:crypto';
+import { autonomousLoopResults as alrRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'autonomous-loop' });
@@ -177,6 +179,7 @@ export class AutonomousLoop {
         if (this.results.length > this.maxResults) {
           this.results = this.results.slice(-this.maxResults);
         }
+        alrRepo.insert(randomUUID().slice(0, 12), { task: check.name, status: result.status, result: JSON.stringify(result), duration_ms: 0 }).catch(() => {});
 
         incCounter('autonomous_check_total', 'Autonomous checks run', 1, {
           status: result.status,
@@ -254,6 +257,7 @@ export class AutonomousLoop {
         check.runCount++;
         results.push(result);
         this.results.push(result);
+        alrRepo.insert(randomUUID().slice(0, 12), { task: check.name, status: result.status, result: JSON.stringify(result), duration_ms: 0 }).catch(() => {});
       } catch (err) {
         log.error({ err, checkId: check.id }, 'manual check failed');
       }

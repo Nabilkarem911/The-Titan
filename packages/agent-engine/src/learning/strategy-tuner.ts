@@ -1,4 +1,6 @@
 import { getLogger } from '@titan/logging';
+import { strategyTunerRecords as stRepo } from '@titan/database';
+import { randomUUID } from 'node:crypto';
 import type { StrategyName } from '../strategies/types.js';
 
 const log = getLogger().child({ component: 'strategy-tuner' });
@@ -18,6 +20,7 @@ export class StrategyTuner {
   record(strategy: StrategyName, taskType: string, success: boolean, durationMs: number, tokensUsed: number): void {
     this.records.push({ strategy, taskType, success, durationMs, tokensUsed });
     if (this.records.length > 5000) this.records = this.records.slice(-5000);
+    stRepo.insert(randomUUID().slice(0, 12), { task_type: taskType, strategy, success, duration_ms: durationMs }).catch(() => {});
   }
 
   recommend(taskType: string): StrategyName {

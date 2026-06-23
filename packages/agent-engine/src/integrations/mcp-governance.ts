@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter, setGauge } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { mcpGovernanceAudit as mgaRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'mcp-governance' });
 
@@ -197,6 +198,7 @@ export class MCPGovernanceManager {
     };
 
     this.auditLog.push(entry);
+    mgaRepo.insert(entry.id, { server: entry.serverId, action: entry.toolName, policy_violated: entry.allowed ? null : entry.reason, decision: entry.allowed ? 'allow' : 'deny' }).catch(() => {});
     if (this.auditLog.length > this.maxAuditEntries) {
       this.auditLog = this.auditLog.slice(-this.maxAuditEntries);
     }

@@ -1,6 +1,8 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
+import { randomUUID } from 'node:crypto';
 import { EnvironmentGraph } from '../world-model/environment-graph.js';
+import { digitalTwinSnapshots as dtsRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'digital-twin' });
 
@@ -96,6 +98,7 @@ export class DigitalTwin {
     if (this.snapshots.length > this.maxSnapshots) {
       this.snapshots.shift();
     }
+    dtsRepo.insert(randomUUID().slice(0, 12), { metrics: JSON.stringify({ cpu: full.cpuUsage, mem: full.memoryUsed }), predictions: '[]', alerts: '[]' }).catch(() => {});
 
     // Record entities in the graph
     this.graph.recordEntity('server', 'host', {

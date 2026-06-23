@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { trtResults as trtRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'test-time-recursive-thinking' });
@@ -275,6 +276,7 @@ export class TestTimeRecursiveThinking {
     if (this.results.length > this.maxResults) {
       this.results = this.results.slice(-this.maxResults);
     }
+    trtRepo.insert(result.id, { problem: problem.slice(0, 500), rounds: result.totalRounds, answer: result.finalAnswer.slice(0, 500), confidence: result.confidence, abstained: result.abstained, knowledge_gained: result.accumulatedKnowledge }).catch(() => {});
 
     incCounter('trt_solve', 'TRT solves', 1, { converged: converged ? 'true' : 'false', abstained: abstained ? 'true' : 'false', solver: solverMode });
     log.info({ id, converged, abstained, rounds: attempts.length, confidence, solverMode, durationMs: result.durationMs }, 'TRT complete');

@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { sycophancyAssessments as saRepo } from '@titan/database';
 import type { LlmProvider, AgentRun, AgentStep } from '../types.js';
 
 const log = getLogger().child({ component: 'anti-sycophancy' });
@@ -310,6 +311,7 @@ export class AntiSycophancyModule {
     if (this.assessments.length > this.maxAssessments) {
       this.assessments = this.assessments.slice(-this.maxAssessments);
     }
+    saRepo.insert(assessment.id, { input_text: '', sycophancy_score: assessment.confidenceCalibration.gap, hedge_words: assessment.hedgeWords, recommendation: assessment.dissentReason ?? assessment.recommendations.join('; ') }).catch(() => {});
     for (const word of assessment.hedgeWords) {
       this.hedgeWordCounts.set(word, (this.hedgeWordCounts.get(word) ?? 0) + 1);
     }

@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { apexPatches as apRepo } from '@titan/database';
 import type { LlmProvider, AgentRun } from '../types.js';
 
 const log = getLogger().child({ component: 'apex-evolution' });
@@ -172,6 +173,7 @@ export class ApexEvolution {
         if (this.patches.length > this.maxPatches) {
           this.patches = this.patches.slice(-this.maxPatches);
         }
+        apRepo.insert(parsed.id, { cycle: this.cycle, description: parsed.patchDescription, patch: parsed.patchCode, applied: parsed.applied, performance_gain: parsed.expectedGain }).catch(() => {});
         incCounter('apex_patch_proposed', 'APEX harness patches proposed', 1);
         log.info({ target: targetModule, risk: parsed.riskLevel }, 'harness patch proposed');
       }

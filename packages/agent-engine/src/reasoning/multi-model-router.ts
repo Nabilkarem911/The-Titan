@@ -1,5 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
+import { randomUUID } from 'node:crypto';
+import { modelRouterUsage as mruRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'multi-model-router' });
 
@@ -290,5 +292,6 @@ export class SmartModelRouter {
     if (this.usage.length > this.maxUsageRecords) {
       this.usage = this.usage.slice(-this.maxUsageRecords);
     }
+    mruRepo.insert(randomUUID().slice(0, 12), { model: decision.modelId, task_type: decision.tier, tokens_used: 0, latency_ms: latency, success: true }).catch(() => {});
   }
 }

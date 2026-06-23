@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { screenAlerts as scrRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'screen-monitor' });
 
@@ -116,6 +117,7 @@ export class ScreenMonitor {
     };
 
     this.alerts.push(alert);
+    scrRepo.insert(alert.id, { alert_type: alert.type, description: alert.message, screenshot_hash: alert.screenshotHash ?? null, severity: alert.type }).catch(() => {});
     this.alertTimestamps.push(now);
 
     if (this.alerts.length > 1000) {

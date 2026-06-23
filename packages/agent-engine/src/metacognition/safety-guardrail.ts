@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { guardrailResults as grRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'safety-guardrail' });
@@ -191,6 +192,7 @@ export class SafetyGuardrail {
     if (this.results.length > this.maxResults) {
       this.results = this.results.slice(-this.maxResults);
     }
+    grRepo.insert(result.id, { action: result.originalAction, risk_level: result.riskLevel, decision: result.decision, risk_categories: result.riskCategories, reasoning: result.feedback }).catch(() => {});
     for (const cat of result.riskCategories) {
       this.riskCategoryCounts.set(cat, (this.riskCategoryCounts.get(cat) ?? 0) + 1);
     }

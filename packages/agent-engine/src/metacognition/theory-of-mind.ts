@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { tomAnalyses as tomRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'theory-of-mind' });
@@ -139,6 +140,7 @@ export class TheoryOfMind {
       if (this.analyses.length > this.maxAnalyses) {
         this.analyses = this.analyses.slice(-this.maxAnalyses);
       }
+      tomRepo.insert(result.id, { entity_id: targetEntityId, perspective: result.recommendedResponse, confidence: result.predictionConfidence, prediction: result.predictedNextAction, correct: null }).catch(() => {});
 
       this.predictionsMade++;
       this.updateModel(targetEntityId, parsed, context.entityType ?? 'user');

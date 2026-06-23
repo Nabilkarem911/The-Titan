@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter, observeHistogram } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { temporalEvents as teRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'temporal-intelligence' });
@@ -69,6 +70,7 @@ export class TemporalIntelligence {
       metadata: metadata ?? {},
     };
     this.events.push(event);
+    teRepo.insert(event.id, { event_type: event.category, content: event.description, timestamp_predicted: event.timestamp, confidence: 0.5 }).catch(() => {});
     incCounter('temporal_events_recorded', 'Temporal events recorded', 1);
     return event;
   }
@@ -82,6 +84,7 @@ export class TemporalIntelligence {
       metadata: metadata ?? {},
     };
     this.events.push(event);
+    teRepo.insert(event.id, { event_type: event.category, content: event.description, timestamp_predicted: event.timestamp, confidence: 0.5 }).catch(() => {});
     this.events.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
     return event;
   }

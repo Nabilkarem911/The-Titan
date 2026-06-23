@@ -2,6 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
+import { dreamInsights, dreamReports } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 import type { ExperienceCollector, Experience } from '../learning/experience-collector.js';
 
@@ -131,6 +132,9 @@ export class DreamMode extends EventEmitter {
       if (this.insights.length > this.maxInsights) {
         this.insights = this.insights.slice(-this.maxInsights);
       }
+      for (const ins of newInsights) {
+        dreamInsights.insert(ins.id, { report_id: null, type: ins.type, content: ins.content, confidence: ins.confidence }).catch(() => {});
+      }
 
       const staleFacts = newInsights.filter((i) => i.type === 'stale_fact').length;
 
@@ -149,6 +153,7 @@ export class DreamMode extends EventEmitter {
       if (this.reports.length > this.maxReports) {
         this.reports = this.reports.slice(-this.maxReports);
       }
+      dreamReports.insert({ id: report.dreamId, experiencesReviewed: report.experiencesReviewed, insights: report.insights, patterns: [], recommendations: [], strategyAdjustments: [], healthScore: 50, createdAt: report.completedAt }).catch(() => {});
 
       incCounter('dream_completed', 'Dream sessions completed', 1);
       incCounter('dream_insights', 'Dream insights generated', newInsights.length);
@@ -269,6 +274,7 @@ export class DreamMode extends EventEmitter {
       if (this.reports.length > this.maxReports) {
         this.reports = this.reports.slice(-this.maxReports);
       }
+      dreamReports.insert({ id: report.dreamId, experiencesReviewed: report.experiencesReviewed, insights: report.insights, patterns: [], recommendations: [], strategyAdjustments: [], healthScore: 50, createdAt: report.completedAt }).catch(() => {});
 
       incCounter('dream_completed', 'Dream sessions completed', 1);
       incCounter('dream_insights', 'Dream insights generated', newInsights.length);

@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter, observeHistogram } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { selfPlayArchive as spaRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'self-play' });
@@ -339,6 +340,7 @@ export class InfiniteSelfPlay {
     if (this.archive.length > ARCHIVE_MAX) {
       this.archive = this.archive.slice(-ARCHIVE_MAX);
     }
+    spaRepo.insert(entry.id, { task: entry.taskId, outcome: entry.success ? 'success' : 'failure', performance: entry.score, mutation: entry.capabilityGained, generation: 0 }).catch(() => {});
   }
 
   getArchive(): EvolutionaryEntry[] {

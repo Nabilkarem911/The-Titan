@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter, setGauge } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { multilayerGuardrailResults as mlgrRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'multi-layer-guardrails' });
 
@@ -433,6 +434,7 @@ export class MultiLayerGuardrails {
     if (this.results.length > this.maxResults) {
       this.results = this.results.slice(-this.maxResults);
     }
+    mlgrRepo.insert(result.id, { input_text: result.input, final_action: result.finalAction, layer_results: JSON.stringify(result.layerResults) }).catch(() => {});
     setGauge('guardrail_results', 'Guardrail results stored', this.results.length);
   }
 

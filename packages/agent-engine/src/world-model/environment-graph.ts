@@ -1,5 +1,6 @@
 import { getLogger } from '@titan/logging';
 import { randomUUID } from 'node:crypto';
+import { environmentEntities as eeRepo, environmentEvents as evRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'world-model-graph' });
 
@@ -55,6 +56,7 @@ export class EnvironmentGraph {
       lastObserved: new Date(),
     };
     this.entities.set(id, entity);
+    eeRepo.upsert(id, { type: entity.type, name: entity.name, properties: JSON.stringify(entity.properties) }, ['name', 'properties']).catch(() => {});
     log.debug({ entityId: id, type }, 'entity recorded');
     return id;
   }
@@ -94,6 +96,7 @@ export class EnvironmentGraph {
     if (this.events.length > this.maxEvents) {
       this.events = this.events.slice(-this.maxEvents);
     }
+    evRepo.insert(fullEvent.id, { entity_id: fullEvent.actor, event_type: fullEvent.action, data: JSON.stringify(fullEvent.context) }).catch(() => {});
 
     // Auto-extract relations from events
     const sourceId = this.recordEntity('tool', event.actor);

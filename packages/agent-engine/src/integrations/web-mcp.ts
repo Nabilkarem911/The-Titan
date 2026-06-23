@@ -2,6 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
+import { webMcpInvocations as wmiRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'web-mcp' });
 
@@ -178,6 +179,7 @@ export class WebMCPBridge extends EventEmitter {
       if (this.invocations.length > this.maxInvocations) {
         this.invocations = this.invocations.slice(-this.maxInvocations);
       }
+      wmiRepo.insert(result.id, { server: result.serverId, tool: result.toolName, params: JSON.stringify(result.input), result: JSON.stringify(result.output), success: result.success }).catch(() => {});
 
       server.lastPing = new Date();
       incCounter('webmcp_invoke', 'WebMCP invocations', 1, { success: success ? 'true' : 'false' });
@@ -201,6 +203,7 @@ export class WebMCPBridge extends EventEmitter {
       if (this.invocations.length > this.maxInvocations) {
         this.invocations = this.invocations.slice(-this.maxInvocations);
       }
+      wmiRepo.insert(result.id, { server: result.serverId, tool: result.toolName, params: JSON.stringify(result.input), result: JSON.stringify(result.output), success: result.success }).catch(() => {});
 
       server.status = 'error';
       incCounter('webmcp_invoke', 'WebMCP invocations', 1, { success: 'false' });

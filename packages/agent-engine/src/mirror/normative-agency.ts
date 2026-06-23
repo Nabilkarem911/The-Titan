@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { normativeCommitments as ncRepo, normativeConflicts as ncfRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'normative-agency' });
@@ -60,6 +61,7 @@ export class NormativeAgency {
     };
 
     this.commitments.set(commitment.id, commitment);
+    ncRepo.insert(commitment.id, { norm: commitment.description, commitment: commitment.description, status: commitment.status }).catch(() => {});
     incCounter('normative_commitments', 'Normative commitments formed', 1);
     log.info({ id: commitment.id, description: description.slice(0, 80) }, 'commitment formed');
     return commitment;
@@ -98,6 +100,7 @@ export class NormativeAgency {
           };
           newConflicts.push(conflict);
           this.conflicts.push(conflict);
+    ncfRepo.insert(conflict.id, { norm1: conflict.commitmentA, norm2: conflict.commitmentB, resolution: conflict.resolution }).catch(() => {});
           incCounter('normative_conflicts', 'Normative conflicts detected', 1);
         }
       }

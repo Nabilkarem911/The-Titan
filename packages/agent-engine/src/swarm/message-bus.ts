@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getLogger } from '@titan/logging';
+import { swarmMessages as smRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'swarm-message-bus' });
 
@@ -46,6 +47,7 @@ export class MessageBus {
     if (this.history.length > this.maxHistory) {
       this.history = this.history.slice(-this.maxHistory);
     }
+    smRepo.insert(full.id, { from_agent: full.from, to_agent: full.to, channel: full.type, content: full.content }).catch(() => {});
 
     if (full.to === 'broadcast') {
       const promises: Promise<void>[] = [];

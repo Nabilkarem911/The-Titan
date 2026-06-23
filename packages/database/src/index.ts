@@ -1,5 +1,6 @@
 export * from './client.js';
 export * from './repositories.js';
+export * from './persistence-repositories.js';
 export * from './audit-integrity.js';
 export * from './agentRuns.js';
 export * from './pluginRepository.js';

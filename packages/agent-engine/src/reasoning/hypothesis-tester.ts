@@ -1,5 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
+import { randomUUID } from 'node:crypto';
+import { hypothesisTests as htRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'hypothesis-tester' });
@@ -89,6 +91,9 @@ export class HypothesisTester {
       this.history.push(...parsed);
       if (this.history.length > this.maxHistory) {
         this.history = this.history.slice(-this.maxHistory);
+      }
+      for (const h of parsed) {
+        htRepo.insert(h.id, { hypothesis: h.statement, test_method: h.testAction, result: h.status, confidence: h.confidence / 100 }).catch(() => {});
       }
 
       return parsed;

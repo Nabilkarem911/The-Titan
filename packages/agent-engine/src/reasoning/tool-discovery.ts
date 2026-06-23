@@ -2,6 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
+import { discoveredTools as dtRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'tool-discovery' });
@@ -146,6 +147,7 @@ export class DynamicToolDiscovery extends EventEmitter {
         const verified = await this.verifyTool(tool);
         tool.verified = verified;
         this.discovered.set(tool.id, tool);
+        dtRepo.upsert(tool.id, { name: tool.name, source: tool.source, description: tool.description ?? '', reliability: tool.reliabilityScore, installed: tool.installed }, ['reliability', 'installed']).catch(() => {});
         if (this.discovered.size > this.maxTools) {
           // Remove oldest uninstalled
           const oldest = Array.from(this.discovered.values())

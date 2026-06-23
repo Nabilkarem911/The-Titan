@@ -1329,11 +1329,38 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     name: 'self_rewrite_apply',
     description: 'Apply a proposed self-improvement — tests in sandbox, auto-rolls back if worse',
     tags: ['reasoning', 'self-rewrite', 'apply'],
-    schema: { proposalId: { type: 'string', description: 'The proposal ID to apply' } },
-    requiredParams: ['proposalId'],
+    schema: {
+      proposalId: { type: 'string', description: 'The proposal ID to apply' },
+      targetModule: { type: 'string', description: 'Target module name' },
+      proposedChange: { type: 'string', description: 'Description of the change' },
+      proposedCode: { type: 'string', description: 'The new code to apply' },
+      expectedImprovement: { type: 'string', description: 'Expected improvement description' },
+      confidence: { type: 'number', description: 'Confidence score 0-1' },
+      riskLevel: { type: 'string', description: 'Risk level: low, medium, or high' },
+      currentPerformance: { type: 'number', description: 'Current performance score 0-1' },
+    },
+    requiredParams: ['proposalId', 'targetModule', 'proposedCode'],
     handler: async (params: unknown) => {
-      const p = params as { proposalId: string };
-      return { message: 'Use API: POST /api/v1/self-rewrite/apply with proposalId', proposalId: p.proposalId };
+      const p = params as {
+        proposalId: string;
+        targetModule: string;
+        proposedChange?: string;
+        proposedCode: string;
+        expectedImprovement?: string;
+        confidence?: number;
+        riskLevel?: 'low' | 'medium' | 'high';
+        currentPerformance?: number;
+      };
+      return wiring.selfRewriter.evaluateAndApply({
+        id: p.proposalId,
+        targetModule: p.targetModule,
+        currentPerformance: p.currentPerformance ?? 0.5,
+        proposedChange: p.proposedChange ?? '',
+        proposedCode: p.proposedCode,
+        expectedImprovement: p.expectedImprovement ?? '',
+        confidence: p.confidence ?? 0.5,
+        riskLevel: p.riskLevel ?? 'medium',
+      });
     },
   });
 
