@@ -29,10 +29,10 @@ export default function SelfForgePage() {
     try {
       const [toolsRes, skillsRes] = await Promise.all([
         api.get<{ tools: ForgedTool[] }>('/forge/tools').catch(() => ({ tools: [] })),
-        api.get<SkillMd[]>('/skills/list').catch(() => []),
+        api.get<{ skills: SkillMd[] }>('/skills-md').catch(() => ({ skills: [] })),
       ]);
       setTools(toolsRes.tools ?? []);
-      setSkills(Array.isArray(skillsRes) ? skillsRes : []);
+      setSkills(skillsRes.skills ?? []);
     } catch {
       toast.error('Failed to load self-forge data');
     } finally {

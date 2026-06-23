@@ -36,7 +36,7 @@ export default function AgentNetwork() {
     if (!targetAgent.trim() || !message.trim()) return;
     setSending(true);
     try {
-      await api.post('/a2a/send', { targetAgent, message });
+      await api.post('/a2a/tasks', { agentId: targetAgent, name: 'message', description: 'Chat message', content: message });
       toast.success('Message sent to agent');
       setMessage('');
     } catch {

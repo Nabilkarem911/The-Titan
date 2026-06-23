@@ -34,8 +34,8 @@ export default function BrowserAgentPage() {
     setLoading(true);
     try {
       const [web, browser] = await Promise.all([
-        api.get<WebIntelStats>('/web-intelligence/stats').catch(() => null),
-        api.get<BrowserStats>('/browser-agent/stats').catch(() => null),
+        api.get<WebIntelStats>('/web/stats').catch(() => null),
+        api.get<BrowserStats>('/browser/stats').catch(() => null),
       ]);
       setWebStats(web);
       setBrowserStats(browser);
@@ -52,7 +52,7 @@ export default function BrowserAgentPage() {
     if (!query.trim()) return;
     setSearching(true);
     try {
-      const res = await api.post<{ results: unknown[] }>('/web-intelligence/search', { query });
+      const res = await api.post<{ results: unknown[] }>('/web/search', { query });
       setResults(res.results ?? []);
       toast.success(`Found ${res.results?.length ?? 0} results`);
     } catch {

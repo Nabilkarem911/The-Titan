@@ -1201,4 +1201,63 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     const bridge = getWebMCPBridge();
     return reply.send(bridge.stats());
   });
+
+  // === Safety Dashboard Routes ===
+
+  app.get('/api/v1/safety/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const mem = getSafetyMemory();
+    return reply.send(mem.stats());
+  });
+
+  app.post('/api/v1/safety/check', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { action, context } = req.body as { action: string; context?: string };
+    if (!action) return reply.code(400).send({ error: 'action is required' });
+    const guard = getSafetyGuardrail();
+    if (!guard) return reply.code(503).send({ error: 'No LLM provider available' });
+    const result = await guard.check(action, context ?? '');
+    return reply.send(result);
+  });
+
+  // === Evolution Stats ===
+
+  app.get('/api/v1/evolution/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    return reply.send({ totalEvolutions: 0, appliedEvolutions: 0, rolledBackEvolutions: 0, totalABTests: 0, appliedTransfers: 0 });
+  });
+
+  // === Mirror Stats ===
+
+  app.get('/api/v1/mirror/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    return reply.send({
+      threads: [],
+      threadCount: 0,
+      lastNarrative: null,
+      selfModel: null,
+      episodicItems: [],
+      episodicSize: 0,
+      episodicCapacity: 7,
+    });
+  });
+
+  // === World Model Stats ===
+
+  app.get('/api/v1/world/graph/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    return reply.send({ entities: 0, relations: 0, events: 0 });
+  });
+
+  app.post('/api/v1/world/simulate', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { scenario } = req.body as { scenario: string };
+    if (!scenario) return reply.code(400).send({ error: 'scenario is required' });
+    return reply.send({ scenario, predictedOutcome: 'unknown', confidence: 0, similarPastEvents: [] });
+  });
+
+  app.get('/api/v1/digital-twin/state', { preHandler: [requireAuth] }, async (_req, reply) => {
+    return reply.send({
+      snapshotCount: 0,
+      entityCount: 0,
+      relationCount: 0,
+      lastSnapshot: null,
+      trends: [],
+      alerts: [],
+    });
+  });
 };
