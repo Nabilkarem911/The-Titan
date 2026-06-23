@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Moon, Brain, Sparkles, Loader2, Play, Square, RefreshCw } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface DreamStats {
   totalDreams: number;
@@ -102,18 +103,21 @@ export default function DreamLab() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Moon className="w-6 h-6 text-accent-primary" />
-            Dream Lab
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Memory consolidation, insight extraction, and dream mode control</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={load} className="btn-ghost flex items-center gap-2">
-            <RefreshCw className="w-4 h-4" /> Refresh
-          </button>
+      <PageHeader
+        icon={Moon}
+        title="Dream Lab"
+        subtitle="Memory consolidation, insight extraction, and dream mode control"
+        description="Dream Mode is Titan's offline memory consolidation system. When activated, Titan reviews past experiences, extracts patterns and insights, updates stale facts, and strengthens important memories — similar to how humans consolidate memories during sleep. Use this page to start/stop dream sessions, view extracted insights, and browse dream reports."
+        tips={[
+          'Start a dream session to let Titan consolidate recent experiences into insights',
+          'Insights are categorized as: patterns, preferences, stale facts, skill gaps, and optimizations',
+          'You can also trigger a single dream from chat: titan chat "start dreaming"',
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <button onClick={load} className="btn-ghost flex items-center gap-2">
+              <RefreshCw className="w-4 h-4" /> Refresh
+            </button>
           {stats?.isRunning ? (
             <button onClick={handleStop} className="btn-secondary flex items-center gap-2">
               <Square className="w-4 h-4" /> Stop
@@ -128,7 +132,8 @@ export default function DreamLab() {
             Trigger Dream
           </button>
         </div>
-      </div>
+        }
+      />
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

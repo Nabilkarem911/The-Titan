@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Orbit, Loader2, RefreshCw, Network, Activity } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface WorldSimStats {
   entities: number;
@@ -68,18 +69,22 @@ export default function WorldModel() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Orbit className="w-6 h-6 text-accent-primary" />
-            World Model
-          </h1>
-          <p className="text-small text-text-secondary mt-1">World simulator, environment graph, digital twin, and causal replay</p>
-        </div>
-        <button onClick={load} className="btn-ghost flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={Orbit}
+        title="World Model"
+        subtitle="World simulator, environment graph, digital twin, and causal replay"
+        description="The World Model is Titan's understanding of its environment. The Environment Graph tracks entities and their relationships. The Digital Twin maintains a live snapshot of the system state. The World Simulator lets you run 'what-if' scenarios to predict outcomes before acting. Use this page to view the graph, check the digital twin, and simulate scenarios."
+        tips={[
+          'Type a scenario below (e.g. "what happens if I restart the database?") and click Simulate',
+          'The Digital Twin shows a live snapshot of all tracked entities and relations',
+          'From chat: titan chat "simulate: what happens if I restart the DB?"',
+        ]}
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {graphStats && (

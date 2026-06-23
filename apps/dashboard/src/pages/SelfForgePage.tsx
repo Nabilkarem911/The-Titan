@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Globe, Loader2, RefreshCw, Wrench, Sparkles } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface ForgedTool {
   name: string;
@@ -67,18 +68,23 @@ export default function SelfForgePage() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Wrench className="w-6 h-6 text-accent-primary" />
-            Self-Forge & Skills
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Tool forging, skill synthesis, and Skill.md registry</p>
-        </div>
-        <button onClick={load} className="btn-ghost flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={Wrench}
+        title="Self-Forge & Skills"
+        subtitle="Tool forging, skill synthesis, and Skill.md registry"
+        description="Self-Forge is Titan's ability to create new tools on demand. When Titan encounters a task it can't do, it writes a new tool, validates it, and registers it for future use. The Skill.md Registry is a community-driven library of skill definitions that agents can share and reuse. Use this page to forge new tools, browse existing ones, and explore the skill registry."
+        tips={[
+          'Type a capability description below and click Forge to create a new tool',
+          'Forged tools are automatically tested before registration',
+          'Skill.md is a standard format — skills can be shared across Titan instances',
+          'From chat: titan chat "I need a tool to convert CSV to Parquet"',
+        ]}
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        }
+      />
 
       <div className="card p-5">
         <h2 className="text-h3 text-text-primary mb-4">Forge New Tool</h2>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Globe, Loader2, RefreshCw, Send } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface A2AStats {
   totalAgents: number;
@@ -56,18 +57,22 @@ export default function AgentNetwork() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Globe className="w-6 h-6 text-accent-primary" />
-            Agent Network (A2A)
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Agent-to-agent communication protocol, web MCP bridge, and screen monitor</p>
-        </div>
-        <button onClick={load} className="btn-ghost flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={Globe}
+        title="Agent Network (A2A)"
+        subtitle="Agent-to-agent communication protocol, web MCP bridge, and screen monitor"
+        description="The Agent Network enables Titan instances to communicate with each other using the A2A (Agent-to-Agent) protocol. Agents can discover each other's capabilities, exchange skills, delegate tasks, and share knowledge. This is the foundation for multi-agent collaboration and the Hive Mind. Use this page to view connected agents, send messages, and browse available capabilities."
+        tips={[
+          'Use the message form below to send a task to another Titan agent',
+          'Capabilities show what each agent can do — useful for task delegation',
+          'From chat: titan chat "send a translation task to Claude agent"',
+        ]}
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        }
+      />
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

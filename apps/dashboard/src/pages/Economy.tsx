@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Coins, Loader2, RefreshCw, TrendingUp, Award } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface RLStats {
   totalEpisodes: number;
@@ -39,18 +40,23 @@ export default function Economy() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Coins className="w-6 h-6 text-accent-primary" />
-            Economy & RL
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Reinforcement learning, autonomous trading, and agent economy</p>
-        </div>
-        <button onClick={load} className="btn-ghost flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={Coins}
+        title="Economy & RL"
+        subtitle="Reinforcement learning, autonomous trading, and agent economy"
+        description="The Economy system uses Reinforcement Learning (Q-learning) to train agents through trial and error. Agents receive rewards for good actions and penalties for bad ones — gradually learning optimal strategies. The system tracks convergence (when learning stabilizes) and maintains a Q-table of state-action values. The Agent Economy also includes ComputeCredits — a marketplace where agents trade skills."
+        tips={[
+          'Episodes are training rounds — more episodes means more learning',
+          'Convergence means the agent has found a stable optimal strategy',
+          'The Q-Table stores the value of each action in each state',
+          'From chat: titan chat "show economy stats"',
+        ]}
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        }
+      />
 
       {rlStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

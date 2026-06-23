@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { GraduationCap, Loader2, RefreshCw, TrendingUp, Brain, Zap } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface MetaLearningStats {
   totalEvolutions: number;
@@ -59,18 +60,22 @@ export default function MetaLearning() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <GraduationCap className="w-6 h-6 text-accent-primary" />
-            Meta-Learning
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Meta-learning optimization, strategy tuning, prompt optimization, and cross-user learning</p>
-        </div>
-        <button onClick={load} className="btn-ghost flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={GraduationCap}
+        title="Meta-Learning"
+        subtitle="Meta-learning optimization, strategy tuning, prompt optimization, and cross-user learning"
+        description="Meta-Learning is Titan's ability to learn how to learn. It tracks which strategies work best for different task types, optimizes prompts across categories, and shares insights across users (anonymously). The system evolves its own learning parameters over time — getting better at learning, not just at doing. Use this page to view optimization stats, cross-user insights, and prompt variants."
+        tips={[
+          'Cross-user insights show patterns learned from all users (anonymized)',
+          'Prompt variants are different phrasings Titan tried — the best ones are kept',
+          'From chat: titan chat "optimize my learning parameters"',
+        ]}
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        }
+      />
 
       {metaStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

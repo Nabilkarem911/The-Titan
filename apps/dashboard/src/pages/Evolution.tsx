@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Sparkles, Loader2, RefreshCw, Wrench, Code2, TrendingUp } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface EvolutionStats {
   totalEvolutions: number;
@@ -62,18 +63,23 @@ export default function Evolution() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-accent-primary" />
-            Evolution Lab
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Self-rewriting, meta-evolution, self-healing debugger, and evolutionary solver</p>
-        </div>
-        <button onClick={load} className="btn-ghost flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={Sparkles}
+        title="Evolution Lab"
+        subtitle="Self-rewriting, meta-evolution, self-healing debugger, and evolutionary solver"
+        description="The Evolution Lab is where Titan improves itself. The Self-Rewriter analyzes its own code, proposes improvements, tests them in a sandbox, and auto-applies only if performance improves. The Meta-Evolution system evolves strategies across tasks. The Self-Healing Debugger learns from past bugs and can auto-fix new ones. The Evolutionary Solver uses genetic algorithms to find solutions."
+        tips={[
+          'Self-Rewriter only applies changes if tests pass and performance improves',
+          'If a rewrite degrades performance, it auto-rolls back',
+          'The debugger stores lessons from each bug — so the same mistake never happens twice',
+          'From chat: titan chat "diagnose and propose improvements to the runner"',
+        ]}
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {evoStats && (

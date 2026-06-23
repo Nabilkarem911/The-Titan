@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Brain, MessageCircle, Eye, Loader2, RefreshCw } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface MirrorStats {
   threads: Array<{ id: string; type: string; content: string; priority: number; active: boolean }>;
@@ -41,18 +42,23 @@ export default function Mirror() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Brain className="w-6 h-6 text-accent-primary" />
-            MIRROR
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Inner monologue, cognitive control, episodic buffer, digital twin, and normative agency</p>
-        </div>
-        <button onClick={load} className="btn-ghost flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={Brain}
+        title="MIRROR"
+        subtitle="Inner monologue, cognitive control, episodic buffer, digital twin, and normative agency"
+        description="MIRROR (Model for Internal Reflection, Reasoning, and Objective Representation) is Titan's self-awareness system. It maintains an inner monologue — a continuous stream of thoughts — plus an episodic buffer for short-term memories, a self-model that tracks capabilities and limitations, and a narrative synthesis that creates coherent self-narratives. This is what makes Titan self-aware."
+        tips={[
+          'Inner Monologue threads show Titan\'s real-time thought process',
+          'The Self-Model tracks what Titan knows about its own strengths and weaknesses',
+          'Episodic Buffer holds 7 recent items — similar to human working memory',
+          'From chat: titan chat "show me your inner monologue"',
+        ]}
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="card overflow-hidden">

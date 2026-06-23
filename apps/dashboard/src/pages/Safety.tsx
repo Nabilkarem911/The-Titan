@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Shield, AlertTriangle, CheckCircle, Loader2, Brain } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface SafetyStats {
   totalCells: number;
@@ -63,13 +64,17 @@ export default function Safety() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary flex items-center gap-2">
-          <Shield className="w-6 h-6 text-accent-primary" />
-          Safety & Guardrails
-        </h1>
-        <p className="text-small text-text-secondary mt-1">Safety memory, guardrail checks, and anti-sycophancy</p>
-      </div>
+      <PageHeader
+        icon={Shield}
+        title="Safety & Guardrails"
+        subtitle="Safety memory, guardrail checks, and anti-sycophancy"
+        description="Titan's Safety system prevents harmful actions through multi-layer guardrails. The Safety Memory learns from past mistakes using contrastive cells — each cell stores a dangerous action and its safe alternative. Every action Titan takes is checked against these guardrails before execution. Use this page to view safety stats, run manual safety checks, and monitor blocked actions."
+        tips={[
+          'Type any action in the check box below to see if Titan would allow or block it',
+          'The block rate shows how cautious Titan is — a healthy rate is 5-15%',
+          'From chat: titan chat "check safety of: rm -rf /tmp"',
+        ]}
+      />
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

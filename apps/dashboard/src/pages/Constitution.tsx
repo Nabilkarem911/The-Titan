@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Scroll, Loader2, RefreshCw, Scale, AlertTriangle } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface NormativeStats {
   total: number;
@@ -41,18 +42,23 @@ export default function Constitution() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Scroll className="w-6 h-6 text-accent-primary" />
-            Constitution
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Normative agency, ethical commitments, and conflict detection</p>
-        </div>
-        <button onClick={load} className="btn-ghost flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={Scroll}
+        title="Constitution"
+        subtitle="Normative agency, ethical commitments, and conflict detection"
+        description="The Titan Constitution is a set of immutable principles that govern all agent behavior. Safety-first and Human Autonomy are immutable — they cannot be amended. Other principles can be revised through a 67% supermajority + LLM deliberation. The Normative Agency system tracks commitments, detects conflicts between principles, and revises commitments based on errors. Use this page to view compliance stats, conflicts, and constitutional revisions."
+        tips={[
+          'Safety-first and Human Autonomy principles are immutable — they can never be changed',
+          'Conflicts occur when two principles pull in opposite directions',
+          'Amendments require 67% supermajority and LLM deliberation',
+          'From chat: titan chat "read the Titan Constitution"',
+        ]}
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        }
+      />
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

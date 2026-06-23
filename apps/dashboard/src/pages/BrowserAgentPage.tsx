@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Globe, Loader2, RefreshCw, Search, MousePointer } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface WebIntelStats {
   totalSearches: number;
@@ -72,18 +73,22 @@ export default function BrowserAgentPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Globe className="w-6 h-6 text-accent-primary" />
-            Browser Agent
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Web intelligence, browser automation, and screen monitoring</p>
-        </div>
-        <button onClick={load} className="btn-ghost flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={Globe}
+        title="Browser Agent"
+        subtitle="Web intelligence, browser automation, and screen monitoring"
+        description="The Browser Agent lets Titan interact with the web — search the internet, scrape pages, fill forms, click buttons, and take screenshots. It combines Web Intelligence (search + scrape + crawl) with Browser Automation (Playwright sessions). Use this page to search the web, view browser session stats, and monitor web interactions."
+        tips={[
+          'Use the search box below to search the web directly from the dashboard',
+          'Browser sessions show active and completed web automation tasks',
+          'From chat: titan chat "go to example.com and fill the contact form"',
+        ]}
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {webStats && (

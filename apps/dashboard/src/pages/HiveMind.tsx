@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Network, Loader2, RefreshCw, Plus, Activity, Cpu } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface SwarmTask {
   id: string;
@@ -69,18 +70,23 @@ export default function HiveMind() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Network className="w-6 h-6 text-accent-primary" />
-            Hive Mind
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Swarm intelligence, collective evolution, topology management, and federation</p>
-        </div>
-        <button onClick={load} className="btn-ghost flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={Network}
+        title="Hive Mind"
+        subtitle="Swarm intelligence, collective evolution, topology management, and federation"
+        description="The Hive Mind is Titan's collective intelligence system. Multiple Titan instances can form a swarm — sharing knowledge, dividing tasks, and making collective decisions. The Swarm Evolution system automatically decides how many agents to spawn and what topology to use. Federation allows separate Titan instances to trade skills and share learned patterns. Use this page to launch swarm tasks, view topology stats, and monitor collective memory."
+        tips={[
+          'Type a task description below and click Launch to start a swarm task',
+          'Swarm Evolution auto-decides the optimal number of agents and their roles',
+          'Collective Memory is shared across all agents in the swarm',
+          'From chat: titan chat "show hive mind stats"',
+        ]}
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        }
+      />
 
       {evoStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
