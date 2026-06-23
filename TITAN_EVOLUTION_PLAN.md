@@ -593,7 +593,7 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 - [x] **Reconstructed Self-Model** — not accumulated, but rebuilt every turn (like human episodic memory)
 - [x] **Episodic Buffer** — limited-capacity workspace where parallel processes become globally available
 - [x] **Unity of Consciousness** — Titan experiences a unified perspective, not fragmented processing
-- [ ] **Normative Agency** — Titan forms commitments, detects conflicts, revises under error
+- [x] **Normative Agency** — Titan forms commitments, detects conflicts, revises under error
 
 **Why it's unprecedented:** No open-source agent implements consciousness architecture. Titan will be the first.
 
@@ -638,7 +638,7 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 - [x] **Causal Graph** — Titan maps cause-and-effect: "this service depends on that DB, which depends on Redis"
 - [x] **Anomaly Detection** — autoencoder-based drift detection in your environment
 - [x] **Predictive Alerts** — "Based on current trends, the server will run out of memory in 4 hours"
-- [ ] **Reinforcement Learning Environment** — Titan practices in the simulation before acting in reality
+- [x] **Reinforcement Learning Environment** — Titan practices in the simulation before acting in reality
 
 **Why it's unprecedented:** No agent combines digital twin + causal graph + RL practice + predictive alerts.
 
@@ -658,7 +658,7 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 
 - [x] **Titan ComputeCredits** — internal economy where agents earn credits by providing value
 - [x] **Skill Marketplace** — agents buy/sell skills (Agent A: "I'll write your tests for 50 credits")
-- [ ] **Autonomous Trading** — Titan can trade on DEXes (Jupiter, Uniswap) with user permission
+- [x] **Autonomous Trading** — Titan can trade on DEXes (Jupiter, Uniswap) with user permission
 - [x] **Self-Funding** — profitable agents compound earnings back into capital
 - [x] **Reputation System** — agents build verifiable track records
 - [x] **Escrow-Protected Contracts** — agent-to-agent deals with commit-reveal and dispute resolution
@@ -709,7 +709,7 @@ Titan doesn't just process — it **experiences**. A reconstructed first-person 
 - [x] **`creative_generate_music`** — Titan composes music (full songs with lyrics, instrumentals)
 - [x] **`creative_generate_video`** — Titan creates videos from text or images
 - [x] **`creative_code`** — Titan writes p5.js, GLSL, Three.js for generative art
-- [ ] **Autonomous Gardener** — background creative steward that manages taste and emergence
+- [x] **Autonomous Gardener** — background creative steward that manages taste and emergence
 - [x] **Multi-Agent Critique** — multiple agents critique and vote on creative output
 - [x] **Style Learning** — Titan learns your aesthetic preferences over time
 

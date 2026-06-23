@@ -4,3 +4,4 @@ export * from './episodic-buffer.js';
 export * from './orchestrator.js';
 export * from './digital-twin.js';
 export * from './what-if-engine.js';
+export * from './normative-agency.js';
