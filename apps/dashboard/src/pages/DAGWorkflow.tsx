@@ -5,6 +5,7 @@ import { Workflow, RefreshCw, Play, ChevronDown, ChevronRight } from 'lucide-rea
 import { ErrorState } from '../components/PageState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface DAGStats {
   totalExecutions: number;
@@ -50,25 +51,29 @@ export default function DAGWorkflow() {
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Workflow className="w-6 h-6 text-accent-primary" />
-            DAG Workflow Engine
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Topological batch execution with parallel branches & retry</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => { refetchStats(); refetchExecs(); }} className="btn-secondary">
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
+      <PageHeader
+        icon={Workflow}
+        title="DAG Workflow Engine"
+        subtitle="Topological batch execution with parallel branches & retry"
+        description="The DAG (Directed Acyclic Graph) Workflow Engine executes tasks in dependency order — tasks with no dependencies run in parallel, while dependent tasks wait. It supports retries, skip-on-failure, and partial completion. Perfect for complex pipelines like ETL, CI/CD, or multi-step AI workflows. Use this page to view execution stats and run new DAG workflows."
+        tips={[
+          'DAGs run tasks in topological order — dependencies first',
+          'Parallel batches run simultaneously for speed',
+          'Failed nodes can be retried automatically or skipped',
+        ]}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => { refetchStats(); refetchExecs(); }} className="btn-secondary">
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
           <button onClick={() => setShowExecForm(!showExecForm)} className="btn-primary">
             <Play className="w-4 h-4" />
             Execute
           </button>
         </div>
-      </div>
+        }
+      />
 
       {statsError && <ErrorState message={statsError} onRetry={refetchStats} />}
 

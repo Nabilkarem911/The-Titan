@@ -8,6 +8,7 @@ import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonRow } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatRelativeTime } from '../utils/format';
+import { PageHeader } from '../components/PageHeader';
 
 export default function Cron() {
   const { data, isLoading, error, refetch } = useApi<ListResponse<CronJob>>('/cron');
@@ -42,19 +43,24 @@ export default function Cron() {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Clock className="w-6 h-6 text-warning" />
-            Cron Jobs
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Schedule recurring agent tasks</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          Create Job
-        </button>
-      </div>
+      <PageHeader
+        icon={Clock}
+        title="Cron Jobs"
+        subtitle="Schedule recurring agent tasks"
+        description="Cron Jobs let you schedule agent tasks to run automatically on a schedule — hourly, daily, weekly, or any cron expression. Perfect for periodic reports, monitoring, data sync, or any task that needs to run repeatedly without manual intervention. Use this page to create, monitor, and delete scheduled tasks."
+        tips={[
+          'Cron expressions: "0 * * * *" = every hour, "0 9 * * 1" = every Monday at 9am',
+          'Each job runs an agent with the specified prompt automatically',
+          'Check the Runs page to see results of scheduled executions',
+        ]}
+        accent="text-warning"
+        actions={
+          <button onClick={() => setShowCreate(true)} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Create Job
+          </button>
+        }
+      />
 
       {isLoading ? (
         <div className="card">{Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} columns={3} />)}</div>

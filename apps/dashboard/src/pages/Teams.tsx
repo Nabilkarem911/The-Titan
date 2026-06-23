@@ -3,6 +3,7 @@ import { Users, Rocket, Loader2, Bot, Wrench, Eye, Brain, Code2, Search as Searc
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
+import { PageHeader } from '../components/PageHeader';
 
 interface TeamTemplate {
   name: string;
@@ -76,10 +77,18 @@ export default function Teams() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary">Multi-Agent Teams</h1>
-        <p className="text-small text-text-secondary mt-1">Launch coordinated teams of AI agents for complex tasks</p>
-      </div>
+      <PageHeader
+        icon={Users}
+        title="Multi-Agent Teams"
+        subtitle="Launch coordinated teams of AI agents for complex tasks"
+        description="Multi-Agent Teams are pre-configured groups of agents that work together on complex tasks. Each team has a structure — a planner, executors, and a reviewer — and a prompt template. Choose a template, customize the prompt, and launch. Teams are more structured than Swarms and are optimized for specific use cases like research, code review, or content creation."
+        tips={[
+          'Pick a template that matches your task type',
+          'Customize the prompt with your specific requirements',
+          'Each team member has a specific role — planner, executor, or reviewer',
+          'From chat: titan chat "launch a research team to analyze competitors"',
+        ]}
+      />
 
       {/* Templates */}
       {loading ? (

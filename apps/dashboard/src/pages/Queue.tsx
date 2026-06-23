@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Layers } from 'lucide-react';
 import { api } from '../api/client';
 import { Skeleton } from '../components/LoadingSkeleton';
+import { PageHeader } from '../components/PageHeader';
 
 interface QueueStats {
   waiting: number;
@@ -38,13 +39,17 @@ export default function Queue() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary flex items-center gap-2">
-          <Layers className="w-6 h-6 text-accent-primary" />
-          Queue
-        </h1>
-        <p className="text-small text-text-secondary mt-1">Live queue statistics (auto-refresh 5s)</p>
-      </div>
+      <PageHeader
+        icon={Layers}
+        title="Queue"
+        subtitle="Live queue statistics (auto-refresh 5s)"
+        description="The Queue page shows live statistics for all BullMQ job queues — pending, active, completed, failed, and delayed jobs. Queues power background tasks like agent runs, cron jobs, and webhooks. Use this page to monitor queue health and detect stuck jobs."
+        tips={[
+          'Stats auto-refresh every 5 seconds',
+          'High pending count means jobs are queueing up faster than they process',
+          'High failed count means something is wrong — check the Runs page for errors',
+        ]}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {QUEUE_NAMES.map((name) => {

@@ -3,6 +3,7 @@ import { Building2, Plus, Trash2 } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 import type { ListResponse, Workspace } from '../api/types';
 import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
@@ -41,19 +42,23 @@ export default function Workspaces() {
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-accent-primary" />
-            Workspaces
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Manage your workspaces and team members</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          Create Workspace
-        </button>
-      </div>
+      <PageHeader
+        icon={Building2}
+        title="Workspaces"
+        subtitle="Manage your workspaces and team members"
+        description="Workspaces are isolated environments for different teams or projects. Each workspace has its own agents, runs, memory, and settings. Use this page to create workspaces, manage members, and switch between them."
+        tips={[
+          'Each workspace is isolated — agents and data don\'t cross over',
+          'Invite team members to collaborate on a workspace',
+          'Switch workspaces from the sidebar to change context',
+        ]}
+        actions={
+          <button onClick={() => setShowCreate(true)} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Create Workspace
+          </button>
+        }
+      />
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

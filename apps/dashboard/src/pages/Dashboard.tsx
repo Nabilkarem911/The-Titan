@@ -13,6 +13,7 @@ import {
 import { useApi } from '../hooks/useApi';
 import type { HealthDashboard, ListResponse, AgentRun, AgentProfile } from '../api/types';
 import { SkeletonCard } from '../components/LoadingSkeleton';
+import { PageHeader } from '../components/PageHeader';
 import { ErrorState } from '../components/PageState';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatRelativeTime } from '../utils/format';
@@ -51,17 +52,23 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary">Mission Control</h1>
-          <p className="text-small text-text-secondary mt-1">Overview of your AI operations</p>
-        </div>
-        <button onClick={() => navigate('/chat')} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          New Chat
-        </button>
-      </div>
+      <PageHeader
+        icon={Zap}
+        title="Mission Control"
+        subtitle="Overview of your AI operations"
+        description="Mission Control is your central dashboard for monitoring all Titan activity. See system health, recent agent runs, active profiles, queue stats, and quick actions — all in one place. Use this page as your starting point to check on Titan's status and jump to any feature."
+        tips={[
+          'Click New Chat to start a conversation with Titan',
+          'Health cards show real-time status of database, Redis, and audit',
+          'Recent Runs shows the latest agent executions — click to see details',
+        ]}
+        actions={
+          <button onClick={() => navigate('/chat')} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            New Chat
+          </button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

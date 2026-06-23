@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TerminalSquare } from 'lucide-react';
 import { TOKEN_KEY } from '../utils/constants';
+import { PageHeader } from '../components/PageHeader';
 
 export default function Terminal() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,11 +79,17 @@ export default function Terminal() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 py-4 border-b border-border-subtle">
-        <h1 className="text-h2 text-text-primary flex items-center gap-2">
-          <TerminalSquare className="w-5 h-5 text-accent-primary" />
-          Terminal
-        </h1>
-        <p className="text-caption text-text-secondary mt-1">Interactive shell in your workspace</p>
+        <PageHeader
+          icon={TerminalSquare}
+          title="Terminal"
+          subtitle="Interactive shell in your workspace"
+          description="The Terminal gives you a live shell inside the Titan server environment. Run commands, inspect files, manage processes — just like a real terminal. The connection is secured with your auth token and runs over WebSocket for real-time input/output."
+          tips={[
+            'The terminal runs in the Titan server environment, not your local machine',
+            'Use it to inspect files, run scripts, or debug issues',
+            'The connection is authenticated via your login token',
+          ]}
+        />
       </div>
       {error ? (
         <div className="flex-1 flex items-center justify-center">

@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import { useApi } from '../hooks/useApi';
 import { Network, RefreshCw, Plus, Search, Zap } from 'lucide-react';
 import { ErrorState } from '../components/PageState';
+import { PageHeader } from '../components/PageHeader';
 import { SkeletonCard } from '../components/LoadingSkeleton';
 import { toast } from 'sonner';
 
@@ -96,25 +97,30 @@ export default function BiTemporalGraph() {
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Network className="w-6 h-6 text-accent-primary" />
-            Bi-Temporal Knowledge Graph
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Facts with valid-time + transaction-time, supersession & traversal</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => { refetchStats(); refetchConflicts(); }} className="btn-secondary">
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
-          <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary">
-            <Plus className="w-4 h-4" />
-            Add Fact
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        icon={Network}
+        title="Bi-Temporal Knowledge Graph"
+        subtitle="Facts with valid-time + transaction-time, supersession & traversal"
+        description="The Bi-Temporal Knowledge Graph stores facts with two timelines: valid-time (when the fact was true in reality) and transaction-time (when it was recorded in the system). This means Titan can answer questions like 'what did we know on Tuesday?' and 'when did this fact stop being true?'. Facts can be superseded by newer ones, and conflicts are tracked and resolved. Use this page to add facts, query the graph, and view conflicts."
+        tips={[
+          'Add facts as subject-predicate-object triples (e.g. Alice — works at — Acme)',
+          'Query by subject to see all facts about an entity, including superseded ones',
+          'Conflicts are detected when two facts contradict each other',
+          'Salience controls how prominent a fact is in Titan\'s reasoning',
+        ]}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => { refetchStats(); refetchConflicts(); }} className="btn-secondary">
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+            <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary">
+              <Plus className="w-4 h-4" />
+              Add Fact
+            </button>
+          </div>
+        }
+      />
 
       {statsError && <ErrorState message={statsError} onRetry={refetchStats} />}
 

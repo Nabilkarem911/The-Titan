@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { GitBranch, Send } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 export default function Git() {
   const [form, setForm] = useState({
@@ -33,13 +34,17 @@ export default function Git() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-h1 text-text-primary flex items-center gap-2">
-          <GitBranch className="w-6 h-6 text-accent-primary" />
-          Git
-        </h1>
-        <p className="text-small text-text-secondary mt-1">Push changes to your repository</p>
-      </div>
+      <PageHeader
+        icon={GitBranch}
+        title="Git"
+        subtitle="Push changes to your repository"
+        description="The Git page lets you push code changes from Titan to your Git repository. You can stage files, write commit messages, and push — all from the dashboard. This is useful when Titan makes code changes (through Self-Forge or Evolution) and you want to push them to GitHub."
+        tips={[
+          'Specify the working directory of your Git repo',
+          'Write a clear commit message describing the changes',
+          'From chat: titan chat "commit and push my changes"',
+        ]}
+      />
 
       <form onSubmit={handlePush} className="card p-6 space-y-4">
         <div>

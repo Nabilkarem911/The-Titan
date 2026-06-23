@@ -3,6 +3,7 @@ import { Bot, Play, CheckCircle, XCircle, Loader2, AlertTriangle, Clock, Wrench,
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
+import { PageHeader } from '../components/PageHeader';
 
 interface VerifyResult {
   type: string;
@@ -114,10 +115,18 @@ export default function Autonomous() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary">Autonomous Mode</h1>
-        <p className="text-small text-text-secondary mt-1">Automated verification, auto-fix, and task execution</p>
-      </div>
+      <PageHeader
+        icon={Bot}
+        title="Autonomous Mode"
+        subtitle="Automated verification, auto-fix, and task execution"
+        description="Autonomous Mode lets Titan run tasks without human supervision. It can verify code (typecheck + lint), auto-fix errors, run Hyper-Agent cycles for self-improvement, and explore new skills via Curiosity. The Hyper-Agent analyzes performance, proposes improvements, and applies them if they work. Curiosity drives the agent to explore new capabilities autonomously."
+        tips={[
+          'Use Quick Verification to run typecheck and lint on any directory',
+          'Enable Auto-Fix to let Titan automatically fix detected errors',
+          'Run a Hyper-Agent cycle to trigger one round of self-improvement',
+          'From chat: titan chat "run a hyper-agent cycle"',
+        ]}
+      />
 
       {/* Quick Verify */}
       <div className="card p-5">

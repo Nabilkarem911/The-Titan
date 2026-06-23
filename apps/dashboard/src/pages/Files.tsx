@@ -18,6 +18,7 @@ import type { FileEntry } from '../api/types';
 import { EmptyState } from '../components/PageState';
 import { Skeleton } from '../components/LoadingSkeleton';
 import { formatBytes } from '../utils/format';
+import { PageHeader } from '../components/PageHeader';
 import { cn } from '../utils/cn';
 
 export default function Files() {
@@ -137,7 +138,18 @@ export default function Files() {
       <div className={cn('flex flex-col border-r border-border-subtle', selectedFile ? 'w-64 shrink-0' : 'flex-1')}>
         <div className="px-4 py-3 border-b border-border-subtle">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-h3 text-text-primary">Files</h1>
+            <PageHeader
+              icon={Folder}
+              title="Files"
+              subtitle="Browse and manage workspace files"
+              description="The Files page lets you browse, read, edit, create, and delete files in the Titan workspace. Navigate folders with breadcrumbs, click files to view or edit them, and upload/download as needed. All changes are saved directly to the server."
+              tips={[
+                'Click a folder to navigate into it, use breadcrumbs to go back',
+                'Click a file to view its content — edit and save directly',
+                'Create new files or folders with the + buttons',
+                'Download files to your local machine',
+              ]}
+            />
             <div className="flex items-center gap-1">
               <button
                 onClick={() => { setShowNewModal('folder'); setNewName(''); }}

@@ -3,19 +3,24 @@ import { BarChart3 } from 'lucide-react';
 import type { MetricsSnapshot } from '../api/types';
 import { ErrorState } from '../components/PageState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
+import { PageHeader } from '../components/PageHeader';
 
 export default function Metrics() {
   const { data, isLoading, error, refetch } = useApi<MetricsSnapshot>('/metrics.json');
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-accent-primary" />
-          Metrics
-        </h1>
-        <p className="text-small text-text-secondary mt-1">System metrics and performance data</p>
-      </div>
+      <PageHeader
+        icon={BarChart3}
+        title="Metrics"
+        subtitle="System metrics and performance data"
+        description="The Metrics page shows real-time performance data — API response times, request counts, error rates, and resource usage. Use this page to monitor Titan's performance and identify bottlenecks."
+        tips={[
+          'Metrics auto-refresh to show live data',
+          'Look for high error rates or slow response times',
+          'Use this alongside the Health page for full diagnostics',
+        ]}
+      />
 
       {error ? (
         <ErrorState message={error} onRetry={refetch} />

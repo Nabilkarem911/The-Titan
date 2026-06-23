@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import { Puzzle, Search, Plus, X, Trash2, Power, Store, Download, Check, Star, Eye, Terminal, Loader2, ChevronDown } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 import type { ListResponse, Plugin } from '../api/types';
 import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
@@ -138,25 +139,31 @@ export default function Plugins() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Puzzle className="w-6 h-6 text-accent-secondary" />
-            Plugins
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Browse and manage installed plugins</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowLibrary(true)} className="btn-secondary flex items-center gap-2">
-            <Store className="w-4 h-4" />
-            Plugin Library
-          </button>
+      <PageHeader
+        icon={Puzzle}
+        title="Plugins"
+        subtitle="Browse and manage installed plugins"
+        description="Plugins are modular extensions that add new tools and capabilities to Titan. Each plugin can be enabled, disabled, configured, or removed. The Plugin Library lets you discover and install new plugins. Use this page to manage your installed plugins and their settings."
+        tips={[
+          'Enable/disable plugins without uninstalling them',
+          'Click Plugin Library to browse and install new plugins',
+          'Each plugin adds specific tools that agents can use',
+          'From chat: titan chat "list my installed plugins"',
+        ]}
+        accent="text-accent-secondary"
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => setShowLibrary(true)} className="btn-secondary flex items-center gap-2">
+              <Store className="w-4 h-4" />
+              Plugin Library
+            </button>
           <button onClick={() => setShowInstall(true)} className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Custom Install
           </button>
         </div>
-      </div>
+        }
+      />
 
       {showLibrary && (
         <div className="card p-6 space-y-4">

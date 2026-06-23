@@ -3,6 +3,7 @@ import { Search, FolderTree, Box, Loader2, Database, FileCode, Wrench, Brain, Sp
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
+import { PageHeader } from '../components/PageHeader';
 
 interface IndexStats {
   indexed: boolean;
@@ -121,10 +122,18 @@ export default function CodeIntel() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary">Code Intelligence</h1>
-        <p className="text-small text-text-secondary mt-1">Index, search, and analyze your codebase</p>
-      </div>
+      <PageHeader
+        icon={Search}
+        title="Code Intelligence"
+        subtitle="Index, search, and analyze your codebase"
+        description="Code Intelligence indexes your codebase so Titan can search symbols (functions, classes, interfaces), find files, and reason about code structure. It combines symbolic search with neuro-symbolic reasoning — Titan can answer questions about your code in natural language. Use this page to index a directory, search for symbols, and run neuro-symbolic queries."
+        tips={[
+          'Index a directory first — then search for symbols or files',
+          'Symbol search finds functions, classes, interfaces by name',
+          'Neuro-symbolic reasoning lets you ask questions about code in English',
+          'From chat: titan chat "index d:/myproject and find all async functions"',
+        ]}
+      />
 
       {/* Index section */}
       <div className="card p-5">

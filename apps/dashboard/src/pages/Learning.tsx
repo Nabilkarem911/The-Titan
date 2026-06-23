@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Brain, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, BarChart3, Loader2, MessageSquare } from 'lucide-react';
+import { Brain, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, BarChart3, Loader2, MessageSquare, GraduationCap } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface LearningStats {
   totalFeedback: number;
@@ -77,10 +78,17 @@ export default function Learning() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary">Learning System</h1>
-        <p className="text-small text-text-secondary mt-1">Agent insights, feedback analysis, and strategy optimization</p>
-      </div>
+      <PageHeader
+        icon={GraduationCap}
+        title="Learning System"
+        subtitle="Agent insights, feedback analysis, and strategy optimization"
+        description="The Learning System tracks how Titan improves over time. It analyzes user feedback (thumbs up/down), identifies patterns in what works and what doesn\'t, and optimizes strategies. The system uses A/B testing to compare different approaches and keeps the winners. Use this page to view learning stats, feedback trends, and strategy performance."
+        tips={[
+          'Feedback from chat (thumbs up/down) feeds directly into learning',
+          'A/B tests compare different strategies — winners are automatically promoted',
+          'From chat: titan chat "show me my learning insights"',
+        ]}
+      />
 
       {/* Stats grid */}
       {stats && (

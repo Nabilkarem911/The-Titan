@@ -7,6 +7,7 @@ import type { ListResponse, ApiKey, ApiKeyCreated } from '../api/types';
 import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonRow } from '../components/LoadingSkeleton';
 import { formatRelativeTime } from '../utils/format';
+import { PageHeader } from '../components/PageHeader';
 
 export default function ApiKeys() {
   const { data, isLoading, error, refetch } = useApi<ListResponse<ApiKey>>('/api-keys');
@@ -52,19 +53,23 @@ export default function ApiKeys() {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <KeyRound className="w-6 h-6 text-accent-primary" />
-            API Keys
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Manage your API keys for programmatic access</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          Create Key
-        </button>
-      </div>
+      <PageHeader
+        icon={KeyRound}
+        title="API Keys"
+        subtitle="Manage your API keys for programmatic access"
+        description="API Keys allow external applications to access Titan's REST API programmatically. Each key has a name and can be revoked at any time. Keys are shown only once when created — store them securely. Use this page to create, copy, and revoke API keys."
+        tips={[
+          'Copy your key immediately after creation — it won\'t be shown again',
+          'Use keys in the Authorization header: Bearer <your-key>',
+          'Revoke a key to instantly block all requests using it',
+        ]}
+        actions={
+          <button onClick={() => setShowCreate(true)} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Create Key
+          </button>
+        }
+      />
 
       {createdKey && (
         <div className="card p-4 border-accent-primary/30">

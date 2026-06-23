@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Brain, Upload, Search, Trash2, FileText, Loader2, Database, X } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 interface KBDocument {
   id: string;
@@ -130,23 +131,31 @@ export default function Knowledge() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary">Knowledge Base</h1>
-          <p className="text-small text-text-secondary mt-1">Upload documents and chat with your knowledge</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setPasteMode(!pasteMode)} className="btn-secondary">
-            <FileText className="w-4 h-4" />
-            Paste Text
-          </button>
-          <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="btn-primary">
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+      <PageHeader
+        icon={Database}
+        title="Knowledge Base"
+        subtitle="Upload documents and chat with your knowledge"
+        description="The Knowledge Base lets you upload documents (PDF, TXT, MD, code files) and chat with them. Titan indexes the content using vector embeddings and uses RAG (Retrieval-Augmented Generation) to answer questions based on your documents. You can also paste text directly. Use this page to upload, manage, and query your knowledge base."
+        tips={[
+          'Upload PDF, TXT, Markdown, or code files — Titan will index them',
+          'Use Paste Text to add content without uploading a file',
+          'Once indexed, ask questions in chat: titan chat "search my knowledge base for..."',
+          'Documents are chunked and embedded for semantic search',
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <button onClick={() => setPasteMode(!pasteMode)} className="btn-secondary">
+              <FileText className="w-4 h-4" />
+              Paste Text
+            </button>
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="btn-primary">
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             Upload File
           </button>
           <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} className="hidden" accept=".txt,.md,.json,.js,.ts,.py,.go,.rs,.java,.c,.cpp,.h,.css,.html,.xml,.yaml,.yml,.csv,.log" />
         </div>
-      </div>
+        }
+      />
 
       {/* Stats */}
       {stats && (

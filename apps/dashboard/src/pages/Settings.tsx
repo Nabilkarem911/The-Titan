@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
+import { PageHeader } from '../components/PageHeader';
 
 type Tab = 'profile' | 'keys' | 'notifications' | 'appearance';
 
@@ -20,13 +21,17 @@ export default function Settings() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-h1 text-text-primary flex items-center gap-2">
-          <SettingsIcon className="w-6 h-6 text-text-secondary" />
-          Settings
-        </h1>
-        <p className="text-small text-text-secondary mt-1">Manage your account and preferences</p>
-      </div>
+      <PageHeader
+        icon={SettingsIcon}
+        title="Settings"
+        subtitle="Manage your account and preferences"
+        description="Configure your Titan account — update your profile, add provider API keys (OpenAI, Anthropic, Google), manage notifications, and customize the appearance. Provider keys are stored securely and used when Titan needs to call external LLM providers."
+        tips={[
+          'Add your OpenAI or Anthropic API key in the Provider Keys tab',
+          'Notifications can be toggled per event type',
+          'Appearance settings control theme and layout preferences',
+        ]}
+      />
 
       <div className="flex gap-6">
         {/* Tabs */}

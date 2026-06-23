@@ -3,25 +3,31 @@ import { HeartPulse, RefreshCw } from 'lucide-react';
 import type { HealthDashboard } from '../api/types';
 import { ErrorState } from '../components/PageState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
+import { PageHeader } from '../components/PageHeader';
 
 export default function Health() {
   const { data, isLoading, error, refetch } = useApi<HealthDashboard>('/health/dashboard');
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <HeartPulse className="w-6 h-6 text-error" />
-            Health
-          </h1>
-          <p className="text-small text-text-secondary mt-1">System health and diagnostics</p>
-        </div>
-        <button onClick={refetch} className="btn-secondary">
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={HeartPulse}
+        title="Health"
+        subtitle="System health and diagnostics"
+        description="The Health page shows real-time system diagnostics — database connection pool status, Redis connectivity, audit integrity, and more. Use this page to check if all Titan services are running correctly and diagnose issues."
+        tips={[
+          'Green indicators mean the service is healthy',
+          'Database pool shows idle vs total connections',
+          'Audit integrity verifies that logs haven\'t been tampered with',
+        ]}
+        accent="text-error"
+        actions={
+          <button onClick={refetch} className="btn-secondary">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        }
+      />
 
       {error ? (
         <ErrorState message={error} onRetry={refetch} />

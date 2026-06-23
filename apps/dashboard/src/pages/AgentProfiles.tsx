@@ -3,6 +3,7 @@ import { Plus, Bot, Trash2, Edit3, X, Save, Loader2, Globe, Lock } from 'lucide-
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { EmptyState } from '../components/PageState';
+import { PageHeader } from '../components/PageHeader';
 import { Skeleton } from '../components/LoadingSkeleton';
 
 interface AgentProfile {
@@ -124,19 +125,24 @@ export default function AgentProfiles() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-h2 text-text-primary flex items-center gap-2">
-            <Bot className="w-6 h-6 text-accent-primary" />
-            Agent Profiles
-          </h1>
-          <p className="text-caption text-text-secondary mt-1">Create and manage AI agent personalities</p>
-        </div>
-        <button onClick={openCreate} className="btn-primary flex items-center gap-1.5">
-          <Plus className="w-4 h-4" />
-          New Profile
-        </button>
-      </div>
+      <PageHeader
+        icon={Bot}
+        title="Agent Profiles"
+        subtitle="Create and manage AI agent personalities"
+        description="Agent Profiles are reusable AI personalities with custom system prompts, models, temperature, tool restrictions, and step limits. Create profiles for different use cases — a careful code reviewer, a creative writer, a fast researcher — and switch between them as needed. Profiles can be public (shared) or private."
+        tips={[
+          'Each profile has its own system prompt, model, and temperature',
+          'Restrict tools per-profile to limit what an agent can do',
+          'Public profiles are shared across workspace members',
+          'From chat: titan chat "run the code-reviewer profile"',
+        ]}
+        actions={
+          <button onClick={openCreate} className="btn-primary flex items-center gap-1.5">
+            <Plus className="w-4 h-4" />
+            New Profile
+          </button>
+        }
+      />
 
       {loading ? (
         <div className="space-y-3">

@@ -8,6 +8,7 @@ import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonRow } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatRelativeTime } from '../utils/format';
+import { PageHeader } from '../components/PageHeader';
 
 export default function Webhooks() {
   const { data, isLoading, error, refetch } = useApi<ListResponse<WebhookType>>('/webhooks');
@@ -57,19 +58,24 @@ export default function Webhooks() {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Webhook className="w-6 h-6 text-accent-secondary" />
-            Webhooks
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Manage webhook endpoints for event notifications</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          Create Webhook
-        </button>
-      </div>
+      <PageHeader
+        icon={Webhook}
+        title="Webhooks"
+        subtitle="Manage webhook endpoints for event notifications"
+        description="Webhooks let external systems receive real-time notifications when events happen in Titan — like when an agent run completes, a task fails, or a guardrail triggers. Each webhook has a URL, events to listen for, and an optional agent to process the event. Use this page to create, test, and manage webhooks."
+        tips={[
+          'Specify which events trigger the webhook (e.g. run.completed)',
+          'Each webhook can optionally run an agent to process the event',
+          'Webhooks retry automatically on failure (up to 3 times)',
+        ]}
+        accent="text-accent-secondary"
+        actions={
+          <button onClick={() => setShowCreate(true)} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Create Webhook
+          </button>
+        }
+      />
 
       {isLoading ? (
         <div className="card">{Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} columns={3} />)}</div>

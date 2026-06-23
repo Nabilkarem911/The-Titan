@@ -3,6 +3,7 @@ import { Wrench, Code2, Save, Loader2, Play, Plus, Trash2 } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
+import { PageHeader } from '../components/PageHeader';
 
 interface SkillTool {
   name: string;
@@ -104,10 +105,18 @@ export default function SkillBuilder() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary">Custom Skill Builder</h1>
-        <p className="text-small text-text-secondary mt-1">Write custom tools in JavaScript and register them as agent skills</p>
-      </div>
+      <PageHeader
+        icon={Wrench}
+        title="Custom Skill Builder"
+        subtitle="Write custom tools in JavaScript and register them as agent skills"
+        description="The Custom Skill Builder lets you write JavaScript code that becomes a new agent tool. You define the tool name, description, parameters, and the code that runs when it\'s called. Once registered, Titan can use your custom tool in any conversation. This is perfect for adding domain-specific capabilities — like querying your internal API or running a custom script."
+        tips={[
+          'Fill in the skill metadata (name, description, parameters)',
+          'Write JavaScript code that will execute when the tool is called',
+          'Test the skill before registering it',
+          'From chat: titan chat "list my custom skills"',
+        ]}
+      />
 
       {/* Metadata */}
       <div className="card p-5 space-y-3">

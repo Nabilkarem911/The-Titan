@@ -8,6 +8,7 @@ import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatRelativeTime } from '../utils/format';
+import { PageHeader } from '../components/PageHeader';
 
 export default function Swarm() {
   const { data, isLoading, error, refetch } = useApi<ListResponse<SwarmTask>>('/swarm/tasks');
@@ -39,19 +40,25 @@ export default function Swarm() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Network className="w-6 h-6 text-accent-secondary" />
-            Swarm
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Multi-agent task orchestration</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          Launch Swarm
-        </button>
-      </div>
+      <PageHeader
+        icon={Network}
+        title="Swarm"
+        subtitle="Multi-agent task orchestration"
+        description="Swarm lets you launch multiple agents that work together on a task. Each agent has a role — planner, executor, or reviewer — and they coordinate to solve complex problems. The planner breaks down the task, executors work on sub-tasks in parallel, and the reviewer checks quality. Use this page to launch and monitor swarm tasks."
+        tips={[
+          'Click Launch Swarm to create a new multi-agent task',
+          'Each swarm has a planner, executor(s), and a reviewer',
+          'Sub-tasks run in parallel for faster completion',
+          'From chat: titan chat "launch a swarm to research and summarize AI trends"',
+        ]}
+        accent="text-accent-secondary"
+        actions={
+          <button onClick={() => setShowCreate(true)} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Launch Swarm
+          </button>
+        }
+      />
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

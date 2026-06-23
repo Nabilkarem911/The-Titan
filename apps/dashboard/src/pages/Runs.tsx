@@ -7,6 +7,7 @@ import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonRow } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatRelativeTime, formatDuration } from '../utils/format';
+import { PageHeader } from '../components/PageHeader';
 
 export default function Runs() {
   const [selectedRun, setSelectedRun] = useState<string | null>(null);
@@ -38,16 +39,23 @@ export default function Runs() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary">Runs</h1>
-          <p className="text-small text-text-secondary mt-1">Agent execution history and step details</p>
-        </div>
-        <div className="flex items-center gap-1.5 text-caption">
-          <span className={`w-2 h-2 rounded-full ${connected ? 'bg-success animate-pulse-soft' : 'bg-text-muted'}`} />
-          <span className={connected ? 'text-success' : 'text-text-muted'}>{connected ? 'Live' : 'Polling'}</span>
-        </div>
-      </div>
+      <PageHeader
+        icon={Activity}
+        title="Runs"
+        subtitle="Agent execution history and step details"
+        description="The Runs page shows every agent execution — past and present. Each run has steps (think, act, observe), a status (running, completed, failed), and a final result. Click any run to see its step-by-step execution trace. Live runs update in real-time via WebSocket."
+        tips={[
+          'Click any run to expand its step-by-step execution trace',
+          'Running runs auto-refresh via WebSocket — no need to reload',
+          'Each step shows: thought, action, tool used, and result',
+        ]}
+        actions={
+          <div className="flex items-center gap-1.5 text-caption">
+            <span className={`w-2 h-2 rounded-full ${connected ? 'bg-success animate-pulse-soft' : 'bg-text-muted'}`} />
+            <span className={connected ? 'text-success' : 'text-text-muted'}>{connected ? 'Live' : 'Polling'}</span>
+          </div>
+        }
+      />
 
       {isLoading ? (
         <div className="card">

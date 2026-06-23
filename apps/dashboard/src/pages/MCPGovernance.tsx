@@ -4,6 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { ShieldCheck, RefreshCw, Plus, Trash2, Search } from 'lucide-react';
 import { ErrorState } from '../components/PageState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
+import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
 
 interface MCPGovernanceStats {
@@ -97,25 +98,29 @@ export default function MCPGovernance() {
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-accent-primary" />
-            MCP Governance
-          </h1>
-          <p className="text-small text-text-secondary mt-1">Per-server policies, permissions, rate limiting & audit</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => { refetchStats(); refetchPolicies(); refetchAudit(); }} className="btn-secondary">
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
+      <PageHeader
+        icon={ShieldCheck}
+        title="MCP Governance"
+        subtitle="Per-server policies, permissions, rate limiting & audit"
+        description="MCP (Model Context Protocol) Governance controls how Titan connects to external MCP servers. Each server has its own policy — what tools it can expose, what data it can access, and rate limits. This ensures that external integrations don\'t compromise security. Use this page to view policies, check audit trails, and manage MCP server permissions."
+        tips={[
+          'Each MCP server has its own permission policy',
+          'Rate limits prevent any single server from overwhelming the system',
+          'The audit trail shows every tool call made through MCP servers',
+        ]}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => { refetchStats(); refetchPolicies(); refetchAudit(); }} className="btn-secondary">
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
           <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary">
             <Plus className="w-4 h-4" />
             Add Policy
           </button>
         </div>
-      </div>
+        }
+      />
 
       {statsError && <ErrorState message={statsError} onRetry={refetchStats} />}
 

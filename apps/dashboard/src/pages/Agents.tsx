@@ -8,6 +8,7 @@ import type { ListResponse, AgentProfile } from '../api/types';
 import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
+import { PageHeader } from '../components/PageHeader';
 import { formatRelativeTime } from '../utils/format';
 
 export default function Agents() {
@@ -64,16 +65,24 @@ export default function Agents() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary">Agents</h1>
-          <p className="text-small text-text-secondary mt-1">Manage and run AI agent profiles</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          Create Agent
-        </button>
-      </div>
+      <PageHeader
+        icon={Bot}
+        title="Agents"
+        subtitle="Manage and run AI agent profiles"
+        description="Agents are pre-configured AI personalities with specific tools, system prompts, and step limits. You can create custom agents for different tasks — a code reviewer, a research assistant, a data analyst — each with its own behavior. Use this page to browse, create, and run agent profiles."
+        tips={[
+          'Click Create Agent to set up a new agent personality',
+          'Each agent has its own system prompt, model, and tool set',
+          'Running an agent creates a new Run — check the Runs page for progress',
+          'From chat: titan chat "run the code-reviewer agent on my project"',
+        ]}
+        actions={
+          <button onClick={() => setShowCreate(true)} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Create Agent
+          </button>
+        }
+      />
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

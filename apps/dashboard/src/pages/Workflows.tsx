@@ -3,6 +3,7 @@ import { Workflow, Plus, Play, Trash2, Edit3, Loader2, ArrowRight, Bot, Wrench, 
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
+import { PageHeader } from '../components/PageHeader';
 
 interface WFNode {
   id: string;
@@ -189,16 +190,24 @@ export default function Workflows() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary">Workflows</h1>
-          <p className="text-small text-text-secondary mt-1">Build automated agent pipelines</p>
-        </div>
-        <button onClick={handleCreate} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          New Workflow
-        </button>
-      </div>
+      <PageHeader
+        icon={Workflow}
+        title="Workflows"
+        subtitle="Build automated agent pipelines"
+        description="Workflows are visual pipelines that chain agents, tools, and conditions together. Drag nodes onto the canvas, connect them with edges, and configure each node. Workflows can be triggered manually, by webhooks, or on a schedule. Perfect for multi-step processes like content generation, data processing, or CI/CD automation."
+        tips={[
+          'Click New Workflow to start building a visual pipeline',
+          'Each node can be an agent, a tool, a condition, or input/output',
+          'Connect nodes with edges to define the execution flow',
+          'From chat: titan chat "run my content-generation workflow"',
+        ]}
+        actions={
+          <button onClick={handleCreate} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            New Workflow
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Workflow list */}

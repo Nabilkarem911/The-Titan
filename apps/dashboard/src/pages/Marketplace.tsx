@@ -3,6 +3,7 @@ import { Store, Search, Download, CheckCircle, Loader2, Power, Trash2, Tag, Wren
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
+import { PageHeader } from '../components/PageHeader';
 
 interface LibraryPlugin {
   key: string;
@@ -110,10 +111,18 @@ export default function Marketplace() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary">Plugin Marketplace</h1>
-        <p className="text-small text-text-secondary mt-1">Browse, install, and manage agent skills and plugins</p>
-      </div>
+      <PageHeader
+        icon={Store}
+        title="Plugin Marketplace"
+        subtitle="Browse, install, and manage agent skills and plugins"
+        description="The Plugin Marketplace is a library of pre-built plugins that add new capabilities to Titan. Browse by category, install with one click, and enable/disable plugins as needed. Each plugin adds new tools that agents can use — like web search, code execution, or database access."
+        tips={[
+          'Browse plugins by category or search by name',
+          'Install a plugin to make its tools available to all agents',
+          'Disable a plugin temporarily without uninstalling it',
+          'From chat: titan chat "list available plugins"',
+        ]}
+      />
 
       {/* Installed plugins */}
       {installed.length > 0 && (

@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import { useApi } from '../hooks/useApi';
 import { Shield, RefreshCw, ScanLine, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { ErrorState } from '../components/PageState';
+import { PageHeader } from '../components/PageHeader';
 import { SkeletonCard } from '../components/LoadingSkeleton';
 import { toast } from 'sonner';
 
@@ -71,19 +72,24 @@ export default function Guardrails() {
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Shield className="w-6 h-6 text-accent-primary" />
-            Multi-Layer Guardrails
-          </h1>
-          <p className="text-small text-text-secondary mt-1">5-layer defense: input validation → injection → PII → content → output</p>
-        </div>
-        <button onClick={() => { refetchStats(); refetchResults(); }} className="btn-secondary">
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        icon={Shield}
+        title="Multi-Layer Guardrails"
+        subtitle="5-layer defense: input validation → injection → PII → content → output"
+        description="Multi-Layer Guardrails protect Titan from malicious inputs and unsafe outputs. Every request passes through 5 layers: (1) Input Validation — schema and type checks, (2) Injection Detection — prevents prompt injection attacks, (3) PII Filter — redacts personal information, (4) Content Filter — blocks harmful content, (5) Output Validation — ensures responses are safe. Use this page to test guardrails and view check results."
+        tips={[
+          'Type input text and output text below to test all 5 guardrail layers',
+          'Each layer can block, warn, or allow the request',
+          'PII filter automatically redacts emails, phone numbers, and SSNs',
+          'From chat: titan chat "check guardrails for: <your text>"',
+        ]}
+        actions={
+          <button onClick={() => { refetchStats(); refetchResults(); }} className="btn-secondary">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        }
+      />
 
       {statsError && <ErrorState message={statsError} onRetry={refetchStats} />}
 

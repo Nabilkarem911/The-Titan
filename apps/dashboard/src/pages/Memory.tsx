@@ -3,6 +3,7 @@ import { Brain, Plus, Trash2, Download, Upload } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonRow } from '../components/LoadingSkeleton';
 
@@ -78,30 +79,36 @@ export default function Memory() {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-text-primary flex items-center gap-2">
-            <Brain className="w-6 h-6 text-accent-secondary" />
-            Memory
-          </h1>
-          <p className="text-small text-text-secondary mt-1">User context and persistent memory</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleExport} disabled={!data?.items.length} className="btn-secondary flex items-center gap-1.5" title="Export as JSON">
-            <Download className="w-4 h-4" />
-            Export
-          </button>
-          <label className="btn-secondary flex items-center gap-1.5 cursor-pointer" title="Import from JSON">
-            <Upload className="w-4 h-4" />
-            Import
-            <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-          </label>
-          <button onClick={() => setShowAdd(true)} className="btn-primary">
-            <Plus className="w-4 h-4" />
-            Add Memory
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        icon={Brain}
+        title="Memory"
+        subtitle="User context and persistent memory"
+        description="Memory is Titan's persistent storage for user context. It remembers facts about you — your preferences, past conversations, ongoing projects — across sessions. Titan uses this to personalize responses without you repeating yourself. Use this page to view, edit, export, and delete your stored memories."
+        tips={[
+          'Memories are stored per-user — only you can see your memories',
+          'Export downloads all memories as a JSON file',
+          'Delete a memory to make Titan forget that specific fact',
+          'From chat: titan chat "remember that I prefer tabs over spaces"',
+        ]}
+        accent="text-accent-secondary"
+        actions={
+          <div className="flex items-center gap-2">
+            <button onClick={handleExport} disabled={!data?.items.length} className="btn-secondary flex items-center gap-1.5" title="Export as JSON">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <label className="btn-secondary flex items-center gap-1.5 cursor-pointer" title="Import from JSON">
+              <Upload className="w-4 h-4" />
+              Import
+              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+            </label>
+            <button onClick={() => setShowAdd(true)} className="btn-primary">
+              <Plus className="w-4 h-4" />
+              Add Memory
+            </button>
+          </div>
+        }
+      />
 
       {isLoading ? (
         <div className="card">{Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} columns={2} />)}</div>

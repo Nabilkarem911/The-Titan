@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FlaskConical, Send, Globe, Heart, Brain, Clock, Loader2 } from 'lucide-react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 export default function Playground() {
   const [method, setMethod] = useState('GET');
@@ -54,13 +55,18 @@ export default function Playground() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-h1 text-text-primary flex items-center gap-2">
-          <FlaskConical className="w-6 h-6 text-accent-tertiary" />
-          Playground
-        </h1>
-        <p className="text-small text-text-secondary mt-1">Test API endpoints and AI capabilities directly</p>
-      </div>
+      <PageHeader
+        icon={FlaskConical}
+        title="Playground"
+        subtitle="Test API endpoints and AI capabilities directly"
+        description="The Playground is a sandbox for testing Titan's AI capabilities and API endpoints. You can send any HTTP request to the Titan API, or use quick actions to test specific features like translation, emotion analysis, theory of mind, and temporal reasoning. Perfect for developers exploring the API or users curious about what Titan can do."
+        tips={[
+          'Use the API tester below to send any GET/POST/PUT/DELETE request',
+          'Quick Actions test specific AI features with pre-filled examples',
+          'Try: POST /health/ready to check if the server is running',
+          'Quick Actions are also available from chat: titan chat "translate Hello to Arabic"',
+        ]}
+      />
 
       {/* Quick Actions */}
       <div className="card p-4 mb-4">

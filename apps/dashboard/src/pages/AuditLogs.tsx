@@ -6,6 +6,7 @@ import { EmptyState, ErrorState } from '../components/PageState';
 import { SkeletonRow } from '../components/LoadingSkeleton';
 import { useDebounce } from '../hooks/useDebounce';
 import { formatDate } from '../utils/format';
+import { PageHeader } from '../components/PageHeader';
 
 export default function AuditLogs() {
   const [search, setSearch] = useState('');
@@ -18,13 +19,18 @@ export default function AuditLogs() {
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-h1 text-text-primary flex items-center gap-2">
-          <ShieldCheck className="w-6 h-6 text-success" />
-          Audit Logs
-        </h1>
-        <p className="text-small text-text-secondary mt-1">Immutable record of all system actions</p>
-      </div>
+      <PageHeader
+        icon={ShieldCheck}
+        title="Audit Logs"
+        subtitle="Immutable record of all system actions"
+        description="Audit Logs are an immutable, tamper-evident record of every action taken in Titan — who did what, when, and from where. They're critical for compliance, security investigations, and debugging. Logs cannot be deleted or modified. Use this page to search and browse all system activity."
+        tips={[
+          'Use the search box to filter logs by action type',
+          'Each log shows: action, resource, actor, IP address, and timestamp',
+          'Logs are immutable — they can never be deleted or modified',
+        ]}
+        accent="text-success"
+      />
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
