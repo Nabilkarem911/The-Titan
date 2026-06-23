@@ -42,6 +42,15 @@ const MCPGovernance = lazy(() => import('./pages/MCPGovernance'));
 const DAGWorkflow = lazy(() => import('./pages/DAGWorkflow'));
 const Guardrails = lazy(() => import('./pages/Guardrails'));
 const BiTemporalGraph = lazy(() => import('./pages/BiTemporalGraph'));
+const DreamLab = lazy(() => import('./pages/DreamLab'));
+const Safety = lazy(() => import('./pages/Safety'));
+const Mirror = lazy(() => import('./pages/Mirror'));
+const Evolution = lazy(() => import('./pages/Evolution'));
+const BrowserAgentPage = lazy(() => import('./pages/BrowserAgentPage'));
+const AgentNetwork = lazy(() => import('./pages/AgentNetwork'));
+const SelfForgePage = lazy(() => import('./pages/SelfForgePage'));
+const WorldModel = lazy(() => import('./pages/WorldModel'));
+const MetaLearning = lazy(() => import('./pages/MetaLearning'));
 
 // ── Protected Layout ──
 function ProtectedLayout() {
@@ -107,6 +116,15 @@ export default function App() {
             <Route path="dag-workflow" element={<DAGWorkflow />} />
             <Route path="guardrails" element={<Guardrails />} />
             <Route path="bi-temporal-graph" element={<BiTemporalGraph />} />
+            <Route path="dream-lab" element={<DreamLab />} />
+            <Route path="safety" element={<Safety />} />
+            <Route path="mirror" element={<Mirror />} />
+            <Route path="evolution" element={<Evolution />} />
+            <Route path="browser-agent" element={<BrowserAgentPage />} />
+            <Route path="agent-network" element={<AgentNetwork />} />
+            <Route path="self-forge" element={<SelfForgePage />} />
+            <Route path="world-model" element={<WorldModel />} />
+            <Route path="meta-learning" element={<MetaLearning />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -27,6 +27,10 @@ import {
   Wrench,
   Shield,
   GitGraph,
+  Moon,
+  Sparkles,
+  Globe,
+  Orbit,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -79,6 +83,25 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'DAG Workflow', path: '/dag-workflow', icon: Workflow },
       { label: 'Guardrails', path: '/guardrails', icon: Shield },
       { label: 'Bi-Temporal Graph', path: '/bi-temporal-graph', icon: GitGraph },
+    ],
+  },
+  {
+    label: 'Cognitive Systems',
+    items: [
+      { label: 'Dream Lab', path: '/dream-lab', icon: Moon },
+      { label: 'Safety', path: '/safety', icon: Shield },
+      { label: 'MIRROR', path: '/mirror', icon: Brain },
+      { label: 'Evolution', path: '/evolution', icon: Sparkles },
+      { label: 'Meta-Learning', path: '/meta-learning', icon: GraduationCap },
+    ],
+  },
+  {
+    label: 'Integrations',
+    items: [
+      { label: 'Browser Agent', path: '/browser-agent', icon: Globe },
+      { label: 'Agent Network', path: '/agent-network', icon: Network },
+      { label: 'Self-Forge', path: '/self-forge', icon: Wrench },
+      { label: 'World Model', path: '/world-model', icon: Orbit },
     ],
   },
   {
