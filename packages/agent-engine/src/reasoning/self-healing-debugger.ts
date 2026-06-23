@@ -3,6 +3,7 @@ import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { selfHealingLessons as lessonsRepo, selfHealingAttempts as attemptsRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'self-healing-debugger' });
@@ -257,6 +258,16 @@ export class SelfHealingDebugger {
     if (this.lessons.length > this.maxLessons) {
       this.lessons = this.lessons.slice(-this.maxLessons);
     }
+    lessonsRepo.insert({
+      id: lesson.id,
+      bugId: lesson.id,
+      errorType: lesson.errorType,
+      failedFix: lesson.failedFix,
+      successfulFix: lesson.successfulFix ?? '',
+      lesson: lesson.errorMessage,
+      successful: !!lesson.successfulFix,
+      createdAt: lesson.learnedAt,
+    }).catch((err) => log.warn({ err, id: lesson.id }, 'failed to persist lesson'));
   }
 
   private async instrument(bug: BugReport): Promise<string[]> {
@@ -403,6 +414,17 @@ export class SelfHealingDebugger {
       if (this.attempts.length > this.maxAttempts) {
         this.attempts = this.attempts.slice(-this.maxAttempts);
       }
+
+      const attemptId = this.attempts[this.attempts.length - 1].id;
+      attemptsRepo.insert({
+        id: attemptId,
+        bugId: bug.id,
+        attempt: attemptNum,
+        fixDescription,
+        fixCode: fixCode ?? null,
+        success,
+        timestamp: new Date(),
+      }).catch((err) => log.warn({ err, bugId: bug.id }, 'failed to persist attempt'));
 
       return { success, fixDescription, fixCode, error: appliedError };
     } catch (err) {

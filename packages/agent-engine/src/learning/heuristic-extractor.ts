@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { heuristics as heuristicsRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'heuristic-extractor' });
@@ -107,6 +108,18 @@ export class HeuristicExtractor {
         };
         this.heuristics.set(id, heuristic);
         extracted.push(heuristic);
+        heuristicsRepo.upsert({
+          id: heuristic.id,
+          content: heuristic.content,
+          category: heuristic.category,
+          source: heuristic.source,
+          taskType: heuristic.taskType,
+          confidence: heuristic.confidence,
+          usageCount: heuristic.usageCount,
+          successRate: heuristic.successRate,
+          createdAt: heuristic.createdAt,
+          lastUsed: heuristic.lastUsed,
+        }).catch((err) => log.warn({ err, id: heuristic.id }, 'failed to persist heuristic'));
       }
 
       const result: ExtractionResult = {

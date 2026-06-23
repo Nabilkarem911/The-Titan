@@ -569,3 +569,137 @@ export const dreamReports = {
     })) as DreamReportRow[];
   },
 };
+
+export const selfImprovementProposals = {
+  async insert(p: {
+    id: string; runId: string; category: string; description: string;
+    suggestedChange: string; expectedBenefit: string; confidence: number;
+    status: string; createdAt: Date;
+  }): Promise<void> {
+    await query(
+      `INSERT INTO self_improvement_proposals (id, run_id, category, description, suggested_change, expected_benefit, confidence, status, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+      [p.id, p.runId, p.category, p.description, p.suggestedChange, p.expectedBenefit, p.confidence, p.status, p.createdAt],
+    );
+  },
+
+  async updateStatus(id: string, status: string): Promise<void> {
+    await query(`UPDATE self_improvement_proposals SET status = $1 WHERE id = $2`, [status, id]);
+  },
+
+  async getRecent(limit = 50): Promise<unknown[]> {
+    const result = await query(`SELECT * FROM self_improvement_proposals ORDER BY created_at DESC LIMIT $1`, [limit]);
+    return result.rows;
+  },
+};
+
+export const selfHealingLessons = {
+  async insert(l: {
+    id: string; bugId: string; errorType: string; failedFix: string;
+    successfulFix: string; lesson: string; successful: boolean; createdAt: Date;
+  }): Promise<void> {
+    await query(
+      `INSERT INTO self_healing_lessons (id, bug_id, error_type, failed_fix, successful_fix, lesson, successful, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
+      [l.id, l.bugId, l.errorType, l.failedFix, l.successfulFix, l.lesson, l.successful, l.createdAt],
+    );
+  },
+
+  async getRecent(limit = 100): Promise<unknown[]> {
+    const result = await query(`SELECT * FROM self_healing_lessons ORDER BY created_at DESC LIMIT $1`, [limit]);
+    return result.rows;
+  },
+};
+
+export const selfHealingAttempts = {
+  async insert(a: {
+    id: string; bugId: string; attempt: number; fixDescription: string;
+    fixCode?: string | null; success: boolean; timestamp: Date;
+  }): Promise<void> {
+    await query(
+      `INSERT INTO self_healing_attempts (id, bug_id, attempt, fix_description, fix_code, success, timestamp)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO NOTHING`,
+      [a.id, a.bugId, a.attempt, a.fixDescription, a.fixCode ?? null, a.success, a.timestamp],
+    );
+  },
+
+  async getRecent(limit = 100): Promise<unknown[]> {
+    const result = await query(`SELECT * FROM self_healing_attempts ORDER BY timestamp DESC LIMIT $1`, [limit]);
+    return result.rows;
+  },
+};
+
+export const selfRewriterVersions = {
+  async insert(v: {
+    id: string; version: number; description: string; code?: string | null;
+    applied: boolean; rolledBack: boolean; phase: string; performance: number; createdAt: Date;
+  }): Promise<void> {
+    await query(
+      `INSERT INTO self_rewrite_versions (id, version, description, code, applied, rolled_back, phase, performance, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+      [v.id, v.version, v.description, v.code ?? null, v.applied, v.rolledBack, v.phase, v.performance, v.createdAt],
+    );
+  },
+
+  async getRecent(limit = 50): Promise<unknown[]> {
+    const result = await query(`SELECT * FROM self_rewrite_versions ORDER BY version DESC LIMIT $1`, [limit]);
+    return result.rows;
+  },
+};
+
+export const heuristics = {
+  async upsert(h: {
+    id: string; content: string; category: string; source: string;
+    taskType: string; confidence: number; usageCount: number;
+    successRate: number; createdAt: Date; lastUsed: Date | null;
+  }): Promise<void> {
+    await query(
+      `INSERT INTO heuristics (id, content, category, source, task_type, confidence, usage_count, success_rate, created_at, last_used)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       ON CONFLICT (id) DO UPDATE SET usage_count = $7, success_rate = $8, last_used = $10`,
+      [h.id, h.content, h.category, h.source, h.taskType, h.confidence, h.usageCount, h.successRate, h.createdAt, h.lastUsed],
+    );
+  },
+
+  async getAll(): Promise<unknown[]> {
+    const result = await query(`SELECT * FROM heuristics ORDER BY created_at DESC`);
+    return result.rows;
+  },
+};
+
+export const introspectionReports = {
+  async insert(r: {
+    id: string; runId: string; stepId: string; reasoningQuality: number;
+    biasesDetected: unknown[]; confabulationsDetected: unknown[];
+    confidence: number; recommendations: unknown[]; createdAt: Date;
+  }): Promise<void> {
+    await query(
+      `INSERT INTO introspection_reports (id, run_id, step_id, reasoning_quality, biases_detected, confabulations_detected, confidence, recommendations, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+      [r.id, r.runId, r.stepId, r.reasoningQuality, JSON.stringify(r.biasesDetected), JSON.stringify(r.confabulationsDetected), r.confidence, JSON.stringify(r.recommendations), r.createdAt],
+    );
+  },
+
+  async getRecent(limit = 50): Promise<unknown[]> {
+    const result = await query(`SELECT * FROM introspection_reports ORDER BY created_at DESC LIMIT $1`, [limit]);
+    return result.rows;
+  },
+};
+
+export const safetyMemoryEntries = {
+  async insert(e: {
+    id: string; category: string; content: string; severity: string;
+    source: string; createdAt: Date; updatedAt: Date;
+  }): Promise<void> {
+    await query(
+      `INSERT INTO safety_memory_entries (id, category, content, severity, source, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO UPDATE SET content = $3, updated_at = $7`,
+      [e.id, e.category, e.content, e.severity, e.source, e.createdAt, e.updatedAt],
+    );
+  },
+
+  async getAll(): Promise<unknown[]> {
+    const result = await query(`SELECT * FROM safety_memory_entries ORDER BY created_at DESC`);
+    return result.rows;
+  },
+};

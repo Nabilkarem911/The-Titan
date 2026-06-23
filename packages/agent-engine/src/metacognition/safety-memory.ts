@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { safetyMemoryEntries as safetyRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'safety-memory' });
 
@@ -66,6 +67,15 @@ export class SelfEvolvingSafetyMemory {
     };
 
     this.cells.set(id, contrastiveCell);
+    safetyRepo.insert({
+      id: contrastiveCell.id,
+      category: 'contrastive_cell',
+      content: `${contrastiveCell.attackStrategy}: ${contrastiveCell.harmfulPattern}`,
+      severity: 'high',
+      source: 'safety_memory',
+      createdAt: contrastiveCell.createdAt,
+      updatedAt: contrastiveCell.createdAt,
+    }).catch((err) => log.warn({ err, id }, 'failed to persist safety cell'));
 
     const strategySet = this.strategyIndex.get(cell.attackStrategy) ?? new Set();
     strategySet.add(id);

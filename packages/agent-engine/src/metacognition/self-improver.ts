@@ -1,5 +1,6 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
+import { selfImprovementProposals as proposalsRepo } from '@titan/database';
 import type { LlmProvider, AgentRun } from '../types.js';
 
 const log = getLogger().child({ component: 'self-improver' });
@@ -82,6 +83,14 @@ export class SelfImprover {
         this.archive.proposals = this.archive.proposals.slice(-this.maxArchiveSize);
       }
 
+      for (const p of proposals) {
+        proposalsRepo.insert({
+          id: p.id, runId: run.id, category: p.category, description: p.description,
+          suggestedChange: p.suggestedChange, expectedBenefit: p.expectedBenefit,
+          confidence: p.confidence, status: 'pending', createdAt: p.createdAt,
+        }).catch((err) => log.warn({ err, id: p.id }, 'failed to persist proposal'));
+      }
+
       incCounter('meta_agent_proposals', 'Improvement proposals generated', proposals.length);
       log.info({ runId: run.id, count: proposals.length }, 'improvement proposals generated');
 
@@ -105,6 +114,7 @@ export class SelfImprover {
     if (idx >= 0) {
       const [proposal] = this.archive.proposals.splice(idx, 1);
       this.archive.applied.push(proposal);
+      proposalsRepo.updateStatus(proposalId, 'applied').catch(() => {});
       log.info({ proposalId }, 'improvement proposal marked as applied');
     }
   }
@@ -114,6 +124,7 @@ export class SelfImprover {
     if (idx >= 0) {
       const [proposal] = this.archive.proposals.splice(idx, 1);
       this.archive.rejected.push(proposal);
+      proposalsRepo.updateStatus(proposalId, 'rejected').catch(() => {});
       log.info({ proposalId }, 'improvement proposal marked as rejected');
     }
   }

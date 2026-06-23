@@ -3,6 +3,7 @@ import { incCounter, setGauge, observeHistogram } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import { selfRewriterVersions as versionsRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'self-rewriter' });
@@ -592,6 +593,18 @@ export class SelfRewriter {
     if (this.versions.length > this.maxVersions) {
       this.versions = this.versions.slice(-this.maxVersions);
     }
+
+    versionsRepo.insert({
+      id: version.id,
+      version: version.version,
+      description: version.description,
+      code: version.code ?? null,
+      applied: version.applied,
+      rolledBack: version.rolledBack,
+      phase: version.phase,
+      performance: version.performance,
+      createdAt: version.createdAt,
+    }).catch((err) => log.warn({ err, id: version.id }, 'failed to persist rewrite version'));
 
     // Evaluate improvement via LLM
     const perfAfter = await this.evaluateImprovement(proposal, perfBefore);

@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { introspectionReports as reportsRepo } from '@titan/database';
 import type { LlmProvider, AgentStep } from '../types.js';
 
 const log = getLogger().child({ component: 'introspection' });
@@ -98,6 +99,18 @@ export class IntrospectionModule {
       if (this.reports.length > this.maxReports) {
         this.reports = this.reports.slice(-this.maxReports);
       }
+
+      reportsRepo.insert({
+        id: parsed.id,
+        runId: parsed.id,
+        stepId: String(parsed.stepIndex),
+        reasoningQuality: parsed.confidenceInReasoning * 100,
+        biasesDetected: parsed.detectedBiases,
+        confabulationsDetected: parsed.isConfabulating ? ['confabulation'] : [],
+        confidence: parsed.confidenceInReasoning,
+        recommendations: parsed.recommendations,
+        createdAt: parsed.createdAt,
+      }).catch((err) => log.warn({ err, id: parsed.id }, 'failed to persist introspection report'));
 
       incCounter('introspection_run', 'Introspections performed', 1);
       if (parsed.isConfabulating) {
