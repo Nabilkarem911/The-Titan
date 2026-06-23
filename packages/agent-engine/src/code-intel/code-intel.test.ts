@@ -88,7 +88,7 @@ describe('extractImports', () => {
 describe('buildCodebaseIndex', () => {
   it('indexes the Titan project', () => {
     const root = path.resolve('packages/agent-engine');
-    const index = buildCodebaseIndex(root, 100);
+    const index = buildCodebaseIndex(root, 200);
 
     expect(index.files.length).toBeGreaterThan(5);
     expect(index.symbols.length).toBeGreaterThan(10);
@@ -97,7 +97,7 @@ describe('buildCodebaseIndex', () => {
 
   it('finds symbols by name', () => {
     const root = path.resolve('packages/agent-engine');
-    const index = buildCodebaseIndex(root, 100);
+    const index = buildCodebaseIndex(root, 200);
 
     const results = findSymbol(index, 'AgentRunner');
     expect(results.length).toBeGreaterThan(0);
@@ -106,7 +106,7 @@ describe('buildCodebaseIndex', () => {
 
   it('finds files by query', () => {
     const root = path.resolve('packages/agent-engine');
-    const index = buildCodebaseIndex(root, 100);
+    const index = buildCodebaseIndex(root, 200);
 
     const results = findFile(index, 'runner');
     expect(results.length).toBeGreaterThan(0);
@@ -118,7 +118,7 @@ describe('buildCodebaseIndex', () => {
 describe('searchCode', () => {
   it('finds relevant files for a query', () => {
     const root = path.resolve('packages/agent-engine');
-    const index = buildCodebaseIndex(root, 100);
+    const index = buildCodebaseIndex(root, 200);
 
     const results = searchCode(index, 'agent runner execute step');
     expect(results.length).toBeGreaterThan(0);
@@ -127,7 +127,7 @@ describe('searchCode', () => {
 
   it('returns matched symbols', () => {
     const root = path.resolve('packages/agent-engine');
-    const index = buildCodebaseIndex(root, 100);
+    const index = buildCodebaseIndex(root, 200);
 
     const results = searchCode(index, 'TaskDecomposer planner');
     const hasPlanner = results.some((r) => r.file.relativePath.includes('planner'));
@@ -140,7 +140,7 @@ describe('searchCode', () => {
 describe('buildSmartContext', () => {
   it('builds context for a query', () => {
     const root = path.resolve('packages/agent-engine');
-    const index = buildCodebaseIndex(root, 100);
+    const index = buildCodebaseIndex(root, 200);
 
     const chunks = buildSmartContext(index, 'how does the agent runner work');
     expect(chunks.length).toBeGreaterThan(0);
@@ -149,7 +149,7 @@ describe('buildSmartContext', () => {
 
   it('formats context for LLM', () => {
     const root = path.resolve('packages/agent-engine');
-    const index = buildCodebaseIndex(root, 100);
+    const index = buildCodebaseIndex(root, 200);
 
     const chunks = buildSmartContext(index, 'agent runner');
     const formatted = formatContextForLlm(chunks);

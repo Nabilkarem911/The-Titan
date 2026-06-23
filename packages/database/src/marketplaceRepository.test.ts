@@ -2,7 +2,18 @@ import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import { getPool, closePool } from './client.js';
 import { plugins, pluginRatings, pluginSearch } from './pluginRepository.js';
 
-describe('Plugin Marketplace Repository', () => {
+// Skip all tests if PostgreSQL is not available
+const dbAvailable = await (async () => {
+  try {
+    const pool = getPool();
+    await pool.query('SELECT 1');
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
+describe.skipIf(!dbAvailable)('Plugin Marketplace Repository', () => {
   beforeAll(async () => {
     const pool = getPool();
     await pool.query(`

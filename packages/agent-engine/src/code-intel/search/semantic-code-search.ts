@@ -23,37 +23,48 @@ export function searchCode(index: CodebaseIndex, query: string, limit = 10): Sea
     const matchedLines: Array<{ line: number; content: string }> = [];
     const reasons: string[] = [];
 
-    // Symbol name matching
+    // Deprioritize test files — they contain query words but aren't source code
+    const isTestFile = file.relativePath.includes('.test.') || file.relativePath.includes('.spec.');
+
+    // Symbol name matching (highest weight — most reliable signal)
     const fileSymbols = index.symbols.filter((s) => s.filePath === file.relativePath);
     for (const sym of fileSymbols) {
       const symWords = splitCamelCase(sym.name).map((w) => w.toLowerCase());
       const overlap = symWords.filter((w) => queryWords.has(w)).length;
       if (overlap > 0) {
-        score += overlap * 3 + (sym.exported ? 2 : 0);
+        score += overlap * 8 + (sym.exported ? 4 : 0);
         matchedSymbols.push(sym);
         reasons.push(`symbol: ${sym.name}`);
       }
     }
 
-    // File path matching
+    // File path matching (high weight — strong signal)
     const pathWords = file.relativePath.toLowerCase().split(/[/\\._-]/);
     const pathOverlap = pathWords.filter((w) => queryWords.has(w)).length;
     if (pathOverlap > 0) {
-      score += pathOverlap * 2;
+      score += pathOverlap * 6;
       reasons.push(`path: ${file.relativePath}`);
     }
 
-    // Content matching (line-level)
+    // Content matching (low weight, capped — prevents verbose files from dominating)
     const lines = file.content.split('\n');
+    let contentScore = 0;
     for (let i = 0; i < lines.length; i++) {
       const lineLower = lines[i].toLowerCase();
       const lineOverlap = [...queryWords].filter((w) => lineLower.includes(w)).length;
       if (lineOverlap >= 2 || (lineOverlap >= 1 && queryWords.size <= 2)) {
-        score += lineOverlap;
+        contentScore += lineOverlap;
         if (matchedLines.length < 5) {
           matchedLines.push({ line: i + 1, content: lines[i].trim().slice(0, 200) });
         }
       }
+    }
+    // Cap content score at 5 — content is a weak signal compared to path/symbol
+    score += Math.min(contentScore, 5);
+
+    // Penalize test files so source files always rank higher
+    if (isTestFile) {
+      score = Math.floor(score * 0.1);
     }
 
     // Doc comment matching
