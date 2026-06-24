@@ -345,6 +345,27 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
                 // preference learning is optional
               }
 
+              // ── Post-run pipeline for Telegram path ──
+              if (tgWiring?.proactiveIntelligence && result.status === 'completed') {
+                try {
+                  const userActions = history.slice(-10).map(m => `${m.role}: ${m.content.slice(0, 100)}`);
+                  userActions.push(`user: ${enrichedPrompt.slice(0, 100)}`);
+                  const suggestion = await tgWiring.proactiveIntelligence.analyzePatterns(userActions);
+                  if (suggestion && input.stream) {
+                    reply.raw.write(`data: ${JSON.stringify({ type: 'proactive_suggestion', pattern: suggestion.pattern, suggestion: suggestion.suggestion, confidence: suggestion.confidence, category: suggestion.category })}\n\n`);
+                  }
+                } catch {}
+              }
+
+              if (tgWiring?.skillSynthesis && result.status === 'completed' && result.steps.length > 2) {
+                try {
+                  const synthResult = await tgWiring.skillSynthesis.synthesize(enrichedPrompt.slice(0, 200));
+                  if (synthResult.success && synthResult.skill && input.stream) {
+                    reply.raw.write(`data: ${JSON.stringify({ type: 'skill_synthesized', skillName: synthResult.skill.name, description: synthResult.skill.description, proficiency: synthResult.skill.proficiency })}\n\n`);
+                  }
+                } catch {}
+              }
+
               if (input.stream) {
                 reply.raw.write(`data: ${JSON.stringify({
                   type: 'run.completed',
@@ -494,7 +515,82 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         }
       }
 
-      const enhancedSystemPrompt = systemPromptExtra + emotionContext + heuristicContext;
+      // 5. Introspection — if user asks about Titan's self-awareness, inject introspection data
+      let introspectionContext = '';
+      const introspectionTriggers = ['what did you learn', 'what have you learned', 'إيه اللي اتعلمته', 'ماذا تعلمت', 'introspect', 'self-aware', 'self model'];
+      if (introspectionTriggers.some(t => enrichedPrompt.toLowerCase().includes(t))) {
+        if (wiring?.introspection) {
+          try {
+            const reports = wiring.introspection.getRecentReports(5);
+            const stats = wiring.introspection.stats();
+            introspectionContext = `\n\nIntrospection data:\n- Total introspections: ${stats.totalIntrospections}\n- Biases detected: ${stats.biasesDetected}\n- Confabulations detected: ${stats.confabulationsDetected}\n- Avg confidence: ${stats.avgConfidence}\n- Top biases: ${stats.topBiases.map(b => b.bias).join(', ')}\nRecent insights: ${reports.map(r => r.reasoning.slice(0, 100)).join(' | ')}`;
+          } catch {}
+        }
+        if (wiring?.introspectiveAwareness) {
+          try {
+            const selfModel = wiring.introspectiveAwareness.getSelfModel();
+            introspectionContext += `\n\nSelf-model:\n- Capabilities: ${selfModel.capabilities.join(', ')}\n- Known limitations: ${selfModel.limitations.join(', ')}\n- Goals: ${selfModel.goals.join(', ')}`;
+          } catch {}
+        }
+      }
+
+      // 6. Safety Memory — check for dangerous actions and inject warnings
+      let safetyWarning = '';
+      if (wiring?.safetyMemory) {
+        try {
+          const safetyResult = wiring.safetyMemory.check(enrichedPrompt);
+          if (safetyResult.decision === 'block') {
+            safetyWarning = `\n\nSAFETY WARNING: This input matches a known harmful pattern (${safetyResult.matchedStrategy}). Confidence: ${safetyResult.confidence}. Reasoning: ${safetyResult.reasoning}. Be extra cautious.`;
+            if (input.stream) {
+              reply.raw.write(`data: ${JSON.stringify({ type: 'safety_warning', decision: safetyResult.decision, strategy: safetyResult.matchedStrategy, confidence: safetyResult.confidence })}\n\n`);
+            }
+          } else if (safetyResult.decision === 'uncertain' && safetyResult.confidence > 0.3) {
+            safetyWarning = `\n\nSafety note: This input partially matches a known pattern (${safetyResult.matchedStrategy}). Review carefully.`;
+          }
+        } catch {}
+      }
+
+      // 7. Screen Monitor — stream recent alerts if any
+      if (wiring?.screenMonitor && input.stream) {
+        try {
+          const recentAlerts = wiring.screenMonitor.getRecentAlerts(3);
+          if (recentAlerts.length > 0) {
+            reply.raw.write(`data: ${JSON.stringify({ type: 'screen_alerts', alerts: recentAlerts.map(a => ({ type: a.type, message: a.message, confidence: a.confidence, timestamp: a.timestamp })) })}\n\n`);
+          }
+        } catch {}
+      }
+
+      // 8. Advanced Multimodal — analyze attached image/PDF files
+      let multimodalContext = '';
+      if (input.files.length > 0 && wiring?.advancedMultimodal) {
+        const llm = getSharedLlm();
+        if (llm) {
+          for (const filePath of input.files) {
+            const lower = filePath.toLowerCase();
+            if (lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.gif') || lower.endsWith('.webp')) {
+              try {
+                const imgBuffer = await readFile(filePath);
+                const base64 = imgBuffer.toString('base64');
+                const imgDescription = `User attached an image (${filePath}). Base64 preview: ${base64.slice(0, 200)}...`;
+                const codeResult = await wiring.advancedMultimodal.codeFromScreenshot(imgDescription);
+                if (codeResult.code) {
+                  multimodalContext += `\n\nImage analysis (${filePath}):\n- Detected language: ${codeResult.language}\n- Extracted code:\n${codeResult.code.slice(0, 500)}\n- Confidence: ${codeResult.confidence}`;
+                }
+              } catch {}
+            } else if (lower.endsWith('.pdf')) {
+              try {
+                const pdfText = await readFile(filePath, 'utf-8');
+                const tables = await wiring.advancedMultimodal.extractPDFTables(pdfText);
+                if (tables.length > 0) {
+                  multimodalContext += `\n\nPDF tables extracted from ${filePath}:\n${tables.map(t => `Page ${t.page}: ${t.headers.join(' | ')}\n${t.rows.map(r => r.join(' | ')).join('\n')}`).join('\n\n')}`;
+                }
+              } catch {}
+            }
+          }
+        }
+      }
+
+      const enhancedSystemPrompt = systemPromptExtra + emotionContext + heuristicContext + introspectionContext + safetyWarning + multimodalContext;
 
       // Create DB run record
       const dbRun = await agentRuns.create({
@@ -548,6 +644,39 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
         // Save assistant reply to history
         await saveChatMessage(sessionId, 'assistant', answer);
+
+        // ── Post-run pipeline: proactive intelligence, skill synthesis ──
+        if (wiring?.proactiveIntelligence && result.status === 'completed') {
+          try {
+            const userActions = history.slice(-10).map(m => `${m.role}: ${m.content.slice(0, 100)}`);
+            userActions.push(`user: ${enrichedPrompt.slice(0, 100)}`);
+            const suggestion = await wiring.proactiveIntelligence.analyzePatterns(userActions);
+            if (suggestion && input.stream) {
+              reply.raw.write(`data: ${JSON.stringify({ type: 'proactive_suggestion', pattern: suggestion.pattern, suggestion: suggestion.suggestion, confidence: suggestion.confidence, category: suggestion.category })}\n\n`);
+            }
+          } catch {}
+        }
+
+        if (wiring?.skillSynthesis && result.status === 'completed' && result.steps.length > 2) {
+          try {
+            const synthResult = await wiring.skillSynthesis.synthesize(enrichedPrompt.slice(0, 200));
+            if (synthResult.success && synthResult.skill && input.stream) {
+              reply.raw.write(`data: ${JSON.stringify({ type: 'skill_synthesized', skillName: synthResult.skill.name, description: synthResult.skill.description, proficiency: synthResult.skill.proficiency })}\n\n`);
+            }
+          } catch {}
+        }
+
+        if (wiring?.toolDiscovery && result.status === 'completed') {
+          try {
+            const missingCaps = result.steps.filter(s => s.observation && !s.observation.success).map(s => s.action?.name ?? 'unknown');
+            if (missingCaps.length > 0) {
+              const discovery = await wiring.toolDiscovery.discover(enrichedPrompt.slice(0, 200), missingCaps);
+              if (discovery.results.length > 0 && input.stream) {
+                reply.raw.write(`data: ${JSON.stringify({ type: 'tool_discovery', tools: discovery.results.slice(0, 3).map(t => ({ name: t.name, source: t.source, description: t.description, reliability: t.reliabilityScore })) })}\n\n`);
+              }
+            }
+          } catch {}
+        }
 
         if (input.stream) {
           reply.raw.write(`data: ${JSON.stringify({
