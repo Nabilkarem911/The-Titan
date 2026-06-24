@@ -349,7 +349,7 @@ export class AgentRunner {
         const tools = this.deps.tools ?? buildToolsFromRegistry();
         const strategyCtx = {
           run,
-          systemPrompt: ctx.systemPrompt,
+          systemPrompt: buildSystemPrompt(ctx, run.prompt),
           memoryItems: ctx.memoryItems,
           tools,
           llm: this.deps.llm,

@@ -107,6 +107,84 @@ describe('Fix 3 — Personality prompt /app instruction', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Fix 6 — Language adherence: explicit language requests + code language
+// ---------------------------------------------------------------------------
+describe('Fix 6 — Language adherence', () => {
+  function makeCtx(prompt: string): AgentContext {
+    return {
+      run: {
+        id: 'test',
+        agentId: 'a',
+        prompt,
+        status: 'running',
+        maxSteps: 10,
+        currentStep: 0,
+        tokensUsed: 0,
+        steps: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      systemPrompt: '',
+      rules: [],
+    };
+  }
+
+  it('English prompt contains language adherence instruction', () => {
+    const prompt = buildAdaptivePrompt(makeCtx('Hello'), 'Hello', 'en');
+    expect(prompt).toContain('Language adherence');
+    expect(prompt).toContain('EXACT same language');
+  });
+
+  it('Arabic prompt contains language adherence instruction', () => {
+    const prompt = buildAdaptivePrompt(makeCtx('ازيك'), 'ازيك', 'ar');
+    expect(prompt).toContain('الالتزام باللغة');
+  });
+
+  it('detects explicit French request "respond in French"', () => {
+    const prompt = buildAdaptivePrompt(makeCtx('respond in French please'), 'respond in French please', 'en');
+    // Should use French personality
+    expect(prompt).toContain('Tu es Titan');
+  });
+
+  it('detects explicit French request "رد بالفرنسية"', () => {
+    const prompt = buildAdaptivePrompt(makeCtx('رد بالفرنسية'), 'رد بالفرنسية', 'ar');
+    expect(prompt).toContain('Tu es Titan');
+  });
+
+  it('detects explicit Arabic request "respond in Arabic"', () => {
+    const prompt = buildAdaptivePrompt(makeCtx('respond in Arabic'), 'respond in Arabic', 'en');
+    // Should use Arabic personality (contains Arabic identity text)
+    expect(prompt).toContain('تايتن');
+  });
+
+  it('detects explicit English request from Arabic message "بالإنجليزي"', () => {
+    const prompt = buildAdaptivePrompt(makeCtx('عايز الرد بالإنجليزي'), 'عايز الرد بالإنجليزي', 'ar');
+    // Should use English personality despite Arabic script
+    expect(prompt).toContain('You are Titan');
+  });
+
+  it('explicit language request overrides preference:language', () => {
+    const ctx = makeCtx('respond in French');
+    ctx.memoryItems = ['preference:language=english'];
+    const prompt = buildAdaptivePrompt(ctx, 'respond in French', 'en');
+    // Explicit request should win over stored preference
+    expect(prompt).toContain('Tu es Titan');
+  });
+
+  it('Arabic text with Python code → Arabic personality', () => {
+    const code = 'def hello():\n    print("hello")\n';
+    const prompt = buildAdaptivePrompt(makeCtx(`عندي مشكلة في الكود ده:\n${code}`), `عندي مشكلة في الكود ده:\n${code}`, 'ar');
+    expect(prompt).toContain('تايتن');
+  });
+
+  it('English text with Python code → English personality', () => {
+    const code = 'def hello():\n    print("hello")\n';
+    const prompt = buildAdaptivePrompt(makeCtx(`I have a bug in this code:\n${code}`), `I have a bug in this code:\n${code}`, 'en');
+    expect(prompt).toContain('You are Titan');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Fix 1 — Context window compression works
 // ---------------------------------------------------------------------------
 describe('Fix 1 — Context window compression', () => {

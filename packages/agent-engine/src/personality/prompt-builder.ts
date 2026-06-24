@@ -266,7 +266,15 @@ function getContextToneSection(lang: DetectedLanguage): string {
 - لو السؤال عادي (دردشة, سؤال عام) → كن طبيعي ومختصر.
 - لو الـ user مستعجل (رسايل قصيرة, أوامر مباشرة) → رد بنفس السرعة بدون مقدمات.
 - لو الـ user بيتعلم (أسئلة "ليه؟" و "إزاي؟") → اشرح بصبر مع أمثلة.
-- لو الـ user متضايق أو محبط → سانده الأول، حل بعدين.`;
+- لو الـ user متضايق أو محبط → سانده الأول، حل بعدين.
+
+🌐 الالتزام باللغة (مهم جداً)
+- رد بنفس لغة رسالة المستخدم بالظبط.
+- لو المستخدم بعت كود Python + نص عربي → رد بالعربي.
+- لو المستخدم بعت كود JavaScript + نص إنجليزي → رد بالإنجليزي.
+- لو المستخدم طلب لغة بالاسم ("respond in French", "رد بالفرنسية", "بالفرنسية") → استخدم اللغة دي بالظبط.
+- متغيرش لغة الرد中途 — لو بدأت بالعربي، كمّل بالعربي.
+- لو فيه preference:language → احترمها، بس لو المستخدم بيتكلم بلغة تانية في الرسالة دي → اتبع الرسالة الحالية.`;
   }
   return `
 🎭 Context adaptation
@@ -274,7 +282,15 @@ function getContextToneSection(lang: DetectedLanguage): string {
 - Casual chat → be natural and brief.
 - User is in a hurry (short messages, direct commands) → match their speed, skip intros.
 - User is learning ("why?" "how?") → explain patiently with examples.
-- User is frustrated → empathize first, solve second.`;
+- User is frustrated → empathize first, solve second.
+
+🌐 Language adherence (critical)
+- ALWAYS respond in the EXACT same language as the user's message.
+- If the user sends Python code + Arabic text → respond in Arabic.
+- If the user sends JavaScript code + English text → respond in English.
+- If the user explicitly requests a language by name ("respond in French", "رد بالفرنسية", "en español") → use that language exactly.
+- Do NOT switch language mid-conversation — if you started in Arabic, continue in Arabic.
+- If preference:language is set → respect it, BUT if the user's current message is in a different language → follow the current message.`;
 }
 
 // ── Tone memory ──
@@ -294,22 +310,72 @@ function getToneMemorySection(lang: DetectedLanguage): string {
 
 // ── Main builder ──
 
+/**
+ * Detect explicit language requests in the user message.
+ * Examples: "respond in French", "رد بالفرنسية", "answer in Arabic", "بالإنجليزي"
+ * Returns the requested language or null if no explicit request found.
+ */
+function detectExplicitLanguageRequest(text: string): DetectedLanguage | null {
+  const lower = text.toLowerCase();
+
+  // French requests
+  if (lower.match(/\b(respond|reply|answer|write|talk)\s+in\s+french\b/) ||
+      lower.match(/\b(in\s+french|en\s+fran[çc]ais)\b/) ||
+      lower.match(/(رد|جاوب|اكتب|تكلم)\s*(بـ?|بالـ?)?(الفرنسية|الفرنسي|فرنساوي)/) ||
+      lower.match(/(بالفرنسية|بالفرنسي)/)) {
+    return 'french';
+  }
+
+  // Arabic requests
+  if (lower.match(/\b(respond|reply|answer|write|talk)\s+in\s+arabic\b/) ||
+      lower.match(/\b(in\s+arabic)\b/) ||
+      lower.match(/(رد|جاوب|اكتب|تكلم)\s*(بـ?|بالـ?)?(العربي|العربية|اللغة العربية)/) ||
+      lower.match(/(بالعربي|بالعربية)/)) {
+    return 'arabic-egyptian';
+  }
+
+  // English requests
+  if (lower.match(/\b(respond|reply|answer|write|talk)\s+in\s+english\b/) ||
+      lower.match(/\b(in\s+english)\b/) ||
+      lower.match(/(رد|جاوب|اكتب|تكلم)\s*(بـ?|بالـ?)?(الإنجليزي|الانجليزي|english|اللغة الإنجليزية)/) ||
+      lower.match(/(بالإنجليزي|بالانجليزي)/)) {
+    return 'english';
+  }
+
+  return null;
+}
+
 export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string, locale?: string): string {
-  // Use passed locale if available, otherwise detect from user message
+  // 1. Check for explicit language requests in the user message (highest priority)
   let detectedLang: DetectedLanguage;
-  if (locale === 'ar') {
+  if (userMessage) {
+    const explicitLang = detectExplicitLanguageRequest(userMessage);
+    if (explicitLang) {
+      detectedLang = explicitLang;
+    } else if (locale === 'ar') {
+      detectedLang = 'arabic-egyptian';
+    } else if (locale === 'en') {
+      detectedLang = 'english';
+    } else {
+      detectedLang = detectLanguage(userMessage).language;
+    }
+  } else if (locale === 'ar') {
     detectedLang = 'arabic-egyptian';
   } else if (locale === 'en') {
     detectedLang = 'english';
   } else {
-    detectedLang = userMessage ? detectLanguage(userMessage).language : 'english';
+    detectedLang = 'english';
   }
 
   // Check if preferences override the detected language
+  // BUT: explicit language request in the current message always wins over stored preferences
+  const explicitLang = userMessage ? detectExplicitLanguageRequest(userMessage) : null;
   const prefLang = ctx.memoryItems?.find((m) => m.startsWith('preference:language='));
-  const effectiveLang: DetectedLanguage = prefLang
-    ? (prefLang.split('=')[1] as DetectedLanguage) ?? detectedLang
-    : detectedLang;
+  const effectiveLang: DetectedLanguage = explicitLang
+    ? explicitLang
+    : prefLang
+      ? (prefLang.split('=')[1] as DetectedLanguage) ?? detectedLang
+      : detectedLang;
 
   const personality = PERSONALITY[effectiveLang] ?? PERSONALITY['english'];
 
