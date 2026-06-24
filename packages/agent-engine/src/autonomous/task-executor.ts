@@ -81,7 +81,7 @@ export class TaskExecutor {
     }
 
     // Step 4: Verify
-    const typeCheck = runTypeCheck(this.deps.cwd);
+    const typeCheck = await runTypeCheck(this.deps.cwd);
     verifications.push(typeCheck);
 
     // Step 5: Auto-fix if enabled and there are errors
@@ -92,7 +92,7 @@ export class TaskExecutor {
 
       if (fixResult.success) {
         // Re-verify
-        const reCheck = runTypeCheck(this.deps.cwd);
+        const reCheck = await runTypeCheck(this.deps.cwd);
         verifications.push(reCheck);
 
         if (!reCheck.passed) {
@@ -107,7 +107,7 @@ export class TaskExecutor {
     }
 
     // Step 6: Run tests
-    const testResult = runTests(this.deps.cwd);
+    const testResult = await runTests(this.deps.cwd);
     verifications.push(testResult);
 
     // Step 7: Commit if all passed

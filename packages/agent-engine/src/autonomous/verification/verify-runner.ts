@@ -1,7 +1,9 @@
-import { execSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'verify-runner' });
+const execFileAsync = promisify(execFile);
 
 export interface VerificationResult {
   type: 'typecheck' | 'test' | 'lint' | 'build';
@@ -11,68 +13,85 @@ export interface VerificationResult {
   durationMs: number;
 }
 
-export function runTypeCheck(cwd: string, tsconfigPath?: string): VerificationResult {
+export async function runTypeCheck(cwd: string, tsconfigPath?: string): Promise<VerificationResult> {
   const start = performance.now();
-  const cmd = tsconfigPath ? `npx tsc -p ${tsconfigPath} --noEmit` : 'npx tsc --noEmit';
+  const args = ['tsc', '--noEmit'];
+  if (tsconfigPath) {
+    args.push('-p', tsconfigPath);
+  }
 
   try {
-    execSync(cmd, { cwd, encoding: 'utf-8', stdio: 'pipe' });
+    await execFileAsync('npx', args, { cwd, encoding: 'utf-8', timeout: 120000 });
     return { type: 'typecheck', passed: true, errors: [], warnings: [], durationMs: elapsed(start) };
   } catch (err) {
-    const output = (err as { stdout?: string; stderr?: string }).stdout ?? (err as { stderr?: string }).stderr ?? '';
+    const e = err as { stdout?: string; stderr?: string };
+    const output = e.stdout ?? e.stderr ?? '';
     const errors = parseTypeErrors(output);
     return { type: 'typecheck', passed: false, errors, warnings: [], durationMs: elapsed(start) };
   }
 }
 
-export function runTests(cwd: string, testCmd?: string): VerificationResult {
+export async function runTests(cwd: string, testCmd?: string): Promise<VerificationResult> {
   const start = performance.now();
-  const cmd = testCmd ?? 'npx vitest run --reporter=verbose';
 
   try {
-    const output = execSync(cmd, { cwd, encoding: 'utf-8', stdio: 'pipe', timeout: 120000 });
-    const warnings = output.includes('warn') ? ['Some warnings in test output'] : [];
+    const { stdout } = await execFileAsync('npx', testCmd ? testCmd.split(' ') : ['vitest', 'run', '--reporter=verbose'], {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 120000,
+    });
+    const warnings = stdout.includes('warn') ? ['Some warnings in test output'] : [];
     return { type: 'test', passed: true, errors: [], warnings, durationMs: elapsed(start) };
   } catch (err) {
-    const output = (err as { stdout?: string }).stdout ?? '';
+    const e = err as { stdout?: string };
+    const output = e.stdout ?? '';
     const errors = parseTestErrors(output);
     return { type: 'test', passed: false, errors, warnings: [], durationMs: elapsed(start) };
   }
 }
 
-export function runLint(cwd: string): VerificationResult {
+export async function runLint(cwd: string): Promise<VerificationResult> {
   const start = performance.now();
 
   try {
-    execSync('npx eslint . --max-warnings 0', { cwd, encoding: 'utf-8', stdio: 'pipe', timeout: 60000 });
+    await execFileAsync('npx', ['eslint', '.', '--max-warnings', '0'], {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 60000,
+    });
     return { type: 'lint', passed: true, errors: [], warnings: [], durationMs: elapsed(start) };
   } catch (err) {
-    const output = (err as { stdout?: string }).stdout ?? '';
+    const e = err as { stdout?: string };
+    const output = e.stdout ?? '';
     const errors = output.split('\n').filter((l) => l.includes('error')).slice(0, 20);
     const warnings = output.split('\n').filter((l) => l.includes('warning')).slice(0, 10);
     return { type: 'lint', passed: false, errors, warnings, durationMs: elapsed(start) };
   }
 }
 
-export function runBuild(cwd: string, buildCmd?: string): VerificationResult {
+export async function runBuild(cwd: string, buildCmd?: string): Promise<VerificationResult> {
   const start = performance.now();
-  const cmd = buildCmd ?? 'npm run build';
 
   try {
-    execSync(cmd, { cwd, encoding: 'utf-8', stdio: 'pipe', timeout: 120000 });
+    await execFileAsync('npm', ['run', 'build'], {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 120000,
+    });
     return { type: 'build', passed: true, errors: [], warnings: [], durationMs: elapsed(start) };
   } catch (err) {
-    const output = (err as { stdout?: string; stderr?: string }).stdout ?? (err as { stderr?: string }).stderr ?? '';
+    const e = err as { stdout?: string; stderr?: string };
+    const output = e.stdout ?? e.stderr ?? '';
     return { type: 'build', passed: false, errors: [output.slice(0, 2000)], warnings: [], durationMs: elapsed(start) };
   }
 }
 
-export function runFullVerification(cwd: string): VerificationResult[] {
+export async function runFullVerification(cwd: string): Promise<VerificationResult[]> {
   const results: VerificationResult[] = [];
 
-  results.push(runTypeCheck(cwd));
+  results.push(await runTypeCheck(cwd));
   if (results[results.length - 1].passed) {
-    results.push(runTests(cwd));
+    results.push(await runTests(cwd));
   }
 
   log.info({

@@ -11,6 +11,7 @@ import { detectLanguage } from '../lang-detect.js';
 import { recordUserInteraction, getLearnedPreferences, getPersonaInstructionsForUser } from '../preference-singleton.js';
 import { readFile } from 'node:fs/promises';
 import { join, resolve, relative } from 'node:path';
+import { userContextStorage } from '../user-context-storage.js';
 
 const log = getLogger().child({ component: 'chat' });
 
@@ -66,7 +67,7 @@ function createWorkspaceToolExecutor(
       }
     }
     if (name.startsWith('desktop_') && userId) {
-      (globalThis as Record<string, unknown>).__currentUserId = userId;
+      return userContextStorage.run({ userId }, () => registry.execute(name, params));
     }
     return registry.execute(name, params);
   };

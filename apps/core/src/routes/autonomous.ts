@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { runTypeCheck, runTests, runLint, type VerificationResult } from '@titan/agent-engine';
+import { validateCwd } from '@titan/tools';
 import { requireAuth } from '../plugins/auth.js';
 
 interface AutonomousTask {
@@ -23,14 +24,21 @@ export const autonomousRoutes: FastifyPluginAsync = async (app: FastifyInstance)
 
     if (!cwd) return reply.status(400).send({ error: 'cwd is required' });
 
+    let safeCwd: string;
+    try {
+      safeCwd = validateCwd(cwd);
+    } catch {
+      return reply.status(400).send({ error: 'cwd is outside allowed prefixes' });
+    }
+
     const requestedChecks = checks || ['typecheck', 'lint'];
     const results: VerificationResult[] = [];
 
     for (const check of requestedChecks) {
       try {
-        if (check === 'typecheck') results.push(runTypeCheck(cwd));
-        else if (check === 'lint') results.push(runLint(cwd));
-        else if (check === 'test') results.push(runTests(cwd));
+        if (check === 'typecheck') results.push(await runTypeCheck(safeCwd));
+        else if (check === 'lint') results.push(await runLint(safeCwd));
+        else if (check === 'test') results.push(await runTests(safeCwd));
       } catch (err) {
         results.push({
           type: check as VerificationResult['type'],
@@ -62,12 +70,19 @@ export const autonomousRoutes: FastifyPluginAsync = async (app: FastifyInstance)
       return reply.status(400).send({ error: 'description and cwd are required' });
     }
 
+    let safeCwd: string;
+    try {
+      safeCwd = validateCwd(cwd);
+    } catch {
+      return reply.status(400).send({ error: 'cwd is outside allowed prefixes' });
+    }
+
     const id = `task-${Date.now()}`;
     const task: AutonomousTask = {
       id,
       description,
       status: 'running',
-      cwd,
+      cwd: safeCwd,
       autoFix: autoFix ?? false,
       results: [],
       startedAt: new Date().toISOString(),
@@ -79,8 +94,8 @@ export const autonomousRoutes: FastifyPluginAsync = async (app: FastifyInstance)
       const checks = ['typecheck', 'lint'];
       for (const check of checks) {
         let result: VerificationResult;
-        if (check === 'typecheck') result = runTypeCheck(cwd);
-        else result = runLint(cwd);
+        if (check === 'typecheck') result = await runTypeCheck(safeCwd);
+        else result = await runLint(safeCwd);
         task.results.push({
           type: result.type,
           passed: result.passed,

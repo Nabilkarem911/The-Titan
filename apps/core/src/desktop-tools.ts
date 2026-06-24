@@ -2,6 +2,7 @@ import type { ToolRegistry } from '@titan/agent-engine';
 import { getDesktopBridge } from './desktop-bridge-instance.js';
 import { validateCommand } from '@titan/tools';
 import { getLogger } from '@titan/logging';
+import { getCurrentUserId } from './user-context-storage.js';
 
 const log = getLogger().child({ component: 'desktop-tools' });
 
@@ -42,7 +43,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
       const p = params as { command: string; deviceId?: string; cwd?: string; timeoutMs?: number };
       validateDesktopCommand(p.command);
 
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -72,7 +73,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'filesystem'],
     handler: async (params: unknown) => {
       const p = params as { path: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -102,7 +103,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'filesystem'],
     handler: async (params: unknown) => {
       const p = params as { path: string; content: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -131,7 +132,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'filesystem'],
     handler: async (params: unknown) => {
       const p = params as { path: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -160,7 +161,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'filesystem', 'dangerous'],
     handler: async (params: unknown) => {
       const p = params as { path: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -187,7 +188,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'screenshot'],
     handler: async (params: unknown) => {
       const p = params as { deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -276,7 +277,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'apps'],
     handler: async (params: unknown) => {
       const p = params as { app: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -303,7 +304,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'system'],
     handler: async (params: unknown) => {
       const p = params as { deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -327,7 +328,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     schema: {},
     tags: ['desktop', 'devices'],
     handler: async () => {
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -361,7 +362,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'keyboard'],
     handler: async (params: unknown) => {
       const p = params as { text: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -390,7 +391,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'apps'],
     handler: async (params: unknown) => {
       const p = params as { app: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -420,7 +421,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'clipboard'],
     handler: async (params: unknown) => {
       const p = params as { action: string; text?: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
 
       const bridge = getDesktopBridge();
@@ -452,7 +453,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'mouse'],
     handler: async (params: unknown) => {
       const p = params as { x: number; y: number; button?: string; doubleClick?: boolean; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
       const bridge = getDesktopBridge();
       if (!bridge) return { success: false, error: 'Desktop bridge not available' };
@@ -478,7 +479,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'mouse'],
     handler: async (params: unknown) => {
       const p = params as { x: number; y: number; smooth?: boolean; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
       const bridge = getDesktopBridge();
       if (!bridge) return { success: false, error: 'Desktop bridge not available' };
@@ -503,7 +504,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'mouse'],
     handler: async (params: unknown) => {
       const p = params as { direction: string; amount?: number; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
       const bridge = getDesktopBridge();
       if (!bridge) return { success: false, error: 'Desktop bridge not available' };
@@ -530,7 +531,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'mouse'],
     handler: async (params: unknown) => {
       const p = params as { fromX: number; fromY: number; toX: number; toY: number; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
       const bridge = getDesktopBridge();
       if (!bridge) return { success: false, error: 'Desktop bridge not available' };
@@ -552,7 +553,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'windows'],
     handler: async (params: unknown) => {
       const p = params as { deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
       const bridge = getDesktopBridge();
       if (!bridge) return { success: false, error: 'Desktop bridge not available' };
@@ -576,7 +577,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'windows'],
     handler: async (params: unknown) => {
       const p = params as { title?: string; process?: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
       const bridge = getDesktopBridge();
       if (!bridge) return { success: false, error: 'Desktop bridge not available' };
@@ -601,7 +602,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'windows'],
     handler: async (params: unknown) => {
       const p = params as { action: string; title: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
       const bridge = getDesktopBridge();
       if (!bridge) return { success: false, error: 'Desktop bridge not available' };
@@ -625,7 +626,7 @@ export function registerDesktopTools(registry: ToolRegistry): void {
     tags: ['desktop', 'vision', 'mouse'],
     handler: async (params: unknown) => {
       const p = params as { description: string; deviceId?: string };
-      const userId = (globalThis as Record<string, unknown>).__currentUserId as string;
+      const userId = getCurrentUserId();
       if (!userId) return { success: false, error: 'No user context' };
       const bridge = getDesktopBridge();
       if (!bridge) return { success: false, error: 'Desktop bridge not available' };
