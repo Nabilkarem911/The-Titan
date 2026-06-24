@@ -89,7 +89,7 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 
 ### Agent & Chat
 
-- ✅ **Multi-step agent runner** — planning, strategy selection, self-critique, tool execution
+- ✅ **Multi-step agent runner** — planning, strategy selection, self-critique, tool execution, code writing & execution for dataset tasks
 - ✅ **Streaming chat** — SSE streaming with multi-turn context
 - ✅ **80+ registered tools** — bash, file operations, code analysis, web search, creative generation, translation, and more
 - ✅ **Tool registry** — LRU cache (max 500 entries), periodic cleanup, rate limiting per tool
@@ -97,6 +97,8 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 - ✅ **Code intelligence** — codebase indexing, smart context building, symbol extraction
 - ✅ **Autonomous task executor** — plan → execute → verify → auto-fix → commit loop
 - ✅ **Verification runner** — async typecheck, lint, test, build (non-blocking)
+- ✅ **Code review classification** — detects code review requests with code, reviews inline without external tools, detects anti-patterns (range(len), missing error handling, missing type hints, N+1 queries, missing docstrings)
+- ✅ **Ambiguous request handling** — asks for clarification on vague requests instead of guessing or pulling irrelevant memory
 
 ### Security
 
@@ -113,11 +115,13 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 ### Memory & Persistence
 
 - ✅ **pgvector embeddings** — 384-dim local BGE-small model
-- ✅ **Chat history** — session-based storage with window function queries
+- ✅ **Chat history** — session-based storage with window function queries, conversation history passed to agent runner
 - ✅ **Agent runs** — full run persistence with steps and results
 - ✅ **Experience collector** — records agent experiences for learning
 - ✅ **Preference learning** — tracks user interactions for personalization
 - ✅ **34 database migrations** — foundational tables through full persistence
+- ✅ **Episodic memory recall** — injects conversation history when user asks about past events, system prompt affirms memory capabilities
+- ✅ **Execution state memory** — auto-checkpoint every 5 steps, resume support on failure
 
 ### Integrations
 
@@ -133,18 +137,22 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 
 ### Reasoning & Metacognition
 
-- ✅ **Dream mode** — experience consolidation and insight extraction
+- ✅ **Dream mode** — experience consolidation and insight extraction, insights injected into chat (both dashboard + Telegram)
 - ✅ **Causal replay** — failure analysis with causal attribution
 - ✅ **Self-healing debugger** — automatic bug diagnosis and fix proposals
 - ✅ **Evolutionary solver** — population-based problem solving
 - ✅ **Neuro-symbolic reasoning** — hybrid neural + symbolic logic
-- ✅ **Hypothesis testing** — generate and evaluate testable hypotheses
-- ✅ **Safety guardrails** — action safety checking
+- ✅ **Hypothesis testing** — generate and evaluate testable hypotheses, tool filtering for user-code vs Titan-code
+- ✅ **Safety guardrails** — action safety checking, multi-layer input validation (prompt injection, PII, harmful content)
 - ✅ **Anti-sycophancy** — detects excessively agreeable responses
-- ✅ **Theory of mind** — models user mental state from messages
+- ✅ **Theory of mind** — models user mental state from messages, explains concepts for conceptual questions
 - ✅ **Test-time recursive thinking** — multi-strategy iterative problem solving
 - ✅ **Smart model router** — routes input to best model by complexity/cost
 - ✅ **Prompt optimizer** — LLM-based prompt improvement
+- ✅ **Introspection** — self-examination, connected to chat via context injection + self-model
+- ✅ **Inner monologue** — internal dialogue (goals, reasoning, emotional threads), streamed to client via SSE
+- ✅ **Emotional intelligence** — text emotion analysis, wired to chat personality with response strategy guidance
+- ✅ **Heuristic extractor** — rule extraction from experiences, injected into agent context pre-run
 
 ### Creative & World Model
 
@@ -166,6 +174,9 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 - ✅ **Queue system** — BullMQ-based job processing
 - ✅ **WebSocket** — real-time step updates and broadcasting
 - ✅ **Observability** — OpenTelemetry traces, metrics, structured logging
+- ✅ **Dockerfile resilience** — npm retry logic (3 attempts) for transient network errors during builds
+- ✅ **Background scheduler** — 12 automated tasks (dream consolidation, heuristic extraction, experience cleanup, etc.)
+- ✅ **Language adherence** — detects user language (Arabic/English) and responds consistently in same language
 
 ---
 
@@ -173,7 +184,6 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 
 - 🚧 **MCP Governance** — code exists in `v5.ts` but not connected to chat flow
 - 🚧 **DAG Workflow Engine** — registered as tool, not wired to chat agent
-- 🚧 **Multi-layer guardrails** — module exists, not integrated into chat pipeline
 - 🚧 **Bi-temporal knowledge graph** — endpoints exist, not used by agent
 - 🚧 **Hive mind** — collective intelligence module, not connected to chat
 - 🚧 **Agent economy** — internal marketplace, not connected to chat
@@ -187,29 +197,18 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 - 🚧 **Infinite self-play** — autonomous skill development, standalone
 - 🚧 **Self-evolving code** — module analysis, not auto-applying changes
 - 🚧 **Apex evolution** — harness patching, requires manual invocation
-- 🚧 **Proactive intelligence** — suggestion engine, not wired to chat
 - 🚧 **Cross-user learning** — anonymized patterns, not connected to chat
 - 🚧 **Strategy tuner** — performance tracking, no auto-tuning yet
 - 🚧 **Edge privacy** — on-device processing framework, not active
-- 🚧 **Screen monitor** — multimodal screen analysis, not connected to chat
-- 🚧 **Advanced multimodal** — PDF tables, code from screenshots, chart understanding
 - 🚧 **Constitution** — principles and amendments, not enforced in agent flow
-- 🚧 **Execution state memory** — checkpoint/resume, not auto-triggered
 - 🚧 **Self-rewriter** — code patch proposals, sandbox testing, not auto-deployed
 - 🚧 **Meta-learning optimizer** — learning process optimization, standalone
-- 🚧 **Heuristic extractor** — rule extraction from experiences, not wired to agent
 - 🚧 **Benchmarking suite** — standardized task evaluation, standalone
 - 🚧 **Hyper-agent** — introspection → improvement → evaluation loop, standalone
-- 🚧 **Skill synthesis** — autonomous skill creation, not connected to chat
-- 🚧 **Dynamic tool discovery** — missing capability detection, not auto-creating tools
-- 🚧 **Emotional intelligence** — text emotion analysis, not wired to chat personality
 - 🚧 **Curiosity engine** — topic exploration, standalone
 - 🚧 **Metacognitive consolidation** — knowledge synthesis, not scheduled
-- 🚧 **Safety memory** — past incident tracking, not enforced in agent flow
-- 🚧 **Introspection** — self-examination, not connected to chat
-- 🚧 **Inner monologue** — internal dialogue, not surfaced in chat
 - 🚧 **Cognitive controller** — attention management, not wired to agent runner
-- 🚧 **Episodic buffer** — short-term memory, not connected to chat
+- 🚧 **Episodic buffer** — bounded workspace module, not directly wired to chat (conversation history covers short-term recall)
 - 🚧 **Collaboration** — session manager, not integrated with chat
 
 ---
