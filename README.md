@@ -1932,6 +1932,31 @@ Result: Passed SOC2 audit with zero AI-related findings.
 
 ---
 
+## Audit Status (2025-01-15)
+
+A comprehensive codebase audit was performed covering all packages, routes, migrations, tests, and security surfaces. The full report is in [`AUDIT_REPORT.md`](AUDIT_REPORT.md).
+
+### Verified
+
+- **50+ route files** registered in Fastify server — all endpoints exist and are wired
+- **33 database migrations** (0000–0032) — comprehensive schema coverage
+- **71 test files** with real Vitest assertions (not stubs)
+- **60+ capability modules** instantiated in `capability-wiring.ts`
+- **46 dashboard pages** in React frontend
+- Auth enforcement (`requireAuth`) on all protected routes
+- IDOR protection tests for agent run access
+- RFC 7807 error handling compliance
+- Cross-module integration tests (AgentEconomy, HiveMind, DreamMode, etc.)
+
+### Known Issues
+
+- **4 critical security findings**: command injection in `verify-runner.ts`, missing `cwd` validation in autonomous routes, race condition via `globalThis.__currentUserId`, bypassable forbidden command patterns
+- **10 stub tools** in `capability-wiring.ts` that don't execute their declared function (e.g., `digital_twin_simulate`, `theory_of_mind`, `trt_solve`)
+- **Performance**: `execSync` blocks event loop in verification runner; tool registry cache has no proactive cleanup; 60+ modules initialized eagerly
+- **Test gaps**: some security tests accept 200/500 as valid for unauthenticated requests; no tests for command injection or race conditions
+
+---
+
 <div align="center">
 
 **Built with obsession by [Nabil Karem](https://github.com/Nabilkarem911)**
