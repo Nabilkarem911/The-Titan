@@ -310,7 +310,18 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
               } catch {}
             }
 
-            const tgEnhancedPrompt = systemPromptExtra + tgEmotionContext + tgHeuristicContext + tgDreamContext + tgTomContext;
+            // Conversation memory for Telegram path
+            let tgConvMemoryContext = '';
+            const tgMemoryTriggers = ['do you remember', 'remember when', 'remember yesterday', 'last time we talked', 'فاكر امبارح', 'فاكر آخر مرة', 'بتفتكر', 'آخر مرة كلمنا', 'كلمنا قبل كده', 'قابلنا قبل كده'];
+            if (tgMemoryTriggers.some(t => enrichedPrompt.toLowerCase().includes(t))) {
+              const tgHistory = history.slice(-20);
+              if (tgHistory.length > 0) {
+                const tgHistoryText = tgHistory.map(m => `${m.role === 'user' ? 'User' : 'Titan'}: ${m.content.slice(0, 200)}`).join('\n');
+                tgConvMemoryContext = `\n\nConversation memory (REAL past messages):\n${tgHistoryText}\n\nIMPORTANT: Use this ACTUAL history to answer. Do NOT say you can't remember.`;
+              }
+            }
+
+            const tgEnhancedPrompt = systemPromptExtra + tgEmotionContext + tgHeuristicContext + tgDreamContext + tgTomContext + tgConvMemoryContext;
 
             // Create DB run record
             const dbRun = await agentRuns.create({
@@ -360,6 +371,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
                 maxSteps: input.maxSteps,
                 systemPromptExtra: tgEnhancedPrompt,
                 locale: lang,
+                conversationHistory: history.slice(-20).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
               });
 
               const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
@@ -547,6 +559,17 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         }
       }
 
+      // 3c. Conversation memory — if user asks about past conversations, inject recent history explicitly
+      let conversationMemoryContext = '';
+      const memoryTriggers = ['do you remember', 'remember when', 'remember yesterday', 'last time we talked', 'فاكر امبارح', 'فاكر آخر مرة', 'بتفتكر', 'آخر مرة كلمنا', 'كلمنا قبل كده', 'قابلنا قبل كده', 'ذكرتلك قبل كده'];
+      if (memoryTriggers.some(t => enrichedPrompt.toLowerCase().includes(t))) {
+        const recentHistory = history.slice(-20);
+        if (recentHistory.length > 0) {
+          const historyText = recentHistory.map(m => `${m.role === 'user' ? 'User' : 'Titan'}: ${m.content.slice(0, 200)}`).join('\n');
+          conversationMemoryContext = `\n\nConversation memory (REAL past messages — use these to answer):\n${historyText}\n\nIMPORTANT: The above is your ACTUAL conversation history. Use it to answer the user's question about past conversations. Do NOT say you can't remember.`;
+        }
+      }
+
       // 4. Inner Monologue — run cognitive threads and stream to client
       if (wiring?.innerMonologue && input.stream) {
         try {
@@ -646,7 +669,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         }
       }
 
-      const enhancedSystemPrompt = systemPromptExtra + emotionContext + heuristicContext + tomContext + introspectionContext + safetyWarning + multimodalContext;
+      const enhancedSystemPrompt = systemPromptExtra + emotionContext + heuristicContext + tomContext + conversationMemoryContext + introspectionContext + safetyWarning + multimodalContext;
 
       // Create DB run record
       const dbRun = await agentRuns.create({
@@ -695,6 +718,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           maxSteps: input.maxSteps,
           systemPromptExtra: enhancedSystemPrompt,
           locale: lang,
+          conversationHistory: history.slice(-20).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         });
 
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';

@@ -212,6 +212,28 @@ describe('Fix 6 — Language adherence', () => {
     expect(prompt).toContain('Theory of Mind analysis');
     expect(prompt).toContain('Explain conceptually');
   });
+
+  it('Arabic prompt contains memory capability section', () => {
+    const prompt = buildAdaptivePrompt(makeCtx('فاكر امبارح؟'), 'فاكر امبارح؟', 'ar');
+    expect(prompt).toContain('الذاكرة');
+    expect(prompt).toContain('episodic memory');
+    expect(prompt).toContain('متقولش أبداً');
+  });
+
+  it('English prompt contains memory capability section', () => {
+    const prompt = buildAdaptivePrompt(makeCtx('do you remember yesterday?'), 'do you remember yesterday?', 'en');
+    expect(prompt).toContain('Memory');
+    expect(prompt).toContain('episodic memory');
+    expect(prompt).toContain('NEVER say "I don\'t have memory"');
+  });
+
+  it('Conversation memory from systemPrompt is preserved in adaptive prompt', () => {
+    const ctx = makeCtx('فاكر امبارح؟');
+    ctx.systemPrompt = 'You are Titan\n\nConversation memory (REAL past messages):\nUser: hello\nTitan: hi there';
+    const prompt = buildAdaptivePrompt(ctx, 'فاكر امبارح؟', 'ar');
+    expect(prompt).toContain('Conversation memory');
+    expect(prompt).toContain('User: hello');
+  });
 });
 
 // ---------------------------------------------------------------------------

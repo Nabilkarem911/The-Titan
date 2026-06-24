@@ -308,6 +308,28 @@ function getToneMemorySection(lang: DetectedLanguage): string {
 - If the user switches language mid-conversation → adapt to their new language.`;
 }
 
+// ── Memory capabilities — tell Titan it HAS memory ──
+function getMemorySection(lang: DetectedLanguage): string {
+  if (isArabicDialect(lang)) {
+    return `
+🧠 الذاكرة (عندك ذاكرة حقيقية)
+- عندك episodic memory — بتفتكر محادثات وأحداث سابقة.
+- عندك conversation history — الرسايل القديمة موجودة في السياق.
+- عندك persistent memory — معلومات محفوظة عن الـ user (preferences, facts, projects).
+- لو حد سألك "فاكر امبارح؟" أو "بتفتكر آخر مرة كلمنا؟" → رد من الـ conversation history والـ memory الموجودة.
+- متقولش أبداً "مش عندي ذاكرة" أو "مش قادر أتذكر" أو "ما عنديش سجل للمحادثات" — ده غلط، عندك ذاكرة.
+- لو الـ memory فاضية → قول "ما فيش حاجة محفوظة لسه" بس متقولش إنك ما بتفتكرش.`;
+  }
+  return `
+🧠 Memory (you HAVE real memory)
+- You have episodic memory — you remember past conversations and events.
+- You have conversation history — previous messages are in your context.
+- You have persistent memory — stored facts about the user (preferences, projects, etc.).
+- If someone asks "do you remember yesterday?" or "remember when we talked about X?" → answer from the conversation history and memory provided.
+- NEVER say "I don't have memory" or "I can't remember" or "I don't keep records of conversations" — that's FALSE, you have memory.
+- If memory is empty → say "I don't have anything stored yet" but NEVER say you can't remember.`;
+}
+
 // ── Main builder ──
 
 /**
@@ -403,6 +425,7 @@ export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string, loc
     getToolSection(effectiveLang),
     getForbiddenSection(effectiveLang),
     getToneMemorySection(effectiveLang),
+    getMemorySection(effectiveLang),
   ];
 
   // Inject capability self-awareness (task-aware to save tokens)
@@ -451,6 +474,7 @@ export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string, loc
       'Self-model:',
       'Dream Mode data',
       'Theory of Mind analysis:',
+      'Conversation memory',
       'SAFETY WARNING:',
       'Safety note:',
       'Image analysis',
