@@ -84,15 +84,25 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
       try {
         const result = await query<{ session_id: string; last_message: string; last_role: string; created_at: string; msg_count: number }>(
-          `SELECT 
+          `WITH ranked AS (
+             SELECT
+               session_id,
+               content,
+               role,
+               created_at,
+               ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY created_at DESC) as rn,
+               COUNT(*) OVER (PARTITION BY session_id) as msg_count
+             FROM memory_messages
+             WHERE session_id LIKE $1
+           )
+           SELECT
              session_id,
-             MAX(created_at) as created_at,
-             COUNT(*) as msg_count,
-             (SELECT content FROM memory_messages WHERE session_id = m.session_id ORDER BY created_at DESC LIMIT 1) as last_message,
-             (SELECT role FROM memory_messages WHERE session_id = m.session_id ORDER BY created_at DESC LIMIT 1) as last_role
-           FROM memory_messages m
-           WHERE session_id LIKE $1
-           GROUP BY session_id
+             created_at,
+             msg_count,
+             content as last_message,
+             role as last_role
+           FROM ranked
+           WHERE rn = 1
            ORDER BY created_at DESC
            LIMIT 50`,
           [`session:${userId}:%`],

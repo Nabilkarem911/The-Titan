@@ -31,10 +31,20 @@ interface RateBucket {
   windowStart: number;
 }
 
+const MAX_CACHE_SIZE = 500;
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
 export class ToolRegistry {
   private tools = new Map<string, ToolDefinition>();
   private cache = new Map<string, CacheEntry>();
   private rateBuckets = new Map<string, RateBucket>();
+  private maxCacheSize: number;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor(maxCacheSize: number = MAX_CACHE_SIZE) {
+    this.maxCacheSize = maxCacheSize;
+    this.startCleanupInterval();
+  }
 
   register(def: ToolDefinition): void {
     if (this.tools.has(def.name)) {
@@ -83,13 +93,18 @@ export class ToolRegistry {
       return { success: false, error: msg };
     }
 
-    // Cache check
+    // Cache check (LRU: move to end on access)
     if (tool.cacheTtlMs && tool.cacheTtlMs > 0) {
       const key = this.getCacheKey(name, params);
       const cached = this.cache.get(key);
       if (cached && Date.now() < cached.expiresAt) {
+        this.cache.delete(key);
+        this.cache.set(key, cached);
         log.info({ tool: name }, 'tool result served from cache');
         return { ...cached.result, latencyMs: 0 };
+      }
+      if (cached) {
+        this.cache.delete(key);
       }
     }
 
@@ -100,9 +115,10 @@ export class ToolRegistry {
       log.info({ tool: name, latencyMs }, 'tool executed');
       const result: ToolResult = { success: true, data, latencyMs };
 
-      // Store in cache
+      // Store in cache (with LRU eviction)
       if (tool.cacheTtlMs && tool.cacheTtlMs > 0) {
         const key = this.getCacheKey(name, params);
+        this.evictIfNeeded();
         this.cache.set(key, { result, expiresAt: Date.now() + tool.cacheTtlMs });
       }
 
@@ -112,6 +128,41 @@ export class ToolRegistry {
       const error = err instanceof Error ? err.message : String(err);
       log.error({ tool: name, error, latencyMs }, 'tool execution failed');
       return { success: false, error, latencyMs };
+    }
+  }
+
+  private evictIfNeeded(): void {
+    while (this.cache.size >= this.maxCacheSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey === undefined) break;
+      this.cache.delete(oldestKey);
+    }
+  }
+
+  private cleanupExpired(): void {
+    const now = Date.now();
+    let removed = 0;
+    for (const [key, entry] of this.cache) {
+      if (now >= entry.expiresAt) {
+        this.cache.delete(key);
+        removed++;
+      }
+    }
+    if (removed > 0) {
+      log.debug({ removed, remaining: this.cache.size }, 'cache cleanup: removed expired entries');
+    }
+  }
+
+  startCleanupInterval(intervalMs: number = CLEANUP_INTERVAL_MS): void {
+    if (this.cleanupTimer) return;
+    this.cleanupTimer = setInterval(() => this.cleanupExpired(), intervalMs);
+    this.cleanupTimer.unref?.();
+  }
+
+  stopCleanupInterval(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
     }
   }
 
