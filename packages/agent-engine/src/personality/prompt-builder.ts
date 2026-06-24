@@ -282,8 +282,16 @@ function getToneMemorySection(lang: DetectedLanguage): string {
 
 // ── Main builder ──
 
-export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string): string {
-  const detectedLang = userMessage ? detectLanguage(userMessage).language : 'english';
+export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string, locale?: string): string {
+  // Use passed locale if available, otherwise detect from user message
+  let detectedLang: DetectedLanguage;
+  if (locale === 'ar') {
+    detectedLang = 'arabic-egyptian';
+  } else if (locale === 'en') {
+    detectedLang = 'english';
+  } else {
+    detectedLang = userMessage ? detectLanguage(userMessage).language : 'english';
+  }
 
   // Check if preferences override the detected language
   const prefLang = ctx.memoryItems?.find((m) => m.startsWith('preference:language='));
@@ -336,6 +344,28 @@ export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string): st
 
   if (rules.length > 0) {
     sections.push(`--- Rules ---\n${rules.join('\n')}`);
+  }
+
+  // Extract enhancement sections from ctx.systemPrompt (emotion, heuristics, introspection, safety, multimodal)
+  // These are appended by the chat pipeline but were being discarded because systemPrompt contains "Titan"
+  if (ctx.systemPrompt) {
+    const ENHANCEMENT_MARKERS = [
+      'Emotional context:',
+      'Relevant past heuristics:',
+      'Introspection data:',
+      'Self-model:',
+      'SAFETY WARNING:',
+      'Safety note:',
+      'Image analysis',
+      'PDF tables extracted',
+    ];
+    const parts = ctx.systemPrompt.split('\n\n');
+    const enhancementParts = parts.filter(part =>
+      ENHANCEMENT_MARKERS.some(marker => part.includes(marker))
+    );
+    if (enhancementParts.length > 0) {
+      sections.push(enhancementParts.join('\n\n'));
+    }
   }
 
   return sections.join('\n');

@@ -52,6 +52,7 @@ export interface AgentRun {
   forbiddenTools?: readonly string[];
   steps: AgentStep[];
   finalAnswer?: string;
+  locale?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,6 +69,7 @@ export interface AgentRunInput {
   forbiddenTools?: readonly string[];
   systemPromptExtra?: string;
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  locale?: string;
 }
 
 export interface LlmMessage {

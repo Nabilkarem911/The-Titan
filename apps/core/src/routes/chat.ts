@@ -331,6 +331,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
                 apiKeyId: req.auth.apiKeyId ?? undefined,
                 maxSteps: input.maxSteps,
                 systemPromptExtra: tgEnhancedPrompt,
+                locale: lang,
               });
 
               const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
@@ -638,6 +639,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           apiKeyId: req.auth.apiKeyId ?? undefined,
           maxSteps: input.maxSteps,
           systemPromptExtra: enhancedSystemPrompt,
+          locale: lang,
         });
 
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';

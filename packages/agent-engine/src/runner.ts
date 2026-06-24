@@ -63,7 +63,7 @@ function buildSystemPrompt(ctx: AgentContext, userMessage?: string): string {
     return sections.join('\n\n');
   }
 
-  return buildAdaptivePrompt(ctx, userMessage);
+  return buildAdaptivePrompt(ctx, userMessage, ctx.run.locale);
 }
 
 function buildMessages(ctx: AgentContext): LlmMessage[] {
@@ -300,6 +300,7 @@ export class AgentRunner {
       tokensUsed: 0,
       forbiddenTools: input.forbiddenTools,
       steps: [],
+      locale: input.locale,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -456,8 +457,7 @@ export class AgentRunner {
             const fromObservation = step.observation?.data
               ? (typeof step.observation.data === 'string' ? step.observation.data : JSON.stringify(step.observation.data)).slice(0, 2000)
               : null;
-            const locale = (run as unknown as Record<string, unknown>).locale as string | undefined;
-            const isArabic = locale === 'ar';
+            const isArabic = run.locale === 'ar';
             run.finalAnswer =
               (fromReflection && fromReflection.length > 5 ? fromReflection : null) ??
               (fromObservation && fromObservation.length > 5
