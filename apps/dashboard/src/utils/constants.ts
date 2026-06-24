@@ -114,6 +114,7 @@ export const NAV_GROUPS: { label: string; labelKey?: string; items: NavItem[] }[
       { label: 'Hive Mind', labelKey: 'navHiveMind', path: '/hive-mind', icon: Network },
       { label: 'Economy', labelKey: 'navEconomy', path: '/economy', icon: Coins },
       { label: 'Constitution', labelKey: 'navConstitution', path: '/constitution', icon: Scroll },
+      { label: 'Collaboration', labelKey: 'navCollaboration', path: '/collaboration', icon: Users },
     ],
   },
   {

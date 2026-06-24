@@ -55,6 +55,7 @@ const MetaLearning = lazy(() => import('./pages/MetaLearning'));
 const HiveMind = lazy(() => import('./pages/HiveMind'));
 const Economy = lazy(() => import('./pages/Economy'));
 const Constitution = lazy(() => import('./pages/Constitution'));
+const Collaboration = lazy(() => import('./pages/Collaboration'));
 
 // ── Protected Layout ──
 function ProtectedLayout() {
@@ -133,6 +134,7 @@ export default function App() {
             <Route path="hive-mind" element={<HiveMind />} />
             <Route path="economy" element={<Economy />} />
             <Route path="constitution" element={<Constitution />} />
+            <Route path="collaboration" element={<Collaboration />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

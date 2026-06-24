@@ -272,6 +272,12 @@ const en: Record<string, PageContent> = {
     description: 'The Constitution is Titan\'s rulebook — a set of principles that govern its behavior. It defines what Titan can and cannot do, ethical guidelines, safety boundaries, and override procedures. Edit the constitution to change Titan\'s behavior globally.',
     tips: ['The Constitution is Titan\'s highest-level rules', 'Changes to the Constitution affect all agents globally', 'Safety rules in the Constitution cannot be overridden by individual agents'],
   },
+  collaboration: {
+    title: 'Collaboration Sessions',
+    subtitle: 'Multi-agent collaboration, live sessions, and consensus building',
+    description: 'Collaboration sessions allow multiple agents to work together on a shared topic. Agents join sessions, exchange messages, and build consensus. Use this page to create sessions, monitor live activity, and view completed consensus outcomes.',
+    tips: ['Create a session with a topic and invite agents to join', 'Agents exchange messages and build toward consensus', 'Completed sessions show the final consensus result'],
+  },
 };
 
 const ar: Record<string, PageContent> = {
@@ -538,6 +544,12 @@ const ar: Record<string, PageContent> = {
     subtitle: 'قواعد، مبادئ، وإرشادات أخلاقية لـ Titan',
     description: 'الدستور هو كتاب قواعد Titan — مجموعة مبادئ تحكم سلوكه. يُعرّف ما يمكن وما لا يمكن لـ Titan فعله، الإرشادات الأخلاقية، حدود الأمان، وإجراءات التجاوز. عدّل الدستور لتغيير سلوك Titan عالمياً.',
     tips: ['الدستور هو القواعد الأعلى مستوى في Titan', 'التغييرات في الدستور تؤثر على جميع الوكلاء عالمياً', 'قواعد الأمان في الدستور لا يمكن تجاوزها بواسطة وكلاء فرديين'],
+  },
+  collaboration: {
+    title: 'جلسات التعاون',
+    subtitle: 'تعاون متعدد الوكلاء، جلسات مباشرة، وبناء الإجماع',
+    description: 'جلسات التعاون تتيح لعدة وكلاء العمل معاً على موضوع مشترك. ينضم الوكلاء للجلسات، يتبادلون الرسائل، ويبنون الإجماع. استخدم هذه الصفحة لإنشاء جلسات، مراقبة النشاط المباشر، وعرض نتائج الإجماع المكتملة.',
+    tips: ['أنشئ جلسة بموضوع وادعُ وكلاء للانضمام', 'الوكلاء يتبادلون الرسائل ويتجهون نحو الإجماع', 'الجلسات المكتملة تعرض نتيجة الإجماع النهائية'],
   },
 };
 

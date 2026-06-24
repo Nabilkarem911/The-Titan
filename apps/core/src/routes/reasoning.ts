@@ -30,6 +30,7 @@ import {
   SwarmEvolution,
   RLEnvironment,
   createProviderFromEnv,
+  getGlobalWiring,
   type BugReport,
 } from '@titan/agent-engine';
 import { experiences as experiencesRepo } from '@titan/database';
@@ -79,6 +80,8 @@ function getCausalReplay(): CausalReplay | null {
 }
 
 function getDebugger(): SelfHealingDebugger | null {
+  const wiring = getGlobalWiring();
+  if (wiring?.selfHealingDebugger) return wiring.selfHealingDebugger;
   if (debugger_) return debugger_;
   const llm = createProviderFromEnv();
   if (!llm) return null;
@@ -87,6 +90,8 @@ function getDebugger(): SelfHealingDebugger | null {
 }
 
 function getSelfRewriter(): SelfRewriter | null {
+  const wiring = getGlobalWiring();
+  if (wiring?.selfRewriter) return wiring.selfRewriter;
   if (selfRewriter) return selfRewriter;
   const llm = createProviderFromEnv();
   if (!llm) return null;
@@ -1236,49 +1241,70 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
   // === Evolution Stats ===
 
   app.get('/api/v1/evolution/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const wiring = getGlobalWiring();
+    if (wiring?.metaEvolution) {
+      const s = wiring.metaEvolution.getStats();
+      return reply.send({ totalEvolutions: s.totalEvolutions, appliedEvolutions: s.appliedEvolutions, rolledBackEvolutions: s.rolledBackEvolutions, totalABTests: s.abTests, appliedTransfers: s.appliedTransfers });
+    }
     return reply.send({ totalEvolutions: 0, appliedEvolutions: 0, rolledBackEvolutions: 0, totalABTests: 0, appliedTransfers: 0 });
   });
 
   // === Mirror Stats ===
 
   app.get('/api/v1/mirror/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
-    return reply.send({
-      threads: [],
-      threadCount: 0,
-      lastNarrative: null,
-      selfModel: null,
-      episodicItems: [],
-      episodicSize: 0,
-      episodicCapacity: 7,
-    });
+    const wiring = getGlobalWiring();
+    if (wiring) {
+      return reply.send({
+        threads: wiring.innerMonologue.getActiveThreads(),
+        threadCount: wiring.innerMonologue.getThreadCount(),
+        lastNarrative: wiring.cognitiveController.getLastNarrative(),
+        selfModel: wiring.cognitiveController.getLastSelfModel(),
+        episodicItems: wiring.episodicBuffer.getItems(),
+        episodicSize: wiring.episodicBuffer.getSize(),
+        episodicCapacity: wiring.episodicBuffer.getCapacity(),
+      });
+    }
+    return reply.send({ threads: [], threadCount: 0, lastNarrative: null, selfModel: null, episodicItems: [], episodicSize: 0, episodicCapacity: 7 });
   });
 
   // === World Model Stats ===
 
   app.get('/api/v1/world/graph/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const wiring = getGlobalWiring();
+    if (wiring?.environmentGraph) {
+      return reply.send(wiring.environmentGraph.stats());
+    }
     return reply.send({ entities: 0, relations: 0, events: 0 });
   });
 
   app.post('/api/v1/world/simulate', { preHandler: [requireAuth] }, async (req, reply) => {
     const { scenario } = req.body as { scenario: string };
     if (!scenario) return reply.code(400).send({ error: 'scenario is required' });
+    const wiring = getGlobalWiring();
+    if (wiring?.worldSimulator) {
+      try {
+        const result = await wiring.worldSimulator.simulate(scenario, 'global');
+        return reply.send(result);
+      } catch {
+        // fall through to stub
+      }
+    }
     return reply.send({ scenario, predictedOutcome: 'unknown', confidence: 0, similarPastEvents: [] });
   });
 
   app.get('/api/v1/digital-twin/state', { preHandler: [requireAuth] }, async (_req, reply) => {
-    return reply.send({
-      snapshotCount: 0,
-      entityCount: 0,
-      relationCount: 0,
-      lastSnapshot: null,
-      trends: [],
-      alerts: [],
-    });
+    const wiring = getGlobalWiring();
+    if (wiring?.digitalTwin) {
+      return reply.send(wiring.digitalTwin.getState());
+    }
+    return reply.send({ snapshotCount: 0, entityCount: 0, relationCount: 0, lastSnapshot: null, trends: [], alerts: [] });
   });
 
   // === Swarm Evolution Stats ===
 
   function getSwarmEvolution(): SwarmEvolution {
+    const wiring = getGlobalWiring();
+    if (wiring?.swarmEvolution) return wiring.swarmEvolution;
     if (swarmEvolution) return swarmEvolution;
     swarmEvolution = new SwarmEvolution();
     return swarmEvolution;
@@ -1293,6 +1319,8 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
   // === RL / Economy Stats ===
 
   function getRLEnvironment(): RLEnvironment {
+    const wiring = getGlobalWiring();
+    if (wiring?.autonomousTrading) return wiring.autonomousTrading;
     if (rlEnvironment) return rlEnvironment;
     rlEnvironment = new RLEnvironment();
     return rlEnvironment;
@@ -1307,6 +1335,8 @@ export const reasoningRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
   // === Normative / Constitution Stats ===
 
   function getNormativeAgency(): NormativeAgency | null {
+    const wiring = getGlobalWiring();
+    if (wiring?.normativeAgency) return wiring.normativeAgency;
     if (normativeAgency) return normativeAgency;
     const llm = createProviderFromEnv();
     if (!llm) return null;
