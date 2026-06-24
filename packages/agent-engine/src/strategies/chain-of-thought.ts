@@ -21,7 +21,8 @@ export class ChainOfThoughtStrategy implements ReasoningStrategy {
   name = 'chain-of-thought' as const;
 
   async execute(ctx: StrategyContext): Promise<StrategyResult> {
-    const { run, llm, tools, executeTool, onStep } = ctx;
+    const { run, llm, executeTool, onStep } = ctx;
+    let tools = ctx.tools;
     const steps: AgentStep[] = [];
     let tokensUsed = 0;
     let finalAnswer: string | undefined;
@@ -32,6 +33,17 @@ export class ChainOfThoughtStrategy implements ReasoningStrategy {
     ];
 
     for (let i = 0; i < run.maxSteps; i++) {
+      // Apply context optimization before each LLM call
+      if (ctx.contextOptimizer) {
+        const compacted = ctx.contextOptimizer.compactHistory(messages, steps);
+        if (compacted.compacted > 0) {
+          messages.length = 0;
+          messages.push(...compacted.messages);
+        }
+        const filtered = ctx.contextOptimizer.optimizeTools(tools, steps, run.prompt);
+        tools = filtered.tools;
+      }
+
       const step: AgentStep = {
         id: randomUUID(),
         runId: run.id,

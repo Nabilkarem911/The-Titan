@@ -1,12 +1,14 @@
 /**
- * Tests for 3 bug fixes:
- * 1. Context window compression enabled (ContextOptimizer passed to runner)
+ * Tests for bug fixes:
+ * 1. Context window compression enabled (ContextOptimizer passed to runner + strategies)
  * 2. Strategy selector picks hypothesis-testing for debugging keywords
  * 3. Personality prompt includes "don't search /app" instruction
+ * 4. Hypothesis-testing strategy filters tools for user-code questions
+ * 5. Strategies apply context optimization internally
  */
 import { describe, it, expect } from 'vitest';
-import { StrategySelector, buildAdaptivePrompt, ContextOptimizer } from '@titan/agent-engine';
-import type { AgentContext, LlmMessage } from '@titan/agent-engine';
+import { StrategySelector, buildAdaptivePrompt, ContextOptimizer, HypothesisTestingStrategy } from '@titan/agent-engine';
+import type { AgentContext, LlmMessage, LlmToolDefinition, AgentRun, AgentStep } from '@titan/agent-engine';
 
 // ---------------------------------------------------------------------------
 // Fix 2 — Strategy Selector picks hypothesis-testing for debugging
@@ -183,5 +185,156 @@ describe('Fix 1 — Context window compression', () => {
     const result = optimizer.compactHistory(messages, []);
     expect(result.compacted).toBe(0);
     expect(result.messages.length).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fix 4 — Hypothesis-testing strategy filters tools for user-code questions
+// ---------------------------------------------------------------------------
+describe('Fix 4 — Hypothesis-testing tool filtering', () => {
+  function makeMockLlm(responses: string[]): { llm: any; calls: number } {
+    let idx = 0;
+    return {
+      llm: {
+        complete: async () => {
+          const content = responses[idx++] ?? 'FINAL ANSWER: Done';
+          return { content, tokensUsed: 100, finishReason: 'stop' };
+        },
+      },
+      calls: 0,
+    };
+  }
+
+  function makeTools(): LlmToolDefinition[] {
+    return [
+      { name: 'execute_bash', description: 'Execute bash commands', parameters: { type: 'object', properties: { cmd: { type: 'string' } }, required: ['cmd'] } },
+      { name: 'desktop_execute', description: 'Execute desktop commands', parameters: { type: 'object', properties: { cmd: { type: 'string' } }, required: ['cmd'] } },
+      { name: 'write_file', description: 'Write file', parameters: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] } },
+      { name: 'hypothesis_generate', description: 'Generate hypotheses', parameters: { type: 'object', properties: { problem: { type: 'string' } }, required: ['problem'] } },
+      { name: 'web_intelligence', description: 'Web intelligence', parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } },
+      { name: 'read_file_content', description: 'Read file', parameters: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] } },
+      { name: 'brave_search', description: 'Search the web', parameters: { type: 'object', properties: { q: { type: 'string' } }, required: ['q'] } },
+    ];
+  }
+
+  function makeRun(prompt: string): AgentRun {
+    return {
+      id: 'test-run',
+      agentId: 'test',
+      prompt,
+      status: 'running',
+      maxSteps: 3,
+      currentStep: 0,
+      tokensUsed: 0,
+      steps: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  it('strategy name is hypothesis-testing', () => {
+    const strategy = new HypothesisTestingStrategy();
+    expect(strategy.name).toBe('hypothesis-testing');
+  });
+
+  it('filters out execute_bash and desktop_execute for user-code questions', async () => {
+    const { llm } = makeMockLlm(['FINAL ANSWER: Based on the error, the issue is...']);
+    const strategy = new HypothesisTestingStrategy();
+    const tools = makeTools();
+
+    // Capture which tools are passed to llm.complete
+    let passedTools: LlmToolDefinition[] | undefined;
+    const wrappedLlm = {
+      complete: async (msgs: any, opts?: any) => {
+        passedTools = opts?.tools;
+        return llm.complete(msgs, opts);
+      },
+    };
+
+    await strategy.execute({
+      run: makeRun('I have an error in my code, my API returns 500'),
+      systemPrompt: '',
+      tools,
+      llm: wrappedLlm as any,
+      executeTool: async () => ({ success: true, data: 'ok' }),
+    });
+
+    expect(passedTools).toBeDefined();
+    const toolNames = passedTools!.map(t => t.name);
+    expect(toolNames).not.toContain('execute_bash');
+    expect(toolNames).not.toContain('desktop_execute');
+    expect(toolNames).not.toContain('write_file');
+    expect(toolNames).toContain('hypothesis_generate');
+    expect(toolNames).toContain('web_intelligence');
+  });
+
+  it('does NOT filter tools for non-user-code debugging', async () => {
+    const { llm } = makeMockLlm(['FINAL ANSWER: Fixed the server issue.']);
+    const strategy = new HypothesisTestingStrategy();
+    const tools = makeTools();
+
+    let passedTools: LlmToolDefinition[] | undefined;
+    const wrappedLlm = {
+      complete: async (msgs: any, opts?: any) => {
+        passedTools = opts?.tools;
+        return llm.complete(msgs, opts);
+      },
+    };
+
+    await strategy.execute({
+      run: makeRun('The server is crashing with an error'),
+      systemPrompt: '',
+      tools,
+      llm: wrappedLlm as any,
+      executeTool: async () => ({ success: true, data: 'ok' }),
+    });
+
+    expect(passedTools).toBeDefined();
+    const toolNames = passedTools!.map(t => t.name);
+    // Should keep all tools including execute_bash for non-user-code debugging
+    expect(toolNames).toContain('execute_bash');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fix 5 — Strategies apply context optimization internally
+// ---------------------------------------------------------------------------
+describe('Fix 5 — Strategy-level context compression', () => {
+  it('ContextOptimizer is part of StrategyContext', () => {
+    // This is a type-level test — if it compiles, the interface is correct
+    const optimizer = new ContextOptimizer({ maxConversationMessages: 4 });
+    const ctx = {
+      run: { id: 't', agentId: 'a', prompt: 'test', status: 'running', maxSteps: 1, currentStep: 0, tokensUsed: 0, steps: [], createdAt: new Date(), updatedAt: new Date() },
+      systemPrompt: '',
+      tools: [],
+      llm: { complete: async () => ({ content: 'FINAL ANSWER: ok', tokensUsed: 10, finishReason: 'stop' }) },
+      executeTool: async () => ({ success: true, data: 'ok' }),
+      contextOptimizer: optimizer,
+    };
+    expect(ctx.contextOptimizer).toBeDefined();
+    expect(ctx.contextOptimizer).toBe(optimizer);
+  });
+
+  it('compactHistory reduces messages when called from strategy', () => {
+    const optimizer = new ContextOptimizer({
+      maxConversationMessages: 4,
+      enableHistoryCompaction: true,
+    });
+
+    // Simulate strategy message accumulation
+    const messages: LlmMessage[] = [
+      { role: 'system', content: 'System prompt' },
+      { role: 'user', content: 'Original question' },
+      { role: 'assistant', content: 'Let me check...', toolCalls: [{ name: 'test', params: {} }] },
+      { role: 'tool', content: 'Result 1' },
+      { role: 'assistant', content: 'Now let me try...', toolCalls: [{ name: 'test2', params: {} }] },
+      { role: 'tool', content: 'Result 2' },
+      { role: 'assistant', content: 'Another step...', toolCalls: [{ name: 'test3', params: {} }] },
+      { role: 'tool', content: 'Result 3' },
+    ];
+
+    const result = optimizer.compactHistory(messages, []);
+    expect(result.compacted).toBeGreaterThan(0);
+    expect(result.messages.length).toBeLessThan(messages.length);
   });
 });

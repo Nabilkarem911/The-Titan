@@ -355,6 +355,7 @@ export class AgentRunner {
           llm: this.deps.llm,
           executeTool: this.deps.executeTool,
           onStep: this.deps.onStep,
+          contextOptimizer: this.contextOptimizer,
         };
 
         let strategy;

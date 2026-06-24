@@ -7,6 +7,7 @@ import type {
   ToolCall,
   ToolResult,
 } from '../types.js';
+import type { ContextOptimizer } from '../providers/context-optimizer.js';
 
 export type StrategyName = 'react' | 'chain-of-thought' | 'tree-of-thought' | 'debate' | 'hypothesis-testing';
 
@@ -31,6 +32,7 @@ export interface StrategyContext {
   llm: LlmProvider;
   executeTool: (call: ToolCall, runId: string) => Promise<ToolResult>;
   onStep?: (step: AgentStep) => Promise<void>;
+  contextOptimizer?: ContextOptimizer;
 }
 
 export interface ThoughtBranch {
