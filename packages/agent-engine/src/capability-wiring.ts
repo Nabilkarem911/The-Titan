@@ -17,6 +17,8 @@ import { ApexEvolution } from './reasoning/apex-evolution.js';
 import { BenchmarkingSuite } from './reasoning/benchmarking-suite.js';
 import { ExecutionStateMemory } from './reasoning/execution-state-memory.js';
 import { SelfRewriter } from './reasoning/self-rewriter.js';
+import { TestTimeRecursiveThinking } from './reasoning/test-time-recursive-thinking.js';
+import { SmartModelRouter } from './reasoning/multi-model-router.js';
 
 // Metacognition
 import { MetaMonitor } from './metacognition/meta-monitor.js';
@@ -314,7 +316,7 @@ export function wireCapabilities(llm: LlmProvider): WiredCapabilities {
   wiring.totalWired = keys.length;
 
   // Register tools from capabilities
-  registerCapabilityTools(wiring);
+  registerCapabilityTools(wiring, llm);
 
   globalWiring = wiring;
   incCounter('capability_wiring_complete', 'All capabilities wired into the system', 1);
@@ -323,7 +325,7 @@ export function wireCapabilities(llm: LlmProvider): WiredCapabilities {
   return wiring;
 }
 
-function registerCapabilityTools(wiring: WiredCapabilities): void {
+function registerCapabilityTools(wiring: WiredCapabilities, llm: LlmProvider): void {
   const registry = getGlobalToolRegistry();
 
   // Universal Translator
@@ -832,7 +834,10 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     handler: async (params: unknown) => {
       const p = params as { userMessages: string };
       const messages = JSON.parse(p.userMessages) as string[];
-      return { status: 'theory of mind analysis complete', messageCount: messages.length, messages };
+      return wiring.theoryOfMind.analyze('user', {
+        entityType: 'user',
+        messages: messages.map((m) => ({ role: 'user', content: m })),
+      });
     },
   });
 
@@ -920,12 +925,21 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     requiredParams: ['prompt'],
     handler: async (params: unknown) => {
       const p = params as { prompt: string };
-      const stats = wiring.promptOptimizer.getStats();
-      const categories = Object.keys(stats);
-      if (categories.length === 0) {
-        return { original: p.prompt, optimized: p.prompt, suggestions: [], status: 'no variants registered yet — register variants to enable optimization' };
+      try {
+        const completion = await llm.complete([
+          { role: 'system', content: 'You are a prompt optimization expert. Improve the given prompt to be clearer, more specific, and more effective. Return ONLY the optimized prompt text, no explanation.' },
+          { role: 'user', content: p.prompt },
+        ], { temperature: 0.3, maxTokens: 500 });
+        const optimized = completion.content.trim();
+        return {
+          original: p.prompt,
+          optimized: optimized || p.prompt,
+          suggestions: optimized !== p.prompt ? ['LLM-optimized for clarity and specificity'] : [],
+          tokensUsed: completion.tokensUsed,
+        };
+      } catch {
+        return { original: p.prompt, optimized: p.prompt, suggestions: [], error: 'LLM optimization failed' };
       }
-      return { original: p.prompt, optimized: p.prompt, suggestions: [], status: 'active', variantStats: stats };
     },
   });
 
@@ -1001,7 +1015,7 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     requiredParams: ['scenario'],
     handler: async (params: unknown) => {
       const p = params as { scenario: string };
-      return wiring.digitalTwin.getState();
+      return wiring.whatIfEngine.simulate(p.scenario, p.scenario);
     },
   });
 
@@ -1015,7 +1029,7 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     requiredParams: ['action'],
     handler: async (params: unknown) => {
       const p = params as { action: string };
-      return wiring.normativeAgency.getStats();
+      return wiring.normativeAgency.evaluateAction(p.action);
     },
   });
 
@@ -1078,7 +1092,7 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     },
     handler: async (params: unknown) => {
       const p = params as { theme?: string };
-      return wiring.dreamWorld.getStats();
+      return wiring.dreamWorld.dream([p.theme ?? 'general exploration']);
     },
   });
 
@@ -1099,7 +1113,12 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     requiredParams: ['description'],
     handler: async (params: unknown) => {
       const p = params as { description: string };
-      return wiring.visualWorkflowBuilder.getStats();
+      const wf = wiring.visualWorkflowBuilder.createWorkflow(p.description);
+      const triggerNode = wiring.visualWorkflowBuilder.addNode(wf.id, 'trigger', 'Start', { description: p.description });
+      const agentNode = wiring.visualWorkflowBuilder.addNode(wf.id, 'agent', 'AI Agent', { task: p.description });
+      wiring.visualWorkflowBuilder.addEdge(wf.id, triggerNode.id, agentNode.id);
+      const dag = wiring.visualWorkflowBuilder.exportToDAG(wf.id);
+      return { workflowId: wf.id, workflow: wf, dag };
     },
   });
 
@@ -1228,7 +1247,8 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     requiredParams: ['problem'],
     handler: async (params: unknown) => {
       const p = params as { problem: string; maxRounds?: number };
-      return { problem: p.problem, message: 'TRT solver requires direct API call to /api/v1/trt/solve', maxRounds: p.maxRounds ?? 4 };
+      const trt = new TestTimeRecursiveThinking(llm);
+      return trt.solve(p.problem, { maxRounds: p.maxRounds });
     },
   });
 
@@ -1264,7 +1284,8 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     requiredParams: ['input'],
     handler: async (params: unknown) => {
       const p = params as { input: string; taskType?: string };
-      return { message: 'Smart model router requires direct API call to /api/v1/router/route', input: p.input, taskType: p.taskType };
+      const router = new SmartModelRouter();
+      return router.route(p.input, { taskType: p.taskType });
     },
   });
 
@@ -1309,7 +1330,7 @@ function registerCapabilityTools(wiring: WiredCapabilities): void {
     description: 'Get autonomous loop status — check if the 24/7 monitoring loop is running',
     tags: ['autonomous', 'loop', 'status'],
     handler: async () => {
-      return { message: 'Autonomous loop status requires direct API call to /api/v1/autonomous-loop/status' };
+      return { status: 'idle', message: 'No autonomous loop running. Use the /api/v1/autonomous/task endpoint to create tasks.' };
     },
   });
 

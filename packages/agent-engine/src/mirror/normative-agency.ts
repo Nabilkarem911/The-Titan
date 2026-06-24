@@ -32,6 +32,24 @@ export interface NormRevision {
   timestamp: Date;
 }
 
+export interface NormativeCheckResult {
+  action: string;
+  aligned: boolean;
+  concerns: string[];
+  conflictingCommitments: Array<{ id: string; description: string }>;
+  recommendation: string;
+}
+
+const ACTION_CHECK_PROMPT = `You are a normative reasoning engine. Evaluate whether an action aligns with the active commitments.
+
+Respond in JSON:
+{
+  "aligned": true|false,
+  "concerns": ["concern1", "concern2"],
+  "conflictingCommitments": [{"id": "commitment-id", "description": "why it conflicts"}],
+  "recommendation": "proceed|refuse|revise"
+}`;
+
 const DELIBERATION_PROMPT = `You are a normative reasoning engine. Detect conflicts between commitments and propose resolutions.
 
 Respond in JSON:
@@ -170,6 +188,55 @@ export class NormativeAgency {
 
   getConflicts(): NormConflict[] {
     return [...this.conflicts];
+  }
+
+  async evaluateAction(action: string): Promise<NormativeCheckResult> {
+    const active = this.getActiveCommitments();
+
+    if (active.length === 0) {
+      return {
+        action,
+        aligned: true,
+        concerns: [],
+        conflictingCommitments: [],
+        recommendation: 'proceed — no active commitments to check against',
+      };
+    }
+
+    try {
+      const completion = await this.llm.complete([
+        { role: 'system', content: ACTION_CHECK_PROMPT },
+        { role: 'user', content: `Action: "${action}"\n\nActive commitments:\n${active.map((c) => `- [${c.id}] ${c.description} (priority: ${c.priority})`).join('\n')}` },
+      ], { temperature: 0.2, maxTokens: 500 });
+
+      const jsonMatch = completion.content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]) as {
+          aligned?: boolean;
+          concerns?: string[];
+          conflictingCommitments?: Array<{ id: string; description: string }>;
+          recommendation?: string;
+        };
+
+        return {
+          action,
+          aligned: parsed.aligned ?? true,
+          concerns: parsed.concerns ?? [],
+          conflictingCommitments: parsed.conflictingCommitments ?? [],
+          recommendation: parsed.recommendation ?? 'proceed',
+        };
+      }
+    } catch (err) {
+      log.error({ err, action }, 'evaluateAction failed');
+    }
+
+    return {
+      action,
+      aligned: true,
+      concerns: ['Unable to evaluate — LLM parsing failed'],
+      conflictingCommitments: [],
+      recommendation: 'proceed with caution',
+    };
   }
 
   getRevisions(): NormRevision[] {
