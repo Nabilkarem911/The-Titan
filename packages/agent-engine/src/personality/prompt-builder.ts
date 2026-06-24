@@ -449,6 +449,8 @@ export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string, loc
       'Relevant past heuristics:',
       'Introspection data:',
       'Self-model:',
+      'Dream Mode data',
+      'Theory of Mind analysis:',
       'SAFETY WARNING:',
       'Safety note:',
       'Image analysis',

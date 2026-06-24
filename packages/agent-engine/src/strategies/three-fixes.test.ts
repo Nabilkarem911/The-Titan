@@ -196,6 +196,22 @@ describe('Fix 6 — Language adherence', () => {
     const prompt = buildAdaptivePrompt(makeCtx(`I have a bug in this code:\n${code}`), `I have a bug in this code:\n${code}`, 'en');
     expect(prompt).toContain('You are Titan');
   });
+
+  it('Dream Mode data from systemPrompt is preserved in adaptive prompt', () => {
+    const ctx = makeCtx('what did you learn');
+    ctx.systemPrompt = 'You are Titan\n\nDream Mode data (REAL insights):\n- Total dreams: 5\n- Total insights: 12';
+    const prompt = buildAdaptivePrompt(ctx, 'what did you learn', 'en');
+    expect(prompt).toContain('Dream Mode data');
+    expect(prompt).toContain('Total dreams: 5');
+  });
+
+  it('Theory of Mind analysis from systemPrompt is preserved in adaptive prompt', () => {
+    const ctx = makeCtx('مش فاهم async/await');
+    ctx.systemPrompt = 'You are Titan\n\nTheory of Mind analysis:\n- Recommended approach: Explain conceptually';
+    const prompt = buildAdaptivePrompt(ctx, 'مش فاهم async/await', 'ar');
+    expect(prompt).toContain('Theory of Mind analysis');
+    expect(prompt).toContain('Explain conceptually');
+  });
 });
 
 // ---------------------------------------------------------------------------
