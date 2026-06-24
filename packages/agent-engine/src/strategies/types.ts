@@ -8,7 +8,7 @@ import type {
   ToolResult,
 } from '../types.js';
 
-export type StrategyName = 'react' | 'chain-of-thought' | 'tree-of-thought' | 'debate';
+export type StrategyName = 'react' | 'chain-of-thought' | 'tree-of-thought' | 'debate' | 'hypothesis-testing';
 
 export interface StrategyResult {
   steps: AgentStep[];
@@ -58,7 +58,7 @@ export interface DebateRound {
 }
 
 export interface TaskClassification {
-  type: 'simple_qa' | 'complex_reasoning' | 'creative' | 'analytical' | 'multi_step' | 'controversial';
+  type: 'simple_qa' | 'complex_reasoning' | 'creative' | 'analytical' | 'multi_step' | 'controversial' | 'debugging';
   confidence: number;
   recommendedStrategy: StrategyName;
   reasoning: string;

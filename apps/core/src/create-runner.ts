@@ -11,6 +11,7 @@ import {
   MultiModelRouter,
   wireCapabilities,
   getGlobalWiring,
+  ContextOptimizer,
   type LlmProvider,
   type ToolCall,
   type ToolResult,
@@ -139,6 +140,16 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
     enablePlanning: opts.enablePlanning ?? true,
     enableAutoStrategy: opts.enableAutoStrategy ?? true,
     enableSelfCritique: opts.enableSelfCritique ?? true,
+
+    // Context window compression — compact history after every few steps to prevent 400k+ token usage
+    contextOptimization: {
+      maxContextTokens: 32000,
+      maxToolOutputTokens: 2000,
+      maxConversationMessages: 6,
+      enableToolFiltering: true,
+      enableHistoryCompaction: true,
+      enableOutputTruncation: true,
+    },
 
     // Wire all cosmic capabilities into the runner
     wiredCapabilities: wireCapabilities(llm),

@@ -4,6 +4,7 @@ import type { StrategyName, ReasoningStrategy, TaskClassification } from './type
 import { ChainOfThoughtStrategy } from './chain-of-thought.js';
 import { TreeOfThoughtStrategy } from './tree-of-thought.js';
 import { DebateStrategy } from './debate.js';
+import { HypothesisTestingStrategy } from './hypothesis-testing.js';
 
 const log = getLogger().child({ component: 'strategy-selector' });
 
@@ -15,6 +16,7 @@ const CLASSIFY_PROMPT = `Classify this task into exactly one category:
 - analytical: Data analysis, comparison, or evaluation
 - multi_step: Task requiring multiple sequential actions (build, deploy, fix)
 - controversial: Topic with multiple valid viewpoints or trade-offs
+- debugging: Investigating an error, bug, crash, or unexpected behavior
 
 Respond ONLY with JSON:
 { "type": "...", "confidence": 0-100, "reasoning": "..." }`;
@@ -26,6 +28,7 @@ const STRATEGY_MAP: Record<string, StrategyName> = {
   analytical: 'tree-of-thought',
   multi_step: 'chain-of-thought',
   controversial: 'debate',
+  debugging: 'hypothesis-testing',
 };
 
 export class StrategySelector {
@@ -36,6 +39,7 @@ export class StrategySelector {
     this.strategies.set('chain-of-thought', new ChainOfThoughtStrategy());
     this.strategies.set('tree-of-thought', new TreeOfThoughtStrategy());
     this.strategies.set('debate', new DebateStrategy());
+    this.strategies.set('hypothesis-testing', new HypothesisTestingStrategy());
   }
 
   getStrategy(name: StrategyName): ReasoningStrategy {
@@ -61,6 +65,12 @@ export class StrategySelector {
   classifyWithHeuristics(prompt: string): TaskClassification {
     const lower = prompt.toLowerCase();
     const wordCount = prompt.split(/\s+/).length;
+
+    // Debugging keywords (English + Arabic) → hypothesis-testing
+    if (lower.match(/\b(error|bug|crash|exception|stack trace|debug|not working|broken|fails?|failing|issue|traceback|undefined|null pointer)\b/) ||
+        lower.match(/(مشكلة|مشكله|بترجع|بتطلع|بيرجع|بيطلع|بيفشل|بيفشل|مش شغال|مش بتشتغل|خطأ|خلل|عطل|بيهنج|بيعلق|بيعمل مشكلة|فيير|error|bug)/)) {
+      return { type: 'debugging', confidence: 85, recommendedStrategy: 'hypothesis-testing', reasoning: 'Debugging task — systematic hypothesis testing needed' };
+    }
 
     if (lower.match(/\b(what is|who is|when did|where is|how many|define)\b/) && wordCount < 20) {
       return { type: 'simple_qa', confidence: 80, recommendedStrategy: 'chain-of-thought', reasoning: 'Short factual question' };

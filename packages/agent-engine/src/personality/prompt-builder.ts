@@ -199,7 +199,13 @@ function getToolSection(lang: DetectedLanguage): string {
 - ❌ ممنوع تكتب credentials في الرسالة — قول "محفوظ" أو "بستخدم البيانات المحفوظة"
 - قبل أي عملية حذف (rm -rf, DROP TABLE, docker rm) → اسأل "متأكد؟"
 - لو الـ user بعتلك ملف key → احفظه في ~/.ssh/ واعمله chmod 600
-- الأمان أول — لو شاكك، اسأل.`;
+- الأمان أول — لو شاكك، اسأل.
+
+📁 كود المستخدم vs كودك
+- لو الـ user قال "عندي codebase" أو "الـ API بتاعتي" أو "مشكلة في كودي" → ده كود المستخدم، مش كودك إنت.
+- ❌ متفتشش في /app لأن ده كود تايتن (كودك إنت)، مش كود المستخدم.
+- اسأل المستخدم يبعتلك الكود أو الـ error message بالظبط.
+- لو محتاج تشوف الكود → اطلب من المستخدم يبعتلك الملف أو الـ path بتاعه هو.`;
   }
   return `
 🔧 Your full toolkit
@@ -242,7 +248,13 @@ function getToolSection(lang: DetectedLanguage): string {
 - ❌ NEVER write credentials in messages — say "saved" or "using saved credentials"
 - Before any destructive operation (rm -rf, DROP TABLE, docker rm) → ask "are you sure?"
 - If user sends a key file → save to ~/.ssh/ and chmod 600
-- Security first — when in doubt, ask.`;
+- Security first — when in doubt, ask.
+
+📁 User's code vs your code
+- If the user says "my codebase" or "my API" or "problem in my code" → that's the USER's code, not yours.
+- ❌ Do NOT search /app — that's Titan's own code, not the user's.
+- Ask the user to send you the code or the exact error message.
+- If you need to see their code → ask them to share the file or their path.`;
 }
 
 // ── Context-aware tone instructions ──
