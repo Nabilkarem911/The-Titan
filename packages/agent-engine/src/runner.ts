@@ -359,12 +359,41 @@ export class AgentRunner {
         };
 
         let strategy;
+        let classification;
         if (this.deps.strategy) {
           strategy = this.strategySelector.getStrategy(this.deps.strategy);
         } else {
           const selected = await this.strategySelector.autoSelect(input.prompt);
           strategy = selected.strategy;
+          classification = selected.classification;
           log.info({ runId: run.id, strategy: selected.classification.recommendedStrategy, type: selected.classification.type }, 'auto-selected strategy');
+        }
+
+        // Ambiguous request — ask for clarification instead of guessing
+        if (classification?.type === 'ambiguous') {
+          const isArabic = /[\u0600-\u06FF]/.test(input.prompt);
+          const clarification = isArabic
+            ? 'مش متأكد تمامًا إيه اللي تحتاجه بالظبط. ممكن توضح أكتر؟ يعني مثلاً:\n- عايز أساعدك في كود أو مشروع؟\n- عايز معلومات عن حاجة معينة؟\n- عايز أحلل داتا أو ملف؟\n- ولا حاجة تانية خالص؟\n\nقولي بالظبط وأنا أنفذ.'
+            : 'I\'m not entirely sure what you need. Could you clarify? For example:\n- Do you want help with code or a project?\n- Do you need information about something specific?\n- Do you want me to analyze data or a file?\n- Or something else entirely?\n\nJust tell me specifically and I\'ll get it done.';
+
+          const step: AgentStep = {
+            id: randomUUID(),
+            runId: run.id,
+            index: 1,
+            status: 'completed',
+            thought: 'Ambiguous request detected — asking for clarification',
+            reflection: clarification,
+            tokensUsed: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          run.steps = [step];
+          run.finalAnswer = clarification;
+          run.status = 'completed';
+          run.currentStep = 1;
+          if (this.deps.onStep) await this.deps.onStep(step);
+          log.info({ runId: run.id }, 'ambiguous request — returned clarification');
+          return run;
         }
 
         // Use strategy only for non-react strategies; react falls through to classic loop

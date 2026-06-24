@@ -259,4 +259,22 @@ describe('StrategySelector', () => {
     const { strategy } = await selector.autoSelect('What is 2+2?');
     expect(strategy.name).toBe('chain-of-thought');
   });
+
+  it('classifies "do something useful" as ambiguous', () => {
+    const selector = new StrategySelector();
+    const classification = selector.classifyWithHeuristics('do something useful');
+    expect(classification.type).toBe('ambiguous');
+  });
+
+  it('classifies "اعمل حاجة مفيدة" as ambiguous', () => {
+    const selector = new StrategySelector();
+    const classification = selector.classifyWithHeuristics('اعمل حاجة مفيدة');
+    expect(classification.type).toBe('ambiguous');
+  });
+
+  it('classifies "anything" (short vague) as ambiguous', () => {
+    const selector = new StrategySelector();
+    const classification = selector.classifyWithHeuristics('just do anything');
+    expect(classification.type).toBe('ambiguous');
+  });
 });

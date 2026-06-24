@@ -15,7 +15,14 @@ For each reasoning step:
 
 After all reasoning, provide your final answer prefixed with "FINAL ANSWER:".
 
-If you need to use a tool at any step, call it — but always explain your reasoning before and after.`;
+If you need to use a tool at any step, call it — but always explain your reasoning before and after.
+
+For dataset, analysis, or coding tasks:
+1. WRITE the code first using write_file (e.g., write a Python script to /tmp/analyze.py)
+2. RUN the code using execute_bash (e.g., python /tmp/analyze.py)
+3. READ the output and report the results
+4. If the code fails, fix it and re-run
+Do NOT just say "I need execute_bash" — write the code first, then run it.`;
 
 export class ChainOfThoughtStrategy implements ReasoningStrategy {
   name = 'chain-of-thought' as const;
@@ -58,7 +65,7 @@ export class ChainOfThoughtStrategy implements ReasoningStrategy {
       step.tokensUsed = completion.tokensUsed;
 
       if (completion.toolCalls && completion.toolCalls.length > 0) {
-        step.thought = completion.content || `Reasoning requires: ${completion.toolCalls.map((c) => c.name).join(', ')}`;
+        step.thought = completion.content || `I need to use ${completion.toolCalls.map((c) => c.name).join(', ')} to proceed with this task.`;
         step.action = completion.toolCalls[0];
         step.status = 'executing';
 

@@ -17,6 +17,7 @@ const CLASSIFY_PROMPT = `Classify this task into exactly one category:
 - multi_step: Task requiring multiple sequential actions (build, deploy, fix)
 - controversial: Topic with multiple valid viewpoints or trade-offs
 - debugging: Investigating an error, bug, crash, or unexpected behavior
+- ambiguous: Vague or unclear request that needs clarification (e.g., "do something useful", "اعمل حاجة مفيدة")
 
 Respond ONLY with JSON:
 { "type": "...", "confidence": 0-100, "reasoning": "..." }`;
@@ -29,6 +30,7 @@ const STRATEGY_MAP: Record<string, StrategyName> = {
   multi_step: 'chain-of-thought',
   controversial: 'debate',
   debugging: 'hypothesis-testing',
+  ambiguous: 'chain-of-thought',
 };
 
 export class StrategySelector {
@@ -94,6 +96,13 @@ export class StrategySelector {
 
     if (lower.match(/\b(write|story|poem|creative|brainstorm|imagine|design)\b/)) {
       return { type: 'creative', confidence: 70, recommendedStrategy: 'chain-of-thought', reasoning: 'Creative/generative task' };
+    }
+
+    // Ambiguous / vague requests — ask for clarification instead of guessing
+    if (lower.match(/\b(do something|something useful|anything|whatever|help me with|just do)\b/) ||
+        lower.match(/(اعمل حاجة|اعمل اي حاجة|حاجة مفيدة|حاجة مفيدة|اي حاجة|عمل أي حاجة|بلاش|مش عارف|مش عارفة|اعمل اللي|شوف يعني)/) ||
+        (wordCount <= 5 && lower.match(/\b(something|anything|whatever|useful|interesting)\b/))) {
+      return { type: 'ambiguous', confidence: 90, recommendedStrategy: 'chain-of-thought', reasoning: 'Vague request — needs clarification before proceeding' };
     }
 
     return { type: 'simple_qa', confidence: 50, recommendedStrategy: 'chain-of-thought', reasoning: 'Default classification' };

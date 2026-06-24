@@ -60,7 +60,7 @@ export interface DebateRound {
 }
 
 export interface TaskClassification {
-  type: 'simple_qa' | 'complex_reasoning' | 'creative' | 'analytical' | 'multi_step' | 'controversial' | 'debugging';
+  type: 'simple_qa' | 'complex_reasoning' | 'creative' | 'analytical' | 'multi_step' | 'controversial' | 'debugging' | 'ambiguous';
   confidence: number;
   recommendedStrategy: StrategyName;
   reasoning: string;
