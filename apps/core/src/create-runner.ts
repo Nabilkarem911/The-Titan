@@ -10,6 +10,7 @@ import {
   createLlmProvider,
   MultiModelRouter,
   wireCapabilities,
+  getGlobalWiring,
   type LlmProvider,
   type ToolCall,
   type ToolResult,
@@ -177,6 +178,21 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
         }
       }
 
+      // ESM — mark run completed/failed and log resume info
+      const wiring = getGlobalWiring();
+      if (wiring?.executionStateMemory) {
+        if (run.status === 'completed') {
+          wiring.executionStateMemory.markCompleted(runId);
+        } else if (run.status === 'failed') {
+          wiring.executionStateMemory.markFailed(runId);
+          const latestCp = wiring.executionStateMemory.getLatestCheckpoint(runId);
+          if (latestCp) {
+            log.info({ runId, checkpointId: latestCp.id, stepIndex: latestCp.stepIndex }, 'run failed — ESM checkpoint available for resume');
+            sse?.write(`data: ${JSON.stringify({ type: 'esm.checkpoint_available', runId, checkpointId: latestCp.id, stepIndex: latestCp.stepIndex })}\n\n`);
+          }
+        }
+      }
+
       sse?.write(`data: ${JSON.stringify({
         type: 'run.updated',
         runId,
@@ -258,6 +274,25 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
           await opts.onStep(step);
         } catch (err) {
           log.warn({ err, runId }, 'external onStep callback failed');
+        }
+      }
+
+      // Execution State Memory — auto-checkpoint every 5 steps
+      if (step.index > 0 && step.index % 5 === 0) {
+        const wiring = getGlobalWiring();
+        if (wiring?.executionStateMemory) {
+          try {
+            wiring.executionStateMemory.checkpoint(runId, step.index, step.index + 1, {
+              messages: [{ role: 'system', content: step.thought ?? '' }],
+              toolResults: step.observation ? [{ tool: step.action?.name ?? 'unknown', result: step.observation.data }] : [],
+              plan: [],
+              variables: {},
+              intermediateResults: [],
+            });
+            log.info({ runId, stepIndex: step.index }, 'ESM auto-checkpoint saved');
+          } catch (err) {
+            log.warn({ err, runId }, 'ESM checkpoint failed');
+          }
         }
       }
     },

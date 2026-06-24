@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { getGlobalToolRegistry, type ToolResult } from '@titan/agent-engine';
+import { getGlobalToolRegistry, getGlobalWiring, type ToolResult } from '@titan/agent-engine';
 import { createRunner } from '../create-runner.js';
 import { getGlobalMemoryClient } from '@titan/memory';
 import { agentRuns, userContext, getChatHistory, saveChatMessage, agentProfiles, query } from '@titan/database';
@@ -12,6 +12,7 @@ import { recordUserInteraction, getLearnedPreferences, getPersonaInstructionsFor
 import { readFile } from 'node:fs/promises';
 import { join, resolve, relative } from 'node:path';
 import { userContextStorage } from '../user-context-storage.js';
+import { createProviderFromEnv } from '@titan/agent-engine';
 
 const log = getLogger().child({ component: 'chat' });
 
@@ -36,6 +37,12 @@ const ChatInputSchema = z.object({
 });
 
 const RATE_LIMIT_CHAT = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
+
+let sharedLlm: ReturnType<typeof createProviderFromEnv> | null = null;
+function getSharedLlm() {
+  if (!sharedLlm) sharedLlm = createProviderFromEnv();
+  return sharedLlm;
+}
 
 /** File tools that should have their filePath rewritten to workspace root. */
 const FILE_TOOLS = new Set(['write_file', 'read_file_content', 'read_file_ast', 'patch_file']);
@@ -240,6 +247,41 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
             const systemPromptExtra = (profileSystemPrompt ? profileSystemPrompt + '\n\n' : '') + contextBlock;
 
+            // ── Pre-run pipeline for Telegram path ──
+            const tgWiring = getGlobalWiring();
+            let tgEffectivePrompt = enrichedPrompt;
+            let tgEmotionContext = '';
+
+            if (tgWiring?.multiLayerGuardrails) {
+              try {
+                const gr = await tgWiring.multiLayerGuardrails.checkInput(enrichedPrompt);
+                if (gr.finalAction === 'block') {
+                  log.warn({ userId, reason: gr.finalReason }, 'TG input blocked by guardrails');
+                  return reply.status(400).send({ error: `Input blocked: ${gr.finalReason}` });
+                }
+                if (gr.sanitizedInput) tgEffectivePrompt = gr.sanitizedInput;
+              } catch {}
+            }
+
+            if (tgWiring?.emotionalIntelligence) {
+              try {
+                const emotion = await tgWiring.emotionalIntelligence.analyze(enrichedPrompt, { userId, sessionId });
+                tgEmotionContext = `\n\nEmotional context:\n- User's dominant emotion: ${emotion.dominantUserEmotion}\n- Response strategy: ${emotion.responseStrategy}\n- Adjust your tone accordingly.`;
+              } catch {}
+            }
+
+            let tgHeuristicContext = '';
+            if (tgWiring?.heuristicExtractor) {
+              try {
+                const matches = tgWiring.heuristicExtractor.retrieve(enrichedPrompt, 3);
+                if (matches.length > 0) {
+                  tgHeuristicContext = '\n\nRelevant past heuristics:\n' + matches.map((m) => `- ${m.heuristic.content} (confidence: ${m.heuristic.confidence})`).join('\n');
+                }
+              } catch {}
+            }
+
+            const tgEnhancedPrompt = systemPromptExtra + tgEmotionContext + tgHeuristicContext;
+
             // Create DB run record
             const dbRun = await agentRuns.create({
               agentId: input.agentId,
@@ -281,12 +323,12 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
               const result = await runner.run({
                 runId,
                 agentId: input.agentId,
-                prompt: enrichedPrompt,
+                prompt: tgEffectivePrompt,
                 userId,
                 workspaceId: req.auth.workspaceId ?? undefined,
                 apiKeyId: req.auth.apiKeyId ?? undefined,
                 maxSteps: input.maxSteps,
-                systemPromptExtra,
+                systemPromptExtra: tgEnhancedPrompt,
               });
 
               const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
@@ -383,6 +425,75 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
       const systemPromptExtra = (profileSystemPrompt ? profileSystemPrompt + '\n\n' : '') + contextBlock;
 
+      // ── Pre-run pipeline: guardrails, emotion, heuristics, inner monologue ──
+      const wiring = getGlobalWiring();
+      let effectivePrompt = enrichedPrompt;
+
+      // 1. Multi-layer Guardrails — check input before it reaches the agent
+      if (wiring?.multiLayerGuardrails) {
+        try {
+          const guardrailResult = await wiring.multiLayerGuardrails.checkInput(enrichedPrompt);
+          if (guardrailResult.finalAction === 'block') {
+            log.warn({ userId, reason: guardrailResult.finalReason }, 'input blocked by guardrails');
+            if (input.stream) {
+              reply.raw.setHeader('Content-Type', 'text/event-stream');
+              reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: `Input blocked: ${guardrailResult.finalReason}` })}\n\n`);
+              reply.raw.end();
+              return;
+            }
+            return reply.status(400).send({ error: `Input blocked: ${guardrailResult.finalReason}` });
+          }
+          if (guardrailResult.sanitizedInput) {
+            effectivePrompt = guardrailResult.sanitizedInput;
+          }
+        } catch {
+          // guardrails failure should not block chat
+        }
+      }
+
+      // 2. Emotional Intelligence — analyze user emotion and adjust tone
+      let emotionContext = '';
+      if (wiring?.emotionalIntelligence) {
+        try {
+          const emotion = await wiring.emotionalIntelligence.analyze(enrichedPrompt, {
+            userId,
+            sessionId,
+            conversationHistory: history.map((m) => m.content),
+          });
+          emotionContext = `\n\nEmotional context:\n- User's dominant emotion: ${emotion.dominantUserEmotion}\n- Valence: ${emotion.valence} (range: -1 to +1)\n- Empathy score: ${emotion.empathyScore}\n- Response strategy: ${emotion.responseStrategy}\n- Adjust your tone accordingly. If the user is frustrated, be concise and reassuring. If happy, match their energy.`;
+        } catch {
+          // emotion analysis is optional
+        }
+      }
+
+      // 3. Heuristic Extractor — retrieve relevant heuristics from past experiences
+      let heuristicContext = '';
+      if (wiring?.heuristicExtractor) {
+        try {
+          const matches = wiring.heuristicExtractor.retrieve(enrichedPrompt, 3);
+          if (matches.length > 0) {
+            heuristicContext = '\n\nRelevant past heuristics:\n' + matches.map((m) => `- ${m.heuristic.content} (confidence: ${m.heuristic.confidence})`).join('\n');
+          }
+        } catch {
+          // heuristic retrieval is optional
+        }
+      }
+
+      // 4. Inner Monologue — run cognitive threads and stream to client
+      if (wiring?.innerMonologue && input.stream) {
+        try {
+          const llm = getSharedLlm();
+          if (llm) {
+            const threadResults = await wiring.innerMonologue.runAllThreads(llm, enrichedPrompt, ['goals', 'reasoning', 'emotional']);
+            reply.raw.write(`data: ${JSON.stringify({ type: 'inner_monologue', threads: threadResults.map((r) => ({ type: r.type, output: r.output })) })}\n\n`);
+          }
+        } catch {
+          // inner monologue is optional
+        }
+      }
+
+      const enhancedSystemPrompt = systemPromptExtra + emotionContext + heuristicContext;
+
       // Create DB run record
       const dbRun = await agentRuns.create({
         agentId: input.agentId,
@@ -423,12 +534,12 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         const result = await runner.run({
           runId,
           agentId: input.agentId,
-          prompt: enrichedPrompt,
+          prompt: effectivePrompt,
           userId,
           workspaceId: req.auth.workspaceId ?? undefined,
           apiKeyId: req.auth.apiKeyId ?? undefined,
           maxSteps: input.maxSteps,
-          systemPromptExtra,
+          systemPromptExtra: enhancedSystemPrompt,
         });
 
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
