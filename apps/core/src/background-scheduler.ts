@@ -49,9 +49,13 @@ async function runDreamCycle(): Promise<void> {
       return;
     }
 
-    const cycle = await wiring.dreamMode.dream(experiences);
+    const cycle = await wiring.dreamMode.dream();
+    if (!cycle) {
+      log.info('dream cycle skipped — already dreaming');
+      return;
+    }
     log.info(
-      { cycleId: cycle.id, insights: cycle.insights?.length ?? 0, durationMs: cycle.durationMs },
+      { dreamId: cycle.dreamId, insights: cycle.insights?.length ?? 0, durationMs: cycle.durationMs },
       'dream cycle completed',
     );
   } catch (err) {
@@ -171,7 +175,9 @@ async function runMetaLearningOptimization(): Promise<void> {
       successRate,
       avgDuration,
       avgTokens,
-      errorPatterns: failed.map(r => r.prompt?.slice(0, 100) ?? '').slice(0, 10),
+      strategyStats: [],
+      toolStats: [],
+      recentErrors: failed.map(r => r.prompt?.slice(0, 100) ?? '').slice(0, 10),
     });
     log.info(
       { optimizationId: result.id, improvement: result.improvement, configAfter: result.configAfter },
