@@ -2,7 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import { curiosityExplorations as ceRepo, synthesizedSkills as ssRepo } from '@titan/database';
+import { curiosityExplorations as ceRepo, synthesizedSkills as ssRepo, curiosityKnowledgeGaps as ckgRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'curiosity-engine' });
@@ -112,6 +112,7 @@ export class CuriosityEngine extends EventEmitter {
 
   recordKnowledgeGap(gap: string): void {
     this.knowledgeGaps.push(gap);
+    ckgRepo.insert(gap).catch(() => {});
     if (this.knowledgeGaps.length > 50) {
       this.knowledgeGaps = this.knowledgeGaps.slice(-50);
     }

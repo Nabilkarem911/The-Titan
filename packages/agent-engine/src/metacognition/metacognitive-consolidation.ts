@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { metacognitiveReflections as mcRepo } from '@titan/database';
+import { metacognitiveReflections as mcRepo, metacognitiveMicroLessons as mmlRepo, metacognitiveMetaKnowledge as mmkRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'metacognitive-consolidation' });
@@ -205,6 +205,7 @@ export class MetacognitiveConsolidation {
           createdAt: new Date(),
         };
         this.microLessons.push(microLesson);
+        mmlRepo.insert(microLesson.lessons.join('; '), microLesson.confidence, 'batch').catch(() => {});
 
         for (const lesson of ml.lessons) {
           const existing = this.metaKnowledge.get(lesson);
@@ -223,6 +224,7 @@ export class MetacognitiveConsolidation {
               source: 'batch',
             };
             this.metaKnowledge.set(lesson, mk);
+            mmkRepo.upsert(mk.knowledge, mk.confidence, 'batch').catch(() => {});
             newMetaKnowledge.push(mk);
           }
         }
@@ -304,6 +306,7 @@ export class MetacognitiveConsolidation {
             source: 'global',
           };
           this.metaKnowledge.set(proc.knowledge, mk);
+          mmkRepo.upsert(mk.knowledge, mk.confidence, 'global').catch(() => {});
           newProcedures.push(mk);
         }
       }

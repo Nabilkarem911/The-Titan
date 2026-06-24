@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { swarmTopologies as stRepo, swarmCollectiveMemory as scmRepo, swarmMessages as smRepo } from '@titan/database';
+import { swarmTopologies as stRepo, swarmCollectiveMemory as scmRepo, swarmMessages as smRepo, swarmFederationTasks as sftRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'swarm-evolution' });
 
@@ -195,6 +195,7 @@ export class SwarmEvolution {
     };
 
     this.federationTasks.push(task);
+    sftRepo.insert(task.id, task.type, task.fromAgent, task.toAgent, '').catch(() => {});
     incCounter('federation_delegations', 'Federation delegations', 1);
     return task;
   }
@@ -211,6 +212,7 @@ export class SwarmEvolution {
     };
 
     this.federationTasks.push(task);
+    sftRepo.insert(task.id, task.type, task.fromAgent, task.toAgent, '').catch(() => {});
     incCounter('federation_skill_exchanges', 'Skill exchanges', 1);
     return task;
   }
@@ -227,6 +229,7 @@ export class SwarmEvolution {
     };
 
     this.federationTasks.push(task);
+    sftRepo.insert(task.id, task.type, task.fromAgent, task.toAgent, '').catch(() => {});
     incCounter('federation_learning', 'Federated learning transfers', 1);
     return task;
   }

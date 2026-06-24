@@ -2,7 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import { synthesizedSkills as ssRepo } from '@titan/database';
+import { synthesizedSkills as ssRepo, skillSynthesisResults as ssrRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'skill-synthesis' });
@@ -143,6 +143,7 @@ export class AutonomousSkillSynthesis extends EventEmitter {
       };
 
       this.results.push(result);
+      ssrRepo.insert(result.id, result.taskDescription, result.skill?.name ?? '', result.success, result.durationMs).catch(() => {});
       if (this.results.length > this.maxResults) {
         this.results = this.results.slice(-this.maxResults);
       }

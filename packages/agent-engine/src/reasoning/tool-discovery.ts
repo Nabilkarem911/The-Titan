@@ -2,7 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import { discoveredTools as dtRepo } from '@titan/database';
+import { discoveredTools as dtRepo, toolDiscoveryQueries as tdqRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'tool-discovery' });
@@ -161,6 +161,7 @@ export class DynamicToolDiscovery extends EventEmitter {
       query.status = tools.length > 0 ? 'found' : 'not-found';
 
       this.queries.push(query);
+      tdqRepo.insert(query.id, query.taskDescription, query.status, tools.length).catch(() => {});
       if (this.queries.length > this.maxQueries) {
         this.queries = this.queries.slice(-this.maxQueries);
       }

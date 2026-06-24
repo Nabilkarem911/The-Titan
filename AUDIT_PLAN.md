@@ -1,54 +1,85 @@
-# خطة المراجعة الصارمة — Full Audit Plan
+# خطة المراجعة الصارمة — Full Audit Plan (محدثة)
 
-## 1. مسارات غير مسجلة في السيرفر (Unregistered Routes)
+## الجزء الأول: Routes (اتصلحت ✅)
+- analytics.ts, search.ts, marketplace.ts, user-preferences.ts, export-import.ts, learning.ts, command.ts — كلها اتربطت بالداتابيس واتسجلت في server.ts
+- /api/v1/dream/trigger اتربط بجلب experiences من الداتابيس
+- integrations.ts القديم مش مسجل ومستبدل بـ integrations-v2.ts
 
-الملفات دي موجودة في `apps/core/src/routes/` بس مش مسجلة في `server.ts`:
+---
 
-| الملف | الحالة | الأكشن |
-|------|--------|--------|
-| `analytics.ts` | 6 مسارات كلها stubs ترجع داتا وهمية | تسجيل + ربط بالداتابيس |
-| `export-import.ts` | 5 مسارات كلها stubs | تسجيل + ربط بالداتابيس |
-| `integrations.ts` (القديم) | 6 مسارات stubs — مستبدل بـ `integrations-v2.ts` | حذف الملف |
-| `learning.ts` (القديم) | 5 مسارات stubs — مستبدل بـ `learning-v2.ts` | حذف الملف |
-| `marketplace.ts` | 6 مسارات كلها stubs | تسجيل + ربط بالداتابيس |
-| `search.ts` | 5 مسارات كلها stubs | تسجيل + ربط بالداتابيس |
-| `user-preferences.ts` | 5 مسارات كلها stubs | تسجيل + ربط بالداتابيس |
+## الجزء الثاني: Agent-Engine modules لسه بتحط في الرام بدون DB
 
-## 2. مسار `/api/command` — مش موجود خالص
+### Economy — محتاجين migration + repositories + wiring كامل
+| الملف | الـ in-memory | الـ DB call |
+|------|--------------|-------------|
+| agent-economy.ts | accounts, reputation, listings, offers, escrows, auditLog | ❌ ولا واحدة |
+| autonomous-trading.ts | episodes, qTable | ❌ ولا واحدة |
 
-تيتان بيتكلم عن مسار `/api/command` اللي مش موجود. ده مسار لازم يتبدا عشان تيتان يقدر ينفذ أوامر من الشات مباشرة. الأكشن: إنشاء المسار + ربطه بالـ tool registry و dream mode.
+### Voice
+| الملف | الـ in-memory | الـ DB call |
+|------|--------------|-------------|
+| elevenlabs-tts.ts | clonedVoices | ❌ |
+| conversation-manager.ts | sessions, history | ❌ |
 
-## 3. مسارات Stub داخل ملفات مسجلة فعلاً
+### Workflow
+| الملف | الـ in-memory | الـ DB call |
+|------|--------------|-------------|
+| dag-workflow-engine.ts | executions | ❌ |
+| workflow-builder.ts | nodes, edges | ❌ (builder — wiring عند save) |
 
-| الملف | المسار | المشكلة |
-|------|--------|---------|
-| `reasoning.ts` | `/api/v1/dream/trigger` | بياخد experiences من الـ body بدل ما يجيبها من الداتابيس |
-| `multimodal.ts` | كله | شغال بس محتاج تسجيل في الداتابيس للنتائج |
+### Reasoning
+| الملف | الـ in-memory | الـ DB call |
+|------|--------------|-------------|
+| test-time-recursive-thinking.ts | globalKnowledge, results | ❌ |
+| self-rewriter.ts | pipelines, versions | ❌ |
+| self-healing-debugger.ts | lessons, attempts | ❌ |
+| neuro-symbolic.ts | rules (2 places) | ❌ (results متوصلة) |
+| hyper-agent.ts | successPatterns, failurePatterns, performanceHistory | ❌ (cycles متوصلة) |
+| execution-state-memory.ts | checkpoints, runCheckpoints | ❌ |
+| benchmarking-suite.ts | suites | ❌ (results متوصلة) |
+| apex-evolution.ts | principles | ❌ (patches متوصلة) |
+| tool-discovery.ts | queries | ❌ (discovered tools متوصلة) |
+| skill-synthesis.ts | results | ❌ (skills متوصلة) |
 
-## 4. جداول ناقصة في الداتابيس
+### Metacognition
+| الملف | الـ in-memory | الـ DB call |
+|------|--------------|-------------|
+| multi-layer-guardrails.ts | results, layerConfigs, customLayers | ❌ |
+| metacognitive-consolidation.ts | microLessons, metaKnowledge (2) | ❌ (reflections متوصلة) |
+| introspection.ts | reports, biasCounts | ❌ |
+| curiosity-engine.ts | knowledgeGaps | ❌ (explorations/skills متوصلة) |
+| theory-of-mind.ts | models | ❌ (analyses متوصلة) |
+| safety-memory.ts | strategyIndex | ❌ (cells متوصلة) |
+| safety-guardrail.ts | blockedPatterns, riskCategoryCounts | ❌ (results متوصلة) |
+| capability-registry.ts | capabilities | ❌ |
+| anti-sycophancy.ts | hedgeWordCounts | ❌ (assessments متوصلة) |
 
-| الجدول | الملف اللي محتاجه | الأكشن |
-|--------|-------------------|--------|
-| `user_preferences` | `user-preferences.ts` | إنشاء migration |
-| `user_notifications` | `user-preferences.ts` | إنشاء migration |
-| `marketplace_listings` | `marketplace.ts` | إنشاء migration |
-| `marketplace_reviews` | `marketplace.ts` | إنشاء migration |
-| `token_usage` | `analytics.ts` | إنشاء migration |
-| `tool_execution_stats` | `analytics.ts` | إنشاء migration |
-| `search_index` | `search.ts` | إنشاء migration |
-| `export_jobs` | `export-import.ts` | إنشاء migration |
-| `run_feedback` | `learning.ts` | التأكد من وجوده |
+### Mirror
+| الملف | الـ in-memory | الـ DB call |
+|------|--------------|-------------|
+| orchestrator.ts | buffer items (3 places) | ❌ |
+| normative-agency.ts | revisions | ❌ (commitments/conflicts متوصلة) |
+| inner-monologue.ts | threads | ❌ |
+| episodic-buffer.ts | items | ❌ |
+| cognitive-controller.ts | narrativeHistory | ❌ |
 
-## 5. ترتيب التنفيذ
+### World-model
+| الملف | الـ in-memory | الـ DB call |
+|------|--------------|-------------|
+| environment-graph.ts | relations | ❌ (entities/events متوصلة) |
+| autonomous-loop.ts | results (line 178) | ❌ (line 259 متوصلة) |
 
-1. إنشاء migration 0032 لكل الجداول الناقصة
+### Swarm
+| الملف | الـ in-memory | الـ DB call |
+|------|--------------|-------------|
+| shared-workspace.ts | artifacts, notes | ❌ |
+| swarm-evolution.ts | federationTasks (3), collectiveMemory conflict | ❌ (topologies/memory متوصلة) |
+
+---
+
+## الجزء الثالث: ترتيب التنفيذ
+
+1. إنشاء migration 0032 لكل الجداول الناقصة (~25 جدول)
 2. إنشاء repositories لكل جدول جديد
-3. ربط `analytics.ts` بالداتابيس + تسجيله في server.ts
-4. ربط `search.ts` بالداتابيس + تسجيله في server.ts
-5. ربط `marketplace.ts` بالداتابيس + تسجيله في server.ts
-6. ربط `user-preferences.ts` بالداتابيس + تسجيله في server.ts
-7. ربط `export-import.ts` بالداتابيس + تسجيله في server.ts
-8. إنشاء مسار `/api/command` + تسجيله في server.ts
-9. حذف `integrations.ts` و `learning.ts` (النسخ القديمة)
-10. ربط `/api/v1/dream/trigger` بجلب experiences من الداتابيس
-11. Build + verify + commit + push
+3. ربط كل module بالـ DB (إضافة .catch(() => {}) calls)
+4. Build + verify + commit + push

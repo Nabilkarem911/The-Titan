@@ -2,6 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
+import { executionCheckpoints as ecRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'execution-state-memory' });
 
@@ -68,6 +69,7 @@ export class ExecutionStateMemory extends EventEmitter {
     };
 
     this.checkpoints.set(id, cp);
+    ecRepo.insert(id, runId, `step-${stepIndex}`, cp.state, cp.metadata).catch(() => {});
     const cps = this.runCheckpoints.get(runId) ?? [];
     cps.push(id);
     this.runCheckpoints.set(runId, cps);

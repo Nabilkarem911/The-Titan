@@ -1,6 +1,6 @@
 import { getLogger } from '@titan/logging';
 import { randomUUID } from 'node:crypto';
-import { environmentEntities as eeRepo, environmentEvents as evRepo } from '@titan/database';
+import { environmentEntities as eeRepo, environmentEvents as evRepo, environmentRelations as erRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'world-model-graph' });
 
@@ -84,6 +84,7 @@ export class EnvironmentGraph {
       observations: 1,
       lastObserved: new Date(),
     });
+    erRepo.insert(id, sourceId, targetId, relation, 0.5).catch(() => {});
   }
 
   recordEvent(event: Omit<ObservedEvent, 'id' | 'timestamp'>): void {

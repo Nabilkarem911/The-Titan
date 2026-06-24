@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { normativeCommitments as ncRepo, normativeConflicts as ncfRepo } from '@titan/database';
+import { normativeCommitments as ncRepo, normativeConflicts as ncfRepo, normativeRevisions as nrRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'normative-agency' });
@@ -141,6 +141,7 @@ export class NormativeAgency {
       commitment.description = revisedDescription;
       commitment.status = 'revised';
       this.revisions.push(revision);
+      nrRepo.insert(revision.id, commitmentId, revision.originalDescription, revision.revisedDescription).catch(() => {});
 
       incCounter('normative_revisions', 'Normative revisions', 1);
       log.info({ commitmentId, revisedDescription: revisedDescription.slice(0, 80) }, 'commitment revised under error');

@@ -2,6 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import type { LlmProvider, LlmMessage } from '../types.js';
 import type { ThreadResult } from './inner-monologue.js';
+import { narrativeHistoryRepo as nhRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'mirror:cognitive-controller' });
 
@@ -96,6 +97,7 @@ export class CognitiveController {
         narrative: parsed.narrative,
         timestamp: new Date(),
       });
+      nhRepo.insert(parsed.narrative, JSON.stringify(parsed.selfModel)).catch(() => {});
 
       if (this.narrativeHistory.length > this.maxHistorySize) {
         this.narrativeHistory.shift();

@@ -1,6 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter, observeHistogram } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
+import { rlEpisodes, rlQTable } from '@titan/database';
 
 const log = getLogger().child({ component: 'rl-environment' });
 
@@ -110,6 +111,7 @@ export class RLEnvironment {
     this.currentEpisode.completedAt = new Date();
 
     this.episodes.push(this.currentEpisode);
+    rlEpisodes.insert(this.currentEpisode.id, this.currentEpisode.totalReward, this.currentEpisode.steps.length, success, this.currentEpisode.startedAt, this.currentEpisode.completedAt).catch(() => {});
     if (this.episodes.length > MAX_EPISODES) {
       this.episodes.shift();
     }
@@ -226,6 +228,7 @@ export class RLEnvironment {
     const currentQ = stateQ.get(action.name) ?? 0;
     const newQ = currentQ + this.learningRate * (reward + this.discountFactor * maxNextQ - currentQ);
     stateQ.set(action.name, newQ);
+    rlQTable.upsert(stateKey, action.name, newQ).catch(() => {});
   }
 
   private stateKey(state: RLState): string {

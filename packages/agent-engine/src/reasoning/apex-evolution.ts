@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { apexPatches as apRepo } from '@titan/database';
+import { apexPatches as apRepo, apexPrinciples as aprRepo } from '@titan/database';
 import type { LlmProvider, AgentRun } from '../types.js';
 
 const log = getLogger().child({ component: 'apex-evolution' });
@@ -230,6 +230,7 @@ export class ApexEvolution {
         );
         if (!this.principles.has(principle.name)) {
           this.principles.set(principle.name, principle);
+          aprRepo.upsert(principle.name, principle.description, principle.sourceRuns.length).catch(() => {});
         }
         extracted.push(principle);
       }
@@ -251,6 +252,7 @@ export class ApexEvolution {
         );
         if (!this.principles.has(principle.name)) {
           this.principles.set(principle.name, principle);
+          aprRepo.upsert(principle.name, principle.description, principle.sourceRuns.length).catch(() => {});
         }
         extracted.push(principle);
       }

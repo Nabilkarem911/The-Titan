@@ -13,6 +13,7 @@ import type {
   ParallelNodeConfig,
 } from './types.js';
 import type { LlmProvider, AgentRunInput, AgentRun, ToolCall, ToolResult } from '../types.js';
+import { dagExecutions as deRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'dag-workflow-engine' });
 
@@ -182,6 +183,7 @@ export class DAGWorkflowEngine {
     };
 
     this.executions.set(runId, dagResult);
+    deRepo.insert(runId, dagResult.workflowId, overallStatus, dagResult.executionOrder, [], skippedNodes).catch(() => {});
     if (this.executions.size > this.maxExecutions) {
       const oldest = this.executions.keys().next().value;
       if (oldest) this.executions.delete(oldest);

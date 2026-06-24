@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { hyperAgentCycles as hacRepo } from '@titan/database';
+import { hyperAgentCycles as hacRepo, hyperAgentPatterns as hapRepo, hyperAgentPerformance as hapfRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'hyper-agent' });
@@ -112,14 +112,17 @@ export class HyperAgent {
       this.currentPerformance = Math.min(1, this.currentPerformance + evaluation.actualGain);
       for (const imp of improvements) {
         this.successPatterns.push(imp.change);
+        hapRepo.insert('success', imp.change).catch(() => {});
       }
     } else if (decision === 'rollback') {
       for (const imp of improvements) {
         this.failurePatterns.push(imp.change);
+        hapRepo.insert('failure', imp.change).catch(() => {});
       }
     }
 
     this.performanceHistory.push(this.currentPerformance);
+    hapfRepo.insert(this.currentPerformance).catch(() => {});
     if (this.performanceHistory.length > 50) {
       this.performanceHistory = this.performanceHistory.slice(-50);
     }

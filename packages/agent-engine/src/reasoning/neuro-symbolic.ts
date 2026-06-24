@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { neuroSymbolicResults as nsrRepo } from '@titan/database';
+import { neuroSymbolicResults as nsrRepo, neuroSymbolicRules as nsRulesRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'neuro-symbolic' });
@@ -166,6 +166,7 @@ export class NeuroSymbolicReasoner {
       timesApplied: 0,
     };
     this.rules.push(fullRule);
+    nsRulesRepo.insert(fullRule.id, fullRule.name, fullRule.condition, fullRule.action, fullRule.priority).catch(() => {});
     if (this.rules.length > this.maxRules) {
       this.rules = this.rules.slice(-this.maxRules);
     }
@@ -344,12 +345,14 @@ export class NeuroSymbolicReasoner {
     ];
 
     for (const rule of defaults) {
-      this.rules.push({
+      const fullRule = {
         ...rule,
         id: randomUUID().slice(0, 8),
         createdAt: new Date(),
         timesApplied: 0,
-      });
+      };
+      this.rules.push(fullRule);
+      nsRulesRepo.insert(fullRule.id, fullRule.name, fullRule.condition, fullRule.action, fullRule.priority).catch(() => {});
     }
   }
 }

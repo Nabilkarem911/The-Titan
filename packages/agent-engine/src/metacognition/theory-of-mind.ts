@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { tomAnalyses as tomRepo } from '@titan/database';
+import { tomAnalyses as tomRepo, tomModels as tomModelsRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'theory-of-mind' });
@@ -249,6 +249,7 @@ export class TheoryOfMind {
       perspectiveChain: existing?.perspectiveChain ?? [],
       createdAt: existing?.createdAt ?? new Date(),
     });
+    tomModelsRepo.upsert(entityId, entityType, beliefState).catch(() => {});
   }
 
   private parseAnalysis(content: string): {

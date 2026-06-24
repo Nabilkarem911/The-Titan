@@ -3,7 +3,7 @@ import { incCounter, setGauge, observeHistogram } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { selfRewriterVersions as versionsRepo } from '@titan/database';
+import { selfRewriterVersions as versionsRepo, selfRewritePipelines as pipelinesRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'self-rewriter' });
@@ -274,6 +274,7 @@ export class SelfRewriter {
       startedAt: new Date(),
     };
     this.pipelines.set(pipelineId, pipeline);
+    pipelinesRepo.insert(pipelineId, pipeline.diagnosis?.bottlenecks[0]?.module ?? '', pipeline.phase).catch(() => {});
     if (this.pipelines.size > this.maxPipelines) {
       const oldest = Array.from(this.pipelines.keys())[0];
       this.pipelines.delete(oldest);

@@ -1,6 +1,8 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import type { LlmProvider, LlmMessage } from '../types.js';
+import { randomUUID } from 'node:crypto';
+import { innerMonologueThreads as imtRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'mirror:inner-monologue' });
 
@@ -67,6 +69,7 @@ export class InnerMonologueManager {
       createdAt: now,
       updatedAt: now,
     });
+    imtRepo.insert(id, type, content).catch(() => {});
     log.debug({ threadId: id, type }, 'cognitive thread added');
     return id;
   }

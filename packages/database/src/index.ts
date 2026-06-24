@@ -12,3 +12,4 @@ export { agentProfiles, type AgentProfile } from './agentProfiles.js';
 export { webhooks, type WebhookRecord } from './webhooks.js';
 export { desktopDevices, type DesktopDevice } from './desktopDevices.js';
 export * from './route-repositories.js';
+export * from './remaining-repositories.js';

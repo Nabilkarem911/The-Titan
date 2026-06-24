@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { trtResults as trtRepo } from '@titan/database';
+import { trtResults as trtRepo, trtGlobalKnowledge } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'test-time-recursive-thinking' });
@@ -211,6 +211,7 @@ export class TestTimeRecursiveThinking {
     for (const k of accumulatedKnowledge) {
       if (!this.globalKnowledge.includes(k)) {
         this.globalKnowledge.push(k);
+        trtGlobalKnowledge.insert(k).catch(() => {});
       }
     }
     if (this.globalKnowledge.length > this.maxGlobalKnowledge) {

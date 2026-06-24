@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { benchmarkResults as brRepo } from '@titan/database';
+import { benchmarkResults as brRepo, benchmarkSuites as bsRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'benchmarking-suite' });
@@ -259,6 +259,7 @@ export class BenchmarkingSuite {
     };
 
     this.suites.push(suiteResult);
+    bsRepo.insert(suiteResult.id, suiteName, suiteResult.avgScore, suiteResult.results.length, startedAt, completedAt).catch(() => {});
     if (this.suites.length > this.maxSuites) {
       this.suites = this.suites.slice(-this.maxSuites);
     }

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { getLogger } from '@titan/logging';
 import type { STTProvider, TTSProvider, VoiceSession } from './voice-types.js';
 import { EmotionDetector, type EmotionResult } from './emotion-detector.js';
+import { voiceSessions, voiceSessionHistory } from '@titan/database';
 
 const log = getLogger().child({ component: 'voice-conversation' });
 
@@ -37,6 +38,7 @@ export class VoiceConversationManager {
 
     this.sessions.set(session.id, session);
     this.history.set(session.id, []);
+    voiceSessions.insert(session.id, userId).catch(() => {});
     log.info({ sessionId: session.id, userId }, 'voice session created');
     return session;
   }
@@ -74,6 +76,7 @@ export class VoiceConversationManager {
     const session = this.sessions.get(sessionId);
     if (session) {
       session.isActive = false;
+      voiceSessions.setActive(sessionId, false).catch(() => {});
       log.info({ sessionId }, 'voice session ended');
     }
   }
@@ -91,6 +94,7 @@ export class VoiceConversationManager {
     const turns = this.history.get(sessionId);
     if (turns) {
       turns.push(turn);
+      voiceSessionHistory.insert(sessionId, turn.role, turn.text).catch(() => {});
       if (turns.length > 100) turns.shift();
     }
   }

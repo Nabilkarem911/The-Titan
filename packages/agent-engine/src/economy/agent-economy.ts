@@ -2,6 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter, observeHistogram } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import type { LlmProvider } from '../types.js';
+import { economyAccounts, economyReputation, economyListings, economyOffers, economyEscrows, economyAuditLog } from '@titan/database';
 
 const log = getLogger().child({ component: 'agent-economy' });
 
@@ -120,6 +121,7 @@ export class AgentEconomy {
       createdAt: new Date(),
     };
     this.accounts.set(agentId, account);
+    economyAccounts.upsert(agentId, account.balance, account.reputation).catch(() => {});
 
     this.reputation.set(agentId, {
       agentId,
@@ -165,6 +167,7 @@ export class AgentEconomy {
     };
 
     this.listings.set(listing.id, listing);
+    economyListings.insert(listing.id, sellerId, skillName, pricePerUse).catch(() => {});
     incCounter('economy_skills_listed', 'Skills listed on marketplace', 1);
     log.info({ listingId: listing.id, sellerId, skillName, pricePerUse }, 'skill listed');
 
@@ -216,7 +219,7 @@ export class AgentEconomy {
     };
 
     this.offers.set(offer.id, offer);
-    incCounter('economy_offers_made', 'Trade offers made', 1);
+    economyOffers.insert(offer.id, fromAgentId, toAgentId, skillListingId ?? '', amount, null, offer.expiresAt).catch(() => {});
 
     return offer;
   }
@@ -245,6 +248,7 @@ export class AgentEconomy {
     };
 
     this.escrows.set(escrow.id, escrow);
+    economyEscrows.insert(escrow.id, offerId, escrow.buyerId, escrow.sellerId, escrow.amount).catch(() => {});
 
     // Hold funds
     const buyerAccount = this.accounts.get(offer.fromAgentId)!;
@@ -292,7 +296,7 @@ export class AgentEconomy {
     };
 
     this.offers.set(counter.id, counter);
-    incCounter('economy_counter_offers', 'Counter offers made', 1);
+    economyOffers.insert(counter.id, counter.fromAgentId, counter.toAgentId, counter.skillListingId ?? '', counterAmount, offer.id, counter.expiresAt).catch(() => {});
 
     return counter;
   }
@@ -519,5 +523,6 @@ export class AgentEconomy {
       timestamp: new Date(),
       immutable: true,
     });
+    economyAuditLog.insert(type, agentId, amount, description).catch(() => {});
   }
 }

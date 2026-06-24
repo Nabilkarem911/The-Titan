@@ -1,4 +1,5 @@
 import { getLogger } from '@titan/logging';
+import { swarmArtifacts as saRepo, swarmNotes as snRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'swarm-workspace' });
 
@@ -25,6 +26,7 @@ export class SharedWorkspace {
       createdAt: new Date(),
     };
     this.artifacts.set(key, artifact);
+    saRepo.insert(artifact.id, artifact.key, artifact.producedBy, typeof artifact.value === 'string' ? artifact.value : JSON.stringify(artifact.value)).catch(() => {});
     log.debug({ key, producedBy }, 'artifact stored');
   }
 
@@ -57,6 +59,7 @@ export class SharedWorkspace {
 
   setNote(agentId: string, note: string): void {
     this.notes.set(agentId, note);
+    snRepo.insert(agentId, note).catch(() => {});
   }
 
   getNote(agentId: string): string | undefined {
