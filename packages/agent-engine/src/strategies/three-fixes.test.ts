@@ -171,6 +171,20 @@ describe('Fix 6 — Language adherence', () => {
     expect(prompt).toContain('Tu es Titan');
   });
 
+  it('Arabic text overrides stored preference:language=english', () => {
+    const ctx = makeCtx('ازيك، عايز أسألك سؤال');
+    ctx.memoryItems = ['preference:language=english'];
+    const prompt = buildAdaptivePrompt(ctx, 'ازيك، عايز أسألك سؤال', 'en');
+    // Current message language (Arabic) should win over stored preference (English)
+    expect(prompt).toContain('تايتن');
+  });
+
+  it('Arabic text with locale=en still produces Arabic personality', () => {
+    const prompt = buildAdaptivePrompt(makeCtx('مش فاهم async/await'), 'مش فاهم async/await', 'en');
+    // Arabic script in message should override locale='en'
+    expect(prompt).toContain('تايتن');
+  });
+
   it('Arabic text with Python code → Arabic personality', () => {
     const code = 'def hello():\n    print("hello")\n';
     const prompt = buildAdaptivePrompt(makeCtx(`عندي مشكلة في الكود ده:\n${code}`), `عندي مشكلة في الكود ده:\n${code}`, 'ar');

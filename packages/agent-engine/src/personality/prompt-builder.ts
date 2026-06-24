@@ -352,12 +352,19 @@ export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string, loc
     const explicitLang = detectExplicitLanguageRequest(userMessage);
     if (explicitLang) {
       detectedLang = explicitLang;
-    } else if (locale === 'ar') {
-      detectedLang = 'arabic-egyptian';
-    } else if (locale === 'en') {
-      detectedLang = 'english';
     } else {
-      detectedLang = detectLanguage(userMessage).language;
+      // Always detect from the actual message content — the message's language
+      // is more reliable than the locale passed from chat.ts
+      const msgLang = detectLanguage(userMessage).language;
+      if (msgLang !== 'english' || !locale) {
+        // Message has a detectable non-English language, or no locale to fall back to
+        detectedLang = msgLang;
+      } else if (locale === 'ar') {
+        // Locale says Arabic but detector couldn't find it (edge case)
+        detectedLang = 'arabic-egyptian';
+      } else {
+        detectedLang = 'english';
+      }
     }
   } else if (locale === 'ar') {
     detectedLang = 'arabic-egyptian';
@@ -367,15 +374,25 @@ export function buildAdaptivePrompt(ctx: AgentContext, userMessage?: string, loc
     detectedLang = 'english';
   }
 
-  // Check if preferences override the detected language
-  // BUT: explicit language request in the current message always wins over stored preferences
+  // Language priority (highest to lowest):
+  // 1. Explicit language request in current message ("respond in French", "رد بالفرنسية")
+  // 2. Language detected from current message's script/content
+  // 3. Stored preference:language (fallback when current message is ambiguous)
   const explicitLang = userMessage ? detectExplicitLanguageRequest(userMessage) : null;
   const prefLang = ctx.memoryItems?.find((m) => m.startsWith('preference:language='));
+  const prefLangValue = prefLang
+    ? (prefLang.split('=')[1] as DetectedLanguage) ?? null
+    : null;
+
+  // If we detected a language from the current message (not the default 'english' fallback),
+  // it takes priority over stored preferences — the user's current language matters more than
+  // a stored preference from a previous session.
+  const detectedIsConfident = detectedLang !== 'english' || (userMessage && /[\u0600-\u06FF]/.test(userMessage));
   const effectiveLang: DetectedLanguage = explicitLang
     ? explicitLang
-    : prefLang
-      ? (prefLang.split('=')[1] as DetectedLanguage) ?? detectedLang
-      : detectedLang;
+    : detectedIsConfident
+      ? detectedLang
+      : prefLangValue ?? detectedLang;
 
   const personality = PERSONALITY[effectiveLang] ?? PERSONALITY['english'];
 

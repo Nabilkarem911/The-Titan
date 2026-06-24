@@ -68,6 +68,12 @@ Infer:
 
 Consider nested beliefs (e.g., "they think I think they want X").
 
+CRITICAL — Detect conceptual vs. practical questions:
+- If the user says "I don't understand X", "مش فاهم X", "ما فهمتش X", "explain X", "اشرح X", "what is X" → this is a CONCEPTUAL question. The user needs a simple explanation with analogies, NOT code or debugging.
+- If the user says "I have a bug", "عندي error", "this code doesn't work" → this is a PRACTICAL question. The user needs debugging help and may need to share code.
+- If the user says "I don't understand async/await" → recommendResponse should say "Explain async/await conceptually using real-world analogies (e.g., waiting at a restaurant). Do NOT ask for code."
+- If the user says "my API returns 500" → recommendResponse should say "Help debug the API error. Ask for the error message and relevant code."
+
 Respond in JSON:
 {
   "inferredBeliefs": { "key": "value" },
@@ -76,7 +82,7 @@ Respond in JSON:
   "uncertainties": ["uncertainty1"],
   "predictedNextAction": "what they'll likely do",
   "predictionConfidence": 0-1,
-  "recommendedResponse": "how to respond",
+  "recommendedResponse": "how to respond — be specific about whether to explain a concept or debug code",
   "perspectiveDepth": 1-3,
   "reasoning": "explanation"
 }`;

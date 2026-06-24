@@ -282,7 +282,35 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
               } catch {}
             }
 
-            const tgEnhancedPrompt = systemPromptExtra + tgEmotionContext + tgHeuristicContext;
+            // Dream insights injection for Telegram path
+            let tgDreamContext = '';
+            const dreamTriggers = ['what did you learn', 'what have you learned', 'إيه اللي اتعلمته', 'ماذا تعلمت', 'what insights', 'what patterns', 'إيه اللي اكتشفته', 'إيه الأنماط'];
+            if (dreamTriggers.some(t => enrichedPrompt.toLowerCase().includes(t)) && tgWiring?.dreamMode) {
+              try {
+                const dreamStats = tgWiring.dreamMode.stats();
+                const allInsights = tgWiring.dreamMode.getInsights();
+                const recentReports = tgWiring.dreamMode.getReports().slice(-3);
+                const insightsSummary = allInsights.slice(-10).map(i => `- [${i.type}] ${i.content} (confidence: ${i.confidence}%)`).join('\n');
+                const reportsSummary = recentReports.map(r => `Dream ${r.dreamId}: ${r.experiencesReviewed} experiences, ${r.insights.length} insights`).join('\n');
+                tgDreamContext = `\n\nDream Mode data (REAL insights):\n- Total dreams: ${dreamStats.totalDreams}\n- Total insights: ${dreamStats.totalInsights}\nRecent reports:\n${reportsSummary}\nLatest insights:\n${insightsSummary || 'No insights yet'}\n\nIMPORTANT: Use these REAL dream insights. Do NOT repeat the last conversation message.`;
+              } catch {}
+            }
+
+            // Theory of Mind for Telegram path
+            let tgTomContext = '';
+            if (tgWiring?.theoryOfMind) {
+              try {
+                const tomResult = await tgWiring.theoryOfMind.analyze('user', {
+                  entityType: 'user',
+                  messages: [...history.slice(-5).map(m => ({ role: m.role, content: m.content })), { role: 'user', content: enrichedPrompt }],
+                });
+                if (tomResult.recommendedResponse && tomResult.predictionConfidence > 0.2) {
+                  tgTomContext = `\n\nTheory of Mind analysis:\n- Recommended approach: ${tomResult.recommendedResponse}\n- CRITICAL: If the user says they don't understand a CONCEPT (e.g., "مش فاهم async/await"), DO NOT ask for code. Explain the concept from scratch in simple terms with analogies.`;
+                }
+              } catch {}
+            }
+
+            const tgEnhancedPrompt = systemPromptExtra + tgEmotionContext + tgHeuristicContext + tgDreamContext + tgTomContext;
 
             // Create DB run record
             const dbRun = await agentRuns.create({
@@ -503,6 +531,22 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         }
       }
 
+      // 3b. Theory of Mind — model user's understanding and inject recommended response approach
+      let tomContext = '';
+      if (wiring?.theoryOfMind) {
+        try {
+          const tomResult = await wiring.theoryOfMind.analyze('user', {
+            entityType: 'user',
+            messages: [...history.slice(-5).map(m => ({ role: m.role, content: m.content })), { role: 'user', content: enrichedPrompt }],
+          });
+          if (tomResult.recommendedResponse && tomResult.predictionConfidence > 0.2) {
+            tomContext = `\n\nTheory of Mind analysis:\n- User's inferred knowledge: ${tomResult.inferredKnowledge.join(', ') || 'unknown'}\n- User's inferred desires: ${tomResult.inferredDesires.join(', ') || 'unknown'}\n- Recommended response approach: ${tomResult.recommendedResponse}\n- Confidence: ${tomResult.predictionConfidence}\n- CRITICAL: If the user says they don't understand a CONCEPT (e.g., "مش فاهم async/await", "I don't get closures"), DO NOT ask for code. Explain the concept from scratch in simple terms with analogies. Only ask for code if the user has a specific BUG or ERROR.`;
+          }
+        } catch {
+          // theory of mind is optional
+        }
+      }
+
       // 4. Inner Monologue — run cognitive threads and stream to client
       if (wiring?.innerMonologue && input.stream) {
         try {
@@ -518,7 +562,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
       // 5. Introspection — if user asks about Titan's self-awareness, inject introspection data
       let introspectionContext = '';
-      const introspectionTriggers = ['what did you learn', 'what have you learned', 'إيه اللي اتعلمته', 'ماذا تعلمت', 'introspect', 'self-aware', 'self model'];
+      const introspectionTriggers = ['what did you learn', 'what have you learned', 'إيه اللي اتعلمته', 'ماذا تعلمت', 'introspect', 'self-aware', 'self model', 'what insights', 'what patterns', 'إيه اللي اكتشفته', 'إيه الأنماط'];
       if (introspectionTriggers.some(t => enrichedPrompt.toLowerCase().includes(t))) {
         if (wiring?.introspection) {
           try {
@@ -531,6 +575,17 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           try {
             const selfModel = wiring.introspectiveAwareness.getSelfModel();
             introspectionContext += `\n\nSelf-model:\n- Capabilities: ${selfModel.capabilities.join(', ')}\n- Known limitations: ${selfModel.limitations.join(', ')}\n- Goals: ${selfModel.goals.join(', ')}`;
+          } catch {}
+        }
+        // Inject dream insights — real data from dream mode, not conversation history
+        if (wiring?.dreamMode) {
+          try {
+            const dreamStats = wiring.dreamMode.stats();
+            const allInsights = wiring.dreamMode.getInsights();
+            const recentReports = wiring.dreamMode.getReports().slice(-3);
+            const insightsSummary = allInsights.slice(-10).map(i => `- [${i.type}] ${i.content} (confidence: ${i.confidence}%)`).join('\n');
+            const reportsSummary = recentReports.map(r => `Dream ${r.dreamId}: ${r.experiencesReviewed} experiences reviewed, ${r.insights.length} insights generated, ${r.staleFactsUpdated} stale facts updated`).join('\n');
+            introspectionContext += `\n\nDream Mode data (REAL insights from dream cycles):\n- Total dreams: ${dreamStats.totalDreams}\n- Total insights: ${dreamStats.totalInsights}\n- Avg insights per dream: ${dreamStats.avgInsightsPerDream}\n- Is running: ${dreamStats.isRunning}\nRecent dream reports:\n${reportsSummary}\nLatest insights:\n${insightsSummary || 'No insights yet'}\n\nIMPORTANT: Use these REAL dream insights to answer the user's question. Do NOT repeat the last conversation message. Summarize actual patterns, preferences, and skill gaps discovered.`;
           } catch {}
         }
       }
@@ -591,7 +646,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         }
       }
 
-      const enhancedSystemPrompt = systemPromptExtra + emotionContext + heuristicContext + introspectionContext + safetyWarning + multimodalContext;
+      const enhancedSystemPrompt = systemPromptExtra + emotionContext + heuristicContext + tomContext + introspectionContext + safetyWarning + multimodalContext;
 
       // Create DB run record
       const dbRun = await agentRuns.create({
