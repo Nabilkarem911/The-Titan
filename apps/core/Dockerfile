@@ -22,7 +22,7 @@ COPY packages/telemetry/package.json   packages/telemetry/package.json
 COPY packages/agent-engine/package.json packages/agent-engine/package.json
 COPY apps/core/package.json            apps/core/package.json
 COPY apps/dashboard/package.json       apps/dashboard/package.json
-RUN npm install --no-audit --no-fund
+RUN for i in 1 2 3; do npm install --no-audit --no-fund && break || (echo "npm install attempt $i failed, retrying..." && sleep 5); done
 
 # ── Stage 2: Build ──────────────────────────────────────────
 FROM deps AS builder
@@ -46,7 +46,7 @@ COPY package.json package-lock.json ./
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/core ./apps/core
 COPY --from=builder /app/apps/dashboard/dist ./apps/dashboard/dist
-RUN npm install --omit=dev --no-audit --no-fund && rm -rf /tmp/* ~/.npm
+RUN for i in 1 2 3; do npm install --omit=dev --no-audit --no-fund && break || (echo "npm install attempt $i failed, retrying..." && sleep 5); done && rm -rf /tmp/* ~/.npm
 
 # Non-root user
 RUN addgroup -S titan -g 1001 && adduser -S titan -G titan -u 1001

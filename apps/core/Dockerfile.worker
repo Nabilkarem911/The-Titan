@@ -20,7 +20,7 @@ COPY packages/observability/package.json packages/observability/package.json
 COPY packages/telemetry/package.json   packages/telemetry/package.json
 COPY packages/agent-engine/package.json packages/agent-engine/package.json
 COPY apps/core/package.json            apps/core/package.json
-RUN npm ci --legacy-peer-deps
+RUN for i in 1 2 3; do npm ci --legacy-peer-deps && break || (echo "npm ci attempt $i failed, retrying..." && sleep 5); done
 
 # ── Stage 2: Build ──────────────────────────────────────────
 FROM deps AS builder
@@ -39,7 +39,7 @@ RUN apk add --no-cache dumb-init
 COPY package.json package-lock.json ./
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/core ./apps/core
-RUN npm ci --omit=dev --legacy-peer-deps && rm -rf /tmp/* ~/.npm
+RUN for i in 1 2 3; do npm ci --omit=dev --legacy-peer-deps && break || (echo "npm ci attempt $i failed, retrying..." && sleep 5); done && rm -rf /tmp/* ~/.npm
 
 # Non-root user
 RUN addgroup -S titan -g 1001 && adduser -S titan -G titan -u 1001
