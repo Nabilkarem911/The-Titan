@@ -13,6 +13,7 @@ import { readFile } from 'node:fs/promises';
 import { join, resolve, relative } from 'node:path';
 import { userContextStorage } from '../user-context-storage.js';
 import { createProviderFromEnv } from '@titan/agent-engine';
+import { touchActivity } from '../background-scheduler.js';
 
 const log = getLogger().child({ component: 'chat' });
 
@@ -157,6 +158,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     { preHandler: requireAuth, ...RATE_LIMIT_CHAT },
     async (req, reply) => {
       if (!req.auth) throw new ValidationError('Authentication required');
+      touchActivity();
 
       const input = ChatInputSchema.parse(req.body);
       const userId = req.auth.userId;

@@ -14,6 +14,7 @@ import { agentRuns, userSecrets, userContext, userProjects } from '@titan/databa
 import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile, pdfCreate, spreadsheetCreate, imageGenerate, imageAnalyze, s3Operations, googleDrive, notionApi, linearApi, rssFeedParse, webMonitor, csvTransform, dataVisualize, slackMessage, smsMessage, textClassify, codeAnalyze, systemMetrics, invoiceGenerate, reportGenerate, jiraApi, seoAnalyze, xmlParse, networkDiagnose, textSummarize, entityExtract, accessibilityCheck, budgetTracker, imageEdit, documentTemplate, slideCreate, gcsOperations, dropboxSync, trelloApi, asanaApi, sitemapCrawl, jsonSchemaValidate, yamlConvert, discordMessage, whatsappMessage, pushNotification, embeddingsGenerate, logSearch, databaseBackup, cronManage, processManager, contractDraft } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { registerDesktopTools } from './desktop-tools.js';
+import { startBackgroundScheduler, stopBackgroundScheduler, touchActivity } from './background-scheduler.js';
 
 const cfg = loadConfig();
 
@@ -1577,9 +1578,11 @@ export async function closeAllWorkers(): Promise<void> {
 // Self-executing entry point for worker container
 if (import.meta.url === `file://${process.argv[1]}`) {
   registerAllWorkers();
+  startBackgroundScheduler();
 
   const gracefulShutdown = async (signal: string) => {
     log.info({ signal }, 'worker shutting down gracefully');
+    stopBackgroundScheduler();
     await closeAllWorkers();
     process.exit(0);
   };

@@ -133,6 +133,14 @@ export const agentRuns = {
     return r.rows.map(mapRun);
   },
 
+  async listRecent(limit: number = 20): Promise<AgentRun[]> {
+    const r = await query<Record<string, unknown>>(
+      `SELECT * FROM agent_runs ORDER BY created_at DESC LIMIT $1`,
+      [limit],
+    );
+    return r.rows.map(mapRun);
+  },
+
   async updateStatus(
     id: string,
     status: string,
