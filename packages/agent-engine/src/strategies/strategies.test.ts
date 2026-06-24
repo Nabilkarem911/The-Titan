@@ -277,4 +277,30 @@ describe('StrategySelector', () => {
     const classification = selector.classifyWithHeuristics('just do anything');
     expect(classification.type).toBe('ambiguous');
   });
+
+  it('classifies "code review" + code as code_review', () => {
+    const selector = new StrategySelector();
+    const classification = selector.classifyWithHeuristics('Please do a code review:\n```python\ndef foo(x):\n  return x + 1\n```');
+    expect(classification.type).toBe('code_review');
+    expect(classification.recommendedStrategy).toBe('chain-of-thought');
+  });
+
+  it('classifies "راجع الكود" + code as code_review', () => {
+    const selector = new StrategySelector();
+    const classification = selector.classifyWithHeuristics('راجع الكود ده:\nfunction add(a, b) {\n  return a + b;\n}');
+    expect(classification.type).toBe('code_review');
+    expect(classification.recommendedStrategy).toBe('chain-of-thought');
+  });
+
+  it('classifies "افحص الكود" + code as code_review', () => {
+    const selector = new StrategySelector();
+    const classification = selector.classifyWithHeuristics('افحص الكود:\nclass Foo:\n  def bar(self):\n    pass');
+    expect(classification.type).toBe('code_review');
+  });
+
+  it('does NOT classify "code review" without code as code_review', () => {
+    const selector = new StrategySelector();
+    const classification = selector.classifyWithHeuristics('What is a code review?');
+    expect(classification.type).not.toBe('code_review');
+  });
 });

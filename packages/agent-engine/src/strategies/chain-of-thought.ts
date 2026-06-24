@@ -22,7 +22,14 @@ For dataset, analysis, or coding tasks:
 2. RUN the code using execute_bash (e.g., python /tmp/analyze.py)
 3. READ the output and report the results
 4. If the code fails, fix it and re-run
-Do NOT just say "I need execute_bash" — write the code first, then run it.`;
+Do NOT just say "I need execute_bash" — write the code first, then run it.
+
+For code review requests (when user provides code and asks for review):
+1. Analyze the code directly — do NOT search for external sources or use web tools
+2. Report: (a) Issues/bugs found, (b) Suggested improvements, (c) Score out of 100
+3. Check for: anti-patterns, missing error handling, missing type hints, N+1 queries, missing docstrings
+4. Be thorough and specific — point to exact lines and explain why something is an issue
+5. Do NOT call any tools — the code is in the message, review it directly`;
 
 export class ChainOfThoughtStrategy implements ReasoningStrategy {
   name = 'chain-of-thought' as const;

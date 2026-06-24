@@ -18,6 +18,7 @@ const CLASSIFY_PROMPT = `Classify this task into exactly one category:
 - controversial: Topic with multiple valid viewpoints or trade-offs
 - debugging: Investigating an error, bug, crash, or unexpected behavior
 - ambiguous: Vague or unclear request that needs clarification (e.g., "do something useful", "اعمل حاجة مفيدة")
+- code_review: User provided code and asked for a review (e.g., "code review", "راجع الكود", "افحص الكود")
 
 Respond ONLY with JSON:
 { "type": "...", "confidence": 0-100, "reasoning": "..." }`;
@@ -31,6 +32,7 @@ const STRATEGY_MAP: Record<string, StrategyName> = {
   controversial: 'debate',
   debugging: 'hypothesis-testing',
   ambiguous: 'chain-of-thought',
+  code_review: 'chain-of-thought',
 };
 
 export class StrategySelector {
@@ -67,6 +69,14 @@ export class StrategySelector {
   classifyWithHeuristics(prompt: string): TaskClassification {
     const lower = prompt.toLowerCase();
     const wordCount = prompt.split(/\s+/).length;
+
+    // Code review detection — must come BEFORE debugging so review requests aren't misclassified
+    const codeReviewKeywords = ['code review', 'review the code', 'review my code', 'راجع الكود', 'افحص الكود', 'راجع الكود ده', 'code quality'];
+    const hasCodeReviewKeyword = codeReviewKeywords.some(kw => lower.includes(kw));
+    const hasCodeInMessage = /(```|def |function |class |import |const |let |var |public |private |return |if \(|for \(|while \(|print\(|console\.log)/.test(prompt);
+    if (hasCodeReviewKeyword && hasCodeInMessage) {
+      return { type: 'code_review', confidence: 95, recommendedStrategy: 'chain-of-thought', reasoning: 'Code review request with code provided — review inline, no external tools needed' };
+    }
 
     // Debugging keywords (English + Arabic) → hypothesis-testing
     if (lower.match(/\b(error|bug|crash|exception|stack trace|debug|not working|broken|fails?|failing|issue|traceback|undefined|null pointer)\b/) ||
