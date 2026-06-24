@@ -1198,16 +1198,39 @@ function registerCapabilityTools(wiring: WiredCapabilities, llm: LlmProvider): v
 
   registry.register({
     name: 'self_forge_tool',
-    description: 'Create a new tool using Self-Forge — the agent designs and implements a new tool for itself',
+    description: 'Create a new tool using Self-Forge and execute it immediately. Provide a description of what the tool should do and optional params to run it with.',
     tags: ['self-forge', 'tool', 'creation'],
     schema: {
       description: { type: 'string', description: 'Description of what the tool should do' },
       name: { type: 'string', description: 'Name for the new tool (optional)' },
+      executeParams: { type: 'object', description: 'Parameters to execute the newly forged tool with immediately (optional)' },
     },
     requiredParams: ['description'],
     handler: async (params: unknown) => {
-      const p = params as { description: string; name?: string };
-      return wiring.selfForge.forgeTool(p.description, p.name ?? 'on-demand');
+      const p = params as { description: string; name?: string; executeParams?: Record<string, unknown> };
+      const forgeResult = await wiring.selfForge.forgeTool(p.description, p.name ?? 'on-demand');
+
+      if (!forgeResult.success || !forgeResult.toolName) {
+        return forgeResult;
+      }
+
+      // Execute the newly forged tool immediately
+      try {
+        const registry = getGlobalToolRegistry();
+        const execResult = await registry.execute(forgeResult.toolName, p.executeParams ?? {});
+        wiring.selfForge.recordUsage(forgeResult.toolName);
+        return {
+          ...forgeResult,
+          executed: true,
+          executionResult: execResult,
+        };
+      } catch (err) {
+        return {
+          ...forgeResult,
+          executed: false,
+          executionError: err instanceof Error ? err.message : String(err),
+        };
+      }
     },
   });
 

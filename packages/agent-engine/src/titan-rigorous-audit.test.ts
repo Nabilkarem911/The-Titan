@@ -214,6 +214,60 @@ describe('Self-Forge — اختبار صنع الأدوات', () => {
     const tools = forge.listForgedTools();
     expect(tools.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('self_forge_tool handler يجب أن ينفذ الأداة بعد صنعها', async () => {
+    resetGlobalToolRegistry();
+    llm.setResponse('forge', JSON.stringify({
+      name: 'word_counter',
+      description: 'Counts words in text',
+      sourceCode: 'async function handler(params) { const text = params.text || ""; return { count: text.split(" ").filter(Boolean).length }; }',
+      schema: { text: { type: 'string', description: 'Text to count words' } },
+      requiredParams: ['text'],
+      testCases: [],
+    }));
+
+    const wiring = wireCapabilities(llm);
+    const registry = getGlobalToolRegistry();
+
+    // The self_forge_tool should be registered in the registry
+    expect(registry.has('self_forge_tool')).toBe(true);
+
+    // Execute self_forge_tool with executeParams
+    const result = await registry.execute('self_forge_tool', {
+      description: 'count words in text',
+      executeParams: { text: 'hello world foo bar' },
+    });
+
+    expect(result.success).toBe(true);
+    const data = result.data as any;
+    expect(data.success).toBe(true);
+    expect(data.toolName).toBe('word_counter');
+    expect(data.executed).toBe(true);
+    expect(data.executionResult).toBeDefined();
+    expect(data.executionResult.success).toBe(true);
+    expect(data.executionResult.data.count).toBe(4);
+
+    resetGlobalWiring();
+  });
+
+  it('self_forge_tool handler يجب أن يرجع executed=false لو الفشل', async () => {
+    resetGlobalToolRegistry();
+    llm.setResponse('forge', 'invalid response');
+
+    const wiring = wireCapabilities(llm);
+    const registry = getGlobalToolRegistry();
+
+    const result = await registry.execute('self_forge_tool', {
+      description: 'something impossible',
+    });
+
+    expect(result.success).toBe(true);
+    const data = result.data as any;
+    expect(data.success).toBe(false);
+    expect(data.executed).toBeUndefined();
+
+    resetGlobalWiring();
+  });
 });
 
 // ============================================================
