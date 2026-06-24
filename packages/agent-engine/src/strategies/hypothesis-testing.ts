@@ -131,7 +131,7 @@ export class HypothesisTestingStrategy implements ReasoningStrategy {
             error: 'Cannot use execution tools (execute_bash, desktop_execute, etc.) to investigate user code. Ask the user to share the code or error message.',
           };
           messages.push({ role: 'assistant', content: step.thought });
-          messages.push({ role: 'tool', content: step.observation.error });
+          messages.push({ role: 'tool', content: 'Cannot use execution tools (execute_bash, desktop_execute, etc.) to investigate user code. Ask the user to share the code or error message.' });
           step.updatedAt = new Date();
           steps.push(step);
           if (onStep) await onStep(step);
