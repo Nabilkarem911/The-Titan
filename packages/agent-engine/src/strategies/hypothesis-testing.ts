@@ -70,7 +70,16 @@ function isUserCodeQuestion(prompt: string): boolean {
     'كودي', 'الـ api بتاعتي', 'مشروعي', 'برنامجي', 'الـ function بتاعتي',
     'عندي codebase', 'عندي مشكلة في كود',
   ];
-  return userCodeMarkers.some(m => lower.includes(m));
+  const isCodeQuestion = userCodeMarkers.some(m => lower.includes(m));
+  if (!isCodeQuestion) return false;
+
+  // Code review requests are NOT debugging — allow all tools
+  const codeReviewMarkers = [
+    'code review', 'review', 'راجع', 'راجع الكود', 'افحص الكود', 'code quality',
+  ];
+  if (codeReviewMarkers.some(m => lower.includes(m))) return false;
+
+  return true;
 }
 
 export class HypothesisTestingStrategy implements ReasoningStrategy {

@@ -424,6 +424,88 @@ describe('Fix 4 — Hypothesis-testing tool filtering', () => {
     // Should keep all tools including execute_bash for non-user-code debugging
     expect(toolNames).toContain('execute_bash');
   });
+
+  it('does NOT filter tools for code review requests even with user-code keywords', async () => {
+    const { llm } = makeMockLlm(['FINAL ANSWER: Code review complete.']);
+    const strategy = new HypothesisTestingStrategy();
+    const tools = makeTools();
+
+    let passedTools: LlmToolDefinition[] | undefined;
+    const wrappedLlm = {
+      complete: async (msgs: any, opts?: any) => {
+        passedTools = opts?.tools;
+        return llm.complete(msgs, opts);
+      },
+    };
+
+    await strategy.execute({
+      run: makeRun('Please do a code review for my code'),
+      systemPrompt: '',
+      tools,
+      llm: wrappedLlm as any,
+      executeTool: async () => ({ success: true, data: 'ok' }),
+    });
+
+    expect(passedTools).toBeDefined();
+    const toolNames = passedTools!.map(t => t.name);
+    // Code review should NOT be filtered — execute_bash should be available
+    expect(toolNames).toContain('execute_bash');
+    expect(toolNames).toContain('write_file');
+  });
+
+  it('does NOT filter tools for Arabic code review "راجع الكود"', async () => {
+    const { llm } = makeMockLlm(['FINAL ANSWER: تم مراجعة الكود.']);
+    const strategy = new HypothesisTestingStrategy();
+    const tools = makeTools();
+
+    let passedTools: LlmToolDefinition[] | undefined;
+    const wrappedLlm = {
+      complete: async (msgs: any, opts?: any) => {
+        passedTools = opts?.tools;
+        return llm.complete(msgs, opts);
+      },
+    };
+
+    await strategy.execute({
+      run: makeRun('راجع الكود في كودي'),
+      systemPrompt: '',
+      tools,
+      llm: wrappedLlm as any,
+      executeTool: async () => ({ success: true, data: 'ok' }),
+    });
+
+    expect(passedTools).toBeDefined();
+    const toolNames = passedTools!.map(t => t.name);
+    expect(toolNames).toContain('execute_bash');
+  });
+
+  it('STILL filters tools for regular debugging with user-code keywords', async () => {
+    const { llm } = makeMockLlm(['FINAL ANSWER: The bug is...']);
+    const strategy = new HypothesisTestingStrategy();
+    const tools = makeTools();
+
+    let passedTools: LlmToolDefinition[] | undefined;
+    const wrappedLlm = {
+      complete: async (msgs: any, opts?: any) => {
+        passedTools = opts?.tools;
+        return llm.complete(msgs, opts);
+      },
+    };
+
+    await strategy.execute({
+      run: makeRun('There is a bug in my code, it crashes'),
+      systemPrompt: '',
+      tools,
+      llm: wrappedLlm as any,
+      executeTool: async () => ({ success: true, data: 'ok' }),
+    });
+
+    expect(passedTools).toBeDefined();
+    const toolNames = passedTools!.map(t => t.name);
+    // Regular debugging with user code should STILL be filtered
+    expect(toolNames).not.toContain('execute_bash');
+    expect(toolNames).not.toContain('desktop_execute');
+  });
 });
 
 // ---------------------------------------------------------------------------
