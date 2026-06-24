@@ -93,7 +93,7 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 - ✅ **Streaming chat** — SSE streaming with multi-turn context
 - ✅ **80+ registered tools** — bash, file operations, code analysis, web search, creative generation, translation, and more
 - ✅ **Tool registry** — LRU cache (max 500 entries), periodic cleanup, rate limiting per tool
-- ✅ **Self-Forge** — agent generates new tools at runtime
+- ✅ **Self-Forge** — agent generates new tools at runtime and executes them immediately, returning results to user
 - ✅ **Code intelligence** — codebase indexing, smart context building, symbol extraction
 - ✅ **Autonomous task executor** — plan → execute → verify → auto-fix → commit loop
 - ✅ **Verification runner** — async typecheck, lint, test, build (non-blocking)
@@ -152,7 +152,11 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 - ✅ **Introspection** — self-examination, connected to chat via context injection + self-model
 - ✅ **Inner monologue** — internal dialogue (goals, reasoning, emotional threads), streamed to client via SSE
 - ✅ **Emotional intelligence** — text emotion analysis, wired to chat personality with response strategy guidance
-- ✅ **Heuristic extractor** — rule extraction from experiences, injected into agent context pre-run
+- ✅ **Heuristic extractor** — rule extraction from experiences, injected into agent context pre-run, consolidated hourly via background scheduler
+- ✅ **Safety memory** — checks input against known harmful patterns pre-run, streams warnings via SSE before agent starts
+- ✅ **Proactive intelligence** — analyzes user patterns post-run and streams suggestions via SSE (both dashboard + Telegram paths)
+- ✅ **Skill synthesis** — auto-synthesizes new skills after successful multi-step runs, verifies with test cases
+- ✅ **Dynamic tool discovery** — discovers missing capabilities when agent steps fail, suggests tools to install
 
 ### Creative & World Model
 
@@ -165,6 +169,8 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 - ✅ **World simulator** — environment graph with entities and relations
 - ✅ **Universal translator** — 100+ language translation
 - ✅ **Temporal intelligence** — past analysis, future prediction, timeline branches
+- ✅ **Screen monitor** — monitors screen for errors/build failures, streams alerts to client before agent run
+- ✅ **Advanced multimodal** — analyzes attached images (code OCR) and PDFs (table extraction) pre-run, converts diagrams to code
 
 ### Platform
 
@@ -177,6 +183,9 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 - ✅ **Dockerfile resilience** — npm retry logic (3 attempts) for transient network errors during builds
 - ✅ **Background scheduler** — 12 automated tasks (dream consolidation, heuristic extraction, experience cleanup, etc.)
 - ✅ **Language adherence** — detects user language (Arabic/English) and responds consistently in same language
+- ✅ **Hyper-agent** — scheduled every 6h via background task (introspection → improvement → evaluation loop)
+- ✅ **Meta-learning optimizer** — scheduled every 2h via background task (optimizes learning config from recent runs)
+- ✅ **Benchmarking suite** — scheduled weekly (Friday 3 AM) via background task (comprehensive benchmark evaluation)
 
 ---
 
@@ -190,21 +199,18 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 - 🚧 **Swarm evolution** — population evolution, standalone only
 - 🚧 **RL training** — reinforcement learning environment, requires state/action generators
 - 🚧 **Meta-evolution** — higher-order evolution, returns stats only
-- 🚧 **GitHub miner** — repository search, not integrated into agent flow
+- 🚧 **GitHub miner** — scheduled daily via background task, but results not integrated into agent flow
 - 🚧 **Zero-data co-evolution** — self-play evolution, standalone
 - 🚧 **Quantum optimizer** — quantum-inspired optimization, basic scoring function
 - 🚧 **Autonomous gardener** — creative idea nurturing, not connected to chat
 - 🚧 **Infinite self-play** — autonomous skill development, standalone
-- 🚧 **Self-evolving code** — module analysis, not auto-applying changes
+- 🚧 **Self-evolving code** — scheduled daily, evaluates fitness from run metrics, but not auto-applying changes
 - 🚧 **Apex evolution** — harness patching, requires manual invocation
 - 🚧 **Cross-user learning** — anonymized patterns, not connected to chat
 - 🚧 **Strategy tuner** — performance tracking, no auto-tuning yet
 - 🚧 **Edge privacy** — on-device processing framework, not active
 - 🚧 **Constitution** — principles and amendments, not enforced in agent flow
 - 🚧 **Self-rewriter** — code patch proposals, sandbox testing, not auto-deployed
-- 🚧 **Meta-learning optimizer** — learning process optimization, standalone
-- 🚧 **Benchmarking suite** — standardized task evaluation, standalone
-- 🚧 **Hyper-agent** — introspection → improvement → evaluation loop, standalone
 - 🚧 **Curiosity engine** — topic exploration, standalone
 - 🚧 **Metacognitive consolidation** — knowledge synthesis, not scheduled
 - 🚧 **Cognitive controller** — attention management, not wired to agent runner
