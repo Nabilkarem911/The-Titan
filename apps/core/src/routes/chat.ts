@@ -314,7 +314,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
             let tgConvMemoryContext = '';
             const tgMemoryTriggers = ['do you remember', 'remember when', 'remember yesterday', 'last time we talked', 'فاكر امبارح', 'فاكر آخر مرة', 'بتفتكر', 'آخر مرة كلمنا', 'كلمنا قبل كده', 'قابلنا قبل كده'];
             if (tgMemoryTriggers.some(t => enrichedPrompt.toLowerCase().includes(t))) {
-              const tgHistory = history.slice(-20);
+              const tgHistory = history.slice(-10);
               if (tgHistory.length > 0) {
                 const tgHistoryText = tgHistory.map(m => `${m.role === 'user' ? 'User' : 'Titan'}: ${m.content.slice(0, 200)}`).join('\n');
                 tgConvMemoryContext = `\n\nConversation memory (REAL past messages):\n${tgHistoryText}\n\nIMPORTANT: Use this ACTUAL history to answer. Do NOT say you can't remember.`;
@@ -371,7 +371,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
                 maxSteps: input.maxSteps,
                 systemPromptExtra: tgEnhancedPrompt,
                 locale: lang,
-                conversationHistory: history.slice(-20).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+                conversationHistory: history.slice(-10).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
               });
 
               const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
@@ -563,19 +563,19 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       let conversationMemoryContext = '';
       const memoryTriggers = ['do you remember', 'remember when', 'remember yesterday', 'last time we talked', 'فاكر امبارح', 'فاكر آخر مرة', 'بتفتكر', 'آخر مرة كلمنا', 'كلمنا قبل كده', 'قابلنا قبل كده', 'ذكرتلك قبل كده'];
       if (memoryTriggers.some(t => enrichedPrompt.toLowerCase().includes(t))) {
-        const recentHistory = history.slice(-20);
+        const recentHistory = history.slice(-10);
         if (recentHistory.length > 0) {
           const historyText = recentHistory.map(m => `${m.role === 'user' ? 'User' : 'Titan'}: ${m.content.slice(0, 200)}`).join('\n');
           conversationMemoryContext = `\n\nConversation memory (REAL past messages — use these to answer):\n${historyText}\n\nIMPORTANT: The above is your ACTUAL conversation history. Use it to answer the user's question about past conversations. Do NOT say you can't remember.`;
         }
       }
 
-      // 4. Inner Monologue — run cognitive threads and stream to client
+      // 4. Inner Monologue — run single cognitive thread and stream to client
       if (wiring?.innerMonologue && input.stream) {
         try {
           const llm = getSharedLlm();
           if (llm) {
-            const threadResults = await wiring.innerMonologue.runAllThreads(llm, enrichedPrompt, ['goals', 'reasoning', 'emotional']);
+            const threadResults = await wiring.innerMonologue.runAllThreads(llm, enrichedPrompt, ['reasoning']);
             reply.raw.write(`data: ${JSON.stringify({ type: 'inner_monologue', threads: threadResults.map((r) => ({ type: r.type, output: r.output })) })}\n\n`);
           }
         } catch {
@@ -718,7 +718,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           maxSteps: input.maxSteps,
           systemPromptExtra: enhancedSystemPrompt,
           locale: lang,
-          conversationHistory: history.slice(-20).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+          conversationHistory: history.slice(-10).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         });
 
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';

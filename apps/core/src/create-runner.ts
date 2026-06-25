@@ -145,7 +145,7 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
     contextOptimization: {
       maxContextTokens: 32000,
       maxToolOutputTokens: 2000,
-      maxConversationMessages: 6,
+      maxConversationMessages: 4,
       enableToolFiltering: true,
       enableHistoryCompaction: true,
       enableOutputTruncation: true,

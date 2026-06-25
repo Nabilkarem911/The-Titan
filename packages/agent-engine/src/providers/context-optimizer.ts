@@ -113,53 +113,28 @@ export class ContextOptimizer {
       }
     }
 
-    // Extract tool names mentioned in the prompt
-    const promptLower = prompt.toLowerCase();
-    const mentionedTools = new Set<string>();
-    for (const tool of tools) {
-      if (promptLower.includes(tool.name.toLowerCase())) {
-        mentionedTools.add(tool.name);
-      }
-    }
+    // Classify the task type from the prompt
+    const taskType = classifyTask(prompt);
+    const allowedTools = getToolsForTask(taskType);
 
-    // Always keep tools that were used recently or mentioned in prompt
+    // Always keep tools that were used recently (mid-run tool continuity)
     const keep = new Set<string>();
     for (const tool of tools) {
       const usage = this.toolUsageMap.get(tool.name);
-      const wasUsedRecently = usage && usage.lastUsedStep >= steps.length - 5;
-      const wasMentioned = mentionedTools.has(tool.name);
-
-      if (wasUsedRecently || wasMentioned) {
+      if (usage && usage.lastUsedStep >= steps.length - 3) {
         keep.add(tool.name);
       }
     }
 
-    // If we're under budget, keep everything
-    const estimatedTokens = this.estimateToolTokens(tools);
-    if (estimatedTokens <= this.opts.maxContextTokens * 0.3) {
-      return { tools, removed: [] };
-    }
-
-    // Filter: keep essential tools + recently used + mentioned
-    const essentialTools = new Set([
-      'execute_bash', 'write_file', 'read_file', 'patch_file',
-      'http_request', 'scrape', 'brave_search',
-    ]);
-
+    // Filter: keep only task-relevant tools + recently used
     const filtered = tools.filter(t =>
-      keep.has(t.name) ||
-      essentialTools.has(t.name) ||
-      t.name.startsWith('manage_') ||
-      t.name.startsWith('set_') ||
-      t.name.startsWith('get_') ||
-      t.name.startsWith('remember') ||
-      t.name.startsWith('recall'),
+      allowedTools.has(t.name) || keep.has(t.name),
     );
 
     const removed = tools.filter(t => !filtered.includes(t)).map(t => t.name);
 
     if (removed.length > 0) {
-      log.debug({ removed: removed.length, kept: filtered.length }, 'tools filtered from context');
+      log.info({ taskType, removed: removed.length, kept: filtered.length }, 'tools filtered by task type');
       incCounter('ctx_tools_removed', 'Tools removed from context', removed.length);
     }
 
@@ -497,4 +472,73 @@ export class ContextOptimizer {
       return [];
     }
   }
+}
+
+// ── Task-aware tool filtering ──
+
+type TaskType = 'simple_qa' | 'code' | 'debugging' | 'creative' | 'multi_step' | 'default';
+
+const TASK_TOOL_SETS: Record<TaskType, Set<string>> = {
+  simple_qa: new Set([
+    'recall', 'remember', 'brave_search', 'brave_answers',
+  ]),
+  code: new Set([
+    'execute_bash', 'write_file', 'read_file_content', 'patch_file', 'read_file_ast',
+    'http_request', 'firecrawl_scrape', 'brave_search', 'recall', 'remember',
+    'parse_csv_json', 'json_validate', 'text_diff', 'markdown_to_html',
+  ]),
+  debugging: new Set([
+    'execute_bash', 'read_file_content', 'read_file_ast', 'patch_file',
+    'hypothesis_generate', 'self_heal_debug', 'brave_search', 'recall',
+  ]),
+  creative: new Set([
+    'generate_creative', 'translate_text', 'brave_search', 'recall', 'remember',
+  ]),
+  multi_step: new Set([
+    'execute_bash', 'write_file', 'read_file_content', 'patch_file', 'read_file_ast',
+    'http_request', 'firecrawl_scrape', 'brave_search', 'brave_answers',
+    'recall', 'remember', 'database_query', 'docker_manage', 'github_api',
+  ]),
+  default: new Set([
+    'execute_bash', 'write_file', 'read_file_content', 'brave_search', 'recall', 'remember',
+  ]),
+};
+
+function classifyTask(prompt: string): TaskType {
+  const lower = prompt.toLowerCase();
+  const wordCount = prompt.split(/\s+/).length;
+
+  if (lower.match(/\b(error|bug|crash|exception|stack trace|debug|not working|broken|fails?|failing|traceback)\b/) ||
+      lower.match(/(مشكلة|مشكله|بيفشل|مش شغال|خطأ|خلل|بيهنج|بيعلق)/)) {
+    return 'debugging';
+  }
+
+  if (lower.match(/\b(code|function|class|deploy|build|compile|refactor|implement|api|endpoint|script)\b/) ||
+      lower.match(/(كود|دالة|كلاس|نشر|بناء|تعديل|برمج)/)) {
+    return 'code';
+  }
+
+  if (lower.match(/\b(write|poem|story|generate|create|design|brainstorm|idea)\b/) ||
+      lower.match(/(اكتب|قصيدة|قصة|ابتكر|صمم|فكرة)/)) {
+    return 'creative';
+  }
+
+  if (lower.match(/\b(deploy|setup|install|configure|migrate|pipeline|ci\/cd|docker|server)\b/) ||
+      lower.match(/(نشر|تثبيت|إعداد|ترحيل|سيرفر)/)) {
+    return 'multi_step';
+  }
+
+  if (wordCount < 25 && lower.match(/\b(what|who|when|where|how many|define|tell me|explain|what is|who is)\b/)) {
+    return 'simple_qa';
+  }
+
+  if (wordCount < 15) {
+    return 'simple_qa';
+  }
+
+  return 'default';
+}
+
+function getToolsForTask(taskType: TaskType): Set<string> {
+  return TASK_TOOL_SETS[taskType] ?? TASK_TOOL_SETS['default'];
 }

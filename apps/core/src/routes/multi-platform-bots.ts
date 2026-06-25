@@ -112,7 +112,7 @@ async function handleMessage(
     agentId: 'platform-bot',
     prompt: text,
     systemPromptExtra: (profileSystemPrompt ? profileSystemPrompt + '\n\n' : '') + contextBlock,
-    conversationHistory: chatHistory.slice(-20),
+    conversationHistory: chatHistory.slice(-10),
   });
 
   const answer = result.finalAnswer?.trim() || 'لم أتمكن من إكمال المهمة.';

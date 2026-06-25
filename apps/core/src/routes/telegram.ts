@@ -661,7 +661,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         agentId,
         prompt: text,
         systemPromptExtra: (profileSystemPrompt ? profileSystemPrompt + '\n\n' : '') + contextBlock,
-        conversationHistory: chatHistory.slice(-20),
+        conversationHistory: chatHistory.slice(-10),
       }).then(async (result) => {
         clearInterval(typingInterval);
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إكمال المهمة.';

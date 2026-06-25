@@ -55,28 +55,39 @@ describe('ContextOptimizer', () => {
     expect(result.tools.some(t => t.name === 'execute_bash')).toBe(true);
   });
 
-  it('keeps all tools when under budget', () => {
+  it('filters tools by task type — simple_qa keeps only essential tools', () => {
     const opt = new ContextOptimizer({ maxContextTokens: 100000, enableToolFiltering: true });
     const tools: LlmToolDefinition[] = [
-      makeTool('tool_a', 'Tool A'),
-      makeTool('tool_b', 'Tool B'),
-      makeTool('tool_c', 'Tool C'),
+      makeTool('recall', 'Recall saved facts'),
+      makeTool('remember', 'Save a fact'),
+      makeTool('brave_search', 'Search the web'),
+      makeTool('execute_bash', 'Execute bash command'),
+      makeTool('docker_manage', 'Manage Docker containers'),
     ];
 
-    const result = opt.optimizeTools(tools, [], 'test prompt');
-    expect(result.tools.length).toBe(3);
-    expect(result.removed.length).toBe(0);
+    const result = opt.optimizeTools(tools, [], 'what is the weather today');
+    expect(result.tools.some(t => t.name === 'recall')).toBe(true);
+    expect(result.tools.some(t => t.name === 'remember')).toBe(true);
+    expect(result.tools.some(t => t.name === 'brave_search')).toBe(true);
+    expect(result.tools.some(t => t.name === 'execute_bash')).toBe(false);
+    expect(result.tools.some(t => t.name === 'docker_manage')).toBe(false);
   });
 
-  it('keeps tools mentioned in prompt', () => {
+  it('code task keeps code-related tools', () => {
     const opt = new ContextOptimizer({ maxContextTokens: 100, enableToolFiltering: true });
     const tools: LlmToolDefinition[] = [
       makeTool('execute_bash', 'Execute bash'),
-      makeTool('custom_tool', 'A custom tool with a long description to increase token count significantly'),
+      makeTool('write_file', 'Write file'),
+      makeTool('read_file_content', 'Read file'),
+      makeTool('brave_search', 'Search the web'),
+      makeTool('dream_stats', 'Dream mode stats'),
     ];
 
-    const result = opt.optimizeTools(tools, [], 'please use custom_tool for this task');
-    expect(result.tools.some(t => t.name === 'custom_tool')).toBe(true);
+    const result = opt.optimizeTools(tools, [], 'please fix the code in my function');
+    expect(result.tools.some(t => t.name === 'execute_bash')).toBe(true);
+    expect(result.tools.some(t => t.name === 'write_file')).toBe(true);
+    expect(result.tools.some(t => t.name === 'read_file_content')).toBe(true);
+    expect(result.tools.some(t => t.name === 'dream_stats')).toBe(false);
   });
 
   it('compacts long conversation history', () => {
