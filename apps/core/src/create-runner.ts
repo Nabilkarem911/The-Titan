@@ -242,7 +242,12 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
           latencyMs: step.latencyMs,
         });
       } catch (err) {
-        log.warn({ err, runId }, 'failed to persist step');
+        const isDuplicate = err instanceof Error && /duplicate|unique|constraint|23505/i.test(err.message);
+        if (isDuplicate) {
+          log.debug({ runId, stepIndex: step.index }, 'duplicate step_index — strategy fallback, ignoring');
+        } else {
+          log.warn({ err, runId }, 'failed to persist step');
+        }
       }
 
       sse?.write(`data: ${JSON.stringify({

@@ -68,6 +68,7 @@ export class TreeOfThoughtStrategy implements ReasoningStrategy {
 
     tokensUsed += branchCompletion.tokensUsed;
     branchStep.tokensUsed = branchCompletion.tokensUsed;
+    branchStep.reasoningContent = branchCompletion.reasoningContent;
 
     const branches = this.parseBranches(branchCompletion.content);
     branchStep.reflection = `Generated ${branches.length} approaches:\n${branches.map((b, i) => `${i + 1}. ${b.thought}`).join('\n')}`;
@@ -102,6 +103,7 @@ export class TreeOfThoughtStrategy implements ReasoningStrategy {
 
         tokensUsed += completion.tokensUsed;
         devStep.tokensUsed = completion.tokensUsed;
+        devStep.reasoningContent = completion.reasoningContent;
 
         if (completion.toolCalls && completion.toolCalls.length > 0) {
           const call = completion.toolCalls[0];

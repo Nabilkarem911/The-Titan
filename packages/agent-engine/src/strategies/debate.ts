@@ -63,6 +63,7 @@ export class DebateStrategy implements ReasoningStrategy {
 
       tokensUsed += gatherCompletion.tokensUsed;
       gatherStep.tokensUsed = gatherCompletion.tokensUsed;
+      gatherStep.reasoningContent = gatherCompletion.reasoningContent;
 
       if (gatherCompletion.toolCalls && gatherCompletion.toolCalls.length > 0) {
         const call = gatherCompletion.toolCalls[0];
@@ -123,6 +124,7 @@ export class DebateStrategy implements ReasoningStrategy {
 
         tokensUsed += completion.tokensUsed;
         debateStep.tokensUsed = completion.tokensUsed;
+        debateStep.reasoningContent = completion.reasoningContent;
         debateStep.thought = `[${perspective.role}] ${completion.content.slice(0, 500)}`;
 
         const confidenceMatch = completion.content.match(/confidence[:\s]*(\d+)/i);

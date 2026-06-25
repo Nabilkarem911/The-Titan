@@ -70,6 +70,7 @@ export class ChainOfThoughtStrategy implements ReasoningStrategy {
       const completion = await llm.complete(messages, { tools, temperature: 0.2 });
       tokensUsed += completion.tokensUsed;
       step.tokensUsed = completion.tokensUsed;
+      step.reasoningContent = completion.reasoningContent;
 
       if (completion.toolCalls && completion.toolCalls.length > 0) {
         step.thought = completion.content || `I need to use ${completion.toolCalls.map((c) => c.name).join(', ')} to proceed with this task.`;
@@ -80,13 +81,14 @@ export class ChainOfThoughtStrategy implements ReasoningStrategy {
           role: 'assistant',
           content: step.thought,
           toolCalls: completion.toolCalls,
+          reasoningContent: completion.reasoningContent,
         });
 
         step.observation = await this.executeToolCalls(completion.toolCalls, executeTool, run.id, messages);
         step.status = 'observing';
       } else {
         step.thought = completion.content;
-        messages.push({ role: 'assistant', content: completion.content });
+        messages.push({ role: 'assistant', content: completion.content, reasoningContent: completion.reasoningContent });
 
         const answerMatch = completion.content.match(/FINAL ANSWER:\s*([\s\S]+)/i);
         if (answerMatch) {

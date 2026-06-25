@@ -128,6 +128,7 @@ export class HypothesisTestingStrategy implements ReasoningStrategy {
       const completion = await llm.complete(messages, { tools, temperature: 0.2 });
       tokensUsed += completion.tokensUsed;
       step.tokensUsed = completion.tokensUsed;
+      step.reasoningContent = completion.reasoningContent;
 
       if (completion.toolCalls && completion.toolCalls.length > 0) {
         // Safety: block forbidden tools even if LLM tries to call them
@@ -139,7 +140,7 @@ export class HypothesisTestingStrategy implements ReasoningStrategy {
             success: false,
             error: 'Cannot use execution tools (execute_bash, desktop_execute, etc.) to investigate user code. Ask the user to share the code or error message.',
           };
-          messages.push({ role: 'assistant', content: step.thought });
+          messages.push({ role: 'assistant', content: step.thought, reasoningContent: completion.reasoningContent });
           messages.push({ role: 'tool', content: 'Cannot use execution tools (execute_bash, desktop_execute, etc.) to investigate user code. Ask the user to share the code or error message.' });
           step.updatedAt = new Date();
           steps.push(step);
@@ -155,13 +156,14 @@ export class HypothesisTestingStrategy implements ReasoningStrategy {
           role: 'assistant',
           content: step.thought,
           toolCalls: safeCalls,
+          reasoningContent: completion.reasoningContent,
         });
 
         step.observation = await this.executeToolCalls(safeCalls, executeTool, run.id, messages);
         step.status = 'observing';
       } else {
         step.thought = completion.content;
-        messages.push({ role: 'assistant', content: completion.content });
+        messages.push({ role: 'assistant', content: completion.content, reasoningContent: completion.reasoningContent });
 
         const answerMatch = completion.content.match(/FINAL ANSWER:\s*([\s\S]+)/i);
         if (answerMatch) {

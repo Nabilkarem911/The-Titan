@@ -113,6 +113,14 @@ export class OpenAiProvider implements LlmProvider {
 
     const reasoningContent = choice.message.reasoning_content || undefined;
 
+    if (reasoningContent) {
+      log.debug({ model: this.config.model, reasoningLen: reasoningContent.length }, 'reasoning_content extracted from LLM response');
+    }
+    const hasReasoningInMessages = messages.some(m => m.role === 'assistant' && m.reasoningContent);
+    if (hasReasoningInMessages && !reasoningContent) {
+      log.warn({ model: this.config.model }, 'reasoning_content was in messages but not returned by LLM — DeepSeek may require it');
+    }
+
     const latency = Math.round(performance.now() - start);
     observeHistogram('llm_request_duration_ms', 'LLM request latency', latency, [100, 250, 500, 1000, 2500, 5000, 10000, 30000]);
     incCounter('llm_requests_total', 'Total LLM requests', 1, { provider: 'openai', model: this.config.model });
@@ -201,7 +209,8 @@ function parseJsonSafe(raw: string): Record<string, unknown> {
 function buildApiMessages(messages: LlmMessage[]): Record<string, unknown>[] {
   let toolCallCounter = 0;
   let lastToolCallId = '';
-  return messages.map((m) => {
+  let reasoningInjected = 0;
+  const result = messages.map((m) => {
     if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0) {
       const calls = m.toolCalls.map((tc, idx) => {
         const id = `call_${toolCallCounter++}_${idx}`;
@@ -219,10 +228,12 @@ function buildApiMessages(messages: LlmMessage[]): Record<string, unknown>[] {
       };
       if (m.reasoningContent) {
         msg['reasoning_content'] = m.reasoningContent;
+        reasoningInjected++;
       }
       return msg;
     }
     if (m.role === 'assistant' && m.reasoningContent) {
+      reasoningInjected++;
       return {
         role: 'assistant' as const,
         content: m.content || null,
@@ -238,6 +249,10 @@ function buildApiMessages(messages: LlmMessage[]): Record<string, unknown>[] {
     }
     return { role: m.role, content: m.content };
   });
+  if (reasoningInjected > 0) {
+    log.debug({ reasoningInjected, totalMessages: messages.length }, 'reasoning_content injected into API messages');
+  }
+  return result;
 }
 
 function stripOrphanToolResponses(messages: Record<string, unknown>[]): Record<string, unknown>[] {
