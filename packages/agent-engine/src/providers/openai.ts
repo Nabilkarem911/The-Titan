@@ -223,7 +223,7 @@ function buildApiMessages(messages: LlmMessage[]): Record<string, unknown>[] {
       });
       const msg: Record<string, unknown> = {
         role: 'assistant' as const,
-        content: m.content || null,
+        content: m.content || '',
         tool_calls: calls,
       };
       if (m.reasoningContent) {
@@ -236,7 +236,7 @@ function buildApiMessages(messages: LlmMessage[]): Record<string, unknown>[] {
       reasoningInjected++;
       return {
         role: 'assistant' as const,
-        content: m.content || null,
+        content: m.content || '',
         reasoning_content: m.reasoningContent,
       };
     }
