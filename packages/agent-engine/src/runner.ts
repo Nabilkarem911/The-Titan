@@ -84,6 +84,7 @@ function buildMessages(ctx: AgentContext): LlmMessage[] {
         role: 'assistant',
         content: step.thought || '',
         toolCalls: [step.action],
+        reasoningContent: step.reasoningContent,
       });
       // Tool result must follow immediately after assistant tool_call
       if (step.observation) {
@@ -99,13 +100,13 @@ function buildMessages(ctx: AgentContext): LlmMessage[] {
       }
       // Reflection as separate assistant message
       if (step.reflection) {
-        msgs.push({ role: 'assistant', content: step.reflection });
+        msgs.push({ role: 'assistant', content: step.reflection, reasoningContent: step.reasoningContent });
       }
     } else {
       // No tool call — just thought/reflection as assistant response
       const content = step.reflection || step.thought || '';
       if (content) {
-        msgs.push({ role: 'assistant', content });
+        msgs.push({ role: 'assistant', content, reasoningContent: step.reasoningContent });
       }
     }
   }
@@ -728,6 +729,7 @@ export class AgentRunner {
     const completion = await this.deps.llm.complete(messages, { tools });
     step.latencyMs = Math.round(performance.now() - start);
     step.tokensUsed = completion.tokensUsed;
+    step.reasoningContent = completion.reasoningContent;
 
     // 2. If tool calls requested → execute
     if (completion.toolCalls && completion.toolCalls.length > 0) {

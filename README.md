@@ -231,8 +231,8 @@ API_KEY_ENCRYPTION_KEY=<32 bytes hex>
 # Required — LLM
 LLM_PROVIDER_TYPE=openai-compatible
 LLM_API_KEY=<your API key>
-LLM_MODEL=gpt-4o
-LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=deepseek-v4-flash
+LLM_BASE_URL=https://api.deepseek.com/v1
 
 # Required — database (defaults work with docker compose)
 POSTGRES_PASSWORD=<change in production>

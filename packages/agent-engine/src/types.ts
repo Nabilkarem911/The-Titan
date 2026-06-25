@@ -27,6 +27,7 @@ export interface AgentStep {
   index: number; // step number in the run
   status: StepStatus;
   thought?: string; // LLM reasoning
+  reasoningContent?: string; // DeepSeek reasoning_content (chain-of-thought)
   plan?: string; // what the agent intends to do
   action?: ToolCall; // tool call
   observation?: ToolResult; // tool result
@@ -77,6 +78,7 @@ export interface LlmMessage {
   content: string;
   toolCalls?: ToolCall[];
   toolResult?: ToolResult;
+  reasoningContent?: string;
 }
 
 export interface LlmCompletion {
@@ -84,6 +86,7 @@ export interface LlmCompletion {
   toolCalls?: ToolCall[];
   tokensUsed: number;
   finishReason: 'stop' | 'tool_calls' | 'length' | 'content_filter';
+  reasoningContent?: string;
 }
 
 export interface LlmToolDefinition {

@@ -23,36 +23,7 @@ export class OpenAiProvider implements LlmProvider {
     const url = `${base.endsWith('/v1') ? base : `${base}/v1`}/chat/completions`;
     const body = {
       model: this.config.model,
-      messages: (() => {
-        let toolCallCounter = 0;
-        let lastToolCallId = '';
-        return messages.map((m) => {
-          if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0) {
-            const calls = m.toolCalls.map((tc, idx) => {
-              const id = `call_${toolCallCounter++}_${idx}`;
-              lastToolCallId = id;
-              return {
-                id,
-                type: 'function' as const,
-                function: { name: tc.name, arguments: JSON.stringify(tc.params) },
-              };
-            });
-            return {
-              role: 'assistant' as const,
-              content: m.content || null,
-              tool_calls: calls,
-            };
-          }
-          if (m.role === 'tool') {
-            return {
-              role: 'tool' as const,
-              content: m.content,
-              tool_call_id: lastToolCallId || `call_${toolCallCounter++}_0`,
-            };
-          }
-          return { role: m.role, content: m.content };
-        });
-      })(),
+      messages: stripOrphanToolResponses(buildApiMessages(messages)),
       max_tokens: opts?.maxTokens ?? 4096,
       temperature: opts?.temperature ?? 0.7,
       tools: (opts?.tools && opts.tools.length > 0) ? opts.tools.map((t) => ({
@@ -122,6 +93,7 @@ export class OpenAiProvider implements LlmProvider {
       choices: Array<{
         message: {
           content: string | null;
+          reasoning_content?: string;
           tool_calls?: Array<{
             function: { name: string; arguments: string };
           }>;
@@ -139,6 +111,8 @@ export class OpenAiProvider implements LlmProvider {
       params: parseJsonSafe(tc.function.arguments),
     }));
 
+    const reasoningContent = choice.message.reasoning_content || undefined;
+
     const latency = Math.round(performance.now() - start);
     observeHistogram('llm_request_duration_ms', 'LLM request latency', latency, [100, 250, 500, 1000, 2500, 5000, 10000, 30000]);
     incCounter('llm_requests_total', 'Total LLM requests', 1, { provider: 'openai', model: this.config.model });
@@ -149,6 +123,7 @@ export class OpenAiProvider implements LlmProvider {
       toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
       tokensUsed: data.usage?.total_tokens ?? 0,
       finishReason: mapFinishReason(choice.finish_reason),
+      reasoningContent,
     };
   }
 
@@ -160,36 +135,7 @@ export class OpenAiProvider implements LlmProvider {
     const url = `${base.endsWith('/v1') ? base : `${base}/v1`}/chat/completions`;
     const body = {
       model: this.config.model,
-      messages: (() => {
-        let toolCallCounter = 0;
-        let lastToolCallId = '';
-        return messages.map((m) => {
-          if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0) {
-            const calls = m.toolCalls.map((tc, idx) => {
-              const id = `call_${toolCallCounter++}_${idx}`;
-              lastToolCallId = id;
-              return {
-                id,
-                type: 'function' as const,
-                function: { name: tc.name, arguments: JSON.stringify(tc.params) },
-              };
-            });
-            return {
-              role: 'assistant' as const,
-              content: m.content || null,
-              tool_calls: calls,
-            };
-          }
-          if (m.role === 'tool') {
-            return {
-              role: 'tool' as const,
-              content: m.content,
-              tool_call_id: lastToolCallId || `call_${toolCallCounter++}_0`,
-            };
-          }
-          return { role: m.role, content: m.content };
-        });
-      })(),
+      messages: stripOrphanToolResponses(buildApiMessages(messages)),
       max_tokens: opts?.maxTokens ?? 4096,
       temperature: opts?.temperature ?? 0.7,
       stream: true,
@@ -250,6 +196,65 @@ function parseJsonSafe(raw: string): Record<string, unknown> {
   } catch {
     return { raw };
   }
+}
+
+function buildApiMessages(messages: LlmMessage[]): Record<string, unknown>[] {
+  let toolCallCounter = 0;
+  let lastToolCallId = '';
+  return messages.map((m) => {
+    if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0) {
+      const calls = m.toolCalls.map((tc, idx) => {
+        const id = `call_${toolCallCounter++}_${idx}`;
+        lastToolCallId = id;
+        return {
+          id,
+          type: 'function' as const,
+          function: { name: tc.name, arguments: JSON.stringify(tc.params) },
+        };
+      });
+      const msg: Record<string, unknown> = {
+        role: 'assistant' as const,
+        content: m.content || null,
+        tool_calls: calls,
+      };
+      if (m.reasoningContent) {
+        msg['reasoning_content'] = m.reasoningContent;
+      }
+      return msg;
+    }
+    if (m.role === 'assistant' && m.reasoningContent) {
+      return {
+        role: 'assistant' as const,
+        content: m.content || null,
+        reasoning_content: m.reasoningContent,
+      };
+    }
+    if (m.role === 'tool') {
+      return {
+        role: 'tool' as const,
+        content: m.content,
+        tool_call_id: lastToolCallId || `call_${toolCallCounter++}_0`,
+      };
+    }
+    return { role: m.role, content: m.content };
+  });
+}
+
+function stripOrphanToolResponses(messages: Record<string, unknown>[]): Record<string, unknown>[] {
+  const result: Record<string, unknown>[] = [];
+  for (const msg of messages) {
+    if (msg['role'] === 'tool') {
+      const hasPrecedingToolCall = result.some(
+        (prev) => prev['role'] === 'assistant' && Array.isArray(prev['tool_calls']) && (prev['tool_calls'] as unknown[]).length > 0,
+      );
+      if (!hasPrecedingToolCall) {
+        log.warn('stripping orphan tool response — no preceding assistant tool_call');
+        continue;
+      }
+    }
+    result.push(msg);
+  }
+  return result;
 }
 
 function mapFinishReason(reason: string): LlmCompletion['finishReason'] {
