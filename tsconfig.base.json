@@ -13,24 +13,6 @@
     "declaration": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "exactOptionalPropertyTypes": false,
-    "baseUrl": ".",
-    "paths": {
-      "@titan/shared": ["./packages/shared/src/index.ts"],
-      "@titan/shared/*": ["./packages/shared/src/*"],
-      "@titan/config": ["./packages/config/src/index.ts"],
-      "@titan/logging": ["./packages/logging/src/index.ts"],
-      "@titan/database": ["./packages/database/src/index.ts"],
-      "@titan/memory": ["./packages/memory/src/index.ts"],
-      "@titan/queue": ["./packages/queue/src/index.ts"],
-      "@titan/auth": ["./packages/auth/src/index.ts"],
-      "@titan/websocket": ["./packages/websocket/src/index.ts"],
-      "@titan/observability": ["./packages/observability/src/index.ts"],
-      "@titan/telemetry": ["./packages/telemetry/src/index.ts"],
-      "@titan/agent-engine": ["./packages/agent-engine/src/index.ts"],
-      "@titan/agent-engine/*": ["./packages/agent-engine/src/*"],
-      "@titan/tools": ["./packages/tools/src/index.ts"],
-      "@titan/sandbox": ["./packages/sandbox/src/index.ts"]
-    }
+    "exactOptionalPropertyTypes": false
   }
 }

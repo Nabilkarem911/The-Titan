@@ -6,9 +6,9 @@ import { infrastructureRoutes } from './infrastructure-routes.js';
 import { statsRoutes } from './stats-routes.js';
 
 export const reasoningRoutes: FastifyPluginAsync = async (app) => {
-  await dreamDebugRoutes(app);
-  await cognitionRoutes(app);
-  await safetyRoutes(app);
-  await infrastructureRoutes(app);
-  await statsRoutes(app);
+  await dreamDebugRoutes(app, {});
+  await cognitionRoutes(app, {});
+  await safetyRoutes(app, {});
+  await infrastructureRoutes(app, {});
+  await statsRoutes(app, {});
 };

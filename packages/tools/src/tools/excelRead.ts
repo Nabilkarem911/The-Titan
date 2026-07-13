@@ -32,7 +32,8 @@ export async function excelRead(params: { path: string; sheet?: string }): Promi
     const rows: unknown[][] = [];
     for (let i = 1; i <= ws.rowCount; i++) {
       const row = ws.getRow(i);
-      rows.push((row.values ?? []).slice(1) as unknown[]);
+      const values = row.values as unknown[] | null;
+      rows.push((values ?? []).slice(1));
     }
     data[name] = rows;
     rowCounts[name] = rows.length;
