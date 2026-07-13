@@ -26,6 +26,7 @@ RUN for i in 1 2 3; do npm install --no-audit --no-fund && break || (echo "npm i
 
 # ── Stage 2: Build ──────────────────────────────────────────
 FROM deps AS builder
+RUN npm install --no-audit --no-fund typescript tsx
 COPY tsconfig.base.json tsconfig.json ./
 COPY packages/ ./packages/
 COPY apps/core/ ./apps/core/
