@@ -69,7 +69,7 @@ export class InnerMonologueManager {
       createdAt: now,
       updatedAt: now,
     });
-    imtRepo.insert(id, type, content).catch(() => {});
+    imtRepo.insert(id, type, content).catch((err) => log.error({ err }, 'DB write failed'));
     log.debug({ threadId: id, type }, 'cognitive thread added');
     return id;
   }

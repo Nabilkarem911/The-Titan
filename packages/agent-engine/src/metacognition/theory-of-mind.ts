@@ -146,7 +146,7 @@ export class TheoryOfMind {
       if (this.analyses.length > this.maxAnalyses) {
         this.analyses = this.analyses.slice(-this.maxAnalyses);
       }
-      tomRepo.insert(result.id, { entity_id: targetEntityId, perspective: result.recommendedResponse, confidence: result.predictionConfidence, prediction: result.predictedNextAction, correct: null }).catch(() => {});
+      tomRepo.insert(result.id, { entity_id: targetEntityId, perspective: result.recommendedResponse, confidence: result.predictionConfidence, prediction: result.predictedNextAction, correct: null }).catch((err) => log.error({ err }, 'DB write failed'));
 
       this.predictionsMade++;
       this.updateModel(targetEntityId, parsed, context.entityType ?? 'user');
@@ -255,7 +255,7 @@ export class TheoryOfMind {
       perspectiveChain: existing?.perspectiveChain ?? [],
       createdAt: existing?.createdAt ?? new Date(),
     });
-    tomModelsRepo.upsert(entityId, entityType, beliefState).catch(() => {});
+    tomModelsRepo.upsert(entityId, entityType, beliefState).catch((err) => log.error({ err }, 'DB write failed'));
   }
 
   private parseAnalysis(content: string): {

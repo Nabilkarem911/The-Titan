@@ -97,7 +97,7 @@ export class CognitiveController {
         narrative: parsed.narrative,
         timestamp: new Date(),
       });
-      nhRepo.insert(parsed.narrative, JSON.stringify(parsed.selfModel)).catch(() => {});
+      nhRepo.insert(parsed.narrative, JSON.stringify(parsed.selfModel)).catch((err) => log.error({ err }, 'DB write failed'));
 
       if (this.narrativeHistory.length > this.maxHistorySize) {
         this.narrativeHistory.shift();

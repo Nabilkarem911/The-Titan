@@ -274,7 +274,7 @@ export class SelfRewriter {
       startedAt: new Date(),
     };
     this.pipelines.set(pipelineId, pipeline);
-    pipelinesRepo.insert(pipelineId, pipeline.diagnosis?.bottlenecks[0]?.module ?? '', pipeline.phase).catch(() => {});
+    pipelinesRepo.insert(pipelineId, pipeline.diagnosis?.bottlenecks[0]?.module ?? '', pipeline.phase).catch((err) => log.error({ err }, 'DB write failed'));
     if (this.pipelines.size > this.maxPipelines) {
       const oldest = Array.from(this.pipelines.keys())[0];
       this.pipelines.delete(oldest);

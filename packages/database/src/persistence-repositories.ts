@@ -28,6 +28,20 @@ function makeSimpleRepo(tableName: string, columns: string[]) {
       return result.rows as Record<string, unknown>[];
     },
 
+    async findById(id: string): Promise<Record<string, unknown> | null> {
+      const result = await query(`SELECT * FROM ${tableName} WHERE id = $1`, [id]);
+      return (result.rows[0] as Record<string, unknown>) ?? null;
+    },
+
+    async listAll(limit = 1000): Promise<Record<string, unknown>[]> {
+      const result = await query(`SELECT * FROM ${tableName} ORDER BY created_at DESC LIMIT $1`, [limit]);
+      return result.rows as Record<string, unknown>[];
+    },
+
+    async deleteById(id: string): Promise<void> {
+      await query(`DELETE FROM ${tableName} WHERE id = $1`, [id]);
+    },
+
     async count(): Promise<number> {
       const result = await query(`SELECT COUNT(*) as cnt FROM ${tableName}`);
       return Number((result.rows[0] as Record<string, unknown>).cnt ?? 0);

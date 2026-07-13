@@ -211,7 +211,7 @@ export class TestTimeRecursiveThinking {
     for (const k of accumulatedKnowledge) {
       if (!this.globalKnowledge.includes(k)) {
         this.globalKnowledge.push(k);
-        trtGlobalKnowledge.insert(k).catch(() => {});
+        trtGlobalKnowledge.insert(k).catch((err) => log.error({ err }, 'DB write failed'));
       }
     }
     if (this.globalKnowledge.length > this.maxGlobalKnowledge) {
@@ -277,7 +277,7 @@ export class TestTimeRecursiveThinking {
     if (this.results.length > this.maxResults) {
       this.results = this.results.slice(-this.maxResults);
     }
-    trtRepo.insert(result.id, { problem: problem.slice(0, 500), rounds: result.totalRounds, answer: result.finalAnswer.slice(0, 500), confidence: result.confidence, abstained: result.abstained, knowledge_gained: result.accumulatedKnowledge }).catch(() => {});
+    trtRepo.insert(result.id, { problem: problem.slice(0, 500), rounds: result.totalRounds, answer: result.finalAnswer.slice(0, 500), confidence: result.confidence, abstained: result.abstained, knowledge_gained: result.accumulatedKnowledge }).catch((err) => log.error({ err }, 'DB write failed'));
 
     incCounter('trt_solve', 'TRT solves', 1, { converged: converged ? 'true' : 'false', abstained: abstained ? 'true' : 'false', solver: solverMode });
     log.info({ id, converged, abstained, rounds: attempts.length, confidence, solverMode, durationMs: result.durationMs }, 'TRT complete');

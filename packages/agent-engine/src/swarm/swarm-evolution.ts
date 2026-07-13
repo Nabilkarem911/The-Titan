@@ -104,7 +104,7 @@ export class SwarmEvolution {
 
     this.currentTopology = config;
     this.topologies.push(config);
-    stRepo.insert(config.id, { name: config.pattern, config: JSON.stringify(config), performance: 0, is_current: true }).catch(() => {});
+    stRepo.insert(config.id, { name: config.pattern, config: JSON.stringify(config), performance: 0, is_current: true }).catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('swarm_topologies', 'Swarm topologies created', 1);
     return config;
   }
@@ -124,7 +124,7 @@ export class SwarmEvolution {
 
     this.currentTopology = newConfig;
     this.topologies.push(newConfig);
-    stRepo.insert(newConfig.id, { name: newConfig.pattern, config: JSON.stringify(newConfig), performance: 0, is_current: true }).catch(() => {});
+    stRepo.insert(newConfig.id, { name: newConfig.pattern, config: JSON.stringify(newConfig), performance: 0, is_current: true }).catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('swarm_reconfigurations', 'Swarm reconfigurations', 1);
     log.info({ from: this.currentTopology.pattern, to: newPattern }, 'topology reconfigured');
     return newConfig;
@@ -163,7 +163,7 @@ export class SwarmEvolution {
     }
 
     this.collectiveMemory.set(key, entry);
-    scmRepo.insert(randomUUID().slice(0, 12), { key, value: entry.value, agent_id: entry.writtenBy }).catch(() => {});
+    scmRepo.insert(randomUUID().slice(0, 12), { key, value: entry.value, agent_id: entry.writtenBy }).catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('collective_memory_writes', 'Collective memory writes', 1);
     return entry;
   }
@@ -195,7 +195,7 @@ export class SwarmEvolution {
     };
 
     this.federationTasks.push(task);
-    sftRepo.insert(task.id, task.type, task.fromAgent, task.toAgent, '').catch(() => {});
+    sftRepo.insert(task.id, task.type, task.fromAgent, task.toAgent, '').catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('federation_delegations', 'Federation delegations', 1);
     return task;
   }
@@ -212,7 +212,7 @@ export class SwarmEvolution {
     };
 
     this.federationTasks.push(task);
-    sftRepo.insert(task.id, task.type, task.fromAgent, task.toAgent, '').catch(() => {});
+    sftRepo.insert(task.id, task.type, task.fromAgent, task.toAgent, '').catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('federation_skill_exchanges', 'Skill exchanges', 1);
     return task;
   }
@@ -229,7 +229,7 @@ export class SwarmEvolution {
     };
 
     this.federationTasks.push(task);
-    sftRepo.insert(task.id, task.type, task.fromAgent, task.toAgent, '').catch(() => {});
+    sftRepo.insert(task.id, task.type, task.fromAgent, task.toAgent, '').catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('federation_learning', 'Federated learning transfers', 1);
     return task;
   }

@@ -43,9 +43,10 @@ export const gitRoutes: FastifyPluginAsync = async (app) => {
       const result = await gitPush({ ...input, cwd: resolvedCwd });
       return reply.status(result.success ? 200 : 400).send(result);
     } catch (err) {
+      console.error('[git] operation failed:', err);
       return reply.status(500).send({
         success: false,
-        message: err instanceof Error ? err.message : 'Git operation failed',
+        message: 'Git operation failed',
         details: [],
       });
     }

@@ -1,8 +1,24 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { getLogger } from '@titan/logging';
 import type { LlmProvider } from '../../types.js';
 
 const log = getLogger().child({ component: 'git-manager' });
+
+function sanitizeBranchName(name: string): string {
+  const cleaned = name.replace(/[^\w.\-\/]/g, '');
+  if (!cleaned) throw new Error('Invalid branch name');
+  if (cleaned.length > 200) throw new Error('Branch name too long');
+  if (cleaned.includes('..') || cleaned.startsWith('.') || cleaned.endsWith('.lock')) {
+    throw new Error('Invalid branch name pattern');
+  }
+  return cleaned;
+}
+
+function sanitizeFilePath(file: string): string {
+  if (file.includes('..')) throw new Error('Path traversal not allowed in file path');
+  if (file.length > 500) throw new Error('File path too long');
+  return file;
+}
 
 export interface GitOpsResult {
   success: boolean;
@@ -17,8 +33,9 @@ export class GitManager {
 
   createBranch(name: string): GitOpsResult {
     try {
-      this.exec(`git checkout -b ${name}`);
-      return { success: true, branch: name };
+      const safeName = sanitizeBranchName(name);
+      this.exec('git', ['checkout', '-b', safeName]);
+      return { success: true, branch: safeName };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Failed to create branch' };
     }
@@ -26,9 +43,8 @@ export class GitManager {
 
   stageFiles(files: string[]): GitOpsResult {
     try {
-      for (const file of files) {
-        this.exec(`git add "${file}"`);
-      }
+      const safeFiles = files.map(sanitizeFilePath);
+      this.exec('git', ['add', ...safeFiles]);
       return { success: true };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Failed to stage files' };
@@ -37,7 +53,7 @@ export class GitManager {
 
   stageAll(): GitOpsResult {
     try {
-      this.exec('git add -A');
+      this.exec('git', ['add', '-A']);
       return { success: true };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Failed to stage' };
@@ -50,7 +66,7 @@ export class GitManager {
         ? await this.generateCommitMessage(description)
         : description;
 
-      const output = this.exec(`git commit -m "${message.replace(/"/g, '\\"')}"`);
+      const output = this.exec('git', ['commit', '-m', message]);
       const hashMatch = output.match(/\[[\w-]+\s+([a-f0-9]+)\]/);
 
       return { success: true, commitHash: hashMatch?.[1], message };
@@ -61,7 +77,8 @@ export class GitManager {
 
   getDiff(): string {
     try {
-      return this.exec('git diff --staged') || this.exec('git diff');
+      const staged = this.exec('git', ['diff', '--staged']);
+      return staged || this.exec('git', ['diff']);
     } catch {
       return '';
     }
@@ -69,7 +86,7 @@ export class GitManager {
 
   getStatus(): string {
     try {
-      return this.exec('git status --short');
+      return this.exec('git', ['status', '--short']);
     } catch {
       return '';
     }
@@ -77,7 +94,7 @@ export class GitManager {
 
   getCurrentBranch(): string {
     try {
-      return this.exec('git rev-parse --abbrev-ref HEAD').trim();
+      return this.exec('git', ['rev-parse', '--abbrev-ref', 'HEAD']).trim();
     } catch {
       return 'unknown';
     }
@@ -85,7 +102,7 @@ export class GitManager {
 
   getChangedFiles(): string[] {
     try {
-      const output = this.exec('git diff --name-only HEAD');
+      const output = this.exec('git', ['diff', '--name-only', 'HEAD']);
       return output.split('\n').filter(Boolean);
     } catch {
       return [];
@@ -111,7 +128,7 @@ export class GitManager {
     }
   }
 
-  private exec(cmd: string): string {
-    return execSync(cmd, { cwd: this.cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+  private exec(cmd: string, args: string[]): string {
+    return execFileSync(cmd, args, { cwd: this.cwd, encoding: 'utf-8' });
   }
 }

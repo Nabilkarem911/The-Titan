@@ -127,7 +127,7 @@ export class ElevenLabsTTSProvider {
       };
 
       this.clonedVoices.push(clone);
-      voiceClones.insert(clone.id, clone.name, clone.voiceId).catch(() => {});
+      voiceClones.insert(clone.id, clone.name, clone.voiceId).catch((err) => log.error({ err }, 'DB write failed'));
       incCounter('elevenlabs_voice_clones', 'Voice clones created', 1);
       log.info({ name, voiceId: clone.voiceId }, 'voice cloned successfully');
 

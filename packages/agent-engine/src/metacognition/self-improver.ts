@@ -114,7 +114,7 @@ export class SelfImprover {
     if (idx >= 0) {
       const [proposal] = this.archive.proposals.splice(idx, 1);
       this.archive.applied.push(proposal);
-      proposalsRepo.updateStatus(proposalId, 'applied').catch(() => {});
+      proposalsRepo.updateStatus(proposalId, 'applied').catch((err) => log.error({ err }, 'DB write failed'));
       log.info({ proposalId }, 'improvement proposal marked as applied');
     }
   }
@@ -124,7 +124,7 @@ export class SelfImprover {
     if (idx >= 0) {
       const [proposal] = this.archive.proposals.splice(idx, 1);
       this.archive.rejected.push(proposal);
-      proposalsRepo.updateStatus(proposalId, 'rejected').catch(() => {});
+      proposalsRepo.updateStatus(proposalId, 'rejected').catch((err) => log.error({ err }, 'DB write failed'));
       log.info({ proposalId }, 'improvement proposal marked as rejected');
     }
   }

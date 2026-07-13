@@ -20,7 +20,7 @@ export class PromptOptimizer {
     const variants = this.variants.get(category) ?? [];
     variants.push({ id, template, successRate: 0.5, avgScore: 50, usageCount: 0 });
     this.variants.set(category, variants);
-    pvRepo.insert(id, { prompt_key: category, variant_text: template, success_rate: 0.5, avg_score: 50, total_uses: 0 }).catch(() => {});
+    pvRepo.insert(id, { prompt_key: category, variant_text: template, success_rate: 0.5, avg_score: 50, total_uses: 0 }).catch((err) => log.error({ err }, 'DB write failed'));
     return id;
   }
 
@@ -43,7 +43,7 @@ export class PromptOptimizer {
         variant.usageCount++;
         variant.successRate = (variant.successRate * (variant.usageCount - 1) + (success ? 1 : 0)) / variant.usageCount;
         variant.avgScore = (variant.avgScore * (variant.usageCount - 1) + score) / variant.usageCount;
-        pvRepo.upsert(variantId, { prompt_key: '', variant_text: variant.template, success_rate: variant.successRate, avg_score: variant.avgScore, total_uses: variant.usageCount }, ['success_rate', 'avg_score', 'total_uses']).catch(() => {});
+        pvRepo.upsert(variantId, { prompt_key: '', variant_text: variant.template, success_rate: variant.successRate, avg_score: variant.avgScore, total_uses: variant.usageCount }, ['success_rate', 'avg_score', 'total_uses']).catch((err) => log.error({ err }, 'DB write failed'));
         return;
       }
     }

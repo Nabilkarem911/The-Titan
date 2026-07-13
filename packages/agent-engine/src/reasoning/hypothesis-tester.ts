@@ -93,7 +93,7 @@ export class HypothesisTester {
         this.history = this.history.slice(-this.maxHistory);
       }
       for (const h of parsed) {
-        htRepo.insert(h.id, { hypothesis: h.statement, test_method: h.testAction, result: h.status, confidence: h.confidence / 100 }).catch(() => {});
+        htRepo.insert(h.id, { hypothesis: h.statement, test_method: h.testAction, result: h.status, confidence: h.confidence / 100 }).catch((err) => log.error({ err }, 'DB write failed'));
       }
 
       return parsed;

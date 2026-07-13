@@ -1,11 +1,26 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve, relative } from 'node:path';
+
+const ALLOWED_LOG_DIRS = ['/var/log', '/tmp', '/opt/titan/logs', '/home/titan/logs'];
+
+function validateLogPath(requestedPath: string): string {
+  const resolved = resolve(requestedPath);
+  const isAllowed = ALLOWED_LOG_DIRS.some(dir => {
+    const rel = relative(dir, resolved);
+    return !rel.startsWith('..');
+  });
+  if (!isAllowed) {
+    throw new Error(`Log search path must be within allowed directories: ${ALLOWED_LOG_DIRS.join(', ')}`);
+  }
+  return resolved;
+}
 
 export async function logSearch(params: { query: string; path?: string; level?: string; limit?: number; since?: string }): Promise<string> {
   const { query, path = '/var/log', level, limit = 50, since } = params;
   if (!query) throw new Error('query is required');
 
-  const logFiles = findLogFiles(path);
+  const safePath = validateLogPath(path);
+  const logFiles = findLogFiles(safePath);
   const results: Array<{ file: string; line: number; content: string; timestamp?: string; level?: string }> = [];
   const sinceDate = since ? new Date(since) : undefined;
 

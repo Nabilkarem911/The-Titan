@@ -13,6 +13,7 @@ export interface SandboxConfig {
 const FORBIDDEN_PATTERNS: readonly string[] = [
   // Filesystem destruction
   'rm -rf /',
+  'rm -r -f /',
   'rm -rf ~',
   'rm -rf *',
   'shred',
@@ -76,16 +77,62 @@ export function validateCwd(cwd: string, config: SandboxConfig = DEFAULT_CONFIG)
   throw new Error(`CWD "${cwd}" is outside allowed prefixes.`);
 }
 
+// Dangerous shell metacharacters that enable command chaining, substitution, or redirection
+const DANGEROUS_METACHAR_PATTERNS: readonly RegExp[] = [
+  /`[^`]*`/,                    // Backtick command substitution
+  /\$\([^)]*\)/,                // $(...) command substitution
+  /\$\{[^}]*\}/,                // ${...} variable expansion (can be used for obfuscation)
+  /<\([^)]*\)/,                 // <(...) process substitution
+  />\([^)]*\)/,                 // >(...) process substitution
+  /\\x[0-9a-f]{2}/i,           // Hex escape sequences (e.g. \x72 for 'r')
+  /\\u[0-9a-f]{4}/i,           // Unicode escape sequences
+  /\\[0-7]{3}/,                // Octal escape sequences
+];
+
+// Commands that are inherently dangerous regardless of arguments
+const FORBIDDEN_BASE_COMMANDS: readonly string[] = [
+  'shred', 'mkfs', 'sudo', 'reboot', 'shutdown',
+  'halt', 'poweroff', 'nsenter', 'unshare',
+];
+
+function normalizeCommand(cmd: string): string {
+  return cmd
+    .replace(/\s+/g, ' ')  // collapse multiple whitespace into single space
+    .replace(/\\\s/g, '')   // remove escaped whitespace (line continuations)
+    .trim()
+    .toLowerCase();
+}
+
 export function validateCommand(command: string, config: SandboxConfig = DEFAULT_CONFIG): void {
   const forbidden = config.forbiddenCommands ?? DEFAULT_CONFIG.forbiddenCommands!;
 
-  // For SSH commands, only validate the local part (the ssh command itself),
-  // not the remote command inside quotes — the remote server has its own security.
-  const isRemoteExec = /^(ssh|sshpass)\s/.test(command.trim().toLowerCase());
-  const checkTarget = isRemoteExec
-    ? command.substring(0, command.indexOf('"') >= 0 ? command.indexOf('"') : command.length).toLowerCase()
-    : command.toLowerCase();
+  // Null byte check first
+  if (command.includes('\0')) {
+    throw new Error('Command contains null bytes');
+  }
 
+  // Normalize: collapse whitespace, remove line continuations
+  const normalized = normalizeCommand(command);
+  const checkTarget = normalized;
+
+  // Check for dangerous shell metacharacters that enable obfuscation or chaining
+  for (const pattern of DANGEROUS_METACHAR_PATTERNS) {
+    if (pattern.test(command)) {
+      log.warn({ command: command.substring(0, 200), pattern: pattern.source }, 'dangerous shell metacharacter detected');
+      throw new Error(`Command contains dangerous shell metacharacter: ${pattern.source}`);
+    }
+  }
+
+  // Check forbidden base commands (these are dangerous regardless of arguments)
+  const baseCmd = checkTarget.split(/[|\s;&]+/)[0] ?? '';
+  for (const base of FORBIDDEN_BASE_COMMANDS) {
+    if (baseCmd === base || baseCmd.endsWith(`/${base}`)) {
+      log.warn({ command: command.substring(0, 200), base }, 'forbidden base command detected');
+      throw new Error(`Command uses forbidden base command: "${base}"`);
+    }
+  }
+
+  // Check forbidden patterns against normalized command
   for (const f of forbidden) {
     if (f === 'sh -i') {
       if (/(?<![s])sh\s+-i/.test(checkTarget)) {
@@ -101,9 +148,6 @@ export function validateCommand(command: string, config: SandboxConfig = DEFAULT
       log.warn({ command: command.substring(0, 200), forbidden: f }, 'forbidden command detected');
       throw new Error(`Command contains forbidden pattern: "${f}"`);
     }
-  }
-  if (command.includes('\0')) {
-    throw new Error('Command contains null bytes');
   }
 }
 

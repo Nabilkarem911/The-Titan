@@ -25,7 +25,7 @@ export class FeedbackProcessor {
 
   record(feedback: UserFeedback): void {
     this.feedbacks.push(feedback);
-    ufRepo.insert(randomUUID().slice(0, 12), { run_id: feedback.runId, user_id: feedback.userId, rating: feedback.rating, comment: feedback.comment ?? null, tags: [] }).catch(() => {});
+    ufRepo.insert(randomUUID().slice(0, 12), { run_id: feedback.runId, user_id: feedback.userId, rating: feedback.rating, comment: feedback.comment ?? null, tags: [] }).catch((err) => log.error({ err }, 'DB write failed'));
     log.info({ runId: feedback.runId, rating: feedback.rating }, 'feedback recorded');
   }
 

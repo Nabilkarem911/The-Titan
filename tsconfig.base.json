@@ -14,7 +14,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": false,
-    "baseUrl": "..",
+    "baseUrl": ".",
     "paths": {
       "@titan/shared": ["./packages/shared/src/index.ts"],
       "@titan/shared/*": ["./packages/shared/src/*"],

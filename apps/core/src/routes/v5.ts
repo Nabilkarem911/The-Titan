@@ -258,14 +258,14 @@ export const v5Routes: FastifyPluginAsync = async (app: FastifyInstance) => {
   app.get('/api/v1/workflows/dag/executions', { preHandler: [requireAuth] }, async (_req, reply) => {
     const engine = getDAGEngine();
     if (!engine) return reply.status(503).send({ error: 'No LLM provider available' });
-    return reply.send({ executions: engine.getExecutions() });
+    return reply.send({ executions: await engine.getExecutions() });
   });
 
   app.get('/api/v1/workflows/dag/executions/:runId', { preHandler: [requireAuth] }, async (req, reply) => {
     const { runId } = req.params as { runId: string };
     const engine = getDAGEngine();
     if (!engine) return reply.status(503).send({ error: 'No LLM provider available' });
-    const result = engine.getExecution(runId);
+    const result = await engine.getExecution(runId);
     if (!result) return reply.status(404).send({ error: 'Execution not found' });
     return reply.send(result);
   });

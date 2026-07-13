@@ -121,7 +121,7 @@ export class AutonomousSkillSynthesis extends EventEmitter {
 
       if (skill.verified) {
         this.skills.set(skill.id, skill);
-      ssRepo.insert(skill.id, { name: skill.name, description: skill.description, proficiency: skill.proficiency, verified: skill.verified, code: skill.code ?? '' }).catch(() => {});
+      ssRepo.insert(skill.id, { name: skill.name, description: skill.description, proficiency: skill.proficiency, verified: skill.verified, code: skill.code ?? '' }).catch((err) => log.error({ err }, 'DB write failed'));
         if (this.skills.size > this.maxSkills) {
           // Remove oldest unused
           const oldest = Array.from(this.skills.values())
@@ -143,7 +143,7 @@ export class AutonomousSkillSynthesis extends EventEmitter {
       };
 
       this.results.push(result);
-      ssrRepo.insert(result.id, result.taskDescription, result.skill?.name ?? '', result.success, result.durationMs).catch(() => {});
+      ssrRepo.insert(result.id, result.taskDescription, result.skill?.name ?? '', result.success, result.durationMs).catch((err) => log.error({ err }, 'DB write failed'));
       if (this.results.length > this.maxResults) {
         this.results = this.results.slice(-this.maxResults);
       }

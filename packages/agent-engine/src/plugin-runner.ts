@@ -32,7 +32,7 @@ export interface LoadedPlugin {
   codeChecksum?: string;
 }
 
-/** Safe sandbox — only expose non-dangerous globals */
+/** Safe sandbox — only expose non-dangerous globals. NO require, NO fetch. */
 function createSandbox(): Record<string, unknown> {
   return {
     console: {
@@ -43,15 +43,8 @@ function createSandbox(): Record<string, unknown> {
     JSON, Math, Date, parseInt, parseFloat, isNaN, isFinite,
     encodeURIComponent, decodeURIComponent, encodeURI, decodeURI,
     setTimeout, clearTimeout, Promise, Array, Object, String, Number, Boolean, Error,
-    fetch: globalThis.fetch,
     module: { exports: {} as Record<string, unknown> },
     exports: {} as Record<string, unknown>,
-    require: (mod: string) => {
-      // Allow only safe built-ins
-      const allowed = ['node:crypto', 'node:path', 'node:url'];
-      if (!allowed.includes(mod)) throw new Error(`require("${mod}") is not allowed in plugins`);
-      return require(mod);
-    },
   };
 }
 
@@ -70,6 +63,9 @@ export class PluginRunner {
     // Load code if provided
     let code = manifest.code;
     if (!code && manifest.codeUrl) {
+      if (!manifest.checksum) {
+        throw new Error(`Plugin "${manifest.name}" loaded from remote URL without checksum — refused for security`);
+      }
       log.info({ plugin: manifest.name, url: manifest.codeUrl }, 'fetching plugin code');
       const res = await fetch(manifest.codeUrl);
       if (!res.ok) throw new Error(`Failed to fetch plugin code from ${manifest.codeUrl}: ${res.status}`);
@@ -77,8 +73,11 @@ export class PluginRunner {
     }
 
     if (code) {
-      // Verify checksum if provided
+      // Verify checksum — MANDATORY for remote-fetched code
       codeChecksum = createHash('sha256').update(code).digest('hex');
+      if (manifest.codeUrl && !manifest.checksum) {
+        throw new Error(`Plugin "${manifest.name}" loaded from remote URL without checksum — refused for security`);
+      }
       if (manifest.checksum && manifest.checksum !== codeChecksum) {
         throw new Error(`Plugin "${manifest.name}" checksum mismatch — possible tampering detected`);
       }
@@ -90,7 +89,7 @@ export class PluginRunner {
       createContext(sandbox);
 
       try {
-        const script = new Script(`(function(module, exports, require, console, fetch) { ${code} })(module, exports, require, console, fetch)`);
+        const script = new Script(`(function(module, exports, console) { "use strict"; ${code} })(module, exports, console)`);
         script.runInContext(sandbox, { timeout: 5000 });
       } catch (err) {
         throw new Error(`Plugin "${manifest.name}" code execution failed: ${(err as Error).message}`);

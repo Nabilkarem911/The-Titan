@@ -56,7 +56,7 @@ export class EnvironmentGraph {
       lastObserved: new Date(),
     };
     this.entities.set(id, entity);
-    eeRepo.upsert(id, { type: entity.type, name: entity.name, properties: JSON.stringify(entity.properties) }, ['name', 'properties']).catch(() => {});
+    eeRepo.upsert(id, { type: entity.type, name: entity.name, properties: JSON.stringify(entity.properties) }, ['name', 'properties']).catch((err) => log.error({ err }, 'DB write failed'));
     log.debug({ entityId: id, type }, 'entity recorded');
     return id;
   }
@@ -84,7 +84,7 @@ export class EnvironmentGraph {
       observations: 1,
       lastObserved: new Date(),
     });
-    erRepo.insert(id, sourceId, targetId, relation, 0.5).catch(() => {});
+    erRepo.insert(id, sourceId, targetId, relation, 0.5).catch((err) => log.error({ err }, 'DB write failed'));
   }
 
   recordEvent(event: Omit<ObservedEvent, 'id' | 'timestamp'>): void {
@@ -97,7 +97,7 @@ export class EnvironmentGraph {
     if (this.events.length > this.maxEvents) {
       this.events = this.events.slice(-this.maxEvents);
     }
-    evRepo.insert(fullEvent.id, { entity_id: fullEvent.actor, event_type: fullEvent.action, data: JSON.stringify(fullEvent.context) }).catch(() => {});
+    evRepo.insert(fullEvent.id, { entity_id: fullEvent.actor, event_type: fullEvent.action, data: JSON.stringify(fullEvent.context) }).catch((err) => log.error({ err }, 'DB write failed'));
 
     // Auto-extract relations from events
     const sourceId = this.recordEntity('tool', event.actor);

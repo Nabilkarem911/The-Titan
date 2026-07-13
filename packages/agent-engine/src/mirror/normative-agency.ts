@@ -79,7 +79,7 @@ export class NormativeAgency {
     };
 
     this.commitments.set(commitment.id, commitment);
-    ncRepo.insert(commitment.id, { norm: commitment.description, commitment: commitment.description, status: commitment.status }).catch(() => {});
+    ncRepo.insert(commitment.id, { norm: commitment.description, commitment: commitment.description, status: commitment.status }).catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('normative_commitments', 'Normative commitments formed', 1);
     log.info({ id: commitment.id, description: description.slice(0, 80) }, 'commitment formed');
     return commitment;
@@ -118,7 +118,7 @@ export class NormativeAgency {
           };
           newConflicts.push(conflict);
           this.conflicts.push(conflict);
-    ncfRepo.insert(conflict.id, { norm1: conflict.commitmentA, norm2: conflict.commitmentB, resolution: conflict.resolution }).catch(() => {});
+    ncfRepo.insert(conflict.id, { norm1: conflict.commitmentA, norm2: conflict.commitmentB, resolution: conflict.resolution }).catch((err) => log.error({ err }, 'DB write failed'));
           incCounter('normative_conflicts', 'Normative conflicts detected', 1);
         }
       }
@@ -159,7 +159,7 @@ export class NormativeAgency {
       commitment.description = revisedDescription;
       commitment.status = 'revised';
       this.revisions.push(revision);
-      nrRepo.insert(revision.id, commitmentId, revision.originalDescription, revision.revisedDescription).catch(() => {});
+      nrRepo.insert(revision.id, commitmentId, revision.originalDescription, revision.revisedDescription).catch((err) => log.error({ err }, 'DB write failed'));
 
       incCounter('normative_revisions', 'Normative revisions', 1);
       log.info({ commitmentId, revisedDescription: revisedDescription.slice(0, 80) }, 'commitment revised under error');

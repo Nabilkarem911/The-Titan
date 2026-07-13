@@ -109,6 +109,35 @@ vi.mock('@titan/database', () => ({
     listForPlugin: vi.fn().mockResolvedValue([]),
   },
   pluginSearch: { search: vi.fn().mockResolvedValue({ items: [], total: 0 }) },
+  // Economy repos
+  economyAccounts: { upsert: vi.fn().mockResolvedValue(undefined), findById: vi.fn().mockResolvedValue(null), listAll: vi.fn().mockResolvedValue([]) },
+  economyReputation: { upsert: vi.fn().mockResolvedValue(undefined), findById: vi.fn().mockResolvedValue(null) },
+  economyListings: { insert: vi.fn().mockResolvedValue(undefined), findById: vi.fn().mockResolvedValue(null), listOpen: vi.fn().mockResolvedValue([]), updateStatus: vi.fn().mockResolvedValue(undefined) },
+  economyOffers: { insert: vi.fn().mockResolvedValue(undefined), findById: vi.fn().mockResolvedValue(null), listForListing: vi.fn().mockResolvedValue([]), listForSeller: vi.fn().mockResolvedValue([]), updateStatus: vi.fn().mockResolvedValue(undefined) },
+  economyEscrows: { insert: vi.fn().mockResolvedValue(undefined), findById: vi.fn().mockResolvedValue(null), updateStatus: vi.fn().mockResolvedValue(undefined) },
+  economyAuditLog: { insert: vi.fn().mockResolvedValue(undefined), listAll: vi.fn().mockResolvedValue([]) },
+  // Guardrail repo
+  guardrailResults: { insert: vi.fn().mockResolvedValue(undefined), listRecent: vi.fn().mockResolvedValue([]) },
+  // RL repos
+  rlEpisodes: { insert: vi.fn().mockResolvedValue(undefined), listRecent: vi.fn().mockResolvedValue([]) },
+  rlQTable: { upsert: vi.fn().mockResolvedValue(undefined), get: vi.fn().mockResolvedValue(null) },
+  // Environment graph repos
+  environmentEntities: { upsert: vi.fn().mockResolvedValue(undefined), findById: vi.fn().mockResolvedValue(null), listAll: vi.fn().mockResolvedValue([]) },
+  environmentEvents: { insert: vi.fn().mockResolvedValue(undefined), listRecent: vi.fn().mockResolvedValue([]) },
+  environmentRelations: { insert: vi.fn().mockResolvedValue(undefined), listAll: vi.fn().mockResolvedValue([]) },
+  // Dream repos
+  dreamInsights: { insert: vi.fn().mockResolvedValue(undefined), listRecent: vi.fn().mockResolvedValue([]), listByType: vi.fn().mockResolvedValue([]) },
+  dreamReports: { insert: vi.fn().mockResolvedValue(undefined), listRecent: vi.fn().mockResolvedValue([]) },
+  // Emotion readings repo
+  emotionReadings: { insert: vi.fn().mockResolvedValue(undefined), listRecent: vi.fn().mockResolvedValue([]), getProfile: vi.fn().mockResolvedValue(null) },
+  // Experiences repo (used by dream mode)
+  experiences: { getRecent: vi.fn().mockResolvedValue([]), insert: vi.fn().mockResolvedValue(undefined) },
+  // Sycophancy assessments repo
+  sycophancyAssessments: { insert: vi.fn().mockResolvedValue(undefined), listRecent: vi.fn().mockResolvedValue([]) },
+  // Heuristics repo
+  heuristics: { upsert: vi.fn().mockResolvedValue(undefined), findById: vi.fn().mockResolvedValue(null), listAll: vi.fn().mockResolvedValue([]) },
+  // Model router usage repo
+  modelRouterUsage: { insert: vi.fn().mockResolvedValue(undefined), listRecent: vi.fn().mockResolvedValue([]) },
   closePool: vi.fn(),
 }));
 
@@ -347,9 +376,9 @@ describe('Webhook routes', () => {
 // 5. PLUGIN ROUTES
 // ===========================================================================
 describe('Plugin routes', () => {
-  it('GET /api/v1/plugins requires auth', async () => {
+  it('GET /api/v1/plugins returns list (public endpoint)', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/plugins' });
-    expect([401, 500, 200]).toContain(res.statusCode);
+    expect(res.statusCode).toBe(200);
   });
 
   it('GET /api/v1/plugins returns list with auth', async () => {
@@ -468,9 +497,9 @@ describe('Code-Intel routes', () => {
 // 11. AUTONOMOUS ROUTES
 // ===========================================================================
 describe('Autonomous routes', () => {
-  it('GET /api/v1/autonomous/loop requires auth', async () => {
-    const res = await app.inject({ method: 'GET', url: '/api/v1/autonomous/loop' });
-    expect([401, 404]).toContain(res.statusCode);
+  it('GET /api/v1/autonomous-loop/status requires auth', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/autonomous-loop/status' });
+    expect(res.statusCode).toBe(401);
   });
 });
 
@@ -493,9 +522,9 @@ describe('MCP routes', () => {
 // 13. SPAWNER ROUTES
 // ===========================================================================
 describe('Spawner routes', () => {
-  it('GET /api/v1/spawner/agents requires auth', async () => {
-    const res = await app.inject({ method: 'GET', url: '/api/v1/spawner/agents' });
-    expect([401, 404]).toContain(res.statusCode);
+  it('GET /api/v1/spawner/children requires auth', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/spawner/children' });
+    expect(res.statusCode).toBe(401);
   });
 });
 
@@ -584,9 +613,9 @@ describe('Reasoning routes', () => {
 // 19. V5 ROUTES
 // ===========================================================================
 describe('V5 routes', () => {
-  it('GET /api/v1/v5/health requires auth', async () => {
-    const res = await app.inject({ method: 'GET', url: '/api/v1/v5/health' });
-    expect([401, 404]).toContain(res.statusCode);
+  it('GET /api/v1/mcp-governance/policies requires auth', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/mcp-governance/policies' });
+    expect(res.statusCode).toBe(401);
   });
 });
 
@@ -680,7 +709,7 @@ describe('Security — auth enforcement', () => {
   it('All protected routes return 401 without auth header', async () => {
     const protectedRoutes = [
       '/api/v1/auth/me', '/api/v1/workspaces', '/api/v1/api-keys',
-      '/api/v1/agent-profiles', '/api/v1/webhooks', '/api/v1/plugins',
+      '/api/v1/agent-profiles', '/api/v1/webhooks',
       '/api/v1/voice/voices', '/api/v1/knowledge/documents',
       '/api/v1/mcp/servers', '/api/v1/forge/tools',
       '/api/v1/hypothesis/history', '/api/v1/insights/overview',
@@ -691,8 +720,8 @@ describe('Security — auth enforcement', () => {
     ];
     for (const url of protectedRoutes) {
       const res = await app.inject({ method: 'GET', url });
-      // Should be 401 (unauthorized) — some routes may 500 from missing mocks
-      expect([401, 500, 200]).toContain(res.statusCode);
+      // All listed routes require auth — must return 401 without credentials
+      expect(res.statusCode).toBe(401);
     }
   });
 });
@@ -748,7 +777,7 @@ describe('Cross-module integration scenarios', () => {
     economy.registerAgent('agent-b');
 
     // Register instance in hive
-    hive.registerInstance({ id: 'instance-1', hostname: 'node-1', capabilities: ['analysis'] });
+    hive.registerInstance({ id: 'instance-1', hostname: 'node-1', capabilities: ['analysis'], specialization: null, lastSeen: new Date() });
 
     // Agent A lists a skill
     const listing = economy.listSkill('agent-a', 'data-analysis', 'Analyzes data patterns', 50, 'analytics');
@@ -810,9 +839,9 @@ describe('Cross-module integration scenarios', () => {
 
     // Feed experiences via dreamFromExperiences
     const experiences = [
-      { prompt: 'Fixed null pointer in parser', strategy: 'react', toolsUsed: ['patch_file'], outcome: 'failure' as const, timestamp: new Date() },
-      { prompt: 'Added null check before .length', strategy: 'plan', toolsUsed: ['write_file'], outcome: 'success' as const, timestamp: new Date() },
-      { prompt: 'Refactored parser with guards', strategy: 'plan', toolsUsed: ['write_file', 'patch_file'], outcome: 'success' as const, timestamp: new Date() },
+      { id: 'exp-1', runId: 'run-1', prompt: 'Fixed null pointer in parser', strategy: 'react', toolsUsed: ['patch_file'], success: false, tokensUsed: 100, durationMs: 500, timestamp: new Date() },
+      { id: 'exp-2', runId: 'run-1', prompt: 'Added null check before .length', strategy: 'plan', toolsUsed: ['write_file'], success: true, tokensUsed: 150, durationMs: 800, timestamp: new Date() },
+      { id: 'exp-3', runId: 'run-1', prompt: 'Refactored parser with guards', strategy: 'plan', toolsUsed: ['write_file', 'patch_file'], success: true, tokensUsed: 200, durationMs: 1200, timestamp: new Date() },
     ];
 
     // Dream

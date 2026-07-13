@@ -340,7 +340,7 @@ export class InfiniteSelfPlay {
     if (this.archive.length > ARCHIVE_MAX) {
       this.archive = this.archive.slice(-ARCHIVE_MAX);
     }
-    spaRepo.insert(entry.id, { task: entry.taskId, outcome: entry.success ? 'success' : 'failure', performance: entry.score, mutation: entry.capabilityGained, generation: 0 }).catch(() => {});
+    spaRepo.insert(entry.id, { task: entry.taskId, outcome: entry.success ? 'success' : 'failure', performance: entry.score, mutation: entry.capabilityGained, generation: 0 }).catch((err) => log.error({ err }, 'DB write failed'));
   }
 
   getArchive(): EvolutionaryEntry[] {

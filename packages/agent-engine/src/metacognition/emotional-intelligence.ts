@@ -112,7 +112,7 @@ export class EmotionalIntelligence {
       if (this.readings.length > this.maxReadings) {
         this.readings = this.readings.slice(-this.maxReadings);
       }
-      erRepo.insert(reading.id, { user_id: reading.userId ?? 'unknown', valence: reading.valence, arousal: reading.arousal, dominant_emotion: reading.dominantUserEmotion, empathy_score: reading.empathyScore, strategy: reading.responseStrategy }).catch(() => {});
+      erRepo.insert(reading.id, { user_id: reading.userId ?? 'unknown', valence: reading.valence, arousal: reading.arousal, dominant_emotion: reading.dominantUserEmotion, empathy_score: reading.empathyScore, strategy: reading.responseStrategy }).catch((err) => log.error({ err }, 'DB write failed'));
 
       this.strategyCounts.set(
         reading.responseStrategy,

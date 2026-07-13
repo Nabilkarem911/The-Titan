@@ -259,13 +259,13 @@ export class BenchmarkingSuite {
     };
 
     this.suites.push(suiteResult);
-    bsRepo.insert(suiteResult.id, suiteName, suiteResult.avgScore, suiteResult.results.length, startedAt, completedAt).catch(() => {});
+    bsRepo.insert(suiteResult.id, suiteName, suiteResult.avgScore, suiteResult.results.length, startedAt, completedAt).catch((err) => log.error({ err }, 'DB write failed'));
     if (this.suites.length > this.maxSuites) {
       this.suites = this.suites.slice(-this.maxSuites);
     }
     this.allResults.push(...results);
     for (const r of results) {
-      brRepo.insert(r.id, { suite_name: suiteName, task_name: r.taskName, score: r.score, duration_ms: r.durationMs, model: null }).catch(() => {});
+      brRepo.insert(r.id, { suite_name: suiteName, task_name: r.taskName, score: r.score, duration_ms: r.durationMs, model: null }).catch((err) => log.error({ err }, 'DB write failed'));
     }
 
     incCounter('benchmark_suite', 'Benchmark suites', 1, { passed: passedTasks > results.length / 2 ? 'majority' : 'minority' });

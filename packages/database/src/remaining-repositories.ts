@@ -112,6 +112,16 @@ export const dagExecutions = {
       [id, workflowId, status, completedNodes, failedNodes, skippedNodes],
     );
   },
+
+  async findById(id: string): Promise<Record<string, unknown> | null> {
+    const result = await query(`SELECT * FROM dag_executions WHERE id = $1`, [id]);
+    return (result.rows[0] as Record<string, unknown>) ?? null;
+  },
+
+  async listRecent(limit = 100): Promise<Record<string, unknown>[]> {
+    const result = await query(`SELECT * FROM dag_executions ORDER BY created_at DESC LIMIT $1`, [limit]);
+    return result.rows as Record<string, unknown>[];
+  },
 };
 
 // ── TRT ──

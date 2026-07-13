@@ -117,7 +117,7 @@ export class ScreenMonitor {
     };
 
     this.alerts.push(alert);
-    scrRepo.insert(alert.id, { alert_type: alert.type, description: alert.message, screenshot_hash: alert.screenshotHash ?? null, severity: alert.type }).catch(() => {});
+    scrRepo.insert(alert.id, { alert_type: alert.type, description: alert.message, screenshot_hash: alert.screenshotHash ?? null, severity: alert.type }).catch((err) => log.error({ err }, 'DB write failed'));
     this.alertTimestamps.push(now);
 
     if (this.alerts.length > 1000) {

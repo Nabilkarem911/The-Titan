@@ -98,7 +98,7 @@ export class DigitalTwin {
     if (this.snapshots.length > this.maxSnapshots) {
       this.snapshots.shift();
     }
-    dtsRepo.insert(randomUUID().slice(0, 12), { metrics: JSON.stringify({ cpu: full.cpuUsage, mem: full.memoryUsed }), predictions: '[]', alerts: '[]' }).catch(() => {});
+    dtsRepo.insert(randomUUID().slice(0, 12), { metrics: JSON.stringify({ cpu: full.cpuUsage, mem: full.memoryUsed }), predictions: '[]', alerts: '[]' }).catch((err) => log.error({ err }, 'DB write failed'));
 
     // Record entities in the graph
     this.graph.recordEntity('server', 'host', {

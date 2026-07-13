@@ -19,6 +19,7 @@ export interface ToolDefinition {
     maxCalls: number;
     windowMs: number;
   };
+  riskLevel?: 'safe' | 'elevated' | 'dangerous';  // safe = default, elevated = requires TOOL_EXECUTE_ELEVATED, dangerous = requires TOOL_EXECUTE_ELEVATED + sandbox
 }
 
 interface CacheEntry {
@@ -181,13 +182,14 @@ export class ToolRegistry {
     return { size: this.cache.size, tools };
   }
 
-  list(): Array<{ name: string; description: string; tags?: string[]; schema?: Record<string, { type: string; description?: string; enum?: string[] }>; requiredParams?: string[] }> {
+  list(): Array<{ name: string; description: string; tags?: string[]; schema?: Record<string, { type: string; description?: string; enum?: string[] }>; requiredParams?: string[]; riskLevel?: 'safe' | 'elevated' | 'dangerous' }> {
     return Array.from(this.tools.values()).map((t) => ({
       name: t.name,
       description: t.description,
       tags: t.tags,
       schema: t.schema,
       requiredParams: t.requiredParams,
+      riskLevel: t.riskLevel,
     }));
   }
 

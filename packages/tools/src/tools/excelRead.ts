@@ -1,5 +1,6 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { readFileSync, existsSync } from 'node:fs';
+import { validateCwd } from '../sandbox.js';
 
 export interface ExcelReadResult {
   sheets: string[];
@@ -9,23 +10,30 @@ export interface ExcelReadResult {
 
 export async function excelRead(params: { path: string; sheet?: string }): Promise<ExcelReadResult> {
   const { path, sheet } = params;
+  validateCwd(path);
 
   if (!existsSync(path)) {
     throw new Error(`File not found: ${path}`);
   }
 
   const buffer = readFileSync(path);
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
 
-  const sheets = workbook.SheetNames;
+  const sheets = workbook.worksheets.map(ws => ws.name);
   const targetSheets = sheet ? [sheet] : sheets;
 
   const data: Record<string, unknown[][]> = {};
   const rowCounts: Record<string, number> = {};
 
   for (const name of targetSheets) {
-    if (!workbook.Sheets[name]) continue;
-    const rows = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[name], { header: 1 });
+    const ws = workbook.getWorksheet(name);
+    if (!ws) continue;
+    const rows: unknown[][] = [];
+    for (let i = 1; i <= ws.rowCount; i++) {
+      const row = ws.getRow(i);
+      rows.push((row.values ?? []).slice(1) as unknown[]);
+    }
     data[name] = rows;
     rowCounts[name] = rows.length;
   }

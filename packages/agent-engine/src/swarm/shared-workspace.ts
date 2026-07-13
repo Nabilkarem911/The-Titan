@@ -26,7 +26,7 @@ export class SharedWorkspace {
       createdAt: new Date(),
     };
     this.artifacts.set(key, artifact);
-    saRepo.insert(artifact.id, artifact.key, artifact.producedBy, typeof artifact.value === 'string' ? artifact.value : JSON.stringify(artifact.value)).catch(() => {});
+    saRepo.insert(artifact.id, artifact.key, artifact.producedBy, typeof artifact.value === 'string' ? artifact.value : JSON.stringify(artifact.value)).catch((err) => log.error({ err }, 'DB write failed'));
     log.debug({ key, producedBy }, 'artifact stored');
   }
 
@@ -59,7 +59,7 @@ export class SharedWorkspace {
 
   setNote(agentId: string, note: string): void {
     this.notes.set(agentId, note);
-    snRepo.insert(agentId, note).catch(() => {});
+    snRepo.insert(agentId, note).catch((err) => log.error({ err }, 'DB write failed'));
   }
 
   getNote(agentId: string): string | undefined {

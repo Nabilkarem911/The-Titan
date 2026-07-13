@@ -343,7 +343,7 @@ export class BrowserAgent extends EventEmitter {
         if (action.selector) {
           await page.click(action.selector, { timeout: this.config.timeout } as any);
         }
-        await page.waitForNetworkIdle({ timeout: 5000 }).catch(() => {});
+        await page.waitForNetworkIdle({ timeout: 5000 }).catch((err) => log.error({ err }, 'DB write failed'));
         const text = await page.evaluate('document.body?.innerText?.slice(0, 5000) ?? ""') as string;
         return { url: page.url(), title: await page.title(), text, success: true };
       }
@@ -478,7 +478,7 @@ export class BrowserAgent extends EventEmitter {
     session.status = 'closed';
     const page = this.pages.get(sessionId);
     if (page) {
-      page.close().catch(() => {});
+      page.close().catch((err) => log.error({ err }, 'DB write failed'));
       this.pages.delete(sessionId);
     }
     this.emit('session:close', sessionId);

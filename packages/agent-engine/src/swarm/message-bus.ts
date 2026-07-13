@@ -47,7 +47,7 @@ export class MessageBus {
     if (this.history.length > this.maxHistory) {
       this.history = this.history.slice(-this.maxHistory);
     }
-    smRepo.insert(full.id, { from_agent: full.from, to_agent: full.to, channel: full.type, content: full.content }).catch(() => {});
+    smRepo.insert(full.id, { from_agent: full.from, to_agent: full.to, channel: full.type, content: full.content }).catch((err) => log.error({ err }, 'DB write failed'));
 
     if (full.to === 'broadcast') {
       const promises: Promise<void>[] = [];

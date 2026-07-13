@@ -179,7 +179,7 @@ export class AutonomousLoop {
         if (this.results.length > this.maxResults) {
           this.results = this.results.slice(-this.maxResults);
         }
-        alrRepo.insert(randomUUID().slice(0, 12), { task: check.name, status: result.status, result: JSON.stringify(result), duration_ms: 0 }).catch(() => {});
+        alrRepo.insert(randomUUID().slice(0, 12), { task: check.name, status: result.status, result: JSON.stringify(result), duration_ms: 0 }).catch((err) => log.error({ err }, 'DB write failed'));
 
         incCounter('autonomous_check_total', 'Autonomous checks run', 1, {
           status: result.status,
@@ -257,7 +257,7 @@ export class AutonomousLoop {
         check.runCount++;
         results.push(result);
         this.results.push(result);
-        alrRepo.insert(randomUUID().slice(0, 12), { task: check.name, status: result.status, result: JSON.stringify(result), duration_ms: 0 }).catch(() => {});
+        alrRepo.insert(randomUUID().slice(0, 12), { task: check.name, status: result.status, result: JSON.stringify(result), duration_ms: 0 }).catch((err) => log.error({ err }, 'DB write failed'));
       } catch (err) {
         log.error({ err, checkId: check.id }, 'manual check failed');
       }

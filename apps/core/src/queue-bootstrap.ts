@@ -37,6 +37,7 @@ registry.register({
     return executeBash({ command, cwd, timeoutMs: timeoutMs ?? 10_000 });
   },
   tags: ['system', 'execution'],
+  riskLevel: 'dangerous',
 });
 
 registry.register({
@@ -52,6 +53,7 @@ registry.register({
     return patchFile({ filePath, patch });
   },
   tags: ['filesystem', 'code'],
+  riskLevel: 'elevated',
 });
 
 registry.register({

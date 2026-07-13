@@ -38,7 +38,7 @@ export class VoiceConversationManager {
 
     this.sessions.set(session.id, session);
     this.history.set(session.id, []);
-    voiceSessions.insert(session.id, userId).catch(() => {});
+    voiceSessions.insert(session.id, userId).catch((err) => log.error({ err }, 'DB write failed'));
     log.info({ sessionId: session.id, userId }, 'voice session created');
     return session;
   }
@@ -76,7 +76,7 @@ export class VoiceConversationManager {
     const session = this.sessions.get(sessionId);
     if (session) {
       session.isActive = false;
-      voiceSessions.setActive(sessionId, false).catch(() => {});
+      voiceSessions.setActive(sessionId, false).catch((err) => log.error({ err }, 'DB write failed'));
       log.info({ sessionId }, 'voice session ended');
     }
   }
@@ -94,7 +94,7 @@ export class VoiceConversationManager {
     const turns = this.history.get(sessionId);
     if (turns) {
       turns.push(turn);
-      voiceSessionHistory.insert(sessionId, turn.role, turn.text).catch(() => {});
+      voiceSessionHistory.insert(sessionId, turn.role, turn.text).catch((err) => log.error({ err }, 'DB write failed'));
       if (turns.length > 100) turns.shift();
     }
   }

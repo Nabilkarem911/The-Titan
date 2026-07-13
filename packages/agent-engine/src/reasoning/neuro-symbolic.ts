@@ -122,7 +122,7 @@ export class NeuroSymbolicReasoner {
       if (this.results.length > this.maxResults) {
         this.results = this.results.slice(-this.maxResults);
       }
-      nsrRepo.insert(result.id, { query: result.query, approach: result.hybrid ? 'hybrid' : (result.neuralOnly ? 'neural' : 'symbolic'), result: result.synthesizedConclusion, confidence: result.confidence, rules_used: result.symbolicRulesApplied.map(r => r.name) }).catch(() => {});
+      nsrRepo.insert(result.id, { query: result.query, approach: result.hybrid ? 'hybrid' : (result.neuralOnly ? 'neural' : 'symbolic'), result: result.synthesizedConclusion, confidence: result.confidence, rules_used: result.symbolicRulesApplied.map(r => r.name) }).catch((err) => log.error({ err }, 'DB write failed'));
 
       incCounter('neuro_symbolic_run', 'Neuro-symbolic reasoning runs', 1, {
         hybrid: result.hybrid ? 'true' : 'false',
@@ -166,7 +166,7 @@ export class NeuroSymbolicReasoner {
       timesApplied: 0,
     };
     this.rules.push(fullRule);
-    nsRulesRepo.insert(fullRule.id, fullRule.name, fullRule.condition, fullRule.action, fullRule.priority).catch(() => {});
+    nsRulesRepo.insert(fullRule.id, fullRule.name, fullRule.condition, fullRule.action, fullRule.priority).catch((err) => log.error({ err }, 'DB write failed'));
     if (this.rules.length > this.maxRules) {
       this.rules = this.rules.slice(-this.maxRules);
     }
@@ -352,7 +352,7 @@ export class NeuroSymbolicReasoner {
         timesApplied: 0,
       };
       this.rules.push(fullRule);
-      nsRulesRepo.insert(fullRule.id, fullRule.name, fullRule.condition, fullRule.action, fullRule.priority).catch(() => {});
+      nsRulesRepo.insert(fullRule.id, fullRule.name, fullRule.condition, fullRule.action, fullRule.priority).catch((err) => log.error({ err }, 'DB write failed'));
     }
   }
 }

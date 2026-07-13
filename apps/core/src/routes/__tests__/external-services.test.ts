@@ -586,7 +586,7 @@ describe('Multi-Platform Bot Routes', () => {
 
   it('GET /api/v1/bots/channels requires auth', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/bots/channels' });
-    expect([401, 404]).toContain(res.statusCode);
+    expect(res.statusCode).toBe(401);
   });
 });
 

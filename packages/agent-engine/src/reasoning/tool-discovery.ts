@@ -147,7 +147,7 @@ export class DynamicToolDiscovery extends EventEmitter {
         const verified = await this.verifyTool(tool);
         tool.verified = verified;
         this.discovered.set(tool.id, tool);
-        dtRepo.upsert(tool.id, { name: tool.name, source: tool.source, description: tool.description ?? '', reliability: tool.reliabilityScore, installed: tool.installed }, ['reliability', 'installed']).catch(() => {});
+        dtRepo.upsert(tool.id, { name: tool.name, source: tool.source, description: tool.description ?? '', reliability: tool.reliabilityScore, installed: tool.installed }, ['reliability', 'installed']).catch((err) => log.error({ err }, 'DB write failed'));
         if (this.discovered.size > this.maxTools) {
           // Remove oldest uninstalled
           const oldest = Array.from(this.discovered.values())
@@ -161,7 +161,7 @@ export class DynamicToolDiscovery extends EventEmitter {
       query.status = tools.length > 0 ? 'found' : 'not-found';
 
       this.queries.push(query);
-      tdqRepo.insert(query.id, query.taskDescription, query.status, tools.length).catch(() => {});
+      tdqRepo.insert(query.id, query.taskDescription, query.status, tools.length).catch((err) => log.error({ err }, 'DB write failed'));
       if (this.queries.length > this.maxQueries) {
         this.queries = this.queries.slice(-this.maxQueries);
       }

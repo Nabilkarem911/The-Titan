@@ -25,7 +25,7 @@ export async function runTypeCheck(cwd: string, tsconfigPath?: string): Promise<
     return { type: 'typecheck', passed: true, errors: [], warnings: [], durationMs: elapsed(start) };
   } catch (err) {
     const e = err as { stdout?: string; stderr?: string };
-    const output = e.stdout ?? e.stderr ?? '';
+    const output = [e.stdout ?? '', e.stderr ?? ''].join('\n');
     const errors = parseTypeErrors(output);
     return { type: 'typecheck', passed: false, errors, warnings: [], durationMs: elapsed(start) };
   }
@@ -103,11 +103,22 @@ export async function runFullVerification(cwd: string): Promise<VerificationResu
 }
 
 function parseTypeErrors(output: string): string[] {
-  return output
+  const tsErrors = output
     .split('\n')
     .filter((l) => l.includes('error TS'))
     .map((l) => l.trim())
     .slice(0, 20);
+  if (tsErrors.length > 0) return tsErrors;
+  // Fall back to any non-empty error-like output lines
+  const genericErrors = output
+    .split('\n')
+    .filter((l) => l.trim().length > 0 && (l.includes('error') || l.includes('Error') || l.includes('not found') || l.includes('Cannot')))
+    .map((l) => l.trim())
+    .slice(0, 20);
+  if (genericErrors.length > 0) return genericErrors;
+  // Final fallback: if there's any non-empty output, report it as an error
+  const lines = output.split('\n').filter((l) => l.trim().length > 0).slice(0, 5);
+  return lines.length > 0 ? lines : ['Typecheck failed'];
 }
 
 function parseTestErrors(output: string): string[] {

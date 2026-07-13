@@ -155,7 +155,7 @@ export class EdgePrivacy {
     };
 
     this.federatedUpdates.push(update);
-    fuRepo.insert(update.id, { model: '', update_data: JSON.stringify(update), round: 0, source: update.fromInstance }).catch(() => {});
+    fuRepo.insert(update.id, { model: '', update_data: JSON.stringify(update), round: 0, source: update.fromInstance }).catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('federated_updates_shared', 'Federated updates shared', 1);
     log.info({ fromInstance, encrypted: true }, 'federated update shared');
     return update;

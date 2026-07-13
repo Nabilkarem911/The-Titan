@@ -209,20 +209,38 @@ async function appOpen(payload: Record<string, unknown>): Promise<CommandResult>
   }
 }
 
+function sanitizeAppName(app: string): string {
+  const cleaned = app.replace(/[^\w.\-]/g, '');
+  if (!cleaned) throw new Error('Invalid app name');
+  if (cleaned.length > 200) throw new Error('App name too long');
+  return cleaned;
+}
+
 async function appClose(payload: Record<string, unknown>): Promise<CommandResult> {
   const app = payload.app as string;
   if (!app) return { success: false, error: 'Missing app' };
   const isWindows = platform() === 'win32';
   const isMac = platform() === 'darwin';
-  const cmd = isWindows ? `taskkill /F /IM ${app}.exe 2>nul & taskkill /F /IM ${app} 2>nul` : isMac ? `pkill -f "${app}"` : `pkill -f "${app}"`;
+  let safeApp: string;
+  try { safeApp = sanitizeAppName(app); } catch { return { success: false, error: 'Invalid app name' }; }
   return new Promise((resolve) => {
-    exec(cmd, (err, stdout, stderr) => {
-      if (err) {
-        resolve({ success: false, error: `Failed to close ${app}: ${err.message}` });
-      } else {
-        resolve({ success: true, data: { app, closed: true, output: stdout.toString() || stderr.toString() } });
-      }
-    });
+    if (isWindows) {
+      execFile('taskkill', ['/F', '/IM', `${safeApp}.exe`], { timeout: 5000 }, (err, stdout, stderr) => {
+        if (err) {
+          execFile('taskkill', ['/F', '/IM', safeApp], { timeout: 5000 }, (err2, stdout2, stderr2) => {
+            if (err2) resolve({ success: false, error: `Failed to close ${safeApp}` });
+            else resolve({ success: true, data: { app: safeApp, closed: true, output: stdout2.toString() || stderr2.toString() } });
+          });
+        } else {
+          resolve({ success: true, data: { app: safeApp, closed: true, output: stdout.toString() || stderr.toString() } });
+        }
+      });
+    } else {
+      execFile('pkill', ['-f', safeApp], { timeout: 5000 }, (err, stdout, stderr) => {
+        if (err) resolve({ success: false, error: `Failed to close ${safeApp}` });
+        else resolve({ success: true, data: { app: safeApp, closed: true, output: stdout.toString() || stderr.toString() } });
+      });
+    }
   });
 }
 
@@ -287,10 +305,29 @@ async function clipboardAction(payload: Record<string, unknown>): Promise<Comman
       return { success: true, data: { content: result } };
     } else if (action === 'write') {
       if (!text) return { success: false, error: 'Missing text for write action' };
-      const cmd = isWindows ? `powershell -command "Set-Clipboard -Value '${text.replace(/'/g, "''")}'"` : isMac ? `printf '%s' '${text.replace(/'/g, "'\\''")}' | pbcopy` : `printf '%s' '${text.replace(/'/g, "'\\''")}' | xclip -selection clipboard`;
-      await new Promise<void>((resolve) => {
-        exec(cmd, { timeout: 5_000 }, () => resolve());
-      });
+      if (isWindows) {
+        await new Promise<void>((resolve) => {
+          const child = spawn('powershell', ['-NoProfile', '-Command', `Set-Clipboard -Value '${text.replace(/'/g, "''")}'`], { timeout: 5_000 });
+          child.on('close', () => resolve());
+          child.on('error', () => resolve());
+        });
+      } else if (isMac) {
+        await new Promise<void>((resolve) => {
+          const child = spawn('pbcopy', [], { timeout: 5_000 });
+          child.stdin?.write(text);
+          child.stdin?.end();
+          child.on('close', () => resolve());
+          child.on('error', () => resolve());
+        });
+      } else {
+        await new Promise<void>((resolve) => {
+          const child = spawn('xclip', ['-selection', 'clipboard'], { timeout: 5_000 });
+          child.stdin?.write(text);
+          child.stdin?.end();
+          child.on('close', () => resolve());
+          child.on('error', () => resolve());
+        });
+      }
       return { success: true, data: { written: text } };
     } else {
       return { success: false, error: `Unknown clipboard action: ${action}` };
@@ -556,11 +593,10 @@ if ($hwnd -ne [IntPtr]::Zero) { ${actionMap[action]} [Win32]::PostMessage($hwnd,
 
 async function execPowerShell(script: string, timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = exec('powershell -NoProfile -Command "' + script.replace(/"/g, '\\"') + '"', { timeout: timeoutMs, maxBuffer: 1024 * 1024 }, (err, stdout) => {
+    execFile('powershell', ['-NoProfile', '-Command', script], { timeout: timeoutMs, maxBuffer: 1024 * 1024 }, (err, stdout) => {
       if (err) reject(err);
       else resolve(stdout.toString());
     });
-    child.unref?.();
   });
 }
 

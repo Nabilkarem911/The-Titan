@@ -183,7 +183,7 @@ export class DAGWorkflowEngine {
     };
 
     this.executions.set(runId, dagResult);
-    deRepo.insert(runId, dagResult.workflowId, overallStatus, dagResult.executionOrder, [], skippedNodes).catch(() => {});
+    deRepo.insert(runId, dagResult.workflowId, overallStatus, dagResult.executionOrder, [], skippedNodes).catch((err) => log.error({ err }, 'DB write failed'));
     if (this.executions.size > this.maxExecutions) {
       const oldest = this.executions.keys().next().value;
       if (oldest) this.executions.delete(oldest);
@@ -477,12 +477,46 @@ export class DAGWorkflowEngine {
 
   // ===== Public API =====
 
-  getExecution(runId: string): DAGExecutionResult | null {
-    return this.executions.get(runId) ?? null;
+  async getExecution(runId: string): Promise<DAGExecutionResult | null> {
+    const cached = this.executions.get(runId);
+    if (cached) return cached;
+    try {
+      const row = await deRepo.findById(runId);
+      if (!row) return null;
+      return this.rowToExecution(row);
+    } catch (err) {
+      log.warn({ err, runId }, 'failed to load execution from DB');
+      return null;
+    }
   }
 
-  getExecutions(): DAGExecutionResult[] {
-    return Array.from(this.executions.values());
+  async getExecutions(): Promise<DAGExecutionResult[]> {
+    const cached = Array.from(this.executions.values());
+    try {
+      const rows = await deRepo.listRecent(100);
+      const fromDb = rows.map((row) => this.rowToExecution(row));
+      // Merge: DB rows that aren't in cache
+      const cachedIds = new Set(cached.map((e) => e.runId));
+      const merged = [...cached, ...fromDb.filter((e) => !cachedIds.has(e.runId))];
+      return merged;
+    } catch (err) {
+      log.warn({ err }, 'failed to load executions from DB — returning in-memory only');
+      return cached;
+    }
+  }
+
+  private rowToExecution(row: Record<string, unknown>): DAGExecutionResult {
+    return {
+      runId: String(row.id ?? ''),
+      workflowId: String(row.workflow_id ?? ''),
+      status: (row.status as 'completed' | 'failed' | 'partial') ?? 'failed',
+      nodeResults: new Map(),
+      executionOrder: Array.isArray(row.completed_nodes) ? row.completed_nodes as string[] : [],
+      parallelBatches: [],
+      durationMs: 0,
+      retriedNodes: [],
+      skippedNodes: Array.isArray(row.skipped_nodes) ? row.skipped_nodes as string[] : [],
+    };
   }
 
   stats(): {

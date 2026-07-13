@@ -292,6 +292,6 @@ export class SmartModelRouter {
     if (this.usage.length > this.maxUsageRecords) {
       this.usage = this.usage.slice(-this.maxUsageRecords);
     }
-    mruRepo.insert(randomUUID().slice(0, 12), { model: decision.modelId, task_type: decision.tier, tokens_used: 0, latency_ms: latency, success: true }).catch(() => {});
+    mruRepo.insert(randomUUID().slice(0, 12), { model: decision.modelId, task_type: decision.tier, tokens_used: 0, latency_ms: latency, success: true }).catch((err) => log.error({ err }, 'DB write failed'));
   }
 }

@@ -434,7 +434,7 @@ export class MultiLayerGuardrails {
     if (this.results.length > this.maxResults) {
       this.results = this.results.slice(-this.maxResults);
     }
-    mlgrRepo.insert(result.id, { input_text: result.input, final_action: result.finalAction, layer_results: JSON.stringify(result.layerResults) }).catch(() => {});
+    mlgrRepo.insert(result.id, { input_text: result.input, final_action: result.finalAction, layer_results: JSON.stringify(result.layerResults) }).catch((err) => log.error({ err }, 'DB write failed'));
     setGauge('guardrail_results', 'Guardrail results stored', this.results.length);
   }
 

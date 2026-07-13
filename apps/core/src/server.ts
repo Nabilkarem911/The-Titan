@@ -54,7 +54,7 @@ import { codeArchitectureRoutes } from './routes/code-architecture.js';
 import { crossUserRoutes } from './routes/cross-user.js';
 import { collaborationRoutes } from './routes/collaboration.js';
 import { multimodalRoutes } from './routes/multimodal.js';
-import { reasoningRoutes } from './routes/reasoning.js';
+import { reasoningRoutes } from './routes/reasoning/index.js';
 import { integrationsRoutes } from './routes/integrations-v2.js';
 import { v5Routes } from './routes/v5.js';
 import { analyticsRoutes } from './routes/analytics.js';

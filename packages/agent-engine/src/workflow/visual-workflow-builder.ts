@@ -46,7 +46,7 @@ export class VisualWorkflowBuilder {
       exported: false,
     };
     this.workflows.push(workflow);
-    vwRepo.insert(workflow.id, { name: workflow.name, description: '', nodes: JSON.stringify(workflow.nodes), edges: JSON.stringify(workflow.edges), status: 'draft' }).catch(() => {});
+    vwRepo.insert(workflow.id, { name: workflow.name, description: '', nodes: JSON.stringify(workflow.nodes), edges: JSON.stringify(workflow.edges), status: 'draft' }).catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('workflows_created', 'Visual workflows created', 1);
     return workflow;
   }
@@ -113,21 +113,53 @@ export class VisualWorkflowBuilder {
     return dag;
   }
 
-  getWorkflows(): VisualWorkflow[] {
-    return [...this.workflows];
+  async getWorkflows(): Promise<VisualWorkflow[]> {
+    try {
+      const rows = await vwRepo.listAll(500);
+      return rows.map((row) => this.rowToWorkflow(row));
+    } catch (err) {
+      log.warn({ err }, 'failed to load workflows from DB — returning in-memory only');
+      return [...this.workflows];
+    }
   }
 
-  getWorkflow(id: string): VisualWorkflow | null {
-    return this.workflows.find((w) => w.id === id) ?? null;
+  async getWorkflow(id: string): Promise<VisualWorkflow | null> {
+    const cached = this.workflows.find((w) => w.id === id);
+    if (cached) return cached;
+    try {
+      const row = await vwRepo.findById(id);
+      if (!row) return null;
+      return this.rowToWorkflow(row);
+    } catch (err) {
+      log.warn({ err, id }, 'failed to load workflow from DB');
+      return null;
+    }
   }
 
-  deleteWorkflow(id: string): boolean {
+  async deleteWorkflow(id: string): Promise<boolean> {
     const idx = this.workflows.findIndex((w) => w.id === id);
     if (idx >= 0) {
       this.workflows.splice(idx, 1);
-      return true;
     }
-    return false;
+    try {
+      await vwRepo.deleteById(id);
+      return true;
+    } catch (err) {
+      log.warn({ err, id }, 'failed to delete workflow from DB');
+      return idx >= 0;
+    }
+  }
+
+  private rowToWorkflow(row: Record<string, unknown>): VisualWorkflow {
+    return {
+      id: String(row.id),
+      name: String(row.name ?? ''),
+      nodes: typeof row.nodes === 'string' ? JSON.parse(row.nodes) : [],
+      edges: typeof row.edges === 'string' ? JSON.parse(row.edges) : [],
+      trigger: undefined,
+      createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
+      exported: String(row.status ?? '') === 'exported',
+    };
   }
 
   getStats(): { total: number; exported: number; totalNodes: number; totalEdges: number } {

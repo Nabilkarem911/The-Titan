@@ -133,7 +133,7 @@ export class DreamMode extends EventEmitter {
         this.insights = this.insights.slice(-this.maxInsights);
       }
       for (const ins of newInsights) {
-        dreamInsights.insert(ins.id, { report_id: null, type: ins.type, content: ins.content, confidence: ins.confidence }).catch(() => {});
+        dreamInsights.insert(ins.id, { report_id: null, type: ins.type, content: ins.content, confidence: ins.confidence }).catch((err) => log.error({ err }, 'DB write failed'));
       }
 
       const staleFacts = newInsights.filter((i) => i.type === 'stale_fact').length;
@@ -153,7 +153,7 @@ export class DreamMode extends EventEmitter {
       if (this.reports.length > this.maxReports) {
         this.reports = this.reports.slice(-this.maxReports);
       }
-      dreamReports.insert({ id: report.dreamId, experiencesReviewed: report.experiencesReviewed, insights: report.insights, patterns: [], recommendations: [], strategyAdjustments: [], healthScore: 50, createdAt: report.completedAt }).catch(() => {});
+      dreamReports.insert({ id: report.dreamId, experiencesReviewed: report.experiencesReviewed, insights: report.insights, patterns: [], recommendations: [], strategyAdjustments: [], healthScore: 50, createdAt: report.completedAt }).catch((err) => log.error({ err }, 'DB write failed'));
 
       incCounter('dream_completed', 'Dream sessions completed', 1);
       incCounter('dream_insights', 'Dream insights generated', newInsights.length);
@@ -274,7 +274,7 @@ export class DreamMode extends EventEmitter {
       if (this.reports.length > this.maxReports) {
         this.reports = this.reports.slice(-this.maxReports);
       }
-      dreamReports.insert({ id: report.dreamId, experiencesReviewed: report.experiencesReviewed, insights: report.insights, patterns: [], recommendations: [], strategyAdjustments: [], healthScore: 50, createdAt: report.completedAt }).catch(() => {});
+      dreamReports.insert({ id: report.dreamId, experiencesReviewed: report.experiencesReviewed, insights: report.insights, patterns: [], recommendations: [], strategyAdjustments: [], healthScore: 50, createdAt: report.completedAt }).catch((err) => log.error({ err }, 'DB write failed'));
 
       incCounter('dream_completed', 'Dream sessions completed', 1);
       incCounter('dream_insights', 'Dream insights generated', newInsights.length);

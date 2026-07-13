@@ -34,7 +34,7 @@ describe('VisualWorkflowBuilder', () => {
     const wf = builder.createWorkflow('Test');
     builder.setTrigger(wf.id, 'cron', { schedule: '0 3 * * *' });
     expect(wf.trigger).toBeDefined();
-    expect(wf.trigger.type).toBe('cron');
+    expect(wf.trigger!.type).toBe('cron');
   });
 
   it('should add condition nodes', () => {
@@ -54,16 +54,16 @@ describe('VisualWorkflowBuilder', () => {
     expect(dag.edges).toHaveLength(1);
   });
 
-  it('should get workflow by id', () => {
+  it('should get workflow by id', async () => {
     const wf = builder.createWorkflow('Test');
-    expect(builder.getWorkflow(wf.id)).not.toBeNull();
-    expect(builder.getWorkflow('nonexistent')).toBeNull();
+    expect(await builder.getWorkflow(wf.id)).not.toBeNull();
+    expect(await builder.getWorkflow('nonexistent')).toBeNull();
   });
 
-  it('should delete workflow', () => {
+  it('should delete workflow', async () => {
     const wf = builder.createWorkflow('Test');
-    expect(builder.deleteWorkflow(wf.id)).toBe(true);
-    expect(builder.getWorkflow(wf.id)).toBeNull();
+    expect(await builder.deleteWorkflow(wf.id)).toBe(true);
+    expect(await builder.getWorkflow(wf.id)).toBeNull();
   });
 
   it('should get stats', () => {
@@ -76,10 +76,10 @@ describe('VisualWorkflowBuilder', () => {
     expect(stats.totalNodes).toBe(1);
   });
 
-  it('should reset', () => {
+  it('should reset', async () => {
     builder.createWorkflow('Test');
     builder.reset();
-    expect(builder.getWorkflows()).toHaveLength(0);
+    expect(await builder.getWorkflows()).toHaveLength(0);
   });
 
   it('should throw on invalid workflow id', () => {

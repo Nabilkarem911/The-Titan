@@ -198,7 +198,7 @@ export class MCPGovernanceManager {
     };
 
     this.auditLog.push(entry);
-    mgaRepo.insert(entry.id, { server: entry.serverId, action: entry.toolName, policy_violated: entry.allowed ? null : entry.reason, decision: entry.allowed ? 'allow' : 'deny' }).catch(() => {});
+    mgaRepo.insert(entry.id, { server: entry.serverId, action: entry.toolName, policy_violated: entry.allowed ? null : entry.reason, decision: entry.allowed ? 'allow' : 'deny' }).catch((err) => log.error({ err }, 'DB write failed'));
     if (this.auditLog.length > this.maxAuditEntries) {
       this.auditLog = this.auditLog.slice(-this.maxAuditEntries);
     }

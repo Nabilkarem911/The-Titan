@@ -18,14 +18,17 @@
     "test": "echo 'no tests yet'"
   },
   "dependencies": {
+    "@fastify/static": "10.1.0",
     "@titan/config": "0.1.0",
-    "@titan/logging": "0.1.0"
+    "@titan/logging": "0.1.0",
+    "diff": "9.0.0",
+    "vite": "8.1.4"
   },
   "optionalDependencies": {
+    "@opentelemetry/auto-instrumentations-node": "^0.78.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.220.0",
+    "@opentelemetry/resources": "^2.9.0",
     "@opentelemetry/sdk-node": "^1.28.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.54.0",
-    "@opentelemetry/resources": "^1.28.0",
     "@opentelemetry/semantic-conventions": "^1.28.0"
   },
   "devDependencies": {

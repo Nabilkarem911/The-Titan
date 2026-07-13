@@ -70,7 +70,7 @@ export class TemporalIntelligence {
       metadata: metadata ?? {},
     };
     this.events.push(event);
-    teRepo.insert(event.id, { event_type: event.category, content: event.description, timestamp_predicted: event.timestamp, confidence: 0.5 }).catch(() => {});
+    teRepo.insert(event.id, { event_type: event.category, content: event.description, timestamp_predicted: event.timestamp, confidence: 0.5 }).catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('temporal_events_recorded', 'Temporal events recorded', 1);
     return event;
   }
@@ -84,7 +84,7 @@ export class TemporalIntelligence {
       metadata: metadata ?? {},
     };
     this.events.push(event);
-    teRepo.insert(event.id, { event_type: event.category, content: event.description, timestamp_predicted: event.timestamp, confidence: 0.5 }).catch(() => {});
+    teRepo.insert(event.id, { event_type: event.category, content: event.description, timestamp_predicted: event.timestamp, confidence: 0.5 }).catch((err) => log.error({ err }, 'DB write failed'));
     this.events.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
     return event;
   }

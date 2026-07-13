@@ -3,6 +3,9 @@ import { requireAuth, requirePermission } from '../plugins/auth.js';
 import { PERMISSIONS } from '@titan/shared';
 import { getGlobalToolRegistry } from '@titan/agent-engine';
 import { experiences } from '@titan/database';
+import { getLogger } from '@titan/logging';
+
+const log = getLogger().child({ component: 'command-routes' });
 
 export const commandRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // POST /api/v1/command — execute a command via the tool registry
@@ -16,11 +19,17 @@ export const commandRoutes: FastifyPluginAsync = async (app: FastifyInstance) =>
     const found = registered.find((t) => t.name === tool);
     if (!found) return reply.code(404).send({ error: `Tool "${tool}" not found` });
 
+    // Check elevated permissions for dangerous tools
+    if (found.riskLevel === 'elevated' || found.riskLevel === 'dangerous') {
+      requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE_ELEVATED);
+    }
+
     try {
       const result = await registry.execute(tool, params ?? {});
       return reply.send({ tool, params, result });
     } catch (err) {
-      return reply.code(500).send({ error: 'Tool execution failed', detail: String(err) });
+      log.error({ err, tool }, 'tool execution failed');
+      return reply.code(500).send({ error: 'Tool execution failed' });
     }
   });
 
@@ -40,7 +49,8 @@ export const commandRoutes: FastifyPluginAsync = async (app: FastifyInstance) =>
       });
       return reply.send({ tool: 'dream_from_experiences', experiencesReviewed: recentExperiences.length, result });
     } catch (err) {
-      return reply.code(500).send({ error: 'Dream mode execution failed', detail: String(err) });
+      log.error({ err }, 'dream mode execution failed');
+      return reply.code(500).send({ error: 'Dream mode execution failed' });
     }
   });
 
@@ -52,6 +62,7 @@ export const commandRoutes: FastifyPluginAsync = async (app: FastifyInstance) =>
       description: t.description,
       tags: t.tags,
       requiredParams: t.requiredParams ?? [],
+      riskLevel: t.riskLevel ?? 'safe',
     }));
     return reply.send({ tools, count: tools.length });
   });

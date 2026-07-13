@@ -20,7 +20,7 @@ export class StrategyTuner {
   record(strategy: StrategyName, taskType: string, success: boolean, durationMs: number, tokensUsed: number): void {
     this.records.push({ strategy, taskType, success, durationMs, tokensUsed });
     if (this.records.length > 5000) this.records = this.records.slice(-5000);
-    stRepo.insert(randomUUID().slice(0, 12), { task_type: taskType, strategy, success, duration_ms: durationMs }).catch(() => {});
+    stRepo.insert(randomUUID().slice(0, 12), { task_type: taskType, strategy, success, duration_ms: durationMs }).catch((err) => log.error({ err }, 'DB write failed'));
   }
 
   recommend(taskType: string): StrategyName {

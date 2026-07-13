@@ -145,7 +145,7 @@ export const integrationKeyRoutes: FastifyPluginAsync = async (app) => {
     // Update WebIntelligence config at runtime if Brave key changed
     if (key === 'BRAVE_SEARCH_API_KEY') {
       const wiring = getGlobalWiring();
-      if (wiring) {
+      if (wiring?.webIntelligence) {
         wiring.webIntelligence.updateConfig({
           apiKey: value,
           baseUrl: value ? 'https://api.search.brave.com' : '',
@@ -202,7 +202,8 @@ export const integrationKeyRoutes: FastifyPluginAsync = async (app) => {
           return { success: true, status: 200, message: 'Key is set (no test available for this key)' };
       }
     } catch (err) {
-      return { success: false, status: 0, message: err instanceof Error ? err.message : 'Connection failed' };
+      log.error({ err, key }, 'connection test failed');
+      return { success: false, status: 0, message: 'Connection failed' };
     }
   });
 };

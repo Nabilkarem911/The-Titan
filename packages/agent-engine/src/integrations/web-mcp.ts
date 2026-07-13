@@ -179,7 +179,7 @@ export class WebMCPBridge extends EventEmitter {
       if (this.invocations.length > this.maxInvocations) {
         this.invocations = this.invocations.slice(-this.maxInvocations);
       }
-      wmiRepo.insert(result.id, { server: result.serverId, tool: result.toolName, params: JSON.stringify(result.input), result: JSON.stringify(result.output), success: result.success }).catch(() => {});
+      wmiRepo.insert(result.id, { server: result.serverId, tool: result.toolName, params: JSON.stringify(result.input), result: JSON.stringify(result.output), success: result.success }).catch((err) => log.error({ err }, 'DB write failed'));
 
       server.lastPing = new Date();
       incCounter('webmcp_invoke', 'WebMCP invocations', 1, { success: success ? 'true' : 'false' });
@@ -203,7 +203,7 @@ export class WebMCPBridge extends EventEmitter {
       if (this.invocations.length > this.maxInvocations) {
         this.invocations = this.invocations.slice(-this.maxInvocations);
       }
-      wmiRepo.insert(result.id, { server: result.serverId, tool: result.toolName, params: JSON.stringify(result.input), result: JSON.stringify(result.output), success: result.success }).catch(() => {});
+      wmiRepo.insert(result.id, { server: result.serverId, tool: result.toolName, params: JSON.stringify(result.input), result: JSON.stringify(result.output), success: result.success }).catch((err) => log.error({ err }, 'DB write failed'));
 
       server.status = 'error';
       incCounter('webmcp_invoke', 'WebMCP invocations', 1, { success: 'false' });

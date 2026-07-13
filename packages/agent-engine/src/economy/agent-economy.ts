@@ -121,7 +121,7 @@ export class AgentEconomy {
       createdAt: new Date(),
     };
     this.accounts.set(agentId, account);
-    economyAccounts.upsert(agentId, account.balance, account.reputation).catch(() => {});
+    economyAccounts.upsert(agentId, account.balance, account.reputation).catch((err) => log.error({ err }, 'DB write failed'));
 
     this.reputation.set(agentId, {
       agentId,
@@ -167,7 +167,7 @@ export class AgentEconomy {
     };
 
     this.listings.set(listing.id, listing);
-    economyListings.insert(listing.id, sellerId, skillName, pricePerUse).catch(() => {});
+    economyListings.insert(listing.id, sellerId, skillName, pricePerUse).catch((err) => log.error({ err }, 'DB write failed'));
     incCounter('economy_skills_listed', 'Skills listed on marketplace', 1);
     log.info({ listingId: listing.id, sellerId, skillName, pricePerUse }, 'skill listed');
 
@@ -219,7 +219,7 @@ export class AgentEconomy {
     };
 
     this.offers.set(offer.id, offer);
-    economyOffers.insert(offer.id, fromAgentId, toAgentId, skillListingId ?? '', amount, null, offer.expiresAt).catch(() => {});
+    economyOffers.insert(offer.id, fromAgentId, toAgentId, skillListingId ?? '', amount, null, offer.expiresAt).catch((err) => log.error({ err }, 'DB write failed'));
 
     return offer;
   }
@@ -248,7 +248,7 @@ export class AgentEconomy {
     };
 
     this.escrows.set(escrow.id, escrow);
-    economyEscrows.insert(escrow.id, offerId, escrow.buyerId, escrow.sellerId, escrow.amount).catch(() => {});
+    economyEscrows.insert(escrow.id, offerId, escrow.buyerId, escrow.sellerId, escrow.amount).catch((err) => log.error({ err }, 'DB write failed'));
 
     // Hold funds
     const buyerAccount = this.accounts.get(offer.fromAgentId)!;
@@ -296,7 +296,7 @@ export class AgentEconomy {
     };
 
     this.offers.set(counter.id, counter);
-    economyOffers.insert(counter.id, counter.fromAgentId, counter.toAgentId, counter.skillListingId ?? '', counterAmount, offer.id, counter.expiresAt).catch(() => {});
+    economyOffers.insert(counter.id, counter.fromAgentId, counter.toAgentId, counter.skillListingId ?? '', counterAmount, offer.id, counter.expiresAt).catch((err) => log.error({ err }, 'DB write failed'));
 
     return counter;
   }
@@ -523,6 +523,6 @@ export class AgentEconomy {
       timestamp: new Date(),
       immutable: true,
     });
-    economyAuditLog.insert(type, agentId, amount, description).catch(() => {});
+    economyAuditLog.insert(type, agentId, amount, description).catch((err) => log.error({ err }, 'DB write failed'));
   }
 }

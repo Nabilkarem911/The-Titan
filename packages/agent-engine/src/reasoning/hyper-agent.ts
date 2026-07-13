@@ -112,17 +112,17 @@ export class HyperAgent {
       this.currentPerformance = Math.min(1, this.currentPerformance + evaluation.actualGain);
       for (const imp of improvements) {
         this.successPatterns.push(imp.change);
-        hapRepo.insert('success', imp.change).catch(() => {});
+        hapRepo.insert('success', imp.change).catch((err) => log.error({ err }, 'DB write failed'));
       }
     } else if (decision === 'rollback') {
       for (const imp of improvements) {
         this.failurePatterns.push(imp.change);
-        hapRepo.insert('failure', imp.change).catch(() => {});
+        hapRepo.insert('failure', imp.change).catch((err) => log.error({ err }, 'DB write failed'));
       }
     }
 
     this.performanceHistory.push(this.currentPerformance);
-    hapfRepo.insert(this.currentPerformance).catch(() => {});
+    hapfRepo.insert(this.currentPerformance).catch((err) => log.error({ err }, 'DB write failed'));
     if (this.performanceHistory.length > 50) {
       this.performanceHistory = this.performanceHistory.slice(-50);
     }
@@ -142,7 +142,7 @@ export class HyperAgent {
     if (this.cycles.length > this.maxCycles) {
       this.cycles = this.cycles.slice(-this.maxCycles);
     }
-    hacRepo.insert(cycle.id, { cycle: cycle.cycleNumber, improvement: cycle.improvements.map(i => i.change).join('; '), gain: cycle.evaluation.actualGain, kept: cycle.decision === 'keep', config: JSON.stringify(this.currentConfig) }).catch(() => {});
+    hacRepo.insert(cycle.id, { cycle: cycle.cycleNumber, improvement: cycle.improvements.map(i => i.change).join('; '), gain: cycle.evaluation.actualGain, kept: cycle.decision === 'keep', config: JSON.stringify(this.currentConfig) }).catch((err) => log.error({ err }, 'DB write failed'));
 
     incCounter('hyperagent_cycle', 'HyperAgent cycles', 1, { decision });
     log.info({ cycleId, cycleNumber, decision, gain: evaluation.actualGain, performance: this.currentPerformance }, 'HyperAgent cycle complete');

@@ -192,7 +192,7 @@ export class MetaLearningOptimizer {
       if (this.results.length > this.maxResults) {
         this.results = this.results.slice(-this.maxResults);
       }
-      mlrRepo.insert(result.id, { optimization_type: 'meta-learning', target: '', before_score: 0, after_score: 0, improvement: result.improvement, config: JSON.stringify(result.configAfter) }).catch(() => {});
+      mlrRepo.insert(result.id, { optimization_type: 'meta-learning', target: '', before_score: 0, after_score: 0, improvement: result.improvement, config: JSON.stringify(result.configAfter) }).catch((err) => log.error({ err }, 'DB write failed'));
 
       incCounter('meta_learning_optimization', 'Meta-learning optimizations', 1, {
         improved: parsed.improvement > 0 ? 'true' : 'false',

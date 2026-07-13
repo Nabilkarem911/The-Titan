@@ -112,7 +112,7 @@ export class CuriosityEngine extends EventEmitter {
 
   recordKnowledgeGap(gap: string): void {
     this.knowledgeGaps.push(gap);
-    ckgRepo.insert(gap).catch(() => {});
+    ckgRepo.insert(gap).catch((err) => log.error({ err }, 'DB write failed'));
     if (this.knowledgeGaps.length > 50) {
       this.knowledgeGaps = this.knowledgeGaps.slice(-50);
     }
@@ -170,8 +170,8 @@ export class CuriosityEngine extends EventEmitter {
       if (this.explorations.length > this.maxExplorations) {
         this.explorations = this.explorations.slice(-this.maxExplorations);
       }
-      ceRepo.insert(task.id, { skill_name: skill.name, domain: skill.category, status: task.status, proficiency: skill.proficiency, findings: task.findings ?? '' }).catch(() => {});
-      ssRepo.insert(skill.id, { name: skill.name, description: skill.description, proficiency: skill.proficiency, verified: false, code: skill.knowledge }).catch(() => {});
+      ceRepo.insert(task.id, { skill_name: skill.name, domain: skill.category, status: task.status, proficiency: skill.proficiency, findings: task.findings ?? '' }).catch((err) => log.error({ err }, 'DB write failed'));
+      ssRepo.insert(skill.id, { name: skill.name, description: skill.description, proficiency: skill.proficiency, verified: false, code: skill.knowledge }).catch((err) => log.error({ err }, 'DB write failed'));
 
       incCounter('curiosity_explored', 'Topics explored', 1);
       incCounter('curiosity_skill', 'Skills acquired', 1);
@@ -243,8 +243,8 @@ export class CuriosityEngine extends EventEmitter {
       if (this.explorations.length > this.maxExplorations) {
         this.explorations = this.explorations.slice(-this.maxExplorations);
       }
-      ceRepo.insert(task.id, { skill_name: skill.name, domain: skill.category, status: task.status, proficiency: skill.proficiency, findings: task.findings ?? '' }).catch(() => {});
-      ssRepo.insert(skill.id, { name: skill.name, description: skill.description, proficiency: skill.proficiency, verified: false, code: skill.knowledge }).catch(() => {});
+      ceRepo.insert(task.id, { skill_name: skill.name, domain: skill.category, status: task.status, proficiency: skill.proficiency, findings: task.findings ?? '' }).catch((err) => log.error({ err }, 'DB write failed'));
+      ssRepo.insert(skill.id, { name: skill.name, description: skill.description, proficiency: skill.proficiency, verified: false, code: skill.knowledge }).catch((err) => log.error({ err }, 'DB write failed'));
 
       incCounter('curiosity_explored', 'Topics explored', 1);
       this.emit('exploration:complete', { task, skill });

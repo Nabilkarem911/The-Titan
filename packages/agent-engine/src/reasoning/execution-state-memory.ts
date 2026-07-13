@@ -69,7 +69,7 @@ export class ExecutionStateMemory extends EventEmitter {
     };
 
     this.checkpoints.set(id, cp);
-    ecRepo.insert(id, runId, `step-${stepIndex}`, cp.state, cp.metadata).catch(() => {});
+    ecRepo.insert(id, runId, `step-${stepIndex}`, cp.state, cp.metadata).catch((err) => log.error({ err }, 'DB write failed'));
     const cps = this.runCheckpoints.get(runId) ?? [];
     cps.push(id);
     this.runCheckpoints.set(runId, cps);

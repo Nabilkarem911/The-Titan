@@ -211,7 +211,7 @@ export class CapabilityRegistry {
         id,
         enabled: true,
       });
-      crRepo.upsert(id, cap.name, true, cap).catch(() => {});
+      crRepo.upsert(id, cap.name, true, cap).catch((err) => log.error({ err }, 'DB write failed'));
     }
 
     // Check env flags for disabled capabilities
@@ -240,7 +240,7 @@ export class CapabilityRegistry {
   register(capability: Omit<Capability, 'id'> & { id?: string }): void {
     const id = capability.id ?? capability.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     this.capabilities.set(id, { ...capability, id });
-    crRepo.upsert(id, capability.name, capability.enabled ?? true, capability).catch(() => {});
+    crRepo.upsert(id, capability.name, capability.enabled ?? true, capability).catch((err) => log.error({ err }, 'DB write failed'));
     log.info({ id, name: capability.name }, 'capability registered');
   }
 

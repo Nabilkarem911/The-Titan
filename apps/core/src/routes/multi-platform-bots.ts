@@ -6,6 +6,7 @@ import { getGlobalMemoryClient } from '@titan/memory';
 import { createRunner } from '../create-runner.js';
 import { getChatHistory, saveChatMessage, agentRuns, agentProfiles, userContext } from '@titan/database';
 import { getLogger } from '@titan/logging';
+import { requireAuth } from '../plugins/auth.js';
 import { detectLanguage } from '../lang-detect.js';
 import { recordUserInteraction, getLearnedPreferences, getPersonaInstructionsForUser } from '../preference-singleton.js';
 
@@ -127,6 +128,28 @@ async function handleMessage(
 export const multiPlatformBotRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   registerAdaptersFromEnv();
 
+  // Management endpoints (always registered, even with no adapters)
+  app.get('/api/v1/bots/channels', { preHandler: [requireAuth] }, async (_req, reply) => {
+    const channels = channelRouter.listChannels();
+    return reply.send({
+      channels: channels.map((name) => {
+        const adapter = channelRouter.getAdapter(name);
+        return { name, connected: !!adapter };
+      }),
+      total: channels.length,
+    });
+  });
+
+  app.post('/api/v1/bots/send', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { channel, to, message } = req.body as { channel: string; to: string; message: string };
+    if (!channel || !to || !message) {
+      return reply.code(400).send({ error: 'channel, to, and message are required' });
+    }
+
+    const sent = await channelRouter.sendResponse(channel, to, { content: message });
+    return reply.send({ sent, channel, to });
+  });
+
   const channels = channelRouter.listChannels();
   if (channels.length === 0) {
     log.info('no platform bots configured — set DISCORD_BOT_TOKEN, SLACK_BOT_TOKEN, or WHATSAPP_API_KEY to enable');
@@ -216,26 +239,4 @@ export const multiPlatformBotRoutes: FastifyPluginAsync = async (app: FastifyIns
 
     log.info('whatsapp webhook registered at /webhooks/whatsapp');
   }
-
-  // Management endpoints
-  app.get('/api/v1/bots/channels', async (_req, reply) => {
-    const channels = channelRouter.listChannels();
-    return reply.send({
-      channels: channels.map((name) => {
-        const adapter = channelRouter.getAdapter(name);
-        return { name, connected: !!adapter };
-      }),
-      total: channels.length,
-    });
-  });
-
-  app.post('/api/v1/bots/send', async (req, reply) => {
-    const { channel, to, message } = req.body as { channel: string; to: string; message: string };
-    if (!channel || !to || !message) {
-      return reply.code(400).send({ error: 'channel, to, and message are required' });
-    }
-
-    const sent = await channelRouter.sendResponse(channel, to, { content: message });
-    return reply.send({ sent, channel, to });
-  });
 };

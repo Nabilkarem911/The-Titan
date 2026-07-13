@@ -173,7 +173,7 @@ export class ApexEvolution {
         if (this.patches.length > this.maxPatches) {
           this.patches = this.patches.slice(-this.maxPatches);
         }
-        apRepo.insert(parsed.id, { cycle: this.cycle, description: parsed.patchDescription, patch: parsed.patchCode, applied: parsed.applied, performance_gain: parsed.expectedGain }).catch(() => {});
+        apRepo.insert(parsed.id, { cycle: this.cycle, description: parsed.patchDescription, patch: parsed.patchCode, applied: parsed.applied, performance_gain: parsed.expectedGain }).catch((err) => log.error({ err }, 'DB write failed'));
         incCounter('apex_patch_proposed', 'APEX harness patches proposed', 1);
         log.info({ target: targetModule, risk: parsed.riskLevel }, 'harness patch proposed');
       }
@@ -230,7 +230,7 @@ export class ApexEvolution {
         );
         if (!this.principles.has(principle.name)) {
           this.principles.set(principle.name, principle);
-          aprRepo.upsert(principle.name, principle.description, principle.sourceRuns.length).catch(() => {});
+          aprRepo.upsert(principle.name, principle.description, principle.sourceRuns.length).catch((err) => log.error({ err }, 'DB write failed'));
         }
         extracted.push(principle);
       }
@@ -252,7 +252,7 @@ export class ApexEvolution {
         );
         if (!this.principles.has(principle.name)) {
           this.principles.set(principle.name, principle);
-          aprRepo.upsert(principle.name, principle.description, principle.sourceRuns.length).catch(() => {});
+          aprRepo.upsert(principle.name, principle.description, principle.sourceRuns.length).catch((err) => log.error({ err }, 'DB write failed'));
         }
         extracted.push(principle);
       }

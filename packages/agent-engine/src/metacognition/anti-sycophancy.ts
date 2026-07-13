@@ -311,7 +311,7 @@ export class AntiSycophancyModule {
     if (this.assessments.length > this.maxAssessments) {
       this.assessments = this.assessments.slice(-this.maxAssessments);
     }
-    saRepo.insert(assessment.id, { input_text: '', sycophancy_score: assessment.confidenceCalibration.gap, hedge_words: assessment.hedgeWords, recommendation: assessment.dissentReason ?? assessment.recommendations.join('; ') }).catch(() => {});
+    saRepo.insert(assessment.id, { input_text: '', sycophancy_score: assessment.confidenceCalibration.gap, hedge_words: assessment.hedgeWords, recommendation: assessment.dissentReason ?? assessment.recommendations.join('; ') }).catch((err) => log.error({ err }, 'DB write failed'));
     for (const word of assessment.hedgeWords) {
       this.hedgeWordCounts.set(word, (this.hedgeWordCounts.get(word) ?? 0) + 1);
     }

@@ -96,7 +96,7 @@ export class MirrorConsciousness {
           type: 'perception',
           salience: 0.8,
         });
-        ebiRepo.insert(`User said: ${userMessage.slice(0, 200)}`, 'perception', 0.8).catch(() => {});
+        ebiRepo.insert(`User said: ${userMessage.slice(0, 200)}`, 'perception', 0.8).catch((err) => log.error({ err }, 'DB write failed'));
       }
 
       // Run parallel cognitive threads
@@ -109,7 +109,7 @@ export class MirrorConsciousness {
           type: result.type === 'emotional' ? 'emotion' : 'thought',
           salience: 0.6,
         });
-        ebiRepo.insert(result.output.slice(0, 200), result.type === 'emotional' ? 'emotion' : 'thought', 0.6).catch(() => {});
+        ebiRepo.insert(result.output.slice(0, 200), result.type === 'emotional' ? 'emotion' : 'thought', 0.6).catch((err) => log.error({ err }, 'DB write failed'));
       }
 
       // Synthesize narrative via cognitive controller
@@ -121,7 +121,7 @@ export class MirrorConsciousness {
         type: 'thought',
         salience: 0.9,
       });
-      ebiRepo.insert(`Conscious experience: ${narrativeResult.narrative.slice(0, 200)}`, 'thought', 0.9).catch(() => {});
+      ebiRepo.insert(`Conscious experience: ${narrativeResult.narrative.slice(0, 200)}`, 'thought', 0.9).catch((err) => log.error({ err }, 'DB write failed'));
 
       // Decay salience of older items
       this.buffer.decaySalience(0.92);

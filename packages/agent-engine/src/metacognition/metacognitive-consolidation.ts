@@ -138,7 +138,7 @@ export class MetacognitiveConsolidation {
       if (this.reflections.length > this.maxReflections) {
         this.reflections = this.reflections.slice(-this.maxReflections);
       }
-      mcRepo.insert(reflection.id, { category: outcome, content: reflection.reasoning, confidence: 0.5, lesson: reflection.lessons.join('; ') }).catch(() => {});
+      mcRepo.insert(reflection.id, { category: outcome, content: reflection.reasoning, confidence: 0.5, lesson: reflection.lessons.join('; ') }).catch((err) => log.error({ err }, 'DB write failed'));
 
       incCounter('mc_reflection', 'Metacognitive reflections', 1, { outcome });
       log.info({ reflectionId, taskId, outcome, lessons: parsed.lessons.length }, 'instance reflection complete');
@@ -205,7 +205,7 @@ export class MetacognitiveConsolidation {
           createdAt: new Date(),
         };
         this.microLessons.push(microLesson);
-        mmlRepo.insert(microLesson.lessons.join('; '), microLesson.confidence, 'batch').catch(() => {});
+        mmlRepo.insert(microLesson.lessons.join('; '), microLesson.confidence, 'batch').catch((err) => log.error({ err }, 'DB write failed'));
 
         for (const lesson of ml.lessons) {
           const existing = this.metaKnowledge.get(lesson);
@@ -224,7 +224,7 @@ export class MetacognitiveConsolidation {
               source: 'batch',
             };
             this.metaKnowledge.set(lesson, mk);
-            mmkRepo.upsert(mk.knowledge, mk.confidence, 'batch').catch(() => {});
+            mmkRepo.upsert(mk.knowledge, mk.confidence, 'batch').catch((err) => log.error({ err }, 'DB write failed'));
             newMetaKnowledge.push(mk);
           }
         }
@@ -306,7 +306,7 @@ export class MetacognitiveConsolidation {
             source: 'global',
           };
           this.metaKnowledge.set(proc.knowledge, mk);
-          mmkRepo.upsert(mk.knowledge, mk.confidence, 'global').catch(() => {});
+          mmkRepo.upsert(mk.knowledge, mk.confidence, 'global').catch((err) => log.error({ err }, 'DB write failed'));
           newProcedures.push(mk);
         }
       }
