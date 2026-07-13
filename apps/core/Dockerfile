@@ -22,11 +22,10 @@ COPY packages/telemetry/package.json   packages/telemetry/package.json
 COPY packages/agent-engine/package.json packages/agent-engine/package.json
 COPY apps/core/package.json            apps/core/package.json
 COPY apps/dashboard/package.json       apps/dashboard/package.json
-RUN for i in 1 2 3; do npm install --no-audit --no-fund && break || (echo "npm install attempt $i failed, retrying..." && sleep 5); done
+RUN for i in 1 2 3; do npm ci --legacy-peer-deps && break || (echo "npm ci attempt $i failed, retrying..." && sleep 5); done
 
 # ── Stage 2: Build ──────────────────────────────────────────
 FROM deps AS builder
-RUN npm install --no-audit --no-fund --legacy-peer-deps typescript tsx
 COPY tsconfig.base.json tsconfig.json ./
 COPY packages/ ./packages/
 COPY apps/core/ ./apps/core/
@@ -48,7 +47,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/core ./apps/core
 COPY --from=builder /app/apps/dashboard/dist ./apps/dashboard/dist
-RUN npm prune --omit=dev --legacy-peer-deps --no-audit --no-fund && rm -rf /tmp/* ~/.npm
+RUN rm -rf node_modules/.cache node_modules/.npm /tmp/* ~/.npm && \
+    find node_modules -depth -type d -name __tests__ -exec rm -rf {} + 2>/dev/null; \
+    find node_modules -depth -type f \( -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.d.ts" -o -name "*.spec.d.ts" \) -delete 2>/dev/null; \
+    true
 
 # Non-root user
 RUN addgroup -S titan -g 1001 && adduser -S titan -G titan -u 1001
