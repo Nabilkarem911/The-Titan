@@ -38,9 +38,10 @@ RUN apk add --no-cache dumb-init
 
 # Copy only what's needed to run (no http server packages needed by worker)
 COPY package.json package-lock.json ./
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/core ./apps/core
-RUN for i in 1 2 3; do npm ci --omit=dev --legacy-peer-deps && break || (echo "npm ci attempt $i failed, retrying..." && sleep 5); done && rm -rf /tmp/* ~/.npm
+RUN npm prune --omit=dev --legacy-peer-deps --no-audit --no-fund && rm -rf /tmp/* ~/.npm
 
 # Non-root user
 RUN addgroup -S titan -g 1001 && adduser -S titan -G titan -u 1001

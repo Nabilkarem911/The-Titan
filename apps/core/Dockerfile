@@ -44,10 +44,11 @@ RUN apk update && apk add --no-cache dumb-init curl git openssl && \
 
 # Copy only what's needed to run
 COPY package.json package-lock.json ./
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/core ./apps/core
 COPY --from=builder /app/apps/dashboard/dist ./apps/dashboard/dist
-RUN for i in 1 2 3; do npm install --omit=dev --no-audit --no-fund && break || (echo "npm install attempt $i failed, retrying..." && sleep 5); done && rm -rf /tmp/* ~/.npm
+RUN npm prune --omit=dev --no-audit --no-fund && rm -rf /tmp/* ~/.npm
 
 # Non-root user
 RUN addgroup -S titan -g 1001 && adduser -S titan -G titan -u 1001
