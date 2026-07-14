@@ -109,7 +109,7 @@ describe('محاكاة صارمة لقدرات تيتان', () => {
     });
 
     it('SelfHealingDebugger — يجب أن يُحلل الخطأ', async () => {
-      const result = await wiring.selfHealingDebugger.debug('TypeError: Cannot read property x of undefined');
+      const result = await wiring.selfHealingDebugger.debug({ error: 'TypeError: Cannot read property x of undefined', code: '', stack: '' } as any);
       expect(result).toBeDefined();
     });
 
@@ -124,12 +124,12 @@ describe('محاكاة صارمة لقدرات تيتان', () => {
     });
 
     it('HyperAgent — يجب أن يُحلل المهمة', async () => {
-      const result = await wiring.hyperAgent.runCycle('Complex task description');
+      const result = await wiring.hyperAgent.runCycle();
       expect(result).toBeDefined();
     });
 
     it('ApexEvolution — يجب أن يُقيّم اللياقة', async () => {
-      const result = await wiring.apexEvolution.proposePatch('Optimize the function');
+      const result = await wiring.apexEvolution.proposePatch('Optimize the function', 50, ['performance']);
       expect(result).toBeDefined();
     });
 
@@ -147,7 +147,7 @@ describe('محاكاة صارمة لقدرات تيتان', () => {
     });
 
     it('SelfRewriter — يجب أن يُقترح تحسينات', async () => {
-      const result = await wiring.selfRewriter.diagnose('function foo() { return 1; }');
+      const result = await wiring.selfRewriter.diagnose({ successRate: 0.5, avgDuration: 500, avgTokens: 100, errorPatterns: [] });
       expect(result).toBeDefined();
     });
 
@@ -234,7 +234,7 @@ describe('محاكاة صارمة لقدرات تيتان', () => {
     });
 
     it('IntrospectionModule — يجب أن يتأمل', async () => {
-      const result = await wiring.introspection.introspectStep('Why did I make that decision?', 'context');
+      const result = await wiring.introspection.introspectStep({ id: 's1', runId: 'r1', index: 0, status: 'completed', thought: 'Why did I make that decision?', tokensUsed: 0, createdAt: new Date(), updatedAt: new Date() }, 0);
       expect(result).toBeDefined();
     });
   });
@@ -265,9 +265,7 @@ describe('محاكاة صارمة لقدرات تيتان', () => {
     });
 
     it('MetaLearningOptimizer — يجب أن يُحسّن', async () => {
-      const result = await wiring.metaLearningOptimizer.optimize('task type', [
-        { strategy: 'react', success: true, tokensUsed: 100, durationMs: 500 },
-      ]);
+      const result = await wiring.metaLearningOptimizer.optimize({ successRate: 0.5, avgDuration: 500, avgTokens: 100, strategyStats: [{ strategy: 'react', successRate: 0.5, uses: 1 }], toolStats: [], recentErrors: [] });
       expect(result).toBeDefined();
     });
 
@@ -296,21 +294,21 @@ describe('محاكاة صارمة لقدرات تيتان', () => {
 
     it('CognitiveController — يجب أن يُولّد السرد', async () => {
       const threadResults = [
-        { threadId: '1', type: 'goals' as const, output: 'Complete the task' },
-        { threadId: '2', type: 'reasoning' as const, output: 'Step by step' },
+        { threadId: '1', type: 'goals' as const, output: 'Complete the task', tokensUsed: 0 },
+        { threadId: '2', type: 'reasoning' as const, output: 'Step by step', tokensUsed: 0 },
       ];
       const result = await wiring.cognitiveController.synthesize(llm, threadResults, 'test context');
       expect(result).toHaveProperty('narrative');
     });
 
     it('EpisodicBuffer — يجب أن يضيف ويسترجع', () => {
-      const id = wiring.episodicBuffer.add({ type: 'observation', content: 'Saw something', priority: 1 });
+      const id = wiring.episodicBuffer.add({ type: 'observation', content: 'Saw something', salience: 1 });
       expect(id).toBeDefined();
       expect(wiring.episodicBuffer.getSize()).toBeGreaterThanOrEqual(1);
     });
 
     it('DigitalTwin — يجب أن يلتقط الحالة', async () => {
-      wiring.digitalTwin.recordSnapshot('test-state', { entities: [], relations: [], events: [], trends: [], anomalies: [] });
+      wiring.digitalTwin.recordSnapshot({ cpuUsage: 50, memoryTotal: 16000, memoryUsed: 8000, memoryFree: 8000 });
       const snapshots = wiring.digitalTwin.getSnapshots();
       expect(snapshots.length).toBeGreaterThanOrEqual(1);
     });
@@ -352,7 +350,7 @@ describe('محاكاة صارمة لقدرات تيتان', () => {
     });
 
     it('RLEnvironment — يجب أن يتدرب', () => {
-      const episode = wiring.autonomousTrading.startEpisode({ name: 'init', properties: {} });
+      const episode = wiring.autonomousTrading.startEpisode({ id: 's1', features: [0.5], description: 'init', timestamp: new Date() });
       expect(episode).toBeDefined();
       expect(episode).toHaveProperty('id');
     });

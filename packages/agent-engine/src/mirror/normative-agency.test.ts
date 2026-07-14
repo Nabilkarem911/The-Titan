@@ -25,13 +25,13 @@ describe('NormativeAgency', () => {
   it('should fulfill a commitment', () => {
     const c = na.formCommitment('test');
     expect(na.fulfillCommitment(c.id)).toBe(true);
-    expect(na.getCommitment(c.id).status).toBe('fulfilled');
+    expect(na.getCommitment(c.id)!.status).toBe('fulfilled');
   });
 
   it('should violate a commitment', () => {
     const c = na.formCommitment('test');
     expect(na.violateCommitment(c.id)).toBe(true);
-    expect(na.getCommitment(c.id).status).toBe('violated');
+    expect(na.getCommitment(c.id)!.status).toBe('violated');
   });
 
   it('should detect conflicts', async () => {

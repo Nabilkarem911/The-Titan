@@ -18,7 +18,7 @@ describe('RLEnvironment', () => {
     rl.startEpisode(state);
     const episode = rl.endEpisode(true);
     expect(episode).not.toBeNull();
-    expect(episode.success).toBe(true);
+    expect(episode!.success).toBe(true);
   });
 
   it('should select action with epsilon-greedy', () => {

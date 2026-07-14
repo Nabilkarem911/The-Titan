@@ -27,7 +27,7 @@ describe('ScreenMonitor', () => {
       message: 'error dialog appeared',
     });
     expect(alert).not.toBeNull();
-    expect(alert.type).toBe('error');
+    expect(alert!.type).toBe('error');
   });
 
   it('should skip duplicate screenshots', async () => {

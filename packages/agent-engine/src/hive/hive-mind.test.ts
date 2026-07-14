@@ -15,18 +15,18 @@ describe('HiveMind', () => {
   });
 
   it('should register additional instances', () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: ['coding'] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: ['coding'], specialization: null });
     expect(hive.getInstances().length).toBe(2);
   });
 
   it('should unregister instances', () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
     hive.unregisterInstance('node-2');
     expect(hive.getInstances().find((i) => i.id === 'node-2')).toBeUndefined();
   });
 
   it('should update lastSeen on heartbeat', () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
     const before = hive.getInstances().find((i) => i.id === 'node-2')!.lastSeen;
     hive.heartbeat('node-2');
     const after = hive.getInstances().find((i) => i.id === 'node-2')!.lastSeen;
@@ -34,7 +34,7 @@ describe('HiveMind', () => {
   });
 
   it('should get online instances within max age', () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
     const online = hive.getOnlineInstances(60000);
     expect(online.length).toBe(2);
   });
@@ -88,8 +88,8 @@ describe('HiveMind', () => {
   });
 
   it('should propose and cast votes', async () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
-    hive.registerInstance({ id: 'node-3', hostname: 'server3', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
+    hive.registerInstance({ id: 'node-3', hostname: 'server3', capabilities: [], specialization: null });
 
     const vote = await hive.proposeVote('test topic', 'test proposal');
     expect(vote.votes).toHaveLength(1); // self vote
@@ -100,7 +100,7 @@ describe('HiveMind', () => {
   });
 
   it('should not allow double voting', async () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
     const vote = await hive.proposeVote('test', 'proposal');
     const result1 = hive.castVote(vote.id, 'node-2', 'yes', 'agree');
     const result2 = hive.castVote(vote.id, 'node-2', 'no', 'changed mind');
@@ -109,7 +109,7 @@ describe('HiveMind', () => {
   });
 
   it('should check quorum and pass vote', async () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
     const vote = await hive.proposeVote('test', 'proposal');
     hive.castVote(vote.id, 'node-2', 'yes', 'agree');
     hive.checkQuorum(vote.id);
@@ -118,8 +118,8 @@ describe('HiveMind', () => {
   });
 
   it('should check quorum and fail vote', async () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
-    hive.registerInstance({ id: 'node-3', hostname: 'server3', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
+    hive.registerInstance({ id: 'node-3', hostname: 'server3', capabilities: [], specialization: null });
     const vote = await hive.proposeVote('test', 'proposal');
     hive.castVote(vote.id, 'node-2', 'no', 'disagree');
     hive.castVote(vote.id, 'node-3', 'no', 'disagree');
@@ -159,7 +159,7 @@ describe('HiveMind', () => {
   });
 
   it('should detect specialization from knowledge contributions', () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
     // Simulate knowledge from node-2
     hive.mergeKnowledge([
       { id: 'k1', key: 'coding:pattern:x', value: {}, originInstance: 'node-2', timestamp: new Date(), version: 1, confidence: 0.8 },
@@ -175,7 +175,7 @@ describe('HiveMind', () => {
   });
 
   it('should return null specialization for instance with no contributions', () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
     expect(hive.detectSpecialization('node-2')).toBeNull();
   });
 
@@ -187,7 +187,7 @@ describe('HiveMind', () => {
   });
 
   it('should get hive stats', async () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
     hive.shareKnowledge('test:key', { data: true });
     await hive.proposeVote('test', 'proposal');
     const stats = hive.getStats();
@@ -198,7 +198,7 @@ describe('HiveMind', () => {
   });
 
   it('should reset all state', () => {
-    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [] });
+    hive.registerInstance({ id: 'node-2', hostname: 'server2', capabilities: [], specialization: null });
     hive.shareKnowledge('test', {});
     hive.reset();
     expect(hive.getInstances().length).toBe(1); // self re-registered

@@ -39,7 +39,7 @@ describe('SwarmEvolution', () => {
     se.createTopology('pipeline', 3);
     const reconfigured = se.reconfigureTopology('orchestrator-worker');
     expect(reconfigured).not.toBeNull();
-    expect(reconfigured.pattern).toBe('orchestrator-worker');
+    expect(reconfigured!.pattern).toBe('orchestrator-worker');
   });
 
   it('should return null reconfigure when no current topology', () => {
@@ -56,30 +56,30 @@ describe('SwarmEvolution', () => {
     se.writeCollectiveMemory('key1', 'value1', 'agent-A');
     const entry = se.readCollectiveMemory('key1');
     expect(entry).not.toBeNull();
-    expect(entry.value).toBe('value1');
-    expect(entry.version).toBe(1);
+    expect(entry!.value).toBe('value1');
+    expect(entry!.version).toBe(1);
   });
 
   it('should increment version on collective memory writes', () => {
     se.writeCollectiveMemory('key1', 'value1', 'agent-A');
     se.writeCollectiveMemory('key1', 'value2', 'agent-B');
     const entry = se.readCollectiveMemory('key1');
-    expect(entry.version).toBe(2);
-    expect(entry.value).toBe('value2');
+    expect(entry!.version).toBe(2);
+    expect(entry!.value).toBe('value2');
   });
 
   it('should track conflicts in collective memory', () => {
     se.writeCollectiveMemory('key1', 'value1', 'agent-A');
     se.writeCollectiveMemory('key1', 'value2', 'agent-B');
     const entry = se.readCollectiveMemory('key1');
-    expect(entry.conflicts).toHaveLength(1);
+    expect(entry!.conflicts).toHaveLength(1);
   });
 
   it('should resolve conflicts', () => {
     se.writeCollectiveMemory('key1', 'value1', 'agent-A');
     se.writeCollectiveMemory('key1', 'value2', 'agent-B');
     const resolved = se.resolveConflict('key1');
-    expect(resolved.conflicts).toHaveLength(0);
+    expect(resolved!.conflicts).toHaveLength(0);
   });
 
   it('should delegate tasks', () => {

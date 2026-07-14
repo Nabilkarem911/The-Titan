@@ -6,7 +6,7 @@ const log = getLogger().child({ component: 'mirror:episodic-buffer' });
 export interface EpisodicItem {
   id: string;
   content: string;
-  type: 'perception' | 'thought' | 'action' | 'emotion' | 'memory';
+  type: 'perception' | 'thought' | 'action' | 'emotion' | 'memory' | 'observation';
   salience: number;
   createdAt: Date;
 }

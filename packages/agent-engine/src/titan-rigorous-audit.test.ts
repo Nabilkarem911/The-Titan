@@ -915,8 +915,8 @@ describe('MIRROR Consciousness — اختبار الوعي الذاتي', () => 
     }));
 
     const result = await controller.synthesize(llm, [
-      { threadId: '1', type: 'reasoning', output: 'analyzing code' },
-      { threadId: '2', type: 'goals', output: 'find the bug' },
+      { threadId: '1', type: 'reasoning', output: 'analyzing code', tokensUsed: 0 },
+      { threadId: '2', type: 'goals', output: 'find the bug', tokensUsed: 0 },
     ], 'debugging task');
 
     expect(result.narrative).toContain('analyzing');
@@ -925,7 +925,7 @@ describe('MIRROR Consciousness — اختبار الوعي الذاتي', () => 
 
   it('EpisodicBuffer — يجب أن يحترم السعة القصوى', () => {
     for (let i = 0; i < 15; i++) {
-      buffer.add({ type: 'observation', content: `item ${i}`, priority: 1 });
+      buffer.add({ type: 'observation', content: `item ${i}`, salience: 1 });
     }
     // Buffer capacity is 10, should not exceed
     expect(buffer.getSize()).toBeLessThanOrEqual(10);
@@ -953,15 +953,15 @@ describe('Environment Graph — اختبار نموذج العالم', () => {
   it('يجب أن يسجل الكيانات والعلاقات', () => {
     const id1 = graph.recordEntity('service', 'api-server', { port: 3000 });
     const id2 = graph.recordEntity('service', 'db-server', { port: 5432 });
-    graph.recordRelation(id1, id2, 'depends-on');
+    graph.recordRelation(id1, id2, 'depends_on');
 
     const relations = graph.getRelations(id1);
     expect(relations.length).toBe(1);
-    expect(relations[0].relation).toBe('depends-on');
+    expect(relations[0].relation).toBe('depends_on');
   });
 
   it('يجب أن يسجل الأحداث', () => {
-    graph.recordEvent({ source: 'api', target: 'db', action: 'query', result: 'success' });
+    graph.recordEvent({ actor: 'api', target: 'db', action: 'query', result: 'success', durationMs: 10, context: {} });
     const events = graph.getRecentEvents(5);
     expect(events.length).toBe(1);
     expect(events[0].result).toBe('success');
@@ -971,8 +971,8 @@ describe('Environment Graph — اختبار نموذج العالم', () => {
     const id1 = graph.recordEntity('service', 'api');
     const id2 = graph.recordEntity('service', 'db');
     const id3 = graph.recordEntity('service', 'cache');
-    graph.recordRelation(id1, id2, 'depends-on');
-    graph.recordRelation(id2, id3, 'depends-on');
+    graph.recordRelation(id1, id2, 'depends_on');
+    graph.recordRelation(id2, id3, 'depends_on');
 
     const impact = graph.getImpactGraph('query', 'db');
     expect(impact.length).toBeGreaterThan(0);
@@ -1120,7 +1120,7 @@ describe('RL Environment — اختبار التعلم المعزز', () => {
 
     rl.recordStep(
       { id: 's1', features: [0.5, 0.3], description: 'init', timestamp: new Date() },
-      { id: 'a1', name: 'action-1', expectedReward: 1, steps: [], totalReward: 0 },
+      { id: 'a1', name: 'action-1', expectedReward: 1 },
       1.0,
       { id: 's2', features: [0.6, 0.4], description: 'next', timestamp: new Date() },
     );
@@ -1132,7 +1132,7 @@ describe('RL Environment — اختبار التعلم المعزز', () => {
     const episode = rl.startEpisode({ id: 's1', features: [0.5], description: 'init', timestamp: new Date() });
     rl.recordStep(
       { id: 's1', features: [0.5], description: 'init', timestamp: new Date() },
-      { id: 'a1', name: 'a1', expectedReward: 1, steps: [], totalReward: 0 },
+      { id: 'a1', name: 'a1', expectedReward: 1 },
       0.5,
       { id: 's2', features: [0.6], description: 'next', timestamp: new Date() },
     );
@@ -1167,11 +1167,17 @@ describe('Meta-Learning Optimizer — اختبار تحسين التعلم', () 
   });
 
   it('يجب أن يُحسن استراتيجية بناءً على بيانات تاريخية', async () => {
-    const result = await optimizer.optimize('coding', [
-      { strategy: 'react', success: true, tokensUsed: 100, durationMs: 500 },
-      { strategy: 'react', success: false, tokensUsed: 200, durationMs: 1000 },
-      { strategy: 'plan', success: true, tokensUsed: 150, durationMs: 600 },
-    ]);
+    const result = await optimizer.optimize({
+      successRate: 0.67,
+      avgDuration: 700,
+      avgTokens: 150,
+      strategyStats: [
+        { strategy: 'react', successRate: 0.5, uses: 2 },
+        { strategy: 'plan', successRate: 1.0, uses: 1 },
+      ],
+      toolStats: [],
+      recentErrors: [],
+    });
     expect(result).toBeDefined();
   });
 });

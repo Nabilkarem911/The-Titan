@@ -972,7 +972,7 @@ describe('Cross-module integration scenarios', () => {
     expect(stats.relations).toBe(1);
 
     // Record an event
-    graph.recordEvent({ actor: 'server-1', target: 'database-1', action: 'cpu-spike', result: 'success', context: { cpu: 95 } });
+    graph.recordEvent({ actor: 'server-1', target: 'database-1', action: 'cpu-spike', result: 'success', durationMs: 100, context: { cpu: 95 } });
 
     const events = graph.getRecentEvents(10);
     expect(events.length).toBeGreaterThan(0);

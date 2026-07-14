@@ -22,7 +22,7 @@ describe('CapabilityRegistry', () => {
   it('should get capability by id', () => {
     const cap = registry.get('self-forge');
     expect(cap).not.toBeNull();
-    expect(cap.name).toBe('Self-Forge');
+    expect(cap!.name).toBe('Self-Forge');
   });
 
   it('should return null for nonexistent capability', () => {
@@ -31,13 +31,13 @@ describe('CapabilityRegistry', () => {
 
   it('should disable a capability', () => {
     expect(registry.disable('self-forge')).toBe(true);
-    expect(registry.get('self-forge').enabled).toBe(false);
+    expect(registry.get('self-forge')!.enabled).toBe(false);
   });
 
   it('should enable a disabled capability', () => {
     registry.disable('self-forge');
     expect(registry.enable('self-forge')).toBe(true);
-    expect(registry.get('self-forge').enabled).toBe(true);
+    expect(registry.get('self-forge')!.enabled).toBe(true);
   });
 
   it('should return false when disabling nonexistent capability', () => {

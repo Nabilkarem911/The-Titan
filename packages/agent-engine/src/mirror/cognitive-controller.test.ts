@@ -25,8 +25,8 @@ describe('CognitiveController', () => {
 
   it('should synthesize a narrative from threads', async () => {
     const threadResults = [
-      { threadId: '1', type: 'goals' as const, output: 'Complete the task' },
-      { threadId: '2', type: 'reasoning' as const, output: 'Step by step plan' },
+      { threadId: '1', type: 'goals' as const, output: 'Complete the task', tokensUsed: 0 },
+      { threadId: '2', type: 'reasoning' as const, output: 'Step by step plan', tokensUsed: 0 },
     ];
     const result = await controller.synthesize(llm, threadResults, 'Task context');
     expect(result).toHaveProperty('narrative');
@@ -35,7 +35,7 @@ describe('CognitiveController', () => {
 
   it('should store narrative after synthesis', async () => {
     const threadResults = [
-      { threadId: '1', type: 'reasoning' as const, output: 'Thinking' },
+      { threadId: '1', type: 'reasoning' as const, output: 'Thinking', tokensUsed: 0 },
     ];
     await controller.synthesize(llm, threadResults, 'Test context');
     expect(controller.getLastNarrative()).not.toBeNull();
