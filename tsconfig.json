@@ -32,8 +32,6 @@
     "apps/desktop/**/*",
     "apps/cli/**/*",
     "**/node_modules/**",
-    "**/dist/**",
-    "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/dist/**"
   ]
 }
