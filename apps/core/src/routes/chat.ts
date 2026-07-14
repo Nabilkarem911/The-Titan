@@ -63,7 +63,7 @@ function createWorkspaceToolExecutor(
         const wsRoot = workspaceRoot.replace(/\\/g, '/');
         const normalized = original.replace(/\\/g, '/');
         if (!normalized.startsWith(wsRoot)) {
-          let relative = normalized
+          const relative = normalized
             .replace(/^\/+/, '')
             .replace(/^home\/titan\//, '')
             .replace(/^home\/[^/]+\//, '')

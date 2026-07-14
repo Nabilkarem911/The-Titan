@@ -10,7 +10,7 @@
 
 ## What is Titan
 
-Titan is an autonomous AI agent framework built entirely from scratch in TypeScript. It provides a multi-step agent runner with tool execution, streaming responses, and a registry of 80+ tools. The system includes JWT authentication, RBAC, audit logging, rate limiting, and a PostgreSQL-backed persistence layer with 34 migrations. Titan supports multi-channel communication (Telegram, Discord, Slack, WhatsApp) and includes a React dashboard with 47 pages. It is designed to be self-hosted via Docker Compose with PostgreSQL, Redis, and a local embedding service.
+Titan is an autonomous AI agent framework built entirely from scratch in TypeScript. It provides a multi-step agent runner with tool execution, streaming responses, and a registry of 97+ tools. The system includes JWT authentication, RBAC, audit logging, rate limiting, and a PostgreSQL-backed persistence layer with 35 migrations. Titan supports multi-channel communication (Telegram, Discord, Slack, WhatsApp) and includes a React dashboard with 48 pages. It is designed to be self-hosted via Docker Compose with PostgreSQL, Redis, and a local embedding service.
 
 ---
 
@@ -19,7 +19,7 @@ Titan is an autonomous AI agent framework built entirely from scratch in TypeScr
 ```bash
 # 1. Clone and configure
 git clone https://github.com/Nabilkarem911/The-Titan.git
-cd Titan
+cd The-Titan
 cp .env.example .env
 # Edit .env — set JWT_SECRET, LLM_API_KEY, and database passwords
 
@@ -39,6 +39,7 @@ Services started:
 |---------|------|-------------|
 | `core` | 3001 | Titan API server |
 | `worker` | — | Queue processor |
+| `cli` | — | Terminal client (`titan chat`, `titan run`, REPL) |
 | `postgres` | 55432 | PostgreSQL 16 + pgvector |
 | `redis` | 6379 | Redis (queue, cache, pub/sub) |
 | `embed` | 8100 | Local BGE-small embedding service |
@@ -52,12 +53,12 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    React Dashboard                       │
-│                   (47 pages, Vite)                       │
+│                   (48 pages, Vite)                       │
 └────────────────────────┬────────────────────────────────┘
                          │ HTTP / WebSocket
 ┌────────────────────────▼────────────────────────────────┐
 │                   Titan Core API                         │
-│              (Fastify, 50 route files)                   │
+│              (Fastify, 56 route files)                   │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
 │  │   Auth   │ │   Chat   │ │ Autonomous│ │ Reasoning│   │
 │  │  (JWT)   │ │ (SSE)    │ │  Tasks   │ │   Tools  │   │
@@ -70,8 +71,8 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 ┌──────▼─────┐ ┌──▼───────┐ ┌────▼─────┐ ┌──────▼──────┐
 │ agent-engine│ │  tools   │ │ database │ │   memory    │
 │ (runner,    │ │ (bash,   │ │ (pg,     │ │ (pgvector,  │
-│  registry,  │ │  files,  │ │  34 migr │ │  redis)     │
-│  80+ tools) │ │  utils)  │ │          │ │             │
+│  registry,  │ │  files,  │ │  35 migr │ │  redis)     │
+│  97+ tools) │ │  utils)  │ │          │ │             │
 └─────────────┘ └──────────┘ └──────────┘ └─────────────┘
        │
 ┌──────▼──────────────────────────────────────┐
@@ -91,7 +92,7 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 
 - ✅ **Multi-step agent runner** — planning, strategy selection, self-critique, tool execution, code writing & execution for dataset tasks
 - ✅ **Streaming chat** — SSE streaming with multi-turn context
-- ✅ **80+ registered tools** — bash, file operations, code analysis, web search, creative generation, translation, and more
+- ✅ **97+ registered tools** — bash, file operations, code analysis, web search, creative generation, translation, and more
 - ✅ **Tool registry** — LRU cache (max 500 entries), periodic cleanup, rate limiting per tool
 - ✅ **Self-Forge** — agent generates new tools at runtime and executes them immediately, returning results to user
 - ✅ **Code intelligence** — codebase indexing, smart context building, symbol extraction
@@ -119,7 +120,7 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 - ✅ **Agent runs** — full run persistence with steps and results
 - ✅ **Experience collector** — records agent experiences for learning
 - ✅ **Preference learning** — tracks user interactions for personalization
-- ✅ **34 database migrations** — foundational tables through full persistence
+- ✅ **35 database migrations** — foundational tables through full persistence
 - ✅ **Episodic memory recall** — injects conversation history when user asks about past events, system prompt affirms memory capabilities
 - ✅ **Execution state memory** — auto-checkpoint every 5 steps, resume support on failure
 
@@ -175,7 +176,7 @@ Optional tools (add `--profile tools`): pgAdmin on 5050, Redis Insight on 5540.
 ### Platform
 
 - ✅ **Docker Compose** — PostgreSQL, Redis, embedding service, core, worker
-- ✅ **React dashboard** — 47 pages covering all features
+- ✅ **React dashboard** — 48 pages covering all features
 - ✅ **SDK** — `TitanClient` with auth, chat, agent runs, streaming
 - ✅ **Queue system** — BullMQ-based job processing
 - ✅ **WebSocket** — real-time step updates and broadcasting
@@ -231,7 +232,7 @@ API_KEY_ENCRYPTION_KEY=<32 bytes hex>
 # Required — LLM
 LLM_PROVIDER_TYPE=openai-compatible
 LLM_API_KEY=<your API key>
-LLM_MODEL=deepseek-v4-flash
+LLM_MODEL=deepseek-chat
 LLM_BASE_URL=https://api.deepseek.com/v1
 
 # Required — database (defaults work with docker compose)
@@ -259,12 +260,23 @@ import { TitanClient } from '@titan/sdk';
 
 const client = new TitanClient({ baseUrl: 'http://localhost:3001' });
 await client.login('user@example.com', 'password');
-const result = await client.chat({
-  prompt: 'Analyze this codebase and list bugs',
-  agentId: 'default-agent',
-  stream: false,
-});
-console.log(result.response);
+
+// Simple chat
+const result = await client.chat('Analyze this codebase and list bugs');
+console.log(result);
+
+// Streaming chat
+for await (const event of client.streamChat('Explain the architecture')) {
+  console.log(event);
+}
+
+// Agent run with streaming
+for await (const event of client.streamAgent({
+  prompt: 'Fix the failing tests in packages/auth',
+  agentId: 'default',
+})) {
+  console.log(event);
+}
 ```
 
 ---
@@ -273,14 +285,14 @@ console.log(result.response);
 
 | Metric | Value |
 |--------|-------|
-| TypeScript files | 698 |
-| Test files | 111 |
-| Database migrations | 34 |
-| Registered tools | 80 |
-| API route files | 50 |
+| TypeScript files | 646 |
+| Test files | 116 |
+| Database migrations | 35 |
+| Registered tools | 97 |
+| API route files | 56 |
 | Packages | 14 |
-| Dashboard pages | 47 |
-| LLM providers | OpenAI-compatible, Anthropic, Google, Ollama |
+| Dashboard pages | 48 |
+| LLM providers | OpenAI, OpenAI-compatible, Anthropic |
 
 ---
 

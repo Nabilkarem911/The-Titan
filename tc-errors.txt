@@ -1,0 +1,62 @@
+apps/core/src/routes/__tests__/comprehensive-audit.test.ts(975,23): error TS2345: Argument of type '{ actor: string; target: string; action: string; result: "success"; context: { cpu: number; }; }' is not assignable to parameter of type 'Omit<ObservedEvent, "timestamp" | "id">'.
+packages/agent-engine/src/economy/autonomous-trading.test.ts(21,12): error TS18047: 'episode' is possibly 'null'.
+packages/agent-engine/src/hive/hive-mind.test.ts(18,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: string[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(23,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(29,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(37,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(91,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(92,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(103,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(112,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(121,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(122,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(162,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(178,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(190,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/hive/hive-mind.test.ts(201,27): error TS2345: Argument of type '{ id: string; hostname: string; capabilities: never[]; }' is not assignable to parameter of type 'Omit<HiveInstance, "lastSeen"> & { lastSeen?: Date | undefined; }'.
+packages/agent-engine/src/metacognition/capability-registry.test.ts(25,12): error TS18047: 'cap' is possibly 'null'.
+packages/agent-engine/src/metacognition/capability-registry.test.ts(34,12): error TS2531: Object is possibly 'null'.
+packages/agent-engine/src/metacognition/capability-registry.test.ts(40,12): error TS2531: Object is possibly 'null'.
+packages/agent-engine/src/mirror/cognitive-controller.test.ts(31,53): error TS2345: Argument of type '({ threadId: string; type: "goals"; output: string; } | { threadId: string; type: "reasoning"; output: string; })[]' is not assignable to parameter of type 'ThreadResult[]'.
+packages/agent-engine/src/mirror/cognitive-controller.test.ts(40,38): error TS2345: Argument of type '{ threadId: string; type: "reasoning"; output: string; }[]' is not assignable to parameter of type 'ThreadResult[]'.
+packages/agent-engine/src/mirror/episodic-buffer.test.ts(17,29): error TS2322: Type '"observation"' is not assignable to type '"action" | "thought" | "memory" | "emotion" | "perception"'.
+packages/agent-engine/src/mirror/episodic-buffer.test.ts(23,18): error TS2322: Type '"observation"' is not assignable to type '"action" | "thought" | "memory" | "emotion" | "perception"'.
+packages/agent-engine/src/mirror/episodic-buffer.test.ts(24,54): error TS2353: Object literal may only specify known properties, and 'priority' does not exist in type 'Omit<EpisodicItem, "id" | "createdAt">'.
+packages/agent-engine/src/mirror/episodic-buffer.test.ts(31,20): error TS2322: Type '"observation"' is not assignable to type '"action" | "thought" | "memory" | "emotion" | "perception"'.
+packages/agent-engine/src/mirror/episodic-buffer.test.ts(38,29): error TS2322: Type '"observation"' is not assignable to type '"action" | "thought" | "memory" | "emotion" | "perception"'.
+packages/agent-engine/src/mirror/episodic-buffer.test.ts(44,18): error TS2322: Type '"observation"' is not assignable to type '"action" | "thought" | "memory" | "emotion" | "perception"'.
+packages/agent-engine/src/mirror/episodic-buffer.test.ts(45,49): error TS2353: Object literal may only specify known properties, and 'priority' does not exist in type 'Omit<EpisodicItem, "id" | "createdAt">'.
+packages/agent-engine/src/mirror/normative-agency.test.ts(28,12): error TS2531: Object is possibly 'null'.
+packages/agent-engine/src/mirror/normative-agency.test.ts(34,12): error TS2531: Object is possibly 'null'.
+packages/agent-engine/src/multimodal/screen-monitor.test.ts(30,12): error TS18047: 'alert' is possibly 'null'.
+packages/agent-engine/src/swarm/swarm-evolution.test.ts(42,12): error TS18047: 'reconfigured' is possibly 'null'.
+packages/agent-engine/src/swarm/swarm-evolution.test.ts(59,12): error TS18047: 'entry' is possibly 'null'.
+packages/agent-engine/src/swarm/swarm-evolution.test.ts(60,12): error TS18047: 'entry' is possibly 'null'.
+packages/agent-engine/src/swarm/swarm-evolution.test.ts(67,12): error TS18047: 'entry' is possibly 'null'.
+packages/agent-engine/src/swarm/swarm-evolution.test.ts(68,12): error TS18047: 'entry' is possibly 'null'.
+packages/agent-engine/src/swarm/swarm-evolution.test.ts(75,12): error TS18047: 'entry' is possibly 'null'.
+packages/agent-engine/src/swarm/swarm-evolution.test.ts(82,12): error TS18047: 'resolved' is possibly 'null'.
+packages/agent-engine/src/titan-rigorous-audit.test.ts(918,7): error TS2741: Property 'tokensUsed' is missing in type '{ threadId: string; type: "reasoning"; output: string; }' but required in type 'ThreadResult'.
+packages/agent-engine/src/titan-rigorous-audit.test.ts(919,7): error TS2741: Property 'tokensUsed' is missing in type '{ threadId: string; type: "goals"; output: string; }' but required in type 'ThreadResult'.
+packages/agent-engine/src/titan-rigorous-audit.test.ts(928,20): error TS2322: Type '"observation"' is not assignable to type '"action" | "thought" | "memory" | "emotion" | "perception"'.
+packages/agent-engine/src/titan-rigorous-audit.test.ts(956,36): error TS2345: Argument of type '"depends-on"' is not assignable to parameter of type '"affects" | "depends_on" | "triggers" | "blocks" | "produces" | "consumes"'.
+packages/agent-engine/src/titan-rigorous-audit.test.ts(964,25): error TS2353: Object literal may only specify known properties, and 'source' does not exist in type 'Omit<ObservedEvent, "timestamp" | "id">'.
+packages/agent-engine/src/titan-rigorous-audit.test.ts(974,36): error TS2345: Argument of type '"depends-on"' is not assignable to parameter of type '"affects" | "depends_on" | "triggers" | "blocks" | "produces" | "consumes"'.
+packages/agent-engine/src/titan-rigorous-audit.test.ts(975,36): error TS2345: Argument of type '"depends-on"' is not assignable to parameter of type '"affects" | "depends_on" | "triggers" | "blocks" | "produces" | "consumes"'.
+packages/agent-engine/src/titan-rigorous-audit.test.ts(1123,56): error TS2353: Object literal may only specify known properties, and 'steps' does not exist in type 'RLAction'.
+packages/agent-engine/src/titan-rigorous-audit.test.ts(1135,50): error TS2353: Object literal may only specify known properties, and 'steps' does not exist in type 'RLAction'.
+packages/agent-engine/src/titan-rigorous-audit.test.ts(1170,55): error TS2554: Expected 1 arguments, but got 2.
+packages/agent-engine/src/titan-simulation.test.ts(112,61): error TS2345: Argument of type 'string' is not assignable to parameter of type 'BugReport'.
+packages/agent-engine/src/titan-simulation.test.ts(127,55): error TS2554: Expected 0 arguments, but got 1.
+packages/agent-engine/src/titan-simulation.test.ts(132,49): error TS2554: Expected 3 arguments, but got 1.
+packages/agent-engine/src/titan-simulation.test.ts(150,57): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ successRate: number; avgDuration: number; avgTokens: number; errorPatterns: string[]; }'.
+packages/agent-engine/src/titan-simulation.test.ts(237,64): error TS2345: Argument of type 'string' is not assignable to parameter of type 'AgentStep'.
+packages/agent-engine/src/titan-simulation.test.ts(268,79): error TS2554: Expected 1 arguments, but got 2.
+packages/agent-engine/src/titan-simulation.test.ts(302,71): error TS2345: Argument of type '({ threadId: string; type: "goals"; output: string; } | { threadId: string; type: "reasoning"; output: string; })[]' is not assignable to parameter of type 'ThreadResult[]'.
+packages/agent-engine/src/titan-simulation.test.ts(307,46): error TS2322: Type '"observation"' is not assignable to type '"action" | "thought" | "memory" | "emotion" | "perception"'.
+packages/agent-engine/src/titan-simulation.test.ts(313,55): error TS2554: Expected 1 arguments, but got 2.
+packages/agent-engine/src/titan-simulation.test.ts(355,63): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'RLState'.
+packages/config/src/index.test.ts(283,19): error TS2304: Cannot find name 'vi'.
+packages/config/src/index.test.ts(297,19): error TS2304: Cannot find name 'vi'.
+packages/config/src/index.test.ts(311,19): error TS2304: Cannot find name 'vi'.
+packages/config/src/index.test.ts(325,19): error TS2304: Cannot find name 'vi'.

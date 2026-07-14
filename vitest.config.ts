@@ -41,6 +41,7 @@ export default defineConfig({
       '@titan/agent-engine': path.resolve(__dirname, 'packages/agent-engine/src/index.ts'),
       '@titan/tools': path.resolve(__dirname, 'packages/tools/src/index.ts'),
       '@titan/sandbox': path.resolve(__dirname, 'packages/sandbox/src/index.ts'),
+      '@titan/sdk': path.resolve(__dirname, 'packages/sdk/src/index.ts'),
     },
   },
 });

@@ -36,7 +36,7 @@ const store = new Store<{
   },
 });
 
-let wsClient: DesktopWsClient | null = null;
+const wsClient: DesktopWsClient | null = null;
 let tray: Tray | null = null;
 
 app.whenReady().then(() => {

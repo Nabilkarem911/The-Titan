@@ -210,7 +210,7 @@ export class DreamWorld {
       totalInsights,
       totalVisualDreams: totalVisual,
       totalCodeDreams: totalCode,
-      totalHypotheses: totalHypotheses,
+      totalHypotheses,
       avgDurationMs: avgDuration,
     };
   }

@@ -29,7 +29,7 @@ export async function calculate(params: { expression: string }): Promise<Calcula
     .replace(/pi/gi, 'Math.PI')
     .replace(/(?<![a-z])e(?![a-z\d])/gi, 'Math.E');
 
-  // eslint-disable-next-line no-new-func
+   
   const result = Function(`"use strict"; return (${normalized})`)() as number;
 
   if (typeof result !== 'number' || !isFinite(result)) {

@@ -19,7 +19,8 @@
       "@titan/agent-engine": ["./packages/agent-engine/src/index.ts"],
       "@titan/agent-engine/*": ["./packages/agent-engine/src/*"],
       "@titan/tools": ["./packages/tools/src/index.ts"],
-      "@titan/sandbox": ["./packages/sandbox/src/index.ts"]
+      "@titan/sandbox": ["./packages/sandbox/src/index.ts"],
+      "@titan/sdk": ["./packages/sdk/src/index.ts"]
     }
   },
   "include": [
@@ -27,6 +28,12 @@
     "packages/*/src/**/*"
   ],
   "exclude": [
-    "apps/dashboard/**/*"
+    "apps/dashboard/**/*",
+    "apps/desktop/**/*",
+    "apps/cli/**/*",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
   ]
 }

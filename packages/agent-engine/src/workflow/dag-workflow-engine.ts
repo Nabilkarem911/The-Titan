@@ -358,7 +358,7 @@ export class DAGWorkflowEngine {
     const contexts: string[] = [];
     for (const [id, result] of priorResults) {
       if (id === nodeId) continue;
-      if (result.status === 'completed' && result.output != null) {
+      if (result.status === 'completed' && result.output !== null) {
         contexts.push(`[${id}]: ${String(result.output).slice(0, 500)}`);
       }
     }

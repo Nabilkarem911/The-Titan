@@ -39,7 +39,7 @@ export class AutoFixer {
 
   async fixErrors(errors: string[], maxAttempts = 3): Promise<FixResult> {
     const attempts: FixAttempt[] = [];
-    let remaining = [...errors];
+    const remaining = [...errors];
 
     for (let i = 0; i < maxAttempts && remaining.length > 0; i++) {
       const error = remaining[0];
