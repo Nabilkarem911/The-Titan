@@ -5,7 +5,7 @@ import { safetyMemoryEntries as safetyRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'safety-memory' });
 
-export interface ContrastiveCell {
+interface ContrastiveCell {
   id: string;
   attackStrategy: string;
   harmfulPattern: string;
@@ -17,7 +17,7 @@ export interface ContrastiveCell {
   lastUsed: Date | null;
 }
 
-export interface SafetyCheckResult {
+interface SafetyCheckResult {
   id: string;
   input: string;
   decision: 'allow' | 'block' | 'uncertain';
@@ -28,7 +28,7 @@ export interface SafetyCheckResult {
   createdAt: Date;
 }
 
-export interface SafetyMemoryStats {
+interface SafetyMemoryStats {
   totalCells: number;
   totalChecks: number;
   blockedCount: number;

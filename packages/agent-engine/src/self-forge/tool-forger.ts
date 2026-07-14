@@ -13,7 +13,7 @@ export interface ForgedToolSpec {
   testCases: Array<{ params: Record<string, unknown>; expectedContains?: string }>;
 }
 
-export interface ForgeRequest {
+interface ForgeRequest {
   capability: string;
   reason: string;
   existingTools: string[];

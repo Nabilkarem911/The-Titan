@@ -3,7 +3,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'peer-review' });
 
-export interface ReviewRequest {
+interface ReviewRequest {
   authorRole: string;
   reviewerRole: string;
   content: string;
@@ -11,7 +11,7 @@ export interface ReviewRequest {
   criteria?: string[];
 }
 
-export interface ReviewFeedback {
+interface ReviewFeedback {
   approved: boolean;
   score: number;
   strengths: string[];
@@ -19,7 +19,7 @@ export interface ReviewFeedback {
   summary: string;
 }
 
-export class PeerReview {
+class PeerReview {
   constructor(private llm: LlmProvider) {}
 
   async review(request: ReviewRequest): Promise<ReviewFeedback> {

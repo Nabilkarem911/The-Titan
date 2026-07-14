@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const log = getLogger().child({ component: 'task-executor' });
 
-export interface TaskExecutorDeps {
+interface TaskExecutorDeps {
   llm: LlmProvider;
   executeTool: (call: ToolCall, runId: string) => Promise<ToolResult>;
   cwd: string;
@@ -18,7 +18,7 @@ export interface TaskExecutorDeps {
   maxFixAttempts?: number;
 }
 
-export interface TaskExecutionResult {
+interface TaskExecutionResult {
   success: boolean;
   filesChanged: string[];
   verificationResults: VerificationResult[];
@@ -28,7 +28,7 @@ export interface TaskExecutionResult {
   durationMs: number;
 }
 
-export class TaskExecutor {
+class TaskExecutor {
   private deps: TaskExecutorDeps;
   private index: CodebaseIndex | null = null;
   private autoFixer: AutoFixer;

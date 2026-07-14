@@ -3,7 +3,7 @@ import type { MemoryEntry } from '../layers/types.js';
 
 const log = getLogger().child({ component: 'memory-forgetter' });
 
-export interface ForgetPolicy {
+interface ForgetPolicy {
   maxAge?: number;
   minImportance?: number;
   maxEntries?: number;

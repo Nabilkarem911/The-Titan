@@ -6,7 +6,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'hyper-agent' });
 
-export interface HyperAgentCycle {
+interface HyperAgentCycle {
   id: string;
   cycleNumber: number;
   phase: 'introspect' | 'improve' | 'evaluate' | 'decide';
@@ -31,7 +31,7 @@ export interface HyperAgentCycle {
   timestamp: Date;
 }
 
-export interface HyperAgentStats {
+interface HyperAgentStats {
   totalCycles: number;
   totalImprovements: number;
   keptImprovements: number;

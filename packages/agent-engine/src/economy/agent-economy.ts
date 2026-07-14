@@ -6,7 +6,7 @@ import { economyAccounts, economyReputation, economyListings, economyOffers, eco
 
 const log = getLogger().child({ component: 'agent-economy' });
 
-export interface ComputeCreditAccount {
+interface ComputeCreditAccount {
   agentId: string;
   balance: number;
   totalEarned: number;
@@ -15,7 +15,7 @@ export interface ComputeCreditAccount {
   createdAt: Date;
 }
 
-export interface SkillListing {
+interface SkillListing {
   id: string;
   sellerId: string;
   skillName: string;
@@ -27,7 +27,7 @@ export interface SkillListing {
   createdAt: Date;
 }
 
-export interface TradeOffer {
+interface TradeOffer {
   id: string;
   fromAgentId: string;
   toAgentId: string;
@@ -42,7 +42,7 @@ export interface TradeOffer {
   expiresAt: Date;
 }
 
-export interface EscrowContract {
+interface EscrowContract {
   id: string;
   tradeOfferId: string;
   buyerId: string;
@@ -54,7 +54,7 @@ export interface EscrowContract {
   resolvedAt: Date | null;
 }
 
-export interface ReputationRecord {
+interface ReputationRecord {
   agentId: string;
   testPassRate: number;
   taskCompletionRate: number;
@@ -64,7 +64,7 @@ export interface ReputationRecord {
   reputationScore: number;
 }
 
-export interface AuditEntry {
+interface AuditEntry {
   id: string;
   type: 'trade' | 'escrow' | 'reputation' | 'credit_transfer';
   agentId: string;

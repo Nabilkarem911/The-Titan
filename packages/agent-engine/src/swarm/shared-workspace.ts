@@ -3,7 +3,7 @@ import { swarmArtifacts as saRepo, swarmNotes as snRepo } from '@titan/database'
 
 const log = getLogger().child({ component: 'swarm-workspace' });
 
-export interface WorkspaceArtifact {
+interface WorkspaceArtifact {
   id: string;
   key: string;
   value: unknown;

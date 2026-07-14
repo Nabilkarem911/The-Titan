@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'advanced-multimodal' });
 
-export interface PDFTable {
+interface PDFTable {
   id: string;
   page: number;
   rows: string[][];
@@ -13,7 +13,7 @@ export interface PDFTable {
   confidence: number;
 }
 
-export interface CodeFromImage {
+interface CodeFromImage {
   id: string;
   language: string;
   code: string;
@@ -21,7 +21,7 @@ export interface CodeFromImage {
   formatted: boolean;
 }
 
-export interface DiagramToCode {
+interface DiagramToCode {
   id: string;
   diagramType: string;
   generatedCode: string;
@@ -29,7 +29,7 @@ export interface DiagramToCode {
   confidence: number;
 }
 
-export interface ChartData {
+interface ChartData {
   id: string;
   chartType: string;
   data: Array<{ label: string; value: number }>;

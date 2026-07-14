@@ -4,7 +4,7 @@ import type { LlmProvider, AgentRun, AgentStep } from '../types.js';
 
 const log = getLogger().child({ component: 'meta-monitor' });
 
-export interface StepConfidence {
+interface StepConfidence {
   stepIndex: number;
   confidence: number;
   reason: string;
@@ -12,7 +12,7 @@ export interface StepConfidence {
   shouldSwitchStrategy: boolean;
 }
 
-export interface MetaAssessment {
+interface MetaAssessment {
   overallConfidence: number;
   stepAssessments: StepConfidence[];
   recommendation: 'proceed' | 'retry' | 'switch_strategy' | 'ask_user' | 'stop';

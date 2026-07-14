@@ -6,7 +6,7 @@ const log = getLogger().child({ component: 'quantum-optimizer' });
 
 export type Strategy = string;
 
-export interface SuperpositionState {
+interface SuperpositionState {
   id: string;
   strategies: Array<{ strategy: Strategy; weight: number; estimatedValue: number }>;
   collapsed: Strategy | null;
@@ -14,7 +14,7 @@ export interface SuperpositionState {
   createdAt: Date;
 }
 
-export interface QuantumOptimizationResult {
+interface QuantumOptimizationResult {
   id: string;
   problem: string;
   optimalStrategy: Strategy;

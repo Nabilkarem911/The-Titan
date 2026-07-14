@@ -6,13 +6,13 @@ import { voiceSessions, voiceSessionHistory } from '@titan/database';
 
 const log = getLogger().child({ component: 'voice-conversation' });
 
-export interface VoiceConversationDeps {
+interface VoiceConversationDeps {
   stt: STTProvider;
   tts: TTSProvider;
   processText: (text: string) => Promise<string>;
 }
 
-export interface VoiceTurn {
+interface VoiceTurn {
   role: 'user' | 'assistant';
   text: string;
   audio?: Buffer;
@@ -20,7 +20,7 @@ export interface VoiceTurn {
   timestamp: Date;
 }
 
-export class VoiceConversationManager {
+class VoiceConversationManager {
   private sessions: Map<string, VoiceSession> = new Map();
   private history: Map<string, VoiceTurn[]> = new Map();
   private emotionDetector = new EmotionDetector();

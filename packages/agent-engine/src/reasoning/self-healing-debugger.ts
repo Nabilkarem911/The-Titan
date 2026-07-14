@@ -18,7 +18,7 @@ export interface BugReport {
   reportedAt: Date;
 }
 
-export interface Lesson {
+interface Lesson {
   id: string;
   errorType: string;
   errorMessage: string;
@@ -28,7 +28,7 @@ export interface Lesson {
   timesApplied: number;
 }
 
-export interface RepairAttempt {
+interface RepairAttempt {
   id: string;
   bugId: string;
   attempt: number;
@@ -39,7 +39,7 @@ export interface RepairAttempt {
   timestamp: Date;
 }
 
-export interface DebugResult {
+interface DebugResult {
   bugId: string;
   diagnosed: boolean;
   rootCause?: string;

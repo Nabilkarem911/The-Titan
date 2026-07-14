@@ -4,7 +4,7 @@ import type { LlmProvider, LlmMessage, LlmCompletion, LlmToolDefinition, ToolCal
 
 const log = getLogger().child({ component: 'llm-openai' });
 
-export interface OpenAiProviderConfig {
+interface OpenAiProviderConfig {
   baseUrl: string;
   apiKey: string;
   model: string;

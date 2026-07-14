@@ -2,7 +2,7 @@ import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'conversation-continuity' });
 
-export interface ConversationSummary {
+interface ConversationSummary {
   sessionId: string;
   userId: string;
   summary: string;
@@ -12,7 +12,7 @@ export interface ConversationSummary {
   timestamp: Date;
 }
 
-export class ConversationContinuity {
+class ConversationContinuity {
   private summaries: Map<string, ConversationSummary[]> = new Map();
   private maxPerUser = 50;
 

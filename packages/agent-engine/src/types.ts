@@ -5,9 +5,9 @@
  *   Prompt → Plan → Action (tool call) → Observation → Reflect → (repeat or finish)
  */
 
-export type StepStatus = 'pending' | 'planning' | 'executing' | 'observing' | 'reflecting' | 'completed' | 'failed';
+type StepStatus = 'pending' | 'planning' | 'executing' | 'observing' | 'reflecting' | 'completed' | 'failed';
 
-export type AgentRunStatus = 'queued' | 'running' | 'paused' | 'completed' | 'failed';
+type AgentRunStatus = 'queued' | 'running' | 'paused' | 'completed' | 'failed';
 
 export interface ToolCall {
   name: string;

@@ -5,8 +5,8 @@ import { mcpGovernanceAudit as mgaRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'mcp-governance' });
 
-export type MCPPermission = 'read' | 'write' | 'execute' | 'admin' | 'delegate';
-export type MCPAuthType = 'none' | 'api_key' | 'oauth2' | 'bearer' | 'mtls';
+type MCPPermission = 'read' | 'write' | 'execute' | 'admin' | 'delegate';
+type MCPAuthType = 'none' | 'api_key' | 'oauth2' | 'bearer' | 'mtls';
 
 export interface MCPGovernancePolicy {
   serverId: string;
@@ -19,7 +19,7 @@ export interface MCPGovernancePolicy {
   auditEnabled: boolean;
 }
 
-export interface MCPAuditEntry {
+interface MCPAuditEntry {
   id: string;
   serverId: string;
   toolName: string;
@@ -32,7 +32,7 @@ export interface MCPAuditEntry {
   metadata?: Record<string, unknown>;
 }
 
-export interface MCPOAuthConfig {
+interface MCPOAuthConfig {
   clientId: string;
   clientSecret: string;
   tokenUrl: string;
@@ -40,7 +40,7 @@ export interface MCPOAuthConfig {
   redirectUri?: string;
 }
 
-export interface MCPOAuthToken {
+interface MCPOAuthToken {
   accessToken: string;
   refreshToken?: string;
   expiresAt: Date;
@@ -48,7 +48,7 @@ export interface MCPOAuthToken {
   scopes: string[];
 }
 
-export interface MCPTransportConfig {
+interface MCPTransportConfig {
   type: 'http' | 'sse' | 'grpc' | 'websocket';
   url: string;
   headers?: Record<string, string>;

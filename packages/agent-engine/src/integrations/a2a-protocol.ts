@@ -5,9 +5,9 @@ import { EventEmitter } from 'node:events';
 
 const log = getLogger().child({ component: 'a2a-protocol' });
 
-export type A2ATaskState = 'pending' | 'working' | 'completed' | 'failed' | 'canceled' | 'input_required';
-export type A2AMessageRole = 'user' | 'agent';
-export type A2ATransport = 'http' | 'sse' | 'grpc' | 'websocket';
+type A2ATaskState = 'pending' | 'working' | 'completed' | 'failed' | 'canceled' | 'input_required';
+type A2AMessageRole = 'user' | 'agent';
+type A2ATransport = 'http' | 'sse' | 'grpc' | 'websocket';
 
 export interface A2AAgentCard {
   id: string;
@@ -29,7 +29,7 @@ export interface A2AAgentCard {
   skills?: Array<{ name: string; description: string; tags?: string[] }>;
 }
 
-export interface A2ATask {
+interface A2ATask {
   id: string;
   name: string;
   description?: string;
@@ -44,7 +44,7 @@ export interface A2ATask {
   metadata?: Record<string, unknown>;
 }
 
-export interface A2AMessage {
+interface A2AMessage {
   id: string;
   role: A2AMessageRole;
   taskId: string;
@@ -53,7 +53,7 @@ export interface A2AMessage {
   createdAt: Date;
 }
 
-export interface A2APart {
+interface A2APart {
   type: 'text' | 'data' | 'file' | 'error';
   text?: string;
   data?: Record<string, unknown>;
@@ -61,7 +61,7 @@ export interface A2APart {
   error?: { code: number; message: string };
 }
 
-export interface A2AArtifact {
+interface A2AArtifact {
   id: string;
   name: string;
   description?: string;
@@ -71,7 +71,7 @@ export interface A2AArtifact {
   createdAt: Date;
 }
 
-export interface A2ARegistration {
+interface A2ARegistration {
   agentCard: A2AAgentCard;
   registeredAt: Date;
   lastSeen: Date;
@@ -80,7 +80,7 @@ export interface A2ARegistration {
   tenantId?: string;
 }
 
-export interface A2AStats {
+interface A2AStats {
   registeredAgents: number;
   activeTasks: number;
   completedTasks: number;

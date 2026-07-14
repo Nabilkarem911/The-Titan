@@ -40,6 +40,6 @@ export interface RetryStrategy {
   maxAdditionalRetries: number;
 }
 
-export interface ReflectionDeps {
+interface ReflectionDeps {
   llm: LlmProvider;
 }

@@ -6,9 +6,9 @@ import { innerMonologueThreads as imtRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'mirror:inner-monologue' });
 
-export type ThreadType = 'goals' | 'reasoning' | 'memory' | 'emotional' | 'monitoring';
+type ThreadType = 'goals' | 'reasoning' | 'memory' | 'emotional' | 'monitoring';
 
-export interface CognitiveThread {
+interface CognitiveThread {
   id: string;
   type: ThreadType;
   content: string;

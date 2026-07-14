@@ -6,7 +6,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'metacognitive-consolidation' });
 
-export interface InstanceReflection {
+interface InstanceReflection {
   id: string;
   taskId: string;
   outcome: 'success' | 'failure';
@@ -17,7 +17,7 @@ export interface InstanceReflection {
   createdAt: Date;
 }
 
-export interface MicroLesson {
+interface MicroLesson {
   id: string;
   lessons: string[];
   pattern: string;
@@ -26,7 +26,7 @@ export interface MicroLesson {
   createdAt: Date;
 }
 
-export interface MetaKnowledge {
+interface MetaKnowledge {
   id: string;
   knowledge: string;
   category: string;
@@ -47,7 +47,7 @@ export interface ConsolidationResult {
   createdAt: Date;
 }
 
-export interface ConsolidationStats {
+interface ConsolidationStats {
   totalReflections: number;
   totalMicroLessons: number;
   totalMetaKnowledge: number;

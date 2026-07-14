@@ -7,7 +7,7 @@ import puppeteer, { type Browser, type Page } from 'puppeteer';
 
 const log = getLogger().child({ component: 'browser-agent' });
 
-export type BrowserActionType =
+type BrowserActionType =
   | 'navigate' | 'click' | 'type' | 'scroll' | 'screenshot'
   | 'extract' | 'wait' | 'select' | 'hover' | 'press_key'
   | 'upload_file' | 'close' | 'evaluate';
@@ -21,7 +21,7 @@ export interface BrowserAction {
   options?: Record<string, unknown>;
 }
 
-export interface BrowserObservation {
+interface BrowserObservation {
   url: string;
   title: string;
   text: string;
@@ -31,7 +31,7 @@ export interface BrowserObservation {
   success: boolean;
 }
 
-export interface BrowserElement {
+interface BrowserElement {
   tag: string;
   text: string;
   selector: string;
@@ -52,7 +52,7 @@ export interface BrowserSession {
   currentUrl: string;
 }
 
-export interface BrowserAgentConfig {
+interface BrowserAgentConfig {
   maxSteps: number;
   viewport: { width: number; height: number };
   timeout: number;
@@ -62,7 +62,7 @@ export interface BrowserAgentConfig {
   userAgent?: string;
 }
 
-export interface BrowserTaskResult {
+interface BrowserTaskResult {
   sessionId: string;
   task: string;
   success: boolean;

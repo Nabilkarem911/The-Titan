@@ -18,7 +18,7 @@ export interface RLAction {
   expectedReward: number;
 }
 
-export interface RLEpisode {
+interface RLEpisode {
   id: string;
   steps: Array<{ state: RLState; action: RLAction; reward: number; nextState: RLState }>;
   totalReward: number;
@@ -27,7 +27,7 @@ export interface RLEpisode {
   completedAt?: Date;
 }
 
-export interface RLTrainingResult {
+interface RLTrainingResult {
   episodes: number;
   avgReward: number;
   bestReward: number;

@@ -7,9 +7,9 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'creative-engine' });
 
-export type CreativeMediaType = 'image' | 'music' | 'video' | 'code';
+type CreativeMediaType = 'image' | 'music' | 'video' | 'code';
 
-export interface CreativeGenerationOptions {
+interface CreativeGenerationOptions {
   prompt: string;
   type: CreativeMediaType;
   style?: string;
@@ -20,7 +20,7 @@ export interface CreativeGenerationOptions {
   seed?: number;
 }
 
-export interface CreativeResult {
+interface CreativeResult {
   id: string;
   type: CreativeMediaType;
   prompt: string;
@@ -36,7 +36,7 @@ export interface CreativeResult {
   };
 }
 
-export interface StylePreference {
+interface StylePreference {
   id: string;
   userId: string;
   styleName: string;
@@ -47,7 +47,7 @@ export interface StylePreference {
   createdAt: Date;
 }
 
-export interface CreativeCritique {
+interface CreativeCritique {
   reviewer: string;
   rating: number;
   strengths: string[];
@@ -532,7 +532,7 @@ export class CreativeEngine {
 
 let globalEngine: CreativeEngine | null = null;
 
-export function getCreativeEngine(llm?: LlmProvider): CreativeEngine {
+function getCreativeEngine(llm?: LlmProvider): CreativeEngine {
   if (!globalEngine) {
     if (!llm) throw new Error('CreativeEngine not initialized — provide LlmProvider');
     globalEngine = new CreativeEngine(llm);
@@ -540,7 +540,7 @@ export function getCreativeEngine(llm?: LlmProvider): CreativeEngine {
   return globalEngine;
 }
 
-export function initCreativeEngine(llm: LlmProvider, tempDir?: string): CreativeEngine {
+function initCreativeEngine(llm: LlmProvider, tempDir?: string): CreativeEngine {
   globalEngine = new CreativeEngine(llm, tempDir);
   return globalEngine;
 }

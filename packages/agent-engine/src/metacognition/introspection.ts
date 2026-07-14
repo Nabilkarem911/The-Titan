@@ -6,7 +6,7 @@ import type { LlmProvider, AgentStep } from '../types.js';
 
 const log = getLogger().child({ component: 'introspection' });
 
-export interface IntrospectionReport {
+interface IntrospectionReport {
   id: string;
   stepIndex: number;
   reasoning: string;
@@ -20,14 +20,14 @@ export interface IntrospectionReport {
   createdAt: Date;
 }
 
-export interface BiasDetection {
+interface BiasDetection {
   bias: string;
   description: string;
   evidence: string;
   severity: 'low' | 'medium' | 'high';
 }
 
-export interface IntrospectionStats {
+interface IntrospectionStats {
   totalIntrospections: number;
   biasesDetected: number;
   confabulationsDetected: number;

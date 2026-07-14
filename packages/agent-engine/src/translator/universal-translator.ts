@@ -5,9 +5,9 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'universal-translator' });
 
-export type TranslationType = 'language' | 'code' | 'protocol' | 'modal' | 'domain';
+type TranslationType = 'language' | 'code' | 'protocol' | 'modal' | 'domain';
 
-export interface TranslationResult {
+interface TranslationResult {
   id: string;
   type: TranslationType;
   source: string;

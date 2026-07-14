@@ -5,7 +5,7 @@ import { federatedUpdates as fuRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'edge-privacy' });
 
-export interface OllamaModel {
+interface OllamaModel {
   id: string;
   name: string;
   size: string;
@@ -13,14 +13,14 @@ export interface OllamaModel {
   contextWindow: number;
 }
 
-export interface LocalRoutingResult {
+interface LocalRoutingResult {
   useLocal: boolean;
   model: string;
   reason: string;
   privacyMode: boolean;
 }
 
-export interface FederatedUpdate {
+interface FederatedUpdate {
   id: string;
   fromInstance: string;
   modelDiff: string;

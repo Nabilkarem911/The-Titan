@@ -17,7 +17,7 @@ export interface VoiceSession {
   isActive: boolean;
 }
 
-export interface VoiceConfig {
+interface VoiceConfig {
   sttModel: 'whisper' | 'deepgram' | 'google';
   ttsModel: 'elevenlabs' | 'openai-tts' | 'google-tts';
   defaultLanguage: string;

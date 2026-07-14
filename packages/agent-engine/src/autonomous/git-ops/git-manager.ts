@@ -20,7 +20,7 @@ function sanitizeFilePath(file: string): string {
   return file;
 }
 
-export interface GitOpsResult {
+interface GitOpsResult {
   success: boolean;
   branch?: string;
   commitHash?: string;

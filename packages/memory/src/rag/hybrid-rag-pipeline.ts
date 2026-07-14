@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 
 const log = getLogger().child({ component: 'rag-pipeline' });
 
-export interface RAGResult {
+interface RAGResult {
   responseId: string;
   context: string;
   citations: Citation[];
@@ -13,7 +13,7 @@ export interface RAGResult {
   totalChunks: number;
 }
 
-export interface RAGConfig {
+interface RAGConfig {
   maxChunks: number;
   minRelevance: number;
   includeMetadata: boolean;
@@ -27,7 +27,7 @@ const DEFAULT_CONFIG: RAGConfig = {
   deduplicateChunks: true,
 };
 
-export class HybridRAGPipeline {
+class HybridRAGPipeline {
   private kb: KnowledgeBase;
   private citationTracker: CitationTracker;
   private config: RAGConfig;

@@ -4,7 +4,7 @@ import { randomUUID, createHash } from 'node:crypto';
 
 const log = getLogger().child({ component: 'github-mining' });
 
-export interface GitHubRepo {
+interface GitHubRepo {
   id: string;
   fullName: string;
   url: string;
@@ -14,7 +14,7 @@ export interface GitHubRepo {
   topics: string[];
 }
 
-export interface CodePattern {
+interface CodePattern {
   id: string;
   repo: string;
   filePath: string;
@@ -26,7 +26,7 @@ export interface CodePattern {
   extractedAt: Date;
 }
 
-export interface CrystallizedSkill {
+interface CrystallizedSkill {
   id: string;
   name: string;
   description: string;

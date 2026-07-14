@@ -5,7 +5,7 @@ import type { StrategyName } from '../strategies/types.js';
 
 const log = getLogger().child({ component: 'strategy-tuner' });
 
-export interface StrategyPerformance {
+interface StrategyPerformance {
   strategy: StrategyName;
   taskType: string;
   successRate: number;

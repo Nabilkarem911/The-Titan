@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'introspective-awareness' });
 
-export interface IntrospectionRecord {
+interface IntrospectionRecord {
   id: string;
   timestamp: Date;
   trigger: string;
@@ -18,7 +18,7 @@ export interface IntrospectionRecord {
   selfModification: string | null;
 }
 
-export interface IntrospectiveSelfModel {
+interface IntrospectiveSelfModel {
   id: string;
   capabilities: string[];
   limitations: string[];
@@ -30,7 +30,7 @@ export interface IntrospectiveSelfModel {
   lastUpdated: Date;
 }
 
-export interface MetacognitionCheck {
+interface MetacognitionCheck {
   id: string;
   question: string;
   reasoning: string;

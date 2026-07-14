@@ -5,7 +5,7 @@ import type { AgentRun, AgentStep, LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'causal-replay' });
 
-export interface CausalAttribution {
+interface CausalAttribution {
   stepIndex: number;
   stepDescription: string;
   toolName?: string;
@@ -15,7 +15,7 @@ export interface CausalAttribution {
   isPivotal: boolean; // true if this is the primary cause
 }
 
-export interface CausalReplayResult {
+interface CausalReplayResult {
   runId: string;
   totalSteps: number;
   attributions: CausalAttribution[];

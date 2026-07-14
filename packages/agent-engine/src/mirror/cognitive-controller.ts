@@ -6,7 +6,7 @@ import { narrativeHistoryRepo as nhRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'mirror:cognitive-controller' });
 
-export interface NarrativeResult {
+interface NarrativeResult {
   narrative: string;
   tokensUsed: number;
   selfModel: SelfModel;

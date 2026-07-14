@@ -2,14 +2,14 @@ import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'voting-system' });
 
-export interface Vote {
+interface Vote {
   voter: string;
   choice: string;
   confidence: number;
   reasoning: string;
 }
 
-export interface VoteResult {
+interface VoteResult {
   question: string;
   winner: string;
   votes: Vote[];
@@ -17,7 +17,7 @@ export interface VoteResult {
   tally: Record<string, number>;
 }
 
-export class VotingSystem {
+class VotingSystem {
   vote(question: string, votes: Vote[]): VoteResult {
     const tally: Record<string, number> = {};
 

@@ -6,9 +6,9 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'safety-guardrail' });
 
-export type GuardrailDecision = 'proceed' | 'refuse' | 'update';
+type GuardrailDecision = 'proceed' | 'refuse' | 'update';
 
-export interface GuardrailResult {
+interface GuardrailResult {
   id: string;
   decision: GuardrailDecision;
   riskLevel: 'none' | 'low' | 'medium' | 'high' | 'critical';
@@ -21,7 +21,7 @@ export interface GuardrailResult {
   createdAt: Date;
 }
 
-export interface GuardrailStats {
+interface GuardrailStats {
   totalChecks: number;
   proceedCount: number;
   refuseCount: number;

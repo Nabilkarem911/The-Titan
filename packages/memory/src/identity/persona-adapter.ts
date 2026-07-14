@@ -3,7 +3,7 @@ import type { UserProfile } from './user-profile-builder.js';
 
 const log = getLogger().child({ component: 'persona-adapter' });
 
-export interface PersonaConfig {
+interface PersonaConfig {
   formality: 'casual' | 'balanced' | 'formal';
   verbosity: 'concise' | 'balanced' | 'detailed';
   techDepth: 'beginner' | 'intermediate' | 'expert';

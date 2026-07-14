@@ -4,7 +4,7 @@ import type { VerificationResult } from '../verification/verify-runner.js';
 
 const log = getLogger().child({ component: 'auto-fixer' });
 
-export interface FixAttempt {
+interface FixAttempt {
   file: string;
   originalContent: string;
   fixedContent: string;

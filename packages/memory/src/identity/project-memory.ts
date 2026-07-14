@@ -2,7 +2,7 @@ import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'project-memory' });
 
-export interface ProjectRecord {
+interface ProjectRecord {
   id: string;
   userId: string;
   name: string;
@@ -16,7 +16,7 @@ export interface ProjectRecord {
   createdAt: Date;
 }
 
-export class ProjectMemory {
+class ProjectMemory {
   private projects: Map<string, ProjectRecord> = new Map();
 
   upsert(userId: string, name: string, updates: Partial<ProjectRecord>): ProjectRecord {

@@ -7,7 +7,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'skill-synthesis' });
 
-export interface SynthesizedSkill {
+interface SynthesizedSkill {
   id: string;
   name: string;
   description: string;
@@ -21,7 +21,7 @@ export interface SynthesizedSkill {
   decompositionSteps: string[];
 }
 
-export interface SynthesisResult {
+interface SynthesisResult {
   id: string;
   taskDescription: string;
   decomposed: boolean;

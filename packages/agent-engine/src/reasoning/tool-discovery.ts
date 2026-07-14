@@ -7,7 +7,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'tool-discovery' });
 
-export interface DiscoveredTool {
+interface DiscoveredTool {
   id: string;
   name: string;
   description: string;
@@ -29,7 +29,7 @@ export interface DiscoveredTool {
   reliabilityScore: number;
 }
 
-export interface DiscoveryQuery {
+interface DiscoveryQuery {
   id: string;
   taskDescription: string;
   missingCapabilities: string[];
@@ -38,7 +38,7 @@ export interface DiscoveryQuery {
   createdAt: Date;
 }
 
-export interface DiscoveryStats {
+interface DiscoveryStats {
   totalDiscoveries: number;
   installedTools: number;
   verifiedTools: number;

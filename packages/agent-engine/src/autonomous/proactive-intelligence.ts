@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'proactive-intelligence' });
 
-export interface ProactiveSuggestion {
+interface ProactiveSuggestion {
   id: string;
   timestamp: Date;
   pattern: string;
@@ -15,7 +15,7 @@ export interface ProactiveSuggestion {
   accepted: boolean | null;
 }
 
-export interface CausalSimulation {
+interface CausalSimulation {
   id: string;
   action: string;
   predictedEffects: Array<{ entity: string; effect: string; probability: number }>;
@@ -24,7 +24,7 @@ export interface CausalSimulation {
   safeToExecute: boolean;
 }
 
-export interface ArchitectureChange {
+interface ArchitectureChange {
   id: string;
   fromPattern: string;
   toPattern: string;
@@ -34,7 +34,7 @@ export interface ArchitectureChange {
   tested: boolean;
 }
 
-export interface LiveCodeEdit {
+interface LiveCodeEdit {
   id: string;
   filePath: string;
   originalCode: string;

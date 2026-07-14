@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'hive-mind' });
 
-export interface HiveInstance {
+interface HiveInstance {
   id: string;
   hostname: string;
   capabilities: string[];
@@ -14,7 +14,7 @@ export interface HiveInstance {
   publicKey?: string;
 }
 
-export interface SharedKnowledge {
+interface SharedKnowledge {
   id: string;
   key: string;
   value: unknown;
@@ -24,7 +24,7 @@ export interface SharedKnowledge {
   confidence: number;
 }
 
-export interface CollectiveVote {
+interface CollectiveVote {
   id: string;
   topic: string;
   proposal: string;
@@ -34,7 +34,7 @@ export interface CollectiveVote {
   createdAt: Date;
 }
 
-export interface SwarmConstitution {
+interface SwarmConstitution {
   version: number;
   articles: ConstitutionArticle[];
   amendmentHistory: ConstitutionAmendment[];
@@ -42,14 +42,14 @@ export interface SwarmConstitution {
   lastAmended: Date;
 }
 
-export interface ConstitutionArticle {
+interface ConstitutionArticle {
   id: string;
   title: string;
   content: string;
   immutable: boolean;
 }
 
-export interface ConstitutionAmendment {
+interface ConstitutionAmendment {
   id: string;
   articleId: string;
   change: string;

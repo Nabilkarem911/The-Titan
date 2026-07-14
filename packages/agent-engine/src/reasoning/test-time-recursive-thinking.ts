@@ -6,7 +6,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'test-time-recursive-thinking' });
 
-export interface TRTAttempt {
+interface TRTAttempt {
   round: number;
   strategy: string;
   answer: string;
@@ -19,7 +19,7 @@ export interface TRTAttempt {
   depth: number;
 }
 
-export interface TRTResult {
+interface TRTResult {
   id: string;
   problem: string;
   attempts: TRTAttempt[];
@@ -35,7 +35,7 @@ export interface TRTResult {
   solverMode: 'fast' | 'slow';
 }
 
-export interface TRTStats {
+interface TRTStats {
   totalProblems: number;
   avgRounds: number;
   convergenceRate: number;

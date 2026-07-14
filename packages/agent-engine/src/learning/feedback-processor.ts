@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 const log = getLogger().child({ component: 'feedback-processor' });
 
-export interface UserFeedback {
+interface UserFeedback {
   runId: string;
   userId: string;
   rating: 'positive' | 'negative' | 'neutral';
@@ -12,7 +12,7 @@ export interface UserFeedback {
   timestamp: Date;
 }
 
-export interface FeedbackSummary {
+interface FeedbackSummary {
   totalFeedback: number;
   positiveRate: number;
   negativeRate: number;

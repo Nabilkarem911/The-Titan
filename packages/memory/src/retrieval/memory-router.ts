@@ -11,7 +11,7 @@ import type { UserMemory } from '../layers/user-memory.js';
 
 const log = getLogger().child({ component: 'memory-router' });
 
-export interface MemoryLayers {
+interface MemoryLayers {
   working: WorkingMemory;
   episodic: EpisodicMemory;
   semantic: SemanticMemory;
@@ -19,7 +19,7 @@ export interface MemoryLayers {
   user: UserMemory;
 }
 
-export class MemoryRouter {
+class MemoryRouter {
   private hybridSearch: HybridSearch;
   private ranker: ContextRanker;
   private layers: MemoryLayers;

@@ -2,7 +2,7 @@ import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'preference-learner' });
 
-export interface LearnedPreference {
+interface LearnedPreference {
   key: string;
   value: string;
   confidence: number;

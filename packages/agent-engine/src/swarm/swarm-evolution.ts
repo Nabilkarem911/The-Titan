@@ -5,9 +5,9 @@ import { swarmTopologies as stRepo, swarmCollectiveMemory as scmRepo, swarmMessa
 
 const log = getLogger().child({ component: 'swarm-evolution' });
 
-export type TopologyPattern = 'pipeline' | 'orchestrator-worker' | 'peer-to-peer' | 'hierarchical' | 'ring' | 'star';
+type TopologyPattern = 'pipeline' | 'orchestrator-worker' | 'peer-to-peer' | 'hierarchical' | 'ring' | 'star';
 
-export interface SwarmAgentRole {
+interface SwarmAgentRole {
   id: string;
   agentId: string;
   role: string;
@@ -15,7 +15,7 @@ export interface SwarmAgentRole {
   performanceScore: number;
 }
 
-export interface SwarmTopologyConfig {
+interface SwarmTopologyConfig {
   id: string;
   pattern: TopologyPattern;
   agentCount: number;
@@ -24,7 +24,7 @@ export interface SwarmTopologyConfig {
   reconfigured: boolean;
 }
 
-export interface CollectiveMemoryEntry {
+interface CollectiveMemoryEntry {
   id: string;
   key: string;
   value: unknown;
@@ -34,7 +34,7 @@ export interface CollectiveMemoryEntry {
   conflicts: Array<{ agentId: string; value: unknown; timestamp: Date }>;
 }
 
-export interface FederationTask {
+interface FederationTask {
   id: string;
   fromAgent: string;
   toAgent: string;

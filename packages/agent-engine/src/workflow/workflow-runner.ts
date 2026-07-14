@@ -15,7 +15,7 @@ import type {
 
 const log = getLogger().child({ component: 'workflow-runner' });
 
-export interface WorkflowRunnerDeps {
+interface WorkflowRunnerDeps {
   llm: LlmProvider;
   executeTool: (call: ToolCall, runId: string) => Promise<ToolResult>;
   createAgentRun: (input: AgentRunInput) => Promise<AgentRun>;

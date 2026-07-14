@@ -6,7 +6,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'normative-agency' });
 
-export interface Commitment {
+interface Commitment {
   id: string;
   description: string;
   priority: number;
@@ -15,7 +15,7 @@ export interface Commitment {
   conflictsWith?: string[];
 }
 
-export interface NormConflict {
+interface NormConflict {
   id: string;
   commitmentA: string;
   commitmentB: string;
@@ -23,7 +23,7 @@ export interface NormConflict {
   resolvedAt: Date;
 }
 
-export interface NormRevision {
+interface NormRevision {
   id: string;
   commitmentId: string;
   originalDescription: string;
@@ -32,7 +32,7 @@ export interface NormRevision {
   timestamp: Date;
 }
 
-export interface NormativeCheckResult {
+interface NormativeCheckResult {
   action: string;
   aligned: boolean;
   concerns: string[];

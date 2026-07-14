@@ -6,9 +6,9 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'emotional-intelligence' });
 
-export type PlutchikEmotion = 'joy' | 'trust' | 'fear' | 'surprise' | 'sadness' | 'disgust' | 'anger' | 'anticipation';
+type PlutchikEmotion = 'joy' | 'trust' | 'fear' | 'surprise' | 'sadness' | 'disgust' | 'anger' | 'anticipation';
 
-export interface EmotionState {
+interface EmotionState {
   joy: number;
   trust: number;
   fear: number;
@@ -19,7 +19,7 @@ export interface EmotionState {
   anticipation: number;
 }
 
-export interface EmotionReading {
+interface EmotionReading {
   id: string;
   userId?: string;
   sessionId?: string;
@@ -34,7 +34,7 @@ export interface EmotionReading {
   createdAt: Date;
 }
 
-export interface EmotionStats {
+interface EmotionStats {
   totalReadings: number;
   avgValence: number;
   avgArousal: number;

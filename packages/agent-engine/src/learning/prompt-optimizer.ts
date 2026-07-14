@@ -4,7 +4,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'prompt-optimizer' });
 
-export interface PromptVariant {
+interface PromptVariant {
   id: string;
   template: string;
   successRate: number;

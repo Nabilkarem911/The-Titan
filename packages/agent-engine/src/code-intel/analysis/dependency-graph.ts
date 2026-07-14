@@ -5,7 +5,7 @@ import { extractSymbols, type CodeSymbol } from '../indexer/symbol-extractor.js'
 
 const log = getLogger().child({ component: 'dependency-graph' });
 
-export interface FileNode {
+interface FileNode {
   path: string;
   name: string;
   ext: string;
@@ -15,13 +15,13 @@ export interface FileNode {
   loc: number;
 }
 
-export interface DependencyEdge {
+interface DependencyEdge {
   from: string;
   to: string;
   type: 'import' | 'function-call' | 'class-extends' | 'type-reference';
 }
 
-export interface ImpactAnalysis {
+interface ImpactAnalysis {
   targetFile: string;
   directDependents: string[];
   transitiveDependents: string[];

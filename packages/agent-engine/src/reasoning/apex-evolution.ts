@@ -8,7 +8,7 @@ const log = getLogger().child({ component: 'apex-evolution' });
 
 // ===== Layer 1: Harness Patching =====
 
-export interface HarnessPatch {
+interface HarnessPatch {
   id: string;
   targetModule: string;
   patchDescription: string;
@@ -38,7 +38,7 @@ export interface Principle {
   updatedAt: Date;
 }
 
-export interface PrincipleExtractionResult {
+interface PrincipleExtractionResult {
   principles: Principle[];
   fromRunCount: number;
   patternsIdentified: string[];
@@ -46,9 +46,9 @@ export interface PrincipleExtractionResult {
 
 // ===== Layer 3: Topology Evolution =====
 
-export type TopologyType = 'single-agent' | 'orchestrator-worker' | 'hierarchical' | 'swarm' | 'mesh' | 'pipeline';
+type TopologyType = 'single-agent' | 'orchestrator-worker' | 'hierarchical' | 'swarm' | 'mesh' | 'pipeline';
 
-export interface TopologyConfig {
+interface TopologyConfig {
   type: TopologyType;
   agentCount: number;
   coordinationPattern: string;
@@ -57,7 +57,7 @@ export interface TopologyConfig {
   expectedLatency: number;
 }
 
-export interface TopologyEvolutionResult {
+interface TopologyEvolutionResult {
   currentTopology: TopologyConfig;
   proposedTopology: TopologyConfig;
   reason: string;
@@ -68,7 +68,7 @@ export interface TopologyEvolutionResult {
 
 // ===== Combined APEX Result =====
 
-export interface ApexEvolutionResult {
+interface ApexEvolutionResult {
   layer1Patches: HarnessPatch[];
   layer2Principles: Principle[];
   layer3Topology?: TopologyEvolutionResult;
@@ -76,7 +76,7 @@ export interface ApexEvolutionResult {
   cycle: number;
 }
 
-export interface ApexStats {
+interface ApexStats {
   totalCycles: number;
   totalPatches: number;
   appliedPatches: number;

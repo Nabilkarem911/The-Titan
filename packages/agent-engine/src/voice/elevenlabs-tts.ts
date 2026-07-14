@@ -4,7 +4,7 @@ import { voiceClones } from '@titan/database';
 
 const log = getLogger().child({ component: 'elevenlabs-tts' });
 
-export interface ElevenLabsOptions {
+interface ElevenLabsOptions {
   apiKey?: string;
   voiceId?: string;
   model?: string;
@@ -14,7 +14,7 @@ export interface ElevenLabsOptions {
   useSpeakerBoost?: boolean;
 }
 
-export interface VoiceClone {
+interface VoiceClone {
   id: string;
   name: string;
   voiceId: string;

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 const log = getLogger().child({ component: 'autonomous-gardener' });
 
-export interface TasteProfile {
+interface TasteProfile {
   preferences: Record<string, number>;
   aestheticScore: number;
   evolutionCount: number;
@@ -19,7 +19,7 @@ export interface CreativeSeed {
   plantedAt: Date;
 }
 
-export interface GardenHarvest {
+interface GardenHarvest {
   id: string;
   seeds: CreativeSeed[];
   bestEmergence: number;

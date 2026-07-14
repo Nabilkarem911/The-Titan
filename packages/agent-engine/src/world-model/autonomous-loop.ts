@@ -6,14 +6,14 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'autonomous-loop' });
 
-export interface AutonomousConfig {
+interface AutonomousConfig {
   intervalMs: number;
   maxConcurrentTasks: number;
   enabled: boolean;
   checks: AutonomousCheck[];
 }
 
-export interface AutonomousCheck {
+interface AutonomousCheck {
   id: string;
   name: string;
   description: string;
@@ -25,7 +25,7 @@ export interface AutonomousCheck {
   runCount: number;
 }
 
-export interface AutonomousResult {
+interface AutonomousResult {
   checkId: string;
   status: 'ok' | 'warning' | 'error';
   message: string;

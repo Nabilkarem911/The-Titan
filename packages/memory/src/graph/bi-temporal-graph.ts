@@ -4,7 +4,7 @@ import { incCounter, setGauge } from '@titan/observability';
 
 const log = getLogger().child({ component: 'bi-temporal-graph' });
 
-export interface BiTemporalFact {
+interface BiTemporalFact {
   id: string;
   subject: string;
   predicate: string;
@@ -20,7 +20,7 @@ export interface BiTemporalFact {
   metadata?: Record<string, unknown>;
 }
 
-export interface ConflictRecord {
+interface ConflictRecord {
   id: string;
   factIds: string[];
   type: 'contradiction' | 'supersession' | 'duplicate';
@@ -29,7 +29,7 @@ export interface ConflictRecord {
   winningFactId: string;
 }
 
-export interface GraphNode {
+interface GraphNode {
   id: string;
   label: string;
   type: string;
@@ -38,7 +38,7 @@ export interface GraphNode {
   lastUpdated: Date;
 }
 
-export interface GraphEdge {
+interface GraphEdge {
   id: string;
   source: string;
   target: string;
@@ -49,14 +49,14 @@ export interface GraphEdge {
   properties?: Record<string, unknown>;
 }
 
-export interface MultiHopPath {
+interface MultiHopPath {
   nodes: GraphNode[];
   edges: GraphEdge[];
   totalWeight: number;
   hops: number;
 }
 
-export interface RetrievalResult {
+interface RetrievalResult {
   facts: BiTemporalFact[];
   paths: MultiHopPath[];
   nodes: GraphNode[];

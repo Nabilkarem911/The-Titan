@@ -17,7 +17,7 @@ import { dagExecutions as deRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'dag-workflow-engine' });
 
-export interface DAGExecutionResult {
+interface DAGExecutionResult {
   runId: string;
   workflowId: string;
   status: 'completed' | 'failed' | 'partial';
@@ -29,20 +29,20 @@ export interface DAGExecutionResult {
   skippedNodes: string[];
 }
 
-export interface DAGNodeRetryPolicy {
+interface DAGNodeRetryPolicy {
   maxRetries: number;
   retryDelayMs: number;
   backoffMultiplier: number;
 }
 
-export interface DAGExecutionOptions {
+interface DAGExecutionOptions {
   retryPolicy?: DAGNodeRetryPolicy;
   failFast?: boolean;
   maxParallelism?: number;
   timeoutMs?: number;
 }
 
-export interface DAGWorkflowEngineDeps {
+interface DAGWorkflowEngineDeps {
   llm: LlmProvider;
   executeTool: (call: ToolCall, runId: string) => Promise<ToolResult>;
   createAgentRun: (input: AgentRunInput) => Promise<AgentRun>;

@@ -6,7 +6,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'meta-learning' });
 
-export interface LearningConfig {
+interface LearningConfig {
   id: string;
   learningRate: number;
   explorationRate: number;
@@ -17,7 +17,7 @@ export interface LearningConfig {
   updatedAt: Date;
 }
 
-export interface OptimizationResult {
+interface OptimizationResult {
   id: string;
   configBefore: { learningRate: number; explorationRate: number; batchSize: number };
   configAfter: { learningRate: number; explorationRate: number; batchSize: number };
@@ -30,7 +30,7 @@ export interface OptimizationResult {
   createdAt: Date;
 }
 
-export interface MetaLearningStats {
+interface MetaLearningStats {
   totalOptimizations: number;
   currentLearningRate: number;
   currentExplorationRate: number;

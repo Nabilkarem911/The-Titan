@@ -8,7 +8,7 @@ import { episodicBufferItems as ebiRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'mirror:orchestrator' });
 
-export interface MirrorState {
+interface MirrorState {
   narrative: string;
   selfModel: SelfModel;
   episodicBuffer: EpisodicItem[];
@@ -17,7 +17,7 @@ export interface MirrorState {
   timestamp: Date;
 }
 
-export interface MirrorConfig {
+interface MirrorConfig {
   enabled: boolean;
   maxThreads?: number;
   episodicCapacity?: number;
@@ -182,14 +182,14 @@ export class MirrorConsciousness {
 
 let globalMirror: MirrorConsciousness | null = null;
 
-export function getMirrorConsciousness(): MirrorConsciousness {
+function getMirrorConsciousness(): MirrorConsciousness {
   if (!globalMirror) {
     globalMirror = new MirrorConsciousness();
   }
   return globalMirror;
 }
 
-export function initMirrorConsciousness(config?: Partial<MirrorConfig>): MirrorConsciousness {
+function initMirrorConsciousness(config?: Partial<MirrorConfig>): MirrorConsciousness {
   globalMirror = new MirrorConsciousness(config);
   return globalMirror;
 }

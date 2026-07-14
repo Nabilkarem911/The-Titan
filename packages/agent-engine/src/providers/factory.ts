@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'llm-factory' });
 
-export interface ProviderConfig {
+interface ProviderConfig {
   type: 'openai' | 'openai-compatible' | 'anthropic';
   baseUrl?: string;
   apiKey: string;

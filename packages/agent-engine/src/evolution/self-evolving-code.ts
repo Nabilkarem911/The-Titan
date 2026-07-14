@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'self-evolving-code' });
 
-export interface CodeImprovement {
+interface CodeImprovement {
   id: string;
   filePath: string;
   description: string;
@@ -26,7 +26,7 @@ export interface FitnessScore {
   overall: number;
 }
 
-export interface EvolutionArchiveEntry {
+interface EvolutionArchiveEntry {
   id: string;
   improvement: CodeImprovement;
   appliedAt: Date;
@@ -34,7 +34,7 @@ export interface EvolutionArchiveEntry {
   commitHash: string;
 }
 
-export interface EvolutionConfig {
+interface EvolutionConfig {
   maxCyclesPerDay: number;
   degradationThreshold: number;
   safetyCriticalFiles: string[];

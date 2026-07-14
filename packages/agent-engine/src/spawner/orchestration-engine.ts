@@ -26,14 +26,14 @@ Respond ONLY with JSON:
   "synthesis_strategy": "merge|vote|best|sequential"
 }`;
 
-export interface OrchestrationDeps {
+interface OrchestrationDeps {
   llm: LlmProvider;
   executeTool: (call: ToolCall, runId: string) => Promise<ToolResult>;
   createAgentRun: (input: AgentRunInput) => Promise<AgentRun>;
   availableTools: LlmToolDefinition[];
 }
 
-export interface OrchestrationResult {
+interface OrchestrationResult {
   id: string;
   task: string;
   subtaskCount: number;
@@ -42,7 +42,7 @@ export interface OrchestrationResult {
   durationMs: number;
 }
 
-export class OrchestrationEngine {
+class OrchestrationEngine {
   private pool: AgentPool;
   private factory: DynamicAgentFactory;
   private llm: LlmProvider;

@@ -5,10 +5,10 @@ import { visualWorkflows as vwRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'visual-workflow' });
 
-export type VisualNodeType = 'trigger' | 'agent' | 'tool' | 'condition' | 'parallel' | 'delay';
-export type TriggerType = 'webhook' | 'cron' | 'file_change' | 'agent_completion';
+type VisualNodeType = 'trigger' | 'agent' | 'tool' | 'condition' | 'parallel' | 'delay';
+type TriggerType = 'webhook' | 'cron' | 'file_change' | 'agent_completion';
 
-export interface VisualWorkflowNode {
+interface VisualWorkflowNode {
   id: string;
   type: VisualNodeType;
   label: string;
@@ -16,14 +16,14 @@ export interface VisualWorkflowNode {
   position: { x: number; y: number };
 }
 
-export interface VisualWorkflowEdge {
+interface VisualWorkflowEdge {
   id: string;
   from: string;
   to: string;
   condition?: string;
 }
 
-export interface VisualWorkflow {
+interface VisualWorkflow {
   id: string;
   name: string;
   nodes: VisualWorkflowNode[];

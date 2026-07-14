@@ -6,13 +6,13 @@ import type { SharedWorkspace } from './shared-workspace.js';
 
 const log = getLogger().child({ component: 'swarm-supervisor' });
 
-export interface SupervisorDeps {
+interface SupervisorDeps {
   llm: LlmProvider;
   messageBus: MessageBus;
   workspace: SharedWorkspace;
 }
 
-export interface SupervisorDecision {
+interface SupervisorDecision {
   action: 'continue' | 'reassign' | 'add_task' | 'remove_task' | 'abort';
   reason: string;
   targetSubTaskId?: string;

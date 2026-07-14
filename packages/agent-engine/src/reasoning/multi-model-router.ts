@@ -5,9 +5,9 @@ import { modelRouterUsage as mruRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'multi-model-router' });
 
-export type RouterModelTier = 'slm' | 'medium' | 'large' | 'xlarge';
+type RouterModelTier = 'slm' | 'medium' | 'large' | 'xlarge';
 
-export interface RouterModelConfig {
+interface RouterModelConfig {
   id: string;
   tier: RouterModelTier;
   provider: string;
@@ -18,7 +18,7 @@ export interface RouterModelConfig {
   capabilities: string[];
 }
 
-export interface RoutingDecision {
+interface RoutingDecision {
   modelId: string;
   tier: RouterModelTier;
   reasoning: string;
@@ -28,7 +28,7 @@ export interface RoutingDecision {
   routingFactors: Record<string, number>;
 }
 
-export interface RoutingStats {
+interface RoutingStats {
   totalRequests: number;
   byTier: Array<{ tier: RouterModelTier; count: number; pct: number }>;
   byModel: Array<{ modelId: string; count: number }>;

@@ -3,7 +3,7 @@ import type { ToolResult } from './types.js';
 
 const log = getLogger().child({ component: 'tool-registry' });
 
-export interface ToolHandler {
+interface ToolHandler {
   (params: unknown): Promise<unknown>;
 }
 

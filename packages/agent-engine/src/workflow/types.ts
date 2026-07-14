@@ -56,7 +56,7 @@ export interface Workflow {
   updatedAt: Date;
 }
 
-export type WorkflowStatus = 'pending' | 'running' | 'completed' | 'failed' | 'paused';
+type WorkflowStatus = 'pending' | 'running' | 'completed' | 'failed' | 'paused';
 
 export interface WorkflowRunState {
   workflowId: string;

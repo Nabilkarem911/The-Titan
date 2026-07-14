@@ -6,7 +6,7 @@ import { digitalTwinSnapshots as dtsRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'digital-twin' });
 
-export interface SystemSnapshot {
+interface SystemSnapshot {
   timestamp: Date;
   cpuUsage: number;
   memoryTotal: number;
@@ -19,7 +19,7 @@ export interface SystemSnapshot {
   customMetrics?: Record<string, number>;
 }
 
-export interface TrendAnalysis {
+interface TrendAnalysis {
   metric: string;
   currentValue: number;
   trend: 'increasing' | 'decreasing' | 'stable';
@@ -31,7 +31,7 @@ export interface TrendAnalysis {
   recommendation: string;
 }
 
-export interface AnomalyDetection {
+interface AnomalyDetection {
   metric: string;
   value: number;
   baseline: number;
@@ -42,7 +42,7 @@ export interface AnomalyDetection {
   description: string;
 }
 
-export interface WhatIfScenario {
+interface WhatIfScenario {
   id: string;
   name: string;
   action: string;
@@ -54,7 +54,7 @@ export interface WhatIfScenario {
   duration: string;
 }
 
-export interface DigitalTwinState {
+interface DigitalTwinState {
   snapshotCount: number;
   entityCount: number;
   relationCount: number;
@@ -64,7 +64,7 @@ export interface DigitalTwinState {
   alerts: PredictiveAlert[];
 }
 
-export interface PredictiveAlert {
+interface PredictiveAlert {
   id: string;
   severity: 'info' | 'warning' | 'critical';
   metric: string;
@@ -372,14 +372,14 @@ export class DigitalTwin {
 
 let globalTwin: DigitalTwin | null = null;
 
-export function getDigitalTwin(): DigitalTwin {
+function getDigitalTwin(): DigitalTwin {
   if (!globalTwin) {
     globalTwin = new DigitalTwin();
   }
   return globalTwin;
 }
 
-export function initDigitalTwin(graph?: EnvironmentGraph): DigitalTwin {
+function initDigitalTwin(graph?: EnvironmentGraph): DigitalTwin {
   globalTwin = new DigitalTwin(graph);
   return globalTwin;
 }

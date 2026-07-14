@@ -6,7 +6,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'neuro-symbolic' });
 
-export interface SymbolicRule {
+interface SymbolicRule {
   id: string;
   name: string;
   condition: string;
@@ -17,13 +17,13 @@ export interface SymbolicRule {
   timesApplied: number;
 }
 
-export interface NeuralPrediction {
+interface NeuralPrediction {
   symbol: string;
   confidence: number;
   reasoning: string;
 }
 
-export interface NeuroSymbolicResult {
+interface NeuroSymbolicResult {
   id: string;
   query: string;
   neuralPredictions: NeuralPrediction[];

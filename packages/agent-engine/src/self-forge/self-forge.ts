@@ -8,7 +8,7 @@ import { ToolRegistrar } from './tool-registrar.js';
 
 const log = getLogger().child({ component: 'self-forge' });
 
-export interface ForgeResult {
+interface ForgeResult {
   success: boolean;
   toolName?: string;
   error?: string;

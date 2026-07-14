@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'co-evolution' });
 
-export interface CurriculumTask {
+interface CurriculumTask {
   id: string;
   description: string;
   difficulty: number;
@@ -14,7 +14,7 @@ export interface CurriculumTask {
   createdAt: Date;
 }
 
-export interface ExecutionResult {
+interface ExecutionResult {
   id: string;
   taskId: string;
   success: boolean;
@@ -24,7 +24,7 @@ export interface ExecutionResult {
   lessonsLearned: string[];
 }
 
-export interface CoEvolutionState {
+interface CoEvolutionState {
   currentDifficulty: number;
   tasksGenerated: number;
   tasksSolved: number;

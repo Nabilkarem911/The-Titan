@@ -5,7 +5,7 @@ import type { DigitalTwin } from './digital-twin.js';
 
 const log = getLogger().child({ component: 'what-if-engine' });
 
-export interface WhatIfResult {
+interface WhatIfResult {
   scenarios: Array<{
     id: string;
     name: string;

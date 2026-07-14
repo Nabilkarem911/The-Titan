@@ -5,7 +5,7 @@ import type { LlmProvider, AgentRun } from '../types.js';
 
 const log = getLogger().child({ component: 'self-improver' });
 
-export interface ImprovementProposal {
+interface ImprovementProposal {
   id: string;
   category: 'prompt' | 'strategy' | 'tool_usage' | 'planning' | 'reflection';
   description: string;
@@ -15,7 +15,7 @@ export interface ImprovementProposal {
   createdAt: Date;
 }
 
-export interface ImprovementArchive {
+interface ImprovementArchive {
   proposals: ImprovementProposal[];
   applied: ImprovementProposal[];
   rejected: ImprovementProposal[];

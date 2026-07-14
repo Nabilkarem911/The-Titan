@@ -6,7 +6,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'benchmarking-suite' });
 
-export interface BenchmarkTask {
+interface BenchmarkTask {
   id: string;
   name: string;
   category: string;
@@ -18,7 +18,7 @@ export interface BenchmarkTask {
   maxSteps: number;
 }
 
-export interface BenchmarkResult {
+interface BenchmarkResult {
   id: string;
   taskId: string;
   taskName: string;
@@ -40,7 +40,7 @@ export interface BenchmarkResult {
   createdAt: Date;
 }
 
-export interface BenchmarkSuiteResult {
+interface BenchmarkSuiteResult {
   id: string;
   suiteName: string;
   totalTasks: number;
@@ -56,7 +56,7 @@ export interface BenchmarkSuiteResult {
   completedAt: Date;
 }
 
-export interface BenchmarkStats {
+interface BenchmarkStats {
   totalSuites: number;
   totalTasks: number;
   totalPassed: number;

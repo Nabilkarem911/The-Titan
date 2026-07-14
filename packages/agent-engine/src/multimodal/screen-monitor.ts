@@ -5,7 +5,7 @@ import { screenAlerts as scrRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'screen-monitor' });
 
-export interface ScreenAlert {
+interface ScreenAlert {
   id: string;
   timestamp: Date;
   type: 'error' | 'warning' | 'info' | 'change';
@@ -14,7 +14,7 @@ export interface ScreenAlert {
   screenshotHash?: string;
 }
 
-export interface WatchConfig {
+interface WatchConfig {
   intervalMs: number;
   watchFor: string[];
   alertThreshold: number;

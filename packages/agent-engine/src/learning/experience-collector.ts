@@ -17,7 +17,7 @@ export interface Experience {
   timestamp: Date;
 }
 
-export interface LearningInsight {
+interface LearningInsight {
   type: 'strategy_preference' | 'tool_preference' | 'error_pattern' | 'performance';
   description: string;
   confidence: number;

@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'meta-evolution' });
 
-export interface EvolutionEntry {
+interface EvolutionEntry {
   id: string;
   timestamp: Date;
   promptBefore: string;
@@ -17,7 +17,7 @@ export interface EvolutionEntry {
   domain: string;
 }
 
-export interface ABTestResult {
+interface ABTestResult {
   id: string;
   variantA: string;
   variantB: string;
@@ -27,7 +27,7 @@ export interface ABTestResult {
   confidence: number;
 }
 
-export interface CrossDomainTransfer {
+interface CrossDomainTransfer {
   id: string;
   sourceDomain: string;
   targetDomain: string;

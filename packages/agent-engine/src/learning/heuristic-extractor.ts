@@ -19,7 +19,7 @@ export interface Heuristic {
   lastUsed: Date | null;
 }
 
-export interface HeuristicMatch {
+interface HeuristicMatch {
   heuristic: Heuristic;
   relevanceScore: number;
   matchedKeywords: string[];
@@ -34,7 +34,7 @@ export interface ExtractionResult {
   createdAt: Date;
 }
 
-export interface HeuristicStats {
+interface HeuristicStats {
   totalHeuristics: number;
   fromSuccess: number;
   fromFailure: number;

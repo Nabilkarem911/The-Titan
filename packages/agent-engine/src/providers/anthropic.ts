@@ -4,7 +4,7 @@ import type { LlmProvider, LlmMessage, LlmCompletion, LlmToolDefinition, ToolCal
 
 const log = getLogger().child({ component: 'llm-anthropic' });
 
-export interface AnthropicProviderConfig {
+interface AnthropicProviderConfig {
   apiKey: string;
   model: string;
   baseUrl?: string;

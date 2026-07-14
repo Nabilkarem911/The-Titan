@@ -11,7 +11,7 @@ const log = getLogger().child({ component: 'self-rewriter' });
 // ===== Phase 1.1: Source-Level Self-Rewriter (MOSS-inspired) =====
 // Full pipeline: diagnosis → planning → implementation → verification → deployment
 
-export type RewritePhase =
+type RewritePhase =
   | 'diagnosis'
   | 'planning'
   | 'implementation'
@@ -20,7 +20,7 @@ export type RewritePhase =
   | 'completed'
   | 'failed';
 
-export interface DiagnosisResult {
+interface DiagnosisResult {
   bottlenecks: Array<{
     module: string;
     issue: string;
@@ -32,7 +32,7 @@ export interface DiagnosisResult {
   healthScore: number; // 0-100
 }
 
-export interface RewritePlan {
+interface RewritePlan {
   id: string;
   targetModule: string;
   diagnosisId: string;
@@ -47,7 +47,7 @@ export interface RewritePlan {
   estimatedImprovement: number;
 }
 
-export interface RewriteVersion {
+interface RewriteVersion {
   id: string;
   version: number;
   description: string;
@@ -63,7 +63,7 @@ export interface RewriteVersion {
   deployedAt?: Date;
 }
 
-export interface RewriteProposal {
+interface RewriteProposal {
   id: string;
   targetModule: string;
   currentPerformance: number;
@@ -74,7 +74,7 @@ export interface RewriteProposal {
   riskLevel: 'low' | 'medium' | 'high';
 }
 
-export interface RewriteResult {
+interface RewriteResult {
   proposalId: string;
   accepted: boolean;
   version: number;
@@ -88,7 +88,7 @@ export interface RewriteResult {
   reasoning: string;
 }
 
-export interface SourceRewritePipeline {
+interface SourceRewritePipeline {
   id: string;
   diagnosis: DiagnosisResult | null;
   plan: RewritePlan | null;
@@ -99,16 +99,16 @@ export interface SourceRewritePipeline {
   completedAt?: Date;
 }
 
-export interface HealthProbe {
+interface HealthProbe {
   name: string;
   passed: boolean;
   details: string;
   durationMs: number;
 }
 
-export type HealthProbeFn = () => Promise<HealthProbe[]>;
-export type SandboxTestFn = (code: string) => Promise<{ passed: boolean; score: number; details?: string }>;
-export type HumanApprovalFn = (plan: RewritePlan) => Promise<boolean>;
+type HealthProbeFn = () => Promise<HealthProbe[]>;
+type SandboxTestFn = (code: string) => Promise<{ passed: boolean; score: number; details?: string }>;
+type HumanApprovalFn = (plan: RewritePlan) => Promise<boolean>;
 
 const ANALYSIS_PROMPT = `You are a recursive self-improvement agent. Analyze the agent's recent performance and propose a concrete code improvement.
 

@@ -6,7 +6,7 @@ import { webMcpInvocations as wmiRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'web-mcp' });
 
-export interface WebMCPServer {
+interface WebMCPServer {
   id: string;
   name: string;
   url: string;
@@ -18,14 +18,14 @@ export interface WebMCPServer {
   tools: WebMCPTool[];
 }
 
-export interface WebMCPTool {
+interface WebMCPTool {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
   serverId: string;
 }
 
-export interface WebMCPInvocationResult {
+interface WebMCPInvocationResult {
   id: string;
   serverId: string;
   toolName: string;
@@ -37,7 +37,7 @@ export interface WebMCPInvocationResult {
   timestamp: Date;
 }
 
-export interface WebMCPStats {
+interface WebMCPStats {
   totalServers: number;
   connectedServers: number;
   totalTools: number;

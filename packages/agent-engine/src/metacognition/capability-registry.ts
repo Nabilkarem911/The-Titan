@@ -15,7 +15,7 @@ export interface Capability {
   dependencies?: string[];
 }
 
-export type CapabilityCategory =
+type CapabilityCategory =
   | 'reasoning'
   | 'memory'
   | 'tools'
@@ -35,7 +35,7 @@ export type CapabilityCategory =
   | 'workflow'
   | 'integrations';
 
-export interface CapabilitySnapshot {
+interface CapabilitySnapshot {
   total: number;
   enabled: number;
   byCategory: Record<string, number>;

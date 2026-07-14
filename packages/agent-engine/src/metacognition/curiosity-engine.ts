@@ -19,7 +19,7 @@ export interface Skill {
   knowledge: string;
 }
 
-export interface ExplorationTask {
+interface ExplorationTask {
   id: string;
   topic: string;
   reason: string;
@@ -31,7 +31,7 @@ export interface ExplorationTask {
   completedAt?: Date;
 }
 
-export interface CuriosityStats {
+interface CuriosityStats {
   totalSkills: number;
   totalExplorations: number;
   successfulExplorations: number;

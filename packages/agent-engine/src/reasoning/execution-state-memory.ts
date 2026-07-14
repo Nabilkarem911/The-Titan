@@ -6,7 +6,7 @@ import { executionCheckpoints as ecRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'execution-state-memory' });
 
-export interface ExecutionCheckpoint {
+interface ExecutionCheckpoint {
   id: string;
   runId: string;
   stepIndex: number;
@@ -24,7 +24,7 @@ export interface ExecutionCheckpoint {
   metadata: Record<string, unknown>;
 }
 
-export interface ExecutionStateStats {
+interface ExecutionStateStats {
   totalCheckpoints: number;
   activeRuns: number;
   completedRuns: number;

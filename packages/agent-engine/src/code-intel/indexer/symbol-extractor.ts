@@ -2,7 +2,7 @@ import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'symbol-extractor' });
 
-export type SymbolKind = 'function' | 'class' | 'interface' | 'type' | 'enum' | 'variable' | 'export' | 'import';
+type SymbolKind = 'function' | 'class' | 'interface' | 'type' | 'enum' | 'variable' | 'export' | 'import';
 
 export interface CodeSymbol {
   name: string;

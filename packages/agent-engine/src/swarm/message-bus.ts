@@ -4,7 +4,7 @@ import { swarmMessages as smRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'swarm-message-bus' });
 
-export interface SwarmMessage {
+interface SwarmMessage {
   id: string;
   from: string;
   to: string | 'broadcast';

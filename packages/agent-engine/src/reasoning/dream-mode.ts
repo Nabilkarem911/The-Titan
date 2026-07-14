@@ -8,7 +8,7 @@ import type { ExperienceCollector, Experience } from '../learning/experience-col
 
 const log = getLogger().child({ component: 'dream-mode' });
 
-export interface DreamInsight {
+interface DreamInsight {
   id: string;
   type: 'pattern' | 'preference' | 'stale_fact' | 'skill_gap' | 'optimization';
   content: string;
@@ -318,6 +318,6 @@ export function getDreamMode(): DreamMode | null {
   return globalDreamMode;
 }
 
-export function setDreamMode(mode: DreamMode): void {
+function setDreamMode(mode: DreamMode): void {
   globalDreamMode = mode;
 }

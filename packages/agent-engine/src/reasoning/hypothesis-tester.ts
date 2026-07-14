@@ -19,7 +19,7 @@ export interface Hypothesis {
   testedAt?: Date;
 }
 
-export interface HypothesisTestResult {
+interface HypothesisTestResult {
   hypothesis: Hypothesis;
   testOutput: string;
   conclusion: 'confirmed' | 'refuted' | 'inconclusive';

@@ -4,7 +4,7 @@ import type { SwarmAgent, AgentRole } from '../swarm/types.js';
 
 const log = getLogger().child({ component: 'team-builder' });
 
-export interface TeamTemplate {
+interface TeamTemplate {
   name: string;
   description: string;
   roles: Array<{ role: AgentRole; name: string; description: string; systemPrompt?: string; tools?: string[]; maxSteps?: number }>;

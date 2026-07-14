@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 const log = getLogger().child({ component: 'cross-user-learner' });
 
-export interface SharedPattern {
+interface SharedPattern {
   id: string;
   pattern: string;
   category: 'task' | 'tool_preference' | 'communication_style' | 'workflow' | 'error_avoidance';
@@ -16,7 +16,7 @@ export interface SharedPattern {
   anonymized: true;
 }
 
-export interface CrossUserInsight {
+interface CrossUserInsight {
   insight: string;
   confidence: number;
   basedOnUsers: number;

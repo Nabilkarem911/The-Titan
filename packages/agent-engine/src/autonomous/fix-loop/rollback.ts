@@ -3,14 +3,14 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 const log = getLogger().child({ component: 'rollback' });
 
-export interface Snapshot {
+interface Snapshot {
   id: string;
   files: Map<string, string>;
   timestamp: Date;
   description: string;
 }
 
-export class RollbackManager {
+class RollbackManager {
   private snapshots: Snapshot[] = [];
   private maxSnapshots = 10;
 

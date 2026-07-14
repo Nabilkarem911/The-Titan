@@ -5,7 +5,7 @@ import { EventEmitter } from 'node:events';
 
 const log = getLogger().child({ component: 'web-intelligence' });
 
-export interface WebSearchResult {
+interface WebSearchResult {
   id: string;
   title: string;
   url: string;
@@ -15,7 +15,7 @@ export interface WebSearchResult {
   source: string;
 }
 
-export interface ScrapeResult {
+interface ScrapeResult {
   id: string;
   url: string;
   title: string;
@@ -36,7 +36,7 @@ export interface ScrapeResult {
   loadTimeMs: number;
 }
 
-export interface CrawlResult {
+interface CrawlResult {
   id: string;
   rootUrl: string;
   pages: ScrapeResult[];
@@ -46,7 +46,7 @@ export interface CrawlResult {
   success: boolean;
 }
 
-export interface InteractResult {
+interface InteractResult {
   id: string;
   url: string;
   action: string;
@@ -58,7 +58,7 @@ export interface InteractResult {
   timestamp: Date;
 }
 
-export interface WebIntelligenceStats {
+interface WebIntelligenceStats {
   totalSearches: number;
   totalScrapes: number;
   totalCrawls: number;
@@ -69,7 +69,7 @@ export interface WebIntelligenceStats {
   recentUrls: string[];
 }
 
-export interface WebIntelligenceConfig {
+interface WebIntelligenceConfig {
   apiKey?: string;
   baseUrl?: string;
   maxResults: number;

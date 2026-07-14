@@ -6,7 +6,7 @@ const log = getLogger().child({ component: 'multi-model-router' });
 
 export type TaskComplexity = 'simple' | 'medium' | 'complex' | 'ultra';
 
-export type TaskCategory =
+type TaskCategory =
   | 'classification'
   | 'extraction'
   | 'formatting'
@@ -35,7 +35,7 @@ export interface ModelConfig {
   taskCategories?: TaskCategory[];
 }
 
-export interface RoutingPolicy {
+interface RoutingPolicy {
   strategy: 'cheapest' | 'fastest' | 'best' | 'round_robin' | 'smart';
   fallbackEnabled: boolean;
   maxRetries: number;
@@ -44,7 +44,7 @@ export interface RoutingPolicy {
   degradeOnBudgetExceeded?: boolean;
 }
 
-export interface RoutingTrace {
+interface RoutingTrace {
   selectedModel: string;
   taskComplexity: TaskComplexity;
   taskCategory: TaskCategory;
@@ -59,7 +59,7 @@ export interface RoutingTrace {
   timestamp: Date;
 }
 
-export interface ProviderRoutingStats {
+interface ProviderRoutingStats {
   totalRequests: number;
   totalTokensUsed: number;
   totalCost: number;

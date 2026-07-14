@@ -5,7 +5,7 @@ import { multilayerGuardrailResults as mlgrRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'multi-layer-guardrails' });
 
-export type GuardrailLayerType =
+type GuardrailLayerType =
   | 'input_validation'
   | 'prompt_injection'
   | 'pii_filter'
@@ -14,9 +14,9 @@ export type GuardrailLayerType =
   | 'rate_limit'
   | 'custom';
 
-export type GuardrailAction = 'allow' | 'block' | 'warn' | 'sanitize';
+type GuardrailAction = 'allow' | 'block' | 'warn' | 'sanitize';
 
-export interface GuardrailLayerResult {
+interface GuardrailLayerResult {
   layer: GuardrailLayerType;
   action: GuardrailAction;
   confidence: number;
@@ -26,7 +26,7 @@ export interface GuardrailLayerResult {
   timestamp: Date;
 }
 
-export interface MultiLayerGuardrailResult {
+interface MultiLayerGuardrailResult {
   id: string;
   input: string;
   output?: string;
@@ -39,7 +39,7 @@ export interface MultiLayerGuardrailResult {
   timestamp: Date;
 }
 
-export interface GuardrailLayerConfig {
+interface GuardrailLayerConfig {
   type: GuardrailLayerType;
   enabled: boolean;
   severity: 'low' | 'medium' | 'high' | 'critical';

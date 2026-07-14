@@ -3,21 +3,21 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'meeting-protocol' });
 
-export interface MeetingAgenda {
+interface MeetingAgenda {
   topic: string;
   context: string;
   participants: string[];
   maxRounds: number;
 }
 
-export interface MeetingMessage {
+interface MeetingMessage {
   from: string;
   content: string;
   round: number;
   timestamp: Date;
 }
 
-export interface MeetingResult {
+interface MeetingResult {
   topic: string;
   rounds: number;
   messages: MeetingMessage[];
@@ -26,7 +26,7 @@ export interface MeetingResult {
   consensus: string;
 }
 
-export class MeetingProtocol {
+class MeetingProtocol {
   constructor(private llm: LlmProvider) {}
 
   async conduct(agenda: MeetingAgenda): Promise<MeetingResult> {

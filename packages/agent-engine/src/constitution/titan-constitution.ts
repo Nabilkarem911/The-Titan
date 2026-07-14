@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'constitution' });
 
-export interface ConstitutionPrinciple {
+interface ConstitutionPrinciple {
   id: string;
   title: string;
   content: string;
@@ -17,7 +17,7 @@ export interface ConstitutionPrinciple {
   reasoning: string;
 }
 
-export interface DeliberationRecord {
+interface DeliberationRecord {
   id: string;
   topic: string;
   proposal: string;
@@ -29,7 +29,7 @@ export interface DeliberationRecord {
   timestamp: Date;
 }
 
-export interface ConstitutionalAmendment {
+interface ConstitutionalAmendment {
   id: string;
   principleId: string;
   proposedBy: string;

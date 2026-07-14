@@ -1,7 +1,7 @@
 import type { AgentRunInput, AgentRun, LlmToolDefinition } from '../types.js';
 
-export type SpawnMode = 'foreground' | 'background';
-export type ChildStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+type SpawnMode = 'foreground' | 'background';
+type ChildStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 export interface SpawnRequest {
   name: string;

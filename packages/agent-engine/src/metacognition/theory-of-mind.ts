@@ -6,7 +6,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'theory-of-mind' });
 
-export interface BeliefState {
+interface BeliefState {
   entityId: string;
   beliefs: Record<string, unknown>;
   desires: string[];
@@ -18,7 +18,7 @@ export interface BeliefState {
   updatedAt: Date;
 }
 
-export interface PerspectiveModel {
+interface PerspectiveModel {
   id: string;
   entityId: string;
   entityType: 'user' | 'agent' | 'system';
@@ -28,7 +28,7 @@ export interface PerspectiveModel {
   createdAt: Date;
 }
 
-export interface ToMAnalysisResult {
+interface ToMAnalysisResult {
   id: string;
   targetEntityId: string;
   inferredBeliefs: Record<string, unknown>;
@@ -42,7 +42,7 @@ export interface ToMAnalysisResult {
   createdAt: Date;
 }
 
-export interface ToMStats {
+interface ToMStats {
   totalAnalyses: number;
   avgConfidence: number;
   trackedEntities: number;

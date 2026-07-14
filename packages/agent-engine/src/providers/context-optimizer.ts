@@ -22,7 +22,7 @@ export interface ContextBudget {
   reserve: number;    // percentage reserved for response
 }
 
-export interface ContextStats {
+interface ContextStats {
   originalTokenEstimate: number;
   optimizedTokenEstimate: number;
   tokensSaved: number;
@@ -31,7 +31,7 @@ export interface ContextStats {
   outputsTruncated: number;
 }
 
-export interface ToolUsageStats {
+interface ToolUsageStats {
   toolName: string;
   callCount: number;
   lastUsedStep: number;
@@ -45,7 +45,7 @@ export interface ContextItem {
   relevanceScore?: number;
 }
 
-export interface LearnedCompressionResult {
+interface LearnedCompressionResult {
   items: ContextItem[];
   tokensSaved: number;
   tokensUsed: number;

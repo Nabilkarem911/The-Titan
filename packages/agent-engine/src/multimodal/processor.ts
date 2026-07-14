@@ -5,7 +5,7 @@ import { extname, basename } from 'node:path';
 
 const log = getLogger().child({ component: 'multimodal-processor' });
 
-export interface ImageAnalysis {
+interface ImageAnalysis {
   filePath: string;
   description: string;
   extractedText?: string;
@@ -17,7 +17,7 @@ export interface ImageAnalysis {
   confidence: number;
 }
 
-export interface PdfAnalysis {
+interface PdfAnalysis {
   filePath: string;
   pageCount: number;
   extractedText: string;
@@ -27,7 +27,7 @@ export interface PdfAnalysis {
   documentType: 'invoice' | 'report' | 'article' | 'contract' | 'manual' | 'unknown';
 }
 
-export interface MultimodalResult {
+interface MultimodalResult {
   type: 'image' | 'pdf' | 'unsupported';
   analysis?: ImageAnalysis | PdfAnalysis;
   error?: string;
@@ -36,7 +36,7 @@ export interface MultimodalResult {
 const SUPPORTED_IMAGE_FORMATS = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg'];
 const SUPPORTED_PDF_FORMATS = ['.pdf'];
 
-export class MultimodalProcessor {
+class MultimodalProcessor {
   private visionEnabled: boolean;
 
   constructor(

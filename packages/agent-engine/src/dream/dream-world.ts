@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'dream-world' });
 
-export interface DreamCycle {
+interface DreamCycle {
   id: string;
   startTime: Date;
   endTime: Date | null;
@@ -20,21 +20,21 @@ export interface DreamCycle {
   insightPropagated: boolean;
 }
 
-export interface VisualDream {
+interface VisualDream {
   id: string;
   description: string;
   generatedImagePrompt: string;
   analysisResult: string;
 }
 
-export interface CodeDream {
+interface CodeDream {
   id: string;
   originalCode: string;
   alternativeArchitecture: string;
   analysisResult: string;
 }
 
-export interface CrossModalSynthesis {
+interface CrossModalSynthesis {
   id: string;
   modalA: string;
   modalB: string;
@@ -42,7 +42,7 @@ export interface CrossModalSynthesis {
   description: string;
 }
 
-export interface DreamHypothesis {
+interface DreamHypothesis {
   id: string;
   hypothesis: string;
   testable: boolean;
@@ -50,14 +50,14 @@ export interface DreamHypothesis {
   confidence: number;
 }
 
-export interface CreativeDreamOutput {
+interface CreativeDreamOutput {
   id: string;
   type: 'art' | 'music' | 'code';
   content: string;
   inspiredBy: string;
 }
 
-export interface MemoryConsolidation {
+interface MemoryConsolidation {
   id: string;
   memoriesMerged: number;
   memoriesForgotten: number;
@@ -65,7 +65,7 @@ export interface MemoryConsolidation {
   description: string;
 }
 
-export interface DreamWorldInsight {
+interface DreamWorldInsight {
   id: string;
   insight: string;
   category: string;

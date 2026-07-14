@@ -4,7 +4,7 @@ import { environmentEntities as eeRepo, environmentEvents as evRepo, environment
 
 const log = getLogger().child({ component: 'world-model-graph' });
 
-export interface EnvironmentEntity {
+interface EnvironmentEntity {
   id: string;
   type: 'server' | 'container' | 'database' | 'api' | 'file' | 'service' | 'user' | 'tool' | 'process';
   name: string;
@@ -12,7 +12,7 @@ export interface EnvironmentEntity {
   lastObserved: Date;
 }
 
-export interface CausalRelation {
+interface CausalRelation {
   id: string;
   sourceId: string;
   targetId: string;

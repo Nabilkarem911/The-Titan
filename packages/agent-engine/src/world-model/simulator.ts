@@ -5,7 +5,7 @@ import type { EnvironmentGraph, ObservedEvent } from './environment-graph.js';
 
 const log = getLogger().child({ component: 'world-simulator' });
 
-export interface SimulationResult {
+interface SimulationResult {
   action: string;
   predictedOutcome: 'success' | 'failure' | 'risky' | 'unknown';
   confidence: number;

@@ -5,7 +5,7 @@ import { EventEmitter } from 'node:events';
 
 const log = getLogger().child({ component: 'collaboration-session' });
 
-export interface CollaborationMessage {
+interface CollaborationMessage {
   id: string;
   sessionId: string;
   agentId: string;
@@ -16,7 +16,7 @@ export interface CollaborationMessage {
   replyTo?: string;
 }
 
-export interface CollaborationAgent {
+interface CollaborationAgent {
   id: string;
   role: string;
   name: string;
@@ -26,7 +26,7 @@ export interface CollaborationAgent {
   joinedAt: Date;
 }
 
-export interface CollaborationSession {
+interface CollaborationSession {
   id: string;
   topic: string;
   description: string;
@@ -38,7 +38,7 @@ export interface CollaborationSession {
   updatedAt: Date;
 }
 
-export interface SessionResult {
+interface SessionResult {
   sessionId: string;
   status: CollaborationSession['status'];
   agentCount: number;
@@ -49,7 +49,7 @@ export interface SessionResult {
   durationMs: number;
 }
 
-export class CollaborationSessionManager extends EventEmitter {
+class CollaborationSessionManager extends EventEmitter {
   private sessions = new Map<string, CollaborationSession>();
   private maxMessages = 1000;
   private maxSessions = 100;

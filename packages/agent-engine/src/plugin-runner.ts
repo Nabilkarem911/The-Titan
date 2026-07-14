@@ -4,7 +4,7 @@ import { Script, createContext } from 'node:vm';
 
 const log = getLogger().child({ component: 'plugin-runner' });
 
-export interface PluginToolMeta {
+interface PluginToolMeta {
   name: string;
   description: string;
   tags?: string[];
@@ -25,7 +25,7 @@ export interface PluginManifest {
   checksum?: string;
 }
 
-export interface LoadedPlugin {
+interface LoadedPlugin {
   manifest: PluginManifest;
   handlers: Map<string, (params: unknown) => Promise<unknown>>;
   loadedAt: Date;

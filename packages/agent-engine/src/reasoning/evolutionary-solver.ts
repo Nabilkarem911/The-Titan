@@ -5,7 +5,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'evolutionary-solver' });
 
-export interface SolutionCandidate {
+interface SolutionCandidate {
   id: string;
   generation: number;
   parentId?: string;
@@ -17,7 +17,7 @@ export interface SolutionCandidate {
   createdAt: Date;
 }
 
-export interface GenerationResult {
+interface GenerationResult {
   generation: number;
   populationSize: number;
   bestScore: number;
@@ -26,7 +26,7 @@ export interface GenerationResult {
   improved: boolean;
 }
 
-export interface EvolutionResult {
+interface EvolutionResult {
   taskId: string;
   problem: string;
   generations: GenerationResult[];

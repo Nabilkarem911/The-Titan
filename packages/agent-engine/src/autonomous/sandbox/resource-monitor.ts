@@ -2,7 +2,7 @@ import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'resource-monitor' });
 
-export interface ResourceUsage {
+interface ResourceUsage {
   cpuPercent: number;
   memoryMb: number;
   memoryPercent: number;
@@ -11,7 +11,7 @@ export interface ResourceUsage {
   timestamp: Date;
 }
 
-export interface ResourceLimits {
+interface ResourceLimits {
   maxMemoryMb: number;
   maxCpuPercent: number;
   maxDiskPercent: number;
@@ -23,7 +23,7 @@ const DEFAULT_LIMITS: ResourceLimits = {
   maxDiskPercent: 90,
 };
 
-export class ResourceMonitor {
+class ResourceMonitor {
   private limits: ResourceLimits;
   private history: ResourceUsage[] = [];
   private maxHistory = 100;

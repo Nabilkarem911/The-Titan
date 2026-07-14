@@ -4,7 +4,7 @@ import type { MemoryEntry } from '../layers/types.js';
 
 const log = getLogger().child({ component: 'memory-summarizer' });
 
-export interface SummarizerDeps {
+interface SummarizerDeps {
   llm: { complete(messages: Array<{ role: string; content: string }>): Promise<{ content: string }> };
 }
 

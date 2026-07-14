@@ -6,7 +6,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'self-play' });
 
-export interface SelfPlayTask {
+interface SelfPlayTask {
   id: string;
   description: string;
   difficulty: number;
@@ -16,7 +16,7 @@ export interface SelfPlayTask {
   createdAt: Date;
 }
 
-export interface SelfPlayResult {
+interface SelfPlayResult {
   taskId: string;
   solution: string;
   success: boolean;
@@ -26,7 +26,7 @@ export interface SelfPlayResult {
   trajectory: Array<{ step: string; thought: string; action: string }>;
 }
 
-export interface EvolutionaryEntry {
+interface EvolutionaryEntry {
   id: string;
   taskId: string;
   domain: string;
@@ -38,7 +38,7 @@ export interface EvolutionaryEntry {
   trajectory: SelfPlayResult['trajectory'];
 }
 
-export interface CapabilityHorizon {
+interface CapabilityHorizon {
   domain: string;
   currentLevel: number;
   maxAchieved: number;

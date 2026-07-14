@@ -6,7 +6,7 @@ import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'temporal-intelligence' });
 
-export interface TemporalEvent {
+interface TemporalEvent {
   id: string;
   timestamp: Date;
   description: string;
@@ -14,7 +14,7 @@ export interface TemporalEvent {
   metadata: Record<string, unknown>;
 }
 
-export interface TimelineBranch {
+interface TimelineBranch {
   id: string;
   name: string;
   probability: number;
@@ -23,7 +23,7 @@ export interface TimelineBranch {
   confidence: number;
 }
 
-export interface TemporalPrediction {
+interface TemporalPrediction {
   id: string;
   event: string;
   confidence: number;
@@ -32,7 +32,7 @@ export interface TemporalPrediction {
   basedOn: string[];
 }
 
-export interface TemporalPattern {
+interface TemporalPattern {
   id: string;
   pattern: string;
   frequency: 'daily' | 'weekly' | 'monthly' | 'irregular';

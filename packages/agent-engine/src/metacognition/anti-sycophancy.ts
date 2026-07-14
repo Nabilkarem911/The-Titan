@@ -6,9 +6,9 @@ import type { LlmProvider, AgentRun, AgentStep } from '../types.js';
 
 const log = getLogger().child({ component: 'anti-sycophancy' });
 
-export type SycophancyLevel = 'none' | 'low' | 'medium' | 'high';
+type SycophancyLevel = 'none' | 'low' | 'medium' | 'high';
 
-export interface SycophancyAssessment {
+interface SycophancyAssessment {
   id: string;
   level: SycophancyLevel;
   isSycophantic: boolean;
@@ -28,7 +28,7 @@ export interface SycophancyAssessment {
   createdAt: Date;
 }
 
-export interface AntiSycophancyStats {
+interface AntiSycophancyStats {
   totalAssessments: number;
   sycophanticCount: number;
   avgCalibrationGap: number;

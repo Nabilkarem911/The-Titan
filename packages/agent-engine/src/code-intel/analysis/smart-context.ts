@@ -9,7 +9,7 @@ const MAX_CONTEXT_TOKENS = 8000;
 const AVG_CHARS_PER_TOKEN = 4;
 const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * AVG_CHARS_PER_TOKEN;
 
-export interface ContextChunk {
+interface ContextChunk {
   filePath: string;
   content: string;
   relevance: number;

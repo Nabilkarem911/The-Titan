@@ -5,7 +5,7 @@ import { join, dirname, basename } from 'node:path';
 
 const log = getLogger().child({ component: 'skill-md' });
 
-export interface SkillMdFrontmatter {
+interface SkillMdFrontmatter {
   name: string;
   description: string;
   license?: string;
@@ -14,7 +14,7 @@ export interface SkillMdFrontmatter {
   allowedTools?: string[];
 }
 
-export interface SkillMd {
+interface SkillMd {
   id: string;
   frontmatter: SkillMdFrontmatter;
   body: string;
@@ -25,20 +25,20 @@ export interface SkillMd {
   sizeBytes: number;
 }
 
-export interface SkillScript {
+interface SkillScript {
   name: string;
   path: string;
   language: string;
   content?: string;
 }
 
-export interface SkillMatchResult {
+interface SkillMatchResult {
   skill: SkillMd;
   score: number;
   matchedKeywords: string[];
 }
 
-export interface SkillMdStats {
+interface SkillMdStats {
   totalSkills: number;
   totalScripts: number;
   totalResources: number;
