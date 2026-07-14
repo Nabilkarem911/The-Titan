@@ -1,4 +1,4 @@
-export interface JwtDecodeResult {
+interface JwtDecodeResult {
   header: Record<string, unknown>;
   payload: Record<string, unknown>;
   isExpired: boolean;

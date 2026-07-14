@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { JsonRpcRequest, JsonRpcNotification, JsonRpcId } from '@titan/shared';
 
-export type RpcHandler<TParams = unknown, TResult = unknown> = (
+type RpcHandler<TParams = unknown, TResult = unknown> = (
   params: TParams,
   context: RpcContext,
 ) => Promise<TResult> | TResult;
@@ -14,7 +14,7 @@ export interface RpcContext {
   apiKeyId?: string;
 }
 
-export type RpcNotificationHandler<TParams = unknown> = (
+type RpcNotificationHandler<TParams = unknown> = (
   params: TParams,
   context: RpcContext,
 ) => Promise<void> | void;

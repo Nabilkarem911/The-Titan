@@ -1,4 +1,4 @@
-export interface Base64Result {
+interface Base64Result {
   input: string;
   output: string;
   operation: 'encode' | 'decode';

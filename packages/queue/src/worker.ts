@@ -11,7 +11,7 @@ import {
 import { moveToDLQ } from './dlq.js';
 import { incCounter, observeHistogram } from '@titan/observability';
 
-export interface WorkerOptions<TData = unknown, TResult = unknown> {
+interface WorkerOptions<TData = unknown, TResult = unknown> {
   queueName: QueueName;
   processor: Processor<TData, TResult>;
   concurrency?: number;

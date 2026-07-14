@@ -1,8 +1,8 @@
 const log = { info: (..._args: unknown[]) => {}, warn: (..._args: unknown[]) => {} };
 
-export type ServiceHealth = 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
+type ServiceHealth = 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
 
-export interface ServiceStatus {
+interface ServiceStatus {
   name: string;
   status: ServiceHealth;
   latencyMs?: number;
@@ -11,14 +11,14 @@ export interface ServiceStatus {
   critical: boolean;
 }
 
-export interface HealthReport {
+interface HealthReport {
   overall: ServiceHealth;
   services: ServiceStatus[];
   timestamp: Date;
   uptimeMs: number;
 }
 
-export type HealthCheckFn = () => Promise<{ status: ServiceHealth; latencyMs?: number; message?: string }>;
+type HealthCheckFn = () => Promise<{ status: ServiceHealth; latencyMs?: number; message?: string }>;
 
 export class HealthAggregator {
   private checks: Map<string, { fn: HealthCheckFn; critical: boolean }> = new Map();

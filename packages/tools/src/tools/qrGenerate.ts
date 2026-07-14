@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 
-export interface QrGenerateResult {
+interface QrGenerateResult {
   dataUrl: string;
   text: string;
 }

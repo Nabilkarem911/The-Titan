@@ -1,4 +1,4 @@
-export interface CurrencyConvertResult {
+interface CurrencyConvertResult {
   from: string;
   to: string;
   amount: number;

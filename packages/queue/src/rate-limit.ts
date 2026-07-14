@@ -22,7 +22,7 @@ function getLimiter(queue: QueueName): TokenBucketRateLimiter {
   return l;
 }
 
-export interface EnqueueCheckOpts {
+interface EnqueueCheckOpts {
   queue: QueueName;
   userId?: string;
   apiKeyId?: string;

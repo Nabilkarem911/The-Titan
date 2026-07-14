@@ -1,4 +1,4 @@
-export interface CalculateResult {
+interface CalculateResult {
   expression: string;
   result: number;
 }

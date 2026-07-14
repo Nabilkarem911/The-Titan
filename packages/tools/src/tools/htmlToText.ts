@@ -1,4 +1,4 @@
-export interface HtmlToTextResult {
+interface HtmlToTextResult {
   text: string;
   length: number;
   wordCount: number;

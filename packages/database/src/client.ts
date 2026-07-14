@@ -8,7 +8,7 @@ const { Pool: PgPool, types } = pkg;
 
 types.setTypeParser(20, (val) => (val === null ? null : Number(val)));
 
-export interface DbConfig {
+interface DbConfig {
   host: string;
   port: number;
   database: string;

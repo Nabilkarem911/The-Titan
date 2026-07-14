@@ -10,7 +10,7 @@ import {
 } from '@titan/shared';
 import { WebSocketProtocolError } from '@titan/shared';
 
-export function isJsonRpcMessage(value: unknown): value is JsonRpcMessage {
+function isJsonRpcMessage(value: unknown): value is JsonRpcMessage {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
   if (v.jsonrpc !== '2.0') return false;
@@ -33,11 +33,11 @@ export function isNotification(msg: JsonRpcMessage): msg is JsonRpcNotification 
   return 'method' in msg && !('id' in msg);
 }
 
-export function buildSuccess<T>(id: JsonRpcId, result: T): JsonRpcSuccess<T> {
+function buildSuccess<T>(id: JsonRpcId, result: T): JsonRpcSuccess<T> {
   return { jsonrpc: '2.0', id, result };
 }
 
-export function buildError(
+function buildError(
   id: JsonRpcId | null,
   code: number,
   message: string,
@@ -62,7 +62,7 @@ export function buildMethodNotFoundError(id: JsonRpcId, method: string): JsonRpc
   return buildError(id, JSON_RPC_ERROR.METHOD_NOT_FOUND, `Method not found: ${method}`);
 }
 
-export function buildInvalidParamsError(id: JsonRpcId, details?: unknown): JsonRpcError {
+function buildInvalidParamsError(id: JsonRpcId, details?: unknown): JsonRpcError {
   return buildError(id, JSON_RPC_ERROR.INVALID_PARAMS, 'Invalid params', details);
 }
 
@@ -70,11 +70,11 @@ export function buildInternalError(id: JsonRpcId, message = 'Internal error', da
   return buildError(id, JSON_RPC_ERROR.INTERNAL_ERROR, message, data);
 }
 
-export function buildAuthFailedError(id: JsonRpcId | null, message = 'Authentication failed'): JsonRpcError {
+function buildAuthFailedError(id: JsonRpcId | null, message = 'Authentication failed'): JsonRpcError {
   return buildError(id, JSON_RPC_ERROR.AUTH_FAILED, message);
 }
 
-export function buildRateLimitedError(id: JsonRpcId | null, retryAfter?: number): JsonRpcError {
+function buildRateLimitedError(id: JsonRpcId | null, retryAfter?: number): JsonRpcError {
   return buildError(id, JSON_RPC_ERROR.RATE_LIMITED, 'Rate limit exceeded', { retryAfter });
 }
 

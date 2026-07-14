@@ -1,4 +1,4 @@
-export interface WeatherResult {
+interface WeatherResult {
   location: string;
   country: string;
   temperature: number;

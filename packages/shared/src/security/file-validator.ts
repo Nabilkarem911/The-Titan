@@ -1,4 +1,4 @@
-export interface FileValidationResult {
+interface FileValidationResult {
   valid: boolean;
   errors: string[];
   mimeType?: string;

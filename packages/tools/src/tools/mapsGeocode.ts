@@ -1,4 +1,4 @@
-export interface GeocodeResult {
+interface GeocodeResult {
   address: string;
   lat: number;
   lng: number;
@@ -7,7 +7,7 @@ export interface GeocodeResult {
   types: string[];
 }
 
-export interface ReverseGeocodeResult {
+interface ReverseGeocodeResult {
   lat: number;
   lng: number;
   formattedAddress: string;

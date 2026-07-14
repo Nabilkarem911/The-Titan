@@ -1,8 +1,8 @@
 const log = { info: (..._args: unknown[]) => {}, warn: (..._args: unknown[]) => {} };
 
-export type CircuitState = 'closed' | 'open' | 'half_open';
+type CircuitState = 'closed' | 'open' | 'half_open';
 
-export interface CircuitBreakerConfig {
+interface CircuitBreakerConfig {
   failureThreshold: number;
   resetTimeout: number;
   halfOpenMaxCalls: number;

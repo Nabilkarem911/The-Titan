@@ -1,10 +1,10 @@
-export type UserId = string;
-export type WorkspaceId = string;
-export type SessionId = string;
-export type ApiKeyId = string;
-export type WorkspaceMemberId = string;
-export type PluginId = string;
-export type PluginVersionId = string;
+type UserId = string;
+type WorkspaceId = string;
+type SessionId = string;
+type ApiKeyId = string;
+type WorkspaceMemberId = string;
+type PluginId = string;
+type PluginVersionId = string;
 
 export interface User {
   id: UserId;
@@ -63,7 +63,7 @@ export interface ApiKey {
   createdAt: Date;
 }
 
-export interface AuditLog {
+interface AuditLog {
   id: string;
   actorId: UserId | null;
   workspaceId: WorkspaceId | null;
@@ -85,7 +85,7 @@ export interface AuthContext {
   permissions: readonly string[];
 }
 
-export interface PaginatedResult<T> {
+interface PaginatedResult<T> {
   items: T[];
   nextCursor: string | null;
   total: number;

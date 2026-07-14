@@ -1,4 +1,4 @@
-export interface IpLookupResult {
+interface IpLookupResult {
   ip: string;
   country: string;
   countryCode: string;

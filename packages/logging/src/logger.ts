@@ -53,7 +53,7 @@ export function child(bindings: Record<string, unknown>): PinoLogger {
   return getLogger().child(bindings);
 }
 
-export type Logger = PinoLogger;
+type Logger = PinoLogger;
 
 export async function shutdownLogger(): Promise<void> {
   if (rootLogger) {

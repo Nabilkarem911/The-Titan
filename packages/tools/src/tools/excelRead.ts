@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs';
 import { readFileSync, existsSync } from 'node:fs';
 import { validateCwd } from '../sandbox.js';
 
-export interface ExcelReadResult {
+interface ExcelReadResult {
   sheets: string[];
   data: Record<string, unknown[][]>;
   rowCounts: Record<string, number>;

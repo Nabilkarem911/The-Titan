@@ -1,4 +1,4 @@
-export interface SessionInfo {
+interface SessionInfo {
   sessionId: string;
   userId: string;
   ip: string;

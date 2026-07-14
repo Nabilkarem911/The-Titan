@@ -6,7 +6,7 @@ import { incCounter } from '@titan/observability';
 
 const log = getLogger().child({ component: 'audit-integrity' });
 
-export interface HashChainEntry {
+interface HashChainEntry {
   id: string;
   prevHash: string;
   thisHash: string;

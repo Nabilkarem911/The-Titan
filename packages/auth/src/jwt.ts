@@ -12,7 +12,7 @@ export interface AccessTokenPayload {
   aud?: string;
 }
 
-export interface RefreshTokenPayload {
+interface RefreshTokenPayload {
   sub: string;
   sid: string;
   type: 'refresh';

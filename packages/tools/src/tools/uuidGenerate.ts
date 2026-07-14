@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-export interface UuidGenerateResult {
+interface UuidGenerateResult {
   uuids: string[];
   count: number;
 }

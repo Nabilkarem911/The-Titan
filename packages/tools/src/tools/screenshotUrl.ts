@@ -1,4 +1,4 @@
-export interface ScreenshotResult {
+interface ScreenshotResult {
   dataUrl: string;
   url: string;
   width: number;

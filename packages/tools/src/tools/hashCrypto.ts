@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 
-export interface HashCryptoResult {
+interface HashCryptoResult {
   input: string;
   algorithm: string;
   hash: string;

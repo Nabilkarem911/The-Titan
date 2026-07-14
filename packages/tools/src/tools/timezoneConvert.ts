@@ -1,4 +1,4 @@
-export interface TimezoneConvertResult {
+interface TimezoneConvertResult {
   originalTime: string;
   fromTimezone: string;
   toTimezone: string;

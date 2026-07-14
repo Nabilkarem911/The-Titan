@@ -1,6 +1,6 @@
 import { promises as dns } from 'node:dns';
 
-export interface DnsLookupResult {
+interface DnsLookupResult {
   domain: string;
   type: string;
   records: unknown[];

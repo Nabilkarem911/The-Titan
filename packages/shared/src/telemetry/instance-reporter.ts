@@ -6,7 +6,7 @@ import { hostname, platform, arch, cpus, totalmem } from 'node:os';
 const TELEMETRY_URL = 'https://telemetry.orcanox.xyz/api/v1/ping';
 const INSTANCE_ID_FILE = join(process.cwd(), '.titan-instance-id');
 
-export interface InstanceInfo {
+interface InstanceInfo {
   instanceId: string;
   nodeVersion: string;
   platform: string;

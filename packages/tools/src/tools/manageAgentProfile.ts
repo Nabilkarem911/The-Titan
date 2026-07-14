@@ -3,7 +3,7 @@ import { agentProfiles } from '@titan/database';
 
 const log = getLogger().child({ component: 'tool-manage-agent-profile' });
 
-export interface ManageAgentProfileInput {
+interface ManageAgentProfileInput {
   action: 'create' | 'update' | 'delete' | 'list' | 'get';
   ownerId: string;
   id?: string;

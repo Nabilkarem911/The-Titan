@@ -76,7 +76,7 @@ const PER_METHOD_SIZE_LIMITS: Record<string, number> = {
 
 const DEFAULT_METHOD_SIZE_LIMIT = 64 * 1024;
 
-export interface WsServerOptions {
+interface WsServerOptions {
   router: RpcRouter;
   path?: string;
 }

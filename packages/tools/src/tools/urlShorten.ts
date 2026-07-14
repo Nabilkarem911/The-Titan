@@ -1,4 +1,4 @@
-export interface UrlShortenResult {
+interface UrlShortenResult {
   originalUrl: string;
   shortUrl: string;
   provider: string;

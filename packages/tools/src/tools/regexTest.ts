@@ -1,4 +1,4 @@
-export interface RegexTestResult {
+interface RegexTestResult {
   pattern: string;
   flags: string;
   input: string;

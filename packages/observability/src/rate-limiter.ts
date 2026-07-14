@@ -3,13 +3,13 @@ import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'rate-limiter' });
 
-export interface RateLimitConfig {
+interface RateLimitConfig {
   capacity: number;
   refillPerSecond: number;
   name: string;
 }
 
-export interface RateLimitResult {
+interface RateLimitResult {
   allowed: boolean;
   remaining: number;
   retryAfterMs: number;

@@ -1,7 +1,7 @@
 import { watch, statSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-export interface FileWatchResult {
+interface FileWatchResult {
   path: string;
   event: 'change' | 'rename' | 'timeout' | 'not_found';
   filename?: string;

@@ -1,6 +1,6 @@
 import { marked } from 'marked';
 
-export interface MarkdownToHtmlResult {
+interface MarkdownToHtmlResult {
   html: string;
   length: number;
 }

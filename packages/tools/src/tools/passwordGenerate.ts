@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
-export interface PasswordGenerateResult {
+interface PasswordGenerateResult {
   password: string;
   length: number;
   strength: 'weak' | 'medium' | 'strong' | 'very-strong';

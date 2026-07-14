@@ -1,4 +1,4 @@
-export interface TranslateResult {
+interface TranslateResult {
   originalText: string;
   translatedText: string;
   sourceLang: string;

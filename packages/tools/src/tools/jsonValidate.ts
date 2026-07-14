@@ -1,4 +1,4 @@
-export interface JsonValidateResult {
+interface JsonValidateResult {
   valid: boolean;
   formatted?: string;
   error?: string;

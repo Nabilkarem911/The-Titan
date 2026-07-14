@@ -2,7 +2,7 @@ import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'metrics' });
 
-export type MetricLabel = Record<string, string | number | boolean>;
+type MetricLabel = Record<string, string | number | boolean>;
 
 interface LabeledSeries {
   labels: MetricLabel;

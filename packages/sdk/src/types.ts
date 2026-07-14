@@ -28,7 +28,7 @@ export interface AgentRunResponse {
   tokensUsed: number;
 }
 
-export interface AgentStepResponse {
+interface AgentStepResponse {
   id: string;
   index: number;
   status: string;
@@ -39,7 +39,7 @@ export interface AgentStepResponse {
   tokensUsed?: number;
 }
 
-export interface ChatMessage {
+interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }

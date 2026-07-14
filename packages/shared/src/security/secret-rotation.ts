@@ -1,12 +1,12 @@
 import { randomBytes } from 'node:crypto';
 
-export interface RotationPolicy {
+interface RotationPolicy {
   maxAgeDays: number;
   notifyBeforeDays: number;
   autoRotate: boolean;
 }
 
-export interface SecretRecord {
+interface SecretRecord {
   id: string;
   name: string;
   createdAt: Date;

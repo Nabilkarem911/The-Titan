@@ -3,7 +3,7 @@ import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'gdpr' });
 
-export interface ErasureResult {
+interface ErasureResult {
   userId: string;
   tablesAffected: number;
   rowsDeleted: number;

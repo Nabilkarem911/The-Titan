@@ -1,4 +1,4 @@
-export interface AnomalyEvent {
+interface AnomalyEvent {
   type: 'burst_requests' | 'odd_hours' | 'geo_change' | 'failed_auth' | 'unusual_tool' | 'large_payload';
   userId?: string;
   ip?: string;

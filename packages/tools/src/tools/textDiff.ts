@@ -1,6 +1,6 @@
 import { diffLines, diffWords, createPatch, type Change } from 'diff';
 
-export interface TextDiffResult {
+interface TextDiffResult {
   mode: 'lines' | 'words';
   added: number;
   removed: number;

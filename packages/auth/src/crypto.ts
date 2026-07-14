@@ -13,7 +13,7 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
 const API_KEY_PREFIX = 'tk_';
 const API_KEY_BYTES = 32;
 
-export interface GeneratedApiKey {
+interface GeneratedApiKey {
   plaintext: string;
   hash: string;
   keyPrefix: string;

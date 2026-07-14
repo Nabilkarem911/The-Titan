@@ -5,7 +5,7 @@ const log = getLogger().child({ component: 'tool-brave-search' });
 const BRAVE_SEARCH_URL = 'https://api.search.brave.com/res/v1/web/search';
 const BRAVE_ANSWERS_URL = 'https://api.search.brave.com/res/v1/summarizer/search';
 
-export interface BraveSearchResult {
+interface BraveSearchResult {
   title: string;
   url: string;
   description: string;

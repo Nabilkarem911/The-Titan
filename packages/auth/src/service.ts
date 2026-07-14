@@ -28,7 +28,7 @@ import {
 
 const log = getLogger().child({ component: 'auth-service' });
 
-export interface RegisterInput {
+interface RegisterInput {
   email: string;
   name: string;
   password: string;
@@ -43,21 +43,21 @@ async function isFirstUserById(userId: string): Promise<boolean> {
   return firstCreated?.id === userId;
 }
 
-export interface LoginInput {
+interface LoginInput {
   email: string;
   password: string;
   userAgent?: string;
   ipAddress?: string;
 }
 
-export interface TokenPair {
+interface TokenPair {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
   tokenType: 'Bearer';
 }
 
-export interface AuthResult {
+interface AuthResult {
   user: { id: string; email: string; name: string };
   tokens: TokenPair;
 }
@@ -246,7 +246,7 @@ export async function resolveWorkspaceContext(
   };
 }
 
-export interface CreateApiKeyInput {
+interface CreateApiKeyInput {
   userId: string;
   workspaceId?: string;
   name: string;

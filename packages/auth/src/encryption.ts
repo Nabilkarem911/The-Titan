@@ -12,7 +12,7 @@ function getKey(salt: Buffer): Buffer {
   return scryptSync(secret, salt, 32);
 }
 
-export interface EncryptedField {
+interface EncryptedField {
   ciphertext: string;
   salt: string;
   iv: string;

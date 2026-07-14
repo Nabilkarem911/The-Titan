@@ -139,7 +139,7 @@ export const AUDIT_ACTIONS = {
   USER_DATA_ERASED: 'user.data_erased',
 } as const;
 
-export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
+type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
 export const ERROR_CODES = {
   UNAUTHORIZED: 'E1001',

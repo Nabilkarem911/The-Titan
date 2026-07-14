@@ -1,4 +1,4 @@
-export interface YouTubeVideo {
+interface YouTubeVideo {
   id: string;
   title: string;
   description: string;
@@ -8,7 +8,7 @@ export interface YouTubeVideo {
   url: string;
 }
 
-export interface YouTubeSearchResult {
+interface YouTubeSearchResult {
   query: string;
   totalResults: number;
   videos: YouTubeVideo[];

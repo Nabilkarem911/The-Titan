@@ -1,6 +1,6 @@
 const log = { info: (..._args: unknown[]) => {}, warn: (..._args: unknown[]) => {} };
 
-export interface BulkheadConfig {
+interface BulkheadConfig {
   name: string;
   maxConcurrent: number;
   maxQueue: number;
@@ -80,7 +80,7 @@ export class BulkheadFullError extends Error {
   }
 }
 
-export class BulkheadTimeoutError extends Error {
+class BulkheadTimeoutError extends Error {
   constructor(name: string, timeoutMs: number) {
     super(`Bulkhead "${name}" queue timeout after ${timeoutMs}ms`);
     this.name = 'BulkheadTimeoutError';
