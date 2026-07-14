@@ -17,6 +17,7 @@ import type { MemoryClient } from '@titan/memory';
 import { getGlobalToolRegistry } from './tool-registry.js';
 import { TaskDecomposer } from './planner/task-decomposer.js';
 import { PlanReviser } from './planner/plan-reviser.js';
+import { PlanValidator } from './planner/plan-validator.js';
 import { getReadySteps } from './planner/dependency-graph.js';
 import { SelfCritic } from './reflection/self-critic.js';
 import { ConfidenceScorer } from './reflection/confidence-scorer.js';
@@ -198,6 +199,7 @@ export interface AgentRunnerDeps {
 export class AgentRunner {
   private planner?: TaskDecomposer;
   private planReviser?: PlanReviser;
+  private planValidator?: PlanValidator;
   private critic?: SelfCritic;
   private confidenceScorer?: ConfidenceScorer;
   private retryStrategist?: RetryStrategist;
@@ -228,6 +230,7 @@ export class AgentRunner {
     if (deps.enablePlanning) {
       this.planner = new TaskDecomposer({ llm: deps.llm });
       this.planReviser = new PlanReviser(deps.llm);
+      this.planValidator = new PlanValidator(deps.llm);
     }
     if (deps.enableSelfCritique) {
       this.critic = new SelfCritic(deps.llm);
@@ -823,6 +826,19 @@ export class AgentRunner {
   }
 
   private async executePlan(run: AgentRun, plan: ExecutionPlan, ctx: AgentContext, input: AgentRunInput): Promise<AgentRun> {
+    if (this.planValidator) {
+      const validation = this.planValidator.validateStructure(plan);
+      if (!validation.valid) {
+        log.warn({ runId: run.id, errors: validation.errors }, 'plan validation failed before execution');
+        run.finalAnswer = `Plan validation failed: ${validation.errors.join('; ')}`;
+        run.status = 'failed';
+        return run;
+      }
+      if (validation.warnings.length > 0) {
+        log.info({ runId: run.id, warnings: validation.warnings }, 'plan validation warnings');
+      }
+    }
+
     plan.status = 'active';
     const maxPlanSteps = Math.min(plan.steps.length * 2, run.maxSteps);
 

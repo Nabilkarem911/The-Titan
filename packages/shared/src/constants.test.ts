@@ -134,8 +134,8 @@ describe('AUDIT_ACTIONS', () => {
     }
   });
 
-  it('has 18 audit actions', () => {
-    expect(Object.values(AUDIT_ACTIONS)).toHaveLength(18);
+  it('has 19 audit actions', () => {
+    expect(Object.values(AUDIT_ACTIONS)).toHaveLength(19);
   });
 
   it('all action values are unique', () => {

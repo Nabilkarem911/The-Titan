@@ -136,6 +136,7 @@ export const AUDIT_ACTIONS = {
   MEMORY_READ: 'memory.read',
   UNAUTHORIZED_ACCESS: 'auth.unauthorized',
   RATE_LIMIT_EXCEEDED: 'rate_limit.exceeded',
+  USER_DATA_ERASED: 'user.data_erased',
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

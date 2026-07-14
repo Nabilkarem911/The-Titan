@@ -16,6 +16,7 @@ import { AUDIT_ACTIONS } from '@titan/shared';
 import { loadConfig } from '@titan/config';
 import { requireAuth } from '../plugins/auth.js';
 import { recordAuthFailureHybrid, recordBruteForcePattern, incCounter } from '@titan/observability';
+import { AnomalyDetector } from '@titan/shared';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -57,6 +58,7 @@ const RATE_LIMIT_REFRESH = (app: FastifyInstance) => ({
 const loginFailureByIp = new Map<string, { count: number; firstAt: number }>();
 const BRUTE_FORCE_WINDOW_MS = 5 * 60_000;
 const BRUTE_FORCE_TRIGGER = 5;
+const anomalyDetector = new AnomalyDetector();
 
 function recordLoginFailure(ip: string): number {
   const now = Date.now();
@@ -136,6 +138,18 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const subject = `ip:${ip}`;
       const count = recordLoginFailure(ip);
       recordAuthFailureHybrid({ ip });
+      const anomaly = anomalyDetector.trackFailedAuth(ip);
+      if (anomaly) {
+        await audit.write({
+          actorId: null,
+          workspaceId: null,
+          action: AUDIT_ACTIONS.UNAUTHORIZED_ACCESS,
+          resource: 'auth',
+          resourceId: ip,
+          metadata: { anomaly: anomaly.type, severity: anomaly.severity, description: anomaly.description },
+          ...(req.ip ? { ipAddress: req.ip } : {}),
+        });
+      }
       if (count >= BRUTE_FORCE_TRIGGER) {
         recordBruteForcePattern(subject, count);
       }

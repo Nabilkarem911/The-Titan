@@ -21,6 +21,7 @@ import {
 import type { MemoryClient } from '@titan/memory';
 import { agentRuns, agentSteps } from '@titan/database';
 import { getLogger } from '@titan/logging';
+import { CircuitBreaker, CircuitOpenError } from '@titan/shared';
 import { getWsServer } from './ws-instance.js';
 import { getExperienceCollector } from './learning-singleton.js';
 
@@ -130,10 +131,24 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
     return primary;
   })();
 
+  const toolBreaker = new CircuitBreaker({ name: 'tool-execution', failureThreshold: 5, resetTimeout: 30000 });
+
   return new AgentRunner({
     llm,
     executeTool: async (call: ToolCall, _runId: string): Promise<ToolResult> => {
-      return executeTool(call.name, call.params);
+      try {
+        return await toolBreaker.execute(() => executeTool(call.name, call.params));
+      } catch (err) {
+        if (err instanceof CircuitOpenError) {
+          log.warn({ tool: call.name, circuit: err.circuitName }, 'circuit breaker open — tool execution blocked');
+          return {
+            success: false,
+            error: `Tool "${call.name}" is temporarily unavailable (circuit breaker open)`,
+            data: null,
+          };
+        }
+        throw err;
+      }
     },
     memory,
     userContextItems,

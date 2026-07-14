@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { getPool, ping, verifyTlsOnStartup, isTlsVerified, getRetentionInfo } from '@titan/database';
 import { pingRedis, verifyAuthOnStartup, isAuthVerified, getQueueStats } from '@titan/queue';
+import { listDLQ, getDLQCounts, purgeDLQ } from '@titan/queue';
 import { QUEUE_NAMES, type QueueName } from '@titan/shared';
 import { getLastVerifyResult, getLastArchiveResult } from '../audit-scheduler.js';
 import { requireAuth } from '../plugins/auth.js';
@@ -91,6 +92,35 @@ export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
         : { status: 'pending', reason: 'archival has not run yet' },
       timestamp: new Date().toISOString(),
     };
+  });
+
+  app.get<{ Params: { queue: string } }>('/api/v1/health/dlq/:queue', { preHandler: requireAuth }, async (req, reply) => {
+    const queue = req.params.queue as QueueName;
+    if (!Object.values(QUEUE_NAMES).includes(queue)) {
+      return reply.status(400).send({ error: 'Invalid queue name' });
+    }
+    try {
+      const [jobs, counts] = await Promise.all([
+        listDLQ(queue, 0, 100),
+        getDLQCounts(queue),
+      ]);
+      return reply.send({ queue, counts, jobs });
+    } catch (err) {
+      return reply.status(500).send({ error: (err as Error).message });
+    }
+  });
+
+  app.delete<{ Params: { queue: string } }>('/api/v1/health/dlq/:queue/purge', { preHandler: requireAuth }, async (req, reply) => {
+    const queue = req.params.queue as QueueName;
+    if (!Object.values(QUEUE_NAMES).includes(queue)) {
+      return reply.status(400).send({ error: 'Invalid queue name' });
+    }
+    try {
+      await purgeDLQ(queue);
+      return reply.status(204).send();
+    } catch (err) {
+      return reply.status(500).send({ error: (err as Error).message });
+    }
   });
 };
 
