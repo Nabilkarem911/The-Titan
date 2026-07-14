@@ -1,4 +1,3 @@
-import { execSync } from 'node:child_process';
 import { getLogger } from '@titan/logging';
 
 const log = getLogger().child({ component: 'resource-monitor' });
