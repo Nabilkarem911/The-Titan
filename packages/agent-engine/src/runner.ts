@@ -24,7 +24,7 @@ import { ConfidenceScorer } from './reflection/confidence-scorer.js';
 import { RetryStrategist } from './reflection/retry-strategist.js';
 import { StrategySelector } from './strategies/strategy-selector.js';
 import type { StrategyName } from './strategies/types.js';
-import type { ExecutionPlan, PlanStep } from './planner/types.js';
+import type { ExecutionPlan } from './planner/types.js';
 import { buildAdaptivePrompt } from './personality/prompt-builder.js';
 import type { SelfForge } from './self-forge/self-forge.js';
 import type { MetaMonitor } from './metacognition/meta-monitor.js';
@@ -929,7 +929,7 @@ export class AgentRunner {
             log.info({ runId: run.id }, 'answer revised after self-critique');
           }
         }
-      } catch (err) {
+      } catch {
         log.warn({ runId: run.id }, 'self-critique failed — keeping original answer');
       }
     }

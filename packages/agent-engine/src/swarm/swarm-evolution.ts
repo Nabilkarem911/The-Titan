@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { swarmTopologies as stRepo, swarmCollectiveMemory as scmRepo, swarmMessages as smRepo, swarmFederationTasks as sftRepo } from '@titan/database';
+import { swarmTopologies as stRepo, swarmCollectiveMemory as scmRepo, swarmFederationTasks as sftRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'swarm-evolution' });
 
@@ -45,8 +45,6 @@ interface FederationTask {
 }
 
 const MAX_AGENTS = 20;
-const TASK_TIMEOUT_MS = 5 * 60 * 1000;
-const TOTAL_TIMEOUT_MS = 30 * 60 * 1000;
 
 export class SwarmEvolution {
   private topologies: SwarmTopologyConfig[] = [];

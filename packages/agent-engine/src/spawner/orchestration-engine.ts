@@ -42,7 +42,7 @@ interface OrchestrationResult {
   durationMs: number;
 }
 
-class OrchestrationEngine {
+export class OrchestrationEngine {
   private pool: AgentPool;
   private factory: DynamicAgentFactory;
   private llm: LlmProvider;

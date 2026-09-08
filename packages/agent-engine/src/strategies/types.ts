@@ -3,7 +3,6 @@ import type {
   LlmToolDefinition,
   AgentRun,
   AgentStep,
-  AgentContext,
   ToolCall,
   ToolResult,
 } from '../types.js';

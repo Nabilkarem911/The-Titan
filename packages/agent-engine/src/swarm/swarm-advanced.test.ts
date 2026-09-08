@@ -4,7 +4,7 @@ import { SharedWorkspace } from './shared-workspace.js';
 import { Supervisor } from './supervisor.js';
 import { Negotiator } from './negotiator.js';
 import type { LlmProvider } from '../types.js';
-import type { SwarmTask, SwarmSubTask, SwarmAgent } from './types.js';
+import type { SwarmTask, SwarmSubTask } from './types.js';
 
 function mockLlm(content: string): LlmProvider {
   return { complete: vi.fn().mockResolvedValue({ content, tokensUsed: 50, finishReason: 'stop' }) };

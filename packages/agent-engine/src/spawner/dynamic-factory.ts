@@ -1,8 +1,5 @@
-import { getLogger } from '@titan/logging';
 import type { LlmProvider, LlmToolDefinition } from '../types.js';
 import type { DynamicAgentSpec, SpawnRequest } from './types.js';
-
-const log = getLogger().child({ component: 'dynamic-factory' });
 
 const FACTORY_PROMPT = `You are designing an AI agent for a specific task. Given the role and goal, create the agent specification.
 

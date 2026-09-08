@@ -1,11 +1,8 @@
-import { getLogger } from '@titan/logging';
 import { writeFileSync, mkdirSync, unlinkSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import type { ForgedToolSpec } from './tool-forger.js';
-
-const log = getLogger().child({ component: 'tool-validator' });
 
 export interface ValidationResult {
   passed: boolean;

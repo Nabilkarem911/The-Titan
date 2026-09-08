@@ -1,5 +1,4 @@
 import { getLogger } from '@titan/logging';
-import { randomUUID } from 'node:crypto';
 import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'tool-forger' });

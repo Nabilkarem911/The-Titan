@@ -273,21 +273,21 @@ export class TemporalIntelligence {
 
       const raw = JSON.parse(jsonMatch[0]);
 
-      const predictions: TemporalPrediction[] = Array.isArray(raw.predictions) ? raw.predictions.map((p: any) => ({
+      const predictions: TemporalPrediction[] = Array.isArray(raw.predictions) ? raw.predictions.map((p: Record<string, unknown>) => ({
         id: randomUUID(),
-        event: p.event ?? 'unknown',
-        confidence: Math.max(0, Math.min(1, p.confidence ?? 0.5)),
-        timeHorizon: p.timeHorizon ?? 'unknown',
+        event: String(p.event ?? 'unknown'),
+        confidence: Math.max(0, Math.min(1, Number(p.confidence ?? 0.5))),
+        timeHorizon: String(p.timeHorizon ?? 'unknown'),
         expectedTime: null,
-        basedOn: Array.isArray(p.basedOn) ? p.basedOn : [],
+        basedOn: Array.isArray(p.basedOn) ? p.basedOn.map(String) : [],
       })) : [];
 
-      const patterns: TemporalPattern[] = Array.isArray(raw.patterns) ? raw.patterns.map((p: any) => ({
+      const patterns: TemporalPattern[] = Array.isArray(raw.patterns) ? raw.patterns.map((p: Record<string, unknown>) => ({
         id: randomUUID(),
-        pattern: p.pattern ?? 'unknown',
-        frequency: ['daily', 'weekly', 'monthly', 'irregular'].includes(p.frequency) ? p.frequency : 'irregular',
-        confidence: Math.max(0, Math.min(1, p.confidence ?? 0.5)),
-        examples: Array.isArray(p.examples) ? p.examples : [],
+        pattern: String(p.pattern ?? 'unknown'),
+        frequency: ['daily', 'weekly', 'monthly', 'irregular'].includes(String(p.frequency)) ? (p.frequency as string) : 'irregular',
+        confidence: Math.max(0, Math.min(1, Number(p.confidence ?? 0.5))),
+        examples: Array.isArray(p.examples) ? p.examples.map(String) : [],
       })) : [];
 
       return { predictions, patterns };

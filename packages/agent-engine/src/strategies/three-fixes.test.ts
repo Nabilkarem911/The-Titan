@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { StrategySelector, buildAdaptivePrompt, ContextOptimizer, HypothesisTestingStrategy } from '@titan/agent-engine';
-import type { AgentContext, LlmMessage, LlmToolDefinition, AgentRun, AgentStep } from '@titan/agent-engine';
+import type { AgentContext, LlmMessage, LlmToolDefinition, AgentRun } from '@titan/agent-engine';
 
 // ---------------------------------------------------------------------------
 // Fix 2 — Strategy Selector picks hypothesis-testing for debugging

@@ -1,4 +1,4 @@
-import type { AgentRunInput, AgentRun, LlmToolDefinition } from '../types.js';
+import type { AgentRun, LlmToolDefinition } from '../types.js';
 
 type SpawnMode = 'foreground' | 'background';
 type ChildStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
