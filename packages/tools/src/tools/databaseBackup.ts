@@ -42,7 +42,8 @@ export async function databaseBackup(params: { action: 'backup' | 'list' | 'info
         });
         return JSON.stringify({ success: true, file: output, database: db, timestamp });
       } catch (err) {
-        return JSON.stringify({ success: false, error: 'Backup failed', note: 'Ensure pg_dump is available and POSTGRES_PASSWORD is set' });
+        const message = err instanceof Error ? err.message : 'Backup failed';
+        return JSON.stringify({ success: false, error: message, note: 'Ensure pg_dump is available and POSTGRES_PASSWORD is set' });
       }
     }
     case 'list': {
