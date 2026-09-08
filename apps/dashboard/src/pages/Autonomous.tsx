@@ -55,8 +55,28 @@ export default function Autonomous() {
     try {
       const [tasksRes, hyperRes, curiosityRes] = await Promise.all([
         api.get<{ items: AutonomousTask[]; total: number }>('/autonomous/tasks'),
-        api.get<HyperAgentStats>('/hyper-agent/stats').catch(() => null),
-        api.get<CuriosityStats>('/curiosity/stats').catch(() => null),
+        api.get<{
+          totalCycles: number;
+          totalImprovements: number;
+          keptImprovements?: number;
+          rolledBackImprovements?: number;
+        }>('/hyper-agent/stats')
+          .then((s) => ({
+            cycles: s.totalCycles,
+            improvements: s.totalImprovements,
+            evaluations: (s.keptImprovements ?? 0) + (s.rolledBackImprovements ?? 0),
+          }))
+          .catch(() => null),
+        api.get<{
+          totalExplorations: number;
+          successfulExplorations: number;
+        }>('/curiosity/stats')
+          .then((s) => ({
+            totalQuestions: s.totalExplorations,
+            explored: s.successfulExplorations,
+            unanswered: s.totalExplorations - s.successfulExplorations,
+          }))
+          .catch(() => null),
       ]);
       setTasks(tasksRes.items);
       setHyperStats(hyperRes);
