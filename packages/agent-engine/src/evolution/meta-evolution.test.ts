@@ -46,7 +46,6 @@ describe('MetaEvolution', () => {
   });
 
   it('should rollback last evolution', async () => {
-    const original = meta.getImprovementPrompt();
     await meta.selfModifyPrompt({ successRate: 70, avgScore: 65 });
     const rolledBack = meta.rollbackLastEvolution();
     if (rolledBack) {

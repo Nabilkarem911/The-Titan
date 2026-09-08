@@ -129,7 +129,7 @@ describe('HiveMind', () => {
   });
 
   it('should get active votes', async () => {
-    const vote = await hive.proposeVote('test', 'proposal');
+    await hive.proposeVote('test', 'proposal');
     const active = hive.getActiveVotes();
     expect(active.length).toBe(1);
   });

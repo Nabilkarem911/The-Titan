@@ -1,5 +1,5 @@
 import { getLogger } from '@titan/logging';
-import { incCounter, observeHistogram } from '@titan/observability';
+import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import type { LlmProvider } from '../types.js';
 
@@ -318,7 +318,7 @@ export class HiveMind {
 
   getAllSpecializations(): Array<{ instanceId: string; specialization: string }> {
     const result: Array<{ instanceId: string; specialization: string }> = [];
-    for (const [id, instance] of this.instances) {
+    for (const [id, _instance] of this.instances) {
       const spec = this.detectSpecialization(id);
       if (spec) {
         result.push({ instanceId: id, specialization: spec });

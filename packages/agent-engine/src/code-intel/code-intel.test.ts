@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { extractSymbols, extractImports } from './indexer/symbol-extractor.js';
-import { buildCodebaseIndex, findSymbol, findFile, getDependents } from './indexer/codebase-index.js';
-import { searchCode, findReferences } from './search/semantic-code-search.js';
+import { buildCodebaseIndex, findSymbol, findFile } from './indexer/codebase-index.js';
+import { searchCode } from './search/semantic-code-search.js';
 import { buildSmartContext, formatContextForLlm } from './analysis/smart-context.js';
 import { getFileStats } from './indexer/file-crawler.js';
 import path from 'node:path';

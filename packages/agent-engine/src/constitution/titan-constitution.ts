@@ -44,7 +44,6 @@ interface ConstitutionalAmendment {
 }
 
 const SUPERMAJORITY_THRESHOLD = 0.67;
-const SAFETY_PRINCIPLES_IMMUTABLE = true;
 
 const DELIBERATION_PROMPT = `You are a constitutional deliberation agent. Reason through the proposal carefully.
 
