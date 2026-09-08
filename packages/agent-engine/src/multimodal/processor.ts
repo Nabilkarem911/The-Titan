@@ -54,7 +54,6 @@ class MultimodalProcessor {
     }
 
     const ext = extname(filePath).toLowerCase();
-    const name = basename(filePath);
 
     if (SUPPORTED_IMAGE_FORMATS.includes(ext)) {
       return this.analyzeImage(filePath);

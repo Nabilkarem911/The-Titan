@@ -1,7 +1,6 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import type { LlmProvider, LlmMessage } from '../types.js';
-import { randomUUID } from 'node:crypto';
 import { innerMonologueThreads as imtRepo } from '@titan/database';
 
 const log = getLogger().child({ component: 'mirror:inner-monologue' });

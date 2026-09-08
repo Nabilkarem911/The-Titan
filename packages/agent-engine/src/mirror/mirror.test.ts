@@ -100,7 +100,7 @@ describe('InnerMonologueManager', () => {
   });
 
   it('should add threads', () => {
-    const id = manager.addThread('goals', 'test goal', 1);
+    manager.addThread('goals', 'test goal', 1);
     expect(manager.getThreadCount()).toBe(1);
     expect(manager.getActiveThreads()[0].type).toBe('goals');
   });

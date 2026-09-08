@@ -152,7 +152,7 @@ export class MultiLayerGuardrails {
     }
 
     // Custom layers
-    for (const [name, config] of this.customLayers) {
+    for (const [_name, config] of this.customLayers) {
       if (config.enabled && config.customHandler) {
         const result = config.customHandler(sanitizedInput);
         layerResults.push(result);

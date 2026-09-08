@@ -200,7 +200,7 @@ export class MultiModelRouter implements LlmProvider {
       try {
         yield* model.provider.stream(messages, opts);
         return;
-      } catch (err) {
+      } catch {
         log.warn({ model: model.name }, 'stream failed — trying fallback');
       }
     }

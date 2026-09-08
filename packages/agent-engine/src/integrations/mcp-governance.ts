@@ -6,7 +6,6 @@ import { mcpGovernanceAudit as mgaRepo } from '@titan/database';
 const log = getLogger().child({ component: 'mcp-governance' });
 
 type MCPPermission = 'read' | 'write' | 'execute' | 'admin' | 'delegate';
-type MCPAuthType = 'none' | 'api_key' | 'oauth2' | 'bearer' | 'mtls';
 
 export interface MCPGovernancePolicy {
   serverId: string;
@@ -46,15 +45,6 @@ interface MCPOAuthToken {
   expiresAt: Date;
   tokenType: string;
   scopes: string[];
-}
-
-interface MCPTransportConfig {
-  type: 'http' | 'sse' | 'grpc' | 'websocket';
-  url: string;
-  headers?: Record<string, string>;
-  timeout?: number;
-  reconnect?: boolean;
-  maxReconnects?: number;
 }
 
 export class MCPGovernanceManager {

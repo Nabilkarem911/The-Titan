@@ -42,18 +42,6 @@ interface AnomalyDetection {
   description: string;
 }
 
-interface WhatIfScenario {
-  id: string;
-  name: string;
-  action: string;
-  target: string;
-  probability: number;
-  confidenceInterval: [number, number];
-  outcomes: string[];
-  risks: string[];
-  duration: string;
-}
-
 interface DigitalTwinState {
   snapshotCount: number;
   entityCount: number;
@@ -372,14 +360,14 @@ export class DigitalTwin {
 
 let globalTwin: DigitalTwin | null = null;
 
-function getDigitalTwin(): DigitalTwin {
+export function getDigitalTwin(): DigitalTwin {
   if (!globalTwin) {
     globalTwin = new DigitalTwin();
   }
   return globalTwin;
 }
 
-function initDigitalTwin(graph?: EnvironmentGraph): DigitalTwin {
+export function initDigitalTwin(graph?: EnvironmentGraph): DigitalTwin {
   globalTwin = new DigitalTwin(graph);
   return globalTwin;
 }

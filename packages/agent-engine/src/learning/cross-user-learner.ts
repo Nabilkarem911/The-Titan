@@ -1,8 +1,5 @@
-import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-
-const log = getLogger().child({ component: 'cross-user-learner' });
 
 interface SharedPattern {
   id: string;

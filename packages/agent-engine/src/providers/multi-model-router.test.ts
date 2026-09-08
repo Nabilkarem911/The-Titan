@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { MultiModelRouter, type ModelConfig, type TaskComplexity } from './multi-model-router.js';
+import { MultiModelRouter, type ModelConfig } from './multi-model-router.js';
 import type { LlmProvider, LlmCompletion } from '../types.js';
 
 function mockProvider(name: string, fail = false): LlmProvider {

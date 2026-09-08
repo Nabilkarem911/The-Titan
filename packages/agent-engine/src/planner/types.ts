@@ -1,4 +1,4 @@
-import type { LlmProvider, ToolCall } from '../types.js';
+import type { LlmProvider } from '../types.js';
 
 export interface PlanStep {
   id: string;

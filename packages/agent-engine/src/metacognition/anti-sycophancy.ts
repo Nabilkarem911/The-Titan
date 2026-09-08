@@ -2,7 +2,7 @@ import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import { sycophancyAssessments as saRepo } from '@titan/database';
-import type { LlmProvider, AgentRun, AgentStep } from '../types.js';
+import type { LlmProvider, AgentRun } from '../types.js';
 
 const log = getLogger().child({ component: 'anti-sycophancy' });
 

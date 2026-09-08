@@ -336,7 +336,7 @@ export class CapabilityRegistry {
         '',
       ];
 
-      for (const [cat, count] of Object.entries(snapshot.byCategory)) {
+      for (const [cat, _count] of Object.entries(snapshot.byCategory)) {
         const catName = categories[cat] ?? cat;
         const catCaps = enabled.filter((c) => c.category === cat);
         if (catCaps.length > 0) {

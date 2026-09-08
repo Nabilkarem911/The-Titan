@@ -1,6 +1,5 @@
 import { getLogger } from '@titan/logging';
 import { promptVariants as pvRepo } from '@titan/database';
-import type { LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'prompt-optimizer' });
 

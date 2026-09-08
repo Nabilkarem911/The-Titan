@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ContextOptimizer, type ContextItem, type ContextBudget } from './context-optimizer.js';
+import { ContextOptimizer, type ContextItem } from './context-optimizer.js';
 import { MockEchoProvider } from '../mockLlmProvider.js';
 
 describe('Learned Context Compression', () => {

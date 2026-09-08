@@ -1,12 +1,6 @@
 import { detectLanguage, isArabicDialect, type DetectedLanguage } from './language-detector.js';
-import type { AgentContext, AgentRule } from '../types.js';
+import type { AgentContext } from '../types.js';
 import { getGlobalCapabilityRegistry } from '../metacognition/capability-registry.js';
-
-// ── Core identity — language-independent ──
-const IDENTITY_CORE = {
-  name: 'Titan',
-  role: 'co-developer and intelligent companion',
-};
 
 // ── Language-specific personality packs ──
 const PERSONALITY: Record<string, string> = {

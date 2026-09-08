@@ -1,6 +1,6 @@
 import { getLogger } from '@titan/logging';
 import { incCounter, observeHistogram } from '@titan/observability';
-import type { LlmMessage, LlmToolDefinition, ToolCall, AgentStep, LlmProvider } from '../types.js';
+import type { LlmMessage, LlmToolDefinition, AgentStep, LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'context-optimizer' });
 
@@ -62,8 +62,6 @@ const DEFAULTS: Required<ContextOptimizationOptions> = {
   enableLearnedCompression: false,
   budget: { code: 40, history: 30, tools: 20, reserve: 10 },
 };
-
-const DEFAULT_BUDGET: ContextBudget = { code: 40, history: 30, tools: 20, reserve: 10 };
 
 const SCORING_PROMPT = `You are a context relevance scorer for an AI agent. Score each context item for relevance to the current task.
 
@@ -143,7 +141,7 @@ export class ContextOptimizer {
 
   compactHistory(
     messages: LlmMessage[],
-    steps: AgentStep[],
+    _steps: AgentStep[],
   ): { messages: LlmMessage[]; compacted: number } {
     if (!this.opts.enableHistoryCompaction) {
       return { messages, compacted: 0 };
@@ -167,20 +165,15 @@ export class ContextOptimizer {
 
     // Create a summary of compacted messages
     const summaryParts: string[] = [];
-    let toolCallsSummarized = 0;
-    let assistantMessagesSummarized = 0;
-
     for (const msg of toCompact) {
       if (msg.role === 'assistant') {
         if (msg.toolCalls && msg.toolCalls.length > 0) {
           for (const tc of msg.toolCalls) {
             summaryParts.push(`[Used ${tc.name}]`);
-            toolCallsSummarized++;
           }
         }
         if (msg.content && msg.content.length > 0) {
           summaryParts.push(`[Assistant: ${msg.content.slice(0, 100)}...]`);
-          assistantMessagesSummarized++;
         }
       } else if (msg.role === 'tool') {
         const content = msg.content.slice(0, 200);

@@ -182,14 +182,14 @@ export class MirrorConsciousness {
 
 let globalMirror: MirrorConsciousness | null = null;
 
-function getMirrorConsciousness(): MirrorConsciousness {
+export function getMirrorConsciousness(): MirrorConsciousness {
   if (!globalMirror) {
     globalMirror = new MirrorConsciousness();
   }
   return globalMirror;
 }
 
-function initMirrorConsciousness(config?: Partial<MirrorConfig>): MirrorConsciousness {
+export function initMirrorConsciousness(config?: Partial<MirrorConfig>): MirrorConsciousness {
   globalMirror = new MirrorConsciousness(config);
   return globalMirror;
 }
