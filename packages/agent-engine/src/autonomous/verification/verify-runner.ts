@@ -69,7 +69,7 @@ export async function runLint(cwd: string): Promise<VerificationResult> {
   }
 }
 
-export async function runBuild(cwd: string, buildCmd?: string): Promise<VerificationResult> {
+export async function runBuild(cwd: string, _buildCmd?: string): Promise<VerificationResult> {
   const start = performance.now();
 
   try {

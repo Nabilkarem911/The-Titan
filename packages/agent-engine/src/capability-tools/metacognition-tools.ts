@@ -148,7 +148,7 @@ export function registerMetacognitionTools(wiring: WiredCapabilities, _llm: LlmP
         finalAnswer: p.agentResponse,
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any);
+      } as unknown as Parameters<typeof wiring.antiSycophancy.assess>[0]);
     },
   });
 

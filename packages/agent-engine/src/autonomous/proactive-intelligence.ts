@@ -148,10 +148,10 @@ export class ProactiveIntelligence {
 
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        predictedEffects = Array.isArray(parsed.predictedEffects) ? parsed.predictedEffects.map((e: any) => ({
-          entity: e.entity ?? '',
-          effect: e.effect ?? '',
-          probability: Math.max(0, Math.min(1, e.probability ?? 0.5)),
+        predictedEffects = Array.isArray(parsed.predictedEffects) ? parsed.predictedEffects.map((e: { entity?: unknown; effect?: unknown; probability?: unknown }) => ({
+          entity: String(e.entity ?? ''),
+          effect: String(e.effect ?? ''),
+          probability: Math.max(0, Math.min(1, Number(e.probability ?? 0.5))),
         })) : [];
         rootCauseChain = Array.isArray(parsed.rootCauseChain) ? parsed.rootCauseChain : [];
         confidence = Math.max(0, Math.min(1, parsed.confidence ?? 0.5));

@@ -1,7 +1,6 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
 import type { LlmProvider } from './types.js';
-import { getGlobalToolRegistry } from './tool-registry.js';
 
 // Reasoning
 import { DreamMode } from './reasoning/dream-mode.js';
@@ -204,8 +203,6 @@ export function wireCapabilities(llm: LlmProvider): WiredCapabilities {
   }
 
   log.info('wiring capabilities (lazy mode)...');
-
-  const registry = getGlobalToolRegistry();
 
   // Core modules with interdependencies — must be eager
   const environmentGraph = new EnvironmentGraph();

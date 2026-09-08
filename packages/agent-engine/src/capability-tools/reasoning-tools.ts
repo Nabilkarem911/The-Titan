@@ -18,7 +18,7 @@ export function registerReasoningTools(wiring: WiredCapabilities, llm: LlmProvid
     handler: async (params: unknown) => {
       const p = params as { experiences: string };
       const experiences = JSON.parse(p.experiences) as Array<{ id: string; runId: string; prompt: string; strategy: string; toolsUsed: string[]; success: boolean; tokensUsed: number; durationMs: number; timestamp: string }>;
-      return wiring.dreamMode.dreamFromExperiences(experiences as any);
+      return wiring.dreamMode.dreamFromExperiences(experiences as unknown as Parameters<typeof wiring.dreamMode.dreamFromExperiences>[0]);
     },
   });
 
@@ -38,7 +38,7 @@ export function registerReasoningTools(wiring: WiredCapabilities, llm: LlmProvid
     },
     handler: async (params: unknown) => {
       const p = params as { type?: string };
-      return wiring.dreamMode.getInsights(p.type as any);
+      return wiring.dreamMode.getInsights(p.type as Parameters<typeof wiring.dreamMode.getInsights>[0]);
     },
   });
 
