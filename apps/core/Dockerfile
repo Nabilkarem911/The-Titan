@@ -44,11 +44,12 @@ RUN apk update && apk add --no-cache dumb-init curl git openssl && \
 
 # Copy only what's needed to run
 COPY package.json package-lock.json ./
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/core ./apps/core
-COPY --from=builder /app/apps/dashboard/dist ./apps/dashboard/dist
-RUN rm -rf node_modules/.cache node_modules/.npm /tmp/* ~/.npm && \
+COPY --from=builder /app/apps/dashboard ./apps/dashboard
+RUN npm ci --legacy-peer-deps --omit=dev && \
+    npm cache clean --force && \
+    rm -rf /tmp/* ~/.npm && \
     find node_modules -depth -type d -name __tests__ -exec rm -rf {} + 2>/dev/null; \
     find node_modules -depth -type f \( -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.d.ts" -o -name "*.spec.d.ts" \) -delete 2>/dev/null; \
     true
