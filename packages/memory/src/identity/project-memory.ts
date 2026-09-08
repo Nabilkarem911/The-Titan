@@ -16,7 +16,7 @@ interface ProjectRecord {
   createdAt: Date;
 }
 
-class ProjectMemory {
+export class ProjectMemory {
   private projects: Map<string, ProjectRecord> = new Map();
 
   upsert(userId: string, name: string, updates: Partial<ProjectRecord>): ProjectRecord {

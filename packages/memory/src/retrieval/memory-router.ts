@@ -1,5 +1,4 @@
 import { getLogger } from '@titan/logging';
-import type { MemoryEntry } from '../layers/types.js';
 import type { HybridSearchResult } from './hybrid-search.js';
 import { HybridSearch } from './hybrid-search.js';
 import { ContextRanker, type RankingContext } from './context-ranker.js';
@@ -19,7 +18,7 @@ interface MemoryLayers {
   user: UserMemory;
 }
 
-class MemoryRouter {
+export class MemoryRouter {
   private hybridSearch: HybridSearch;
   private ranker: ContextRanker;
   private layers: MemoryLayers;

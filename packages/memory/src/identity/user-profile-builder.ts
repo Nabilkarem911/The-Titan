@@ -1,7 +1,3 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'user-profile' });
-
 export interface UserProfile {
   userId: string;
   name?: string;

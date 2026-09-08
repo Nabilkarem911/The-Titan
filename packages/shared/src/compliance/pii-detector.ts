@@ -1,5 +1,3 @@
-const log = { info: (..._args: unknown[]) => {}, warn: (..._args: unknown[]) => {} };
-
 export interface PIIMatch {
   type: 'email' | 'phone' | 'ssn' | 'credit_card' | 'ip_address' | 'api_key' | 'password';
   value: string;

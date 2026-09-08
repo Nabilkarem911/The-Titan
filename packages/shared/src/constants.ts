@@ -139,8 +139,6 @@ export const AUDIT_ACTIONS = {
   USER_DATA_ERASED: 'user.data_erased',
 } as const;
 
-type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
-
 export const ERROR_CODES = {
   UNAUTHORIZED: 'E1001',
   INVALID_TOKEN: 'E1002',

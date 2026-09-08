@@ -27,7 +27,7 @@ const DEFAULT_CONFIG: RAGConfig = {
   deduplicateChunks: true,
 };
 
-class HybridRAGPipeline {
+export class HybridRAGPipeline {
   private kb: KnowledgeBase;
   private citationTracker: CitationTracker;
   private config: RAGConfig;

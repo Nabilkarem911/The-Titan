@@ -1,8 +1,4 @@
-import { getLogger } from '@titan/logging';
 import type { HybridSearchResult } from './hybrid-search.js';
-
-const log = getLogger().child({ component: 'context-ranker' });
-
 export interface RankingContext {
   currentGoal?: string;
   recentTools?: string[];

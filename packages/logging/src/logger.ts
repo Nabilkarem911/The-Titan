@@ -53,8 +53,6 @@ export function child(bindings: Record<string, unknown>): PinoLogger {
   return getLogger().child(bindings);
 }
 
-type Logger = PinoLogger;
-
 export async function shutdownLogger(): Promise<void> {
   if (rootLogger) {
     await new Promise<void>((resolve) => rootLogger!.flush(() => resolve()));

@@ -39,10 +39,6 @@ interface AgentStepResponse {
   tokensUsed?: number;
 }
 
-interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
 
 export interface ChatResponse {
   message: string;

@@ -1,7 +1,3 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'citation-tracker' });
-
 export interface Citation {
   id: string;
   documentName: string;

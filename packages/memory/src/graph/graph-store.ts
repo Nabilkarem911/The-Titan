@@ -1,8 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { getLogger } from '@titan/logging';
 import type { Entity, Relation, GraphQueryResult } from './types.js';
-
-const log = getLogger().child({ component: 'graph-store' });
 
 const MAX_ENTITIES = 5000;
 const MAX_RELATIONS = 10000;

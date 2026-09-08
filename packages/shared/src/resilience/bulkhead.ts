@@ -1,5 +1,3 @@
-const log = { info: (..._args: unknown[]) => {}, warn: (..._args: unknown[]) => {} };
-
 interface BulkheadConfig {
   name: string;
   maxConcurrent: number;

@@ -17,7 +17,7 @@ export class SemanticMemory implements MemoryLayer {
       try {
         const [embedding] = await this.embedder.embed([entry.content]);
         entry.embedding = embedding;
-      } catch (err) {
+      } catch {
         log.warn({ id: entry.id }, 'failed to embed — storing without vector');
       }
     }

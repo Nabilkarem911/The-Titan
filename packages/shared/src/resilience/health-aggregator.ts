@@ -1,5 +1,3 @@
-const log = { info: (..._args: unknown[]) => {}, warn: (..._args: unknown[]) => {} };
-
 type ServiceHealth = 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
 
 interface ServiceStatus {
