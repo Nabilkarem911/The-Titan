@@ -228,50 +228,50 @@ export class DreamWorld {
       const raw = JSON.parse(jsonMatch[0]);
 
       return {
-        visualDreams: Array.isArray(raw.visualDreams) ? raw.visualDreams.map((v: any) => ({
+        visualDreams: Array.isArray(raw.visualDreams) ? raw.visualDreams.map((v: Record<string, unknown>) => ({
           id: randomUUID(),
-          description: v.description ?? '',
-          generatedImagePrompt: v.generatedImagePrompt ?? '',
-          analysisResult: v.analysisResult ?? '',
+          description: String(v.description ?? ''),
+          generatedImagePrompt: String(v.generatedImagePrompt ?? ''),
+          analysisResult: String(v.analysisResult ?? ''),
         })) : [],
-        codeDreams: Array.isArray(raw.codeDreams) ? raw.codeDreams.map((v: any) => ({
+        codeDreams: Array.isArray(raw.codeDreams) ? raw.codeDreams.map((v: Record<string, unknown>) => ({
           id: randomUUID(),
-          originalCode: v.originalCode ?? '',
-          alternativeArchitecture: v.alternativeArchitecture ?? '',
-          analysisResult: v.analysisResult ?? '',
+          originalCode: String(v.originalCode ?? ''),
+          alternativeArchitecture: String(v.alternativeArchitecture ?? ''),
+          analysisResult: String(v.analysisResult ?? ''),
         })) : [],
-        crossModalSyntheses: Array.isArray(raw.crossModalSyntheses) ? raw.crossModalSyntheses.map((v: any) => ({
+        crossModalSyntheses: Array.isArray(raw.crossModalSyntheses) ? raw.crossModalSyntheses.map((v: Record<string, unknown>) => ({
           id: randomUUID(),
-          modalA: v.modalA ?? '',
-          modalB: v.modalB ?? '',
-          pattern: v.pattern ?? '',
-          description: v.description ?? '',
+          modalA: String(v.modalA ?? ''),
+          modalB: String(v.modalB ?? ''),
+          pattern: String(v.pattern ?? ''),
+          description: String(v.description ?? ''),
         })) : [],
-        hypotheses: Array.isArray(raw.hypotheses) ? raw.hypotheses.map((v: any) => ({
+        hypotheses: Array.isArray(raw.hypotheses) ? raw.hypotheses.map((v: Record<string, unknown>) => ({
           id: randomUUID(),
-          hypothesis: v.hypothesis ?? '',
-          testable: v.testable ?? false,
+          hypothesis: String(v.hypothesis ?? ''),
+          testable: Boolean(v.testable ?? false),
           testResult: 'pending' as const,
-          confidence: Math.max(0, Math.min(1, v.confidence ?? 0.5)),
+          confidence: Math.max(0, Math.min(1, Number(v.confidence ?? 0.5))),
         })) : [],
-        creativeOutputs: Array.isArray(raw.creativeOutputs) ? raw.creativeOutputs.map((v: any) => ({
+        creativeOutputs: Array.isArray(raw.creativeOutputs) ? raw.creativeOutputs.map((v: Record<string, unknown>) => ({
           id: randomUUID(),
-          type: v.type ?? 'art',
-          content: v.content ?? '',
-          inspiredBy: v.inspiredBy ?? '',
+          type: String(v.type ?? 'art'),
+          content: String(v.content ?? ''),
+          inspiredBy: String(v.inspiredBy ?? ''),
         })) : [],
-        memoryConsolidations: Array.isArray(raw.memoryConsolidations) ? raw.memoryConsolidations.map((v: any) => ({
+        memoryConsolidations: Array.isArray(raw.memoryConsolidations) ? raw.memoryConsolidations.map((v: Record<string, unknown>) => ({
           id: randomUUID(),
-          memoriesMerged: v.memoriesMerged ?? 0,
-          memoriesForgotten: v.memoriesForgotten ?? 0,
-          memoriesSynthesized: v.memoriesSynthesized ?? 0,
-          description: v.description ?? '',
+          memoriesMerged: Number(v.memoriesMerged ?? 0),
+          memoriesForgotten: Number(v.memoriesForgotten ?? 0),
+          memoriesSynthesized: Number(v.memoriesSynthesized ?? 0),
+          description: String(v.description ?? ''),
         })) : [],
-        insights: Array.isArray(raw.insights) ? raw.insights.map((v: any) => ({
+        insights: Array.isArray(raw.insights) ? raw.insights.map((v: Record<string, unknown>) => ({
           id: randomUUID(),
-          insight: v.insight ?? '',
-          category: v.category ?? 'general',
-          confidence: Math.max(0, Math.min(1, v.confidence ?? 0.5)),
+          insight: String(v.insight ?? ''),
+          category: String(v.category ?? 'general'),
+          confidence: Math.max(0, Math.min(1, Number(v.confidence ?? 0.5))),
           validated: false,
         })) : [],
       };
