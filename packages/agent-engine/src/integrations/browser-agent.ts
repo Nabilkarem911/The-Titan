@@ -303,6 +303,19 @@ export class BrowserAgent extends EventEmitter {
   }
 
   private async executeRealAction(sessionId: string, session: BrowserSession, action: BrowserAction): Promise<BrowserObservation> {
+    if (action.type === 'navigate' && this.config.allowedDomains && action.url) {
+      const domain = new URL(action.url).hostname;
+      if (!this.config.allowedDomains.includes(domain)) {
+        return {
+          url: session.currentUrl,
+          title: '',
+          text: '',
+          success: false,
+          error: `Domain ${domain} not in allowed list`,
+        };
+      }
+    }
+
     const browser = await this.getBrowser();
     let page = this.pages.get(sessionId);
 
@@ -317,18 +330,6 @@ export class BrowserAgent extends EventEmitter {
 
     switch (action.type) {
       case 'navigate': {
-        if (this.config.allowedDomains && action.url) {
-          const domain = new URL(action.url).hostname;
-          if (!this.config.allowedDomains.includes(domain)) {
-            return {
-              url: session.currentUrl,
-              title: '',
-              text: '',
-              success: false,
-              error: `Domain ${domain} not in allowed list`,
-            };
-          }
-        }
         await page.goto(action.url ?? session.currentUrl, {
           waitUntil: 'networkidle2',
           timeout: this.config.timeout,
