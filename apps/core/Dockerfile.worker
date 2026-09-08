@@ -53,6 +53,6 @@ USER titan
 
 # Worker has no HTTP port — healthcheck via process exit code
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD pgrep -x node || exit 1
+  CMD pgrep -f "queue-bootstrap.js" || exit 1
 
 CMD ["dumb-init", "node", "apps/core/dist/queue-bootstrap.js"]
