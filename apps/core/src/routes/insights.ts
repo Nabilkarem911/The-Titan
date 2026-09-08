@@ -85,11 +85,7 @@ export const insightsRoutes: FastifyPluginAsync = async (app: FastifyInstance) =
 
   // POST /api/v1/insights/feedback — record user feedback for learning
   app.post('/api/v1/insights/feedback', { preHandler: [requireAuth] }, async (req, reply) => {
-    const { runId, feedback, score } = req.body as {
-      runId: string;
-      feedback: 'positive' | 'negative';
-      score?: number;
-    };
+    const { runId, feedback } = req.body as { runId: string; feedback: 'positive' | 'negative'; };
 
     if (!runId || !feedback) {
       return reply.code(400).send({ error: 'runId and feedback are required' });

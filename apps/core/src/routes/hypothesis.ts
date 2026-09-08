@@ -1,10 +1,7 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { requireAuth, requirePermission } from '../plugins/auth.js';
 import { PERMISSIONS } from '@titan/shared';
-import { getLogger } from '@titan/logging';
 import { HypothesisTester, createProviderFromEnv } from '@titan/agent-engine';
-
-const log = getLogger().child({ component: 'hypothesis-routes' });
 
 let tester: HypothesisTester | null = null;
 
@@ -53,7 +50,7 @@ export const hypothesisRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     const t = getTester();
     if (!t) return reply.code(503).send({ error: 'No LLM provider available' });
 
-    const result = await t.evaluateResult(hypothesis as any, testOutput);
+    const result = await t.evaluateResult(hypothesis as Parameters<typeof t.evaluateResult>[0], testOutput);
     return reply.send(result);
   });
 

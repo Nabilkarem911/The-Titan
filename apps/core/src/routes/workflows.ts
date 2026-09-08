@@ -106,7 +106,7 @@ export const workflowRoutes: FastifyPluginAsync = async (app: FastifyInstance) =
     const wf = workflows.get(id);
     if (!wf || wf.userId !== userId) return reply.status(404).send({ error: 'Workflow not found' });
 
-    const { input } = (req.body as { input?: Record<string, unknown> }) || {};
+    const { input: _input } = (req.body as { input?: Record<string, unknown> }) || {};
     const runId = randomUUID();
     const exec: WorkflowExecution = {
       runId,

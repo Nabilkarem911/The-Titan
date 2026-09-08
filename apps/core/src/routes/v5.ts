@@ -7,7 +7,6 @@ import {
   MCPGovernanceManager,
   DAGWorkflowEngine,
   MultiLayerGuardrails,
-  WorkflowBuilder,
   createProviderFromEnv,
   getGlobalToolRegistry,
 } from '@titan/agent-engine';
@@ -183,7 +182,7 @@ export const v5Routes: FastifyPluginAsync = async (app: FastifyInstance) => {
   app.post('/api/v1/mcp-governance/check', { preHandler: [requireAuth] }, async (req, reply) => {
     const { serverId, tool, permission, userId } = req.body as { serverId: string; tool: string; permission: string; userId?: string };
     const mgr = getMCPGovernance();
-    const result = mgr.checkPermission(serverId, tool, permission as any, userId);
+    const result = mgr.checkPermission(serverId, tool, permission as Parameters<typeof mgr.checkPermission>[2], userId);
     return reply.send(result);
   });
 
@@ -339,12 +338,14 @@ export const v5Routes: FastifyPluginAsync = async (app: FastifyInstance) => {
       enabled?: boolean; blockOnMatch?: boolean; severity?: string;
     };
     const guardrails = getMultiLayerGuardrails();
-    guardrails.setLayerConfig(layer as any, {
-      type: layer as any,
+    const layerType = layer as Parameters<typeof guardrails.setLayerConfig>[0];
+    const layerConfig: Parameters<typeof guardrails.setLayerConfig>[1] = {
+      type: layerType,
       enabled: enabled ?? true,
       blockOnMatch: blockOnMatch ?? false,
-      severity: (severity as any) ?? 'medium',
-    });
+      severity: (severity as Parameters<typeof guardrails.setLayerConfig>[1]['severity']) ?? 'medium',
+    };
+    guardrails.setLayerConfig(layerType, layerConfig);
     return reply.send({ layer, updated: true });
   });
 
