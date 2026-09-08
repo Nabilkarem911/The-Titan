@@ -66,12 +66,12 @@ export class AdvancedMultimodal {
       if (!jsonMatch) return [];
 
       const parsed = JSON.parse(jsonMatch[0]);
-      const tables: PDFTable[] = Array.isArray(parsed.tables) ? parsed.tables.map((t: any) => ({
+      const tables: PDFTable[] = Array.isArray(parsed.tables) ? parsed.tables.map((t: Record<string, unknown>) => ({
         id: randomUUID(),
-        page: t.page ?? 1,
-        headers: Array.isArray(t.headers) ? t.headers : [],
-        rows: Array.isArray(t.rows) ? t.rows : [],
-        confidence: Math.max(0, Math.min(1, t.confidence ?? 0.5)),
+        page: Number(t.page ?? 1),
+        headers: Array.isArray(t.headers) ? t.headers.map(String) : [],
+        rows: Array.isArray(t.rows) ? (t.rows as unknown[]).map((r: unknown) => Array.isArray(r) ? r.map(String) : []) : [],
+        confidence: Math.max(0, Math.min(1, Number(t.confidence ?? 0.5))),
       })) : [];
 
       incCounter('pdf_tables_extracted', 'PDF tables extracted', tables.length);
@@ -169,9 +169,9 @@ export class AdvancedMultimodal {
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         chartType = parsed.chartType ?? 'unknown';
-        data = Array.isArray(parsed.data) ? parsed.data.map((d: any) => ({
-          label: d.label ?? '',
-          value: Number(d.value) ?? 0,
+        data = Array.isArray(parsed.data) ? parsed.data.map((d: Record<string, unknown>) => ({
+          label: String(d.label ?? ''),
+          value: Number(d.value ?? 0),
         })) : [];
         confidence = Math.max(0, Math.min(1, parsed.confidence ?? 0.5));
       }
