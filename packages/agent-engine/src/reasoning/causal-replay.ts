@@ -1,6 +1,5 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
-import { randomUUID } from 'node:crypto';
 import type { AgentRun, AgentStep, LlmProvider } from '../types.js';
 
 const log = getLogger().child({ component: 'causal-replay' });

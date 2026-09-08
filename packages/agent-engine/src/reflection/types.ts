@@ -1,5 +1,3 @@
-import type { LlmProvider, AgentStep, AgentRun } from '../types.js';
-
 export interface CriticResult {
   approved: boolean;
   issues: CriticIssue[];
@@ -40,6 +38,3 @@ export interface RetryStrategy {
   maxAdditionalRetries: number;
 }
 
-interface ReflectionDeps {
-  llm: LlmProvider;
-}

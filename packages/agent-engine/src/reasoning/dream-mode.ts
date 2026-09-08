@@ -318,6 +318,6 @@ export function getDreamMode(): DreamMode | null {
   return globalDreamMode;
 }
 
-function setDreamMode(mode: DreamMode): void {
+export function setDreamMode(mode: DreamMode): void {
   globalDreamMode = mode;
 }

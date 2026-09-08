@@ -1,9 +1,6 @@
-import { getLogger } from '@titan/logging';
 import type { LlmProvider, AgentStep, LlmToolDefinition } from '../types.js';
 import type { RetryStrategy, ErrorAnalysis } from './types.js';
 import { ErrorAnalyzer } from './error-analyzer.js';
-
-const log = getLogger().child({ component: 'retry-strategist' });
 
 const MAX_RETRIES_PER_STEP = 2;
 

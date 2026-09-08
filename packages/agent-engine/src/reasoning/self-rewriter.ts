@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import { incCounter, setGauge, observeHistogram } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { selfRewriterVersions as versionsRepo, selfRewritePipelines as pipelinesRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';

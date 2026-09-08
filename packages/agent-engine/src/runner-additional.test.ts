@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { AgentRunner } from './runner.js';
 import { MockLlmProvider, MockEchoProvider } from './mockLlmProvider.js';
-import type { LlmProvider, LlmMessage, LlmCompletion, ToolCall, ToolResult, LlmToolDefinition } from './types.js';
+import type { LlmProvider, LlmMessage, LlmCompletion, ToolResult, LlmToolDefinition } from './types.js';
 
 /**
  * A mock provider that always requests the same tool call, used to test

@@ -1,6 +1,5 @@
 import { getLogger } from '@titan/logging';
 import { incCounter } from '@titan/observability';
-import { randomUUID } from 'node:crypto';
 import { hypothesisTests as htRepo } from '@titan/database';
 import type { LlmProvider } from '../types.js';
 

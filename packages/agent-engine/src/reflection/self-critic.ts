@@ -1,5 +1,5 @@
 import { getLogger } from '@titan/logging';
-import type { LlmProvider, AgentRun, AgentStep } from '../types.js';
+import type { LlmProvider, AgentRun } from '../types.js';
 import type { CriticResult, CriticIssue } from './types.js';
 
 const log = getLogger().child({ component: 'self-critic' });

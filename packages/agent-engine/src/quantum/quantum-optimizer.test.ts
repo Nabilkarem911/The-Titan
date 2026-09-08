@@ -20,7 +20,7 @@ describe('QuantumOptimizer', () => {
   });
 
   it('should complete collapse within 5s', async () => {
-    const state = await q.superposeStrategies(['A', 'B'], (s) => 1);
+    const state = await q.superposeStrategies(['A', 'B'], (_s) => 1);
     expect(state.collapseTimeMs).toBeLessThan(5000);
   });
 
