@@ -251,7 +251,7 @@ export const cognitionRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     if (!performanceData) return reply.code(400).send({ error: 'performanceData is required' });
     const ml = getMetaLearningOptimizer();
     if (!ml) return reply.code(503).send({ error: 'No LLM provider available' });
-    const result = await ml.optimize(performanceData as any);
+    const result = await ml.optimize(performanceData as unknown as Parameters<typeof ml.optimize>[0]);
     return reply.send(result);
   });
 
@@ -283,7 +283,7 @@ export const cognitionRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     };
     const tom = getTheoryOfMind();
     if (!tom) return reply.code(503).send({ error: 'No LLM provider available' });
-    const result = await tom.analyze(targetEntityId, { entityType: entityType as any, messages, actions, background, currentTask });
+    const result = await tom.analyze(targetEntityId, { entityType: entityType as unknown as Parameters<typeof tom.analyze>[1]['entityType'], messages, actions, background, currentTask });
     return reply.send(result);
   });
 

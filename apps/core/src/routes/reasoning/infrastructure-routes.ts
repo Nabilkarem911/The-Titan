@@ -148,7 +148,7 @@ export const infrastructureRoutes: FastifyPluginAsync = async (app: FastifyInsta
     };
     try {
       const router = getSmartModelRouter();
-      const decision = router.route(input, { taskType, maxLatencyMs, maxCost, requiredCapabilities, preferTier: preferTier as any });
+      const decision = router.route(input, { taskType, maxLatencyMs, maxCost, requiredCapabilities, preferTier: preferTier as unknown as NonNullable<Parameters<typeof router.route>[1]>['preferTier'] });
       return reply.send(decision);
     } catch (err) {
       return reply.code(500).send({ error: 'Router failed', detail: String(err) });
@@ -163,7 +163,7 @@ export const infrastructureRoutes: FastifyPluginAsync = async (app: FastifyInsta
   app.post('/api/v1/router/models', { preHandler: [requireAuth] }, async (req, reply) => {
     requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
     const router = getSmartModelRouter();
-    router.addModel(req.body as any);
+    router.addModel(req.body as unknown as Parameters<typeof router.addModel>[0]);
     return reply.send({ success: true });
   });
 
@@ -193,7 +193,7 @@ export const infrastructureRoutes: FastifyPluginAsync = async (app: FastifyInsta
     requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
     const bs = getBenchmarkingSuite();
     if (!bs) return reply.code(503).send({ error: 'No LLM provider available' });
-    bs.addCustomTask(req.body as any);
+    bs.addCustomTask(req.body as unknown as Parameters<typeof bs.addCustomTask>[0]);
     return reply.send({ success: true });
   });
 

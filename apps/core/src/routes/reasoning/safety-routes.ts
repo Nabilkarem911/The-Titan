@@ -35,7 +35,7 @@ export const safetyRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
     const { decision } = req.query as { decision?: string };
     const guard = getSafetyGuardrail();
     if (!guard) return reply.send({ results: [] });
-    return reply.send({ results: guard.getResults(decision ? { decision: decision as any } : undefined) });
+    return reply.send({ results: guard.getResults(decision ? { decision: decision as unknown as NonNullable<Parameters<typeof guard.getResults>[0]>['decision'] } : undefined) });
   });
 
   app.get('/api/v1/guardrail/stats', { preHandler: [requireAuth] }, async (_req, reply) => {
