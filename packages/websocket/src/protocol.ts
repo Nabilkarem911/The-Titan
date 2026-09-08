@@ -33,7 +33,7 @@ export function isNotification(msg: JsonRpcMessage): msg is JsonRpcNotification 
   return 'method' in msg && !('id' in msg);
 }
 
-function buildSuccess<T>(id: JsonRpcId, result: T): JsonRpcSuccess<T> {
+export function buildSuccess<T>(id: JsonRpcId, result: T): JsonRpcSuccess<T> {
   return { jsonrpc: '2.0', id, result };
 }
 
@@ -62,7 +62,7 @@ export function buildMethodNotFoundError(id: JsonRpcId, method: string): JsonRpc
   return buildError(id, JSON_RPC_ERROR.METHOD_NOT_FOUND, `Method not found: ${method}`);
 }
 
-function buildInvalidParamsError(id: JsonRpcId, details?: unknown): JsonRpcError {
+export function buildInvalidParamsError(id: JsonRpcId, details?: unknown): JsonRpcError {
   return buildError(id, JSON_RPC_ERROR.INVALID_PARAMS, 'Invalid params', details);
 }
 
@@ -70,11 +70,11 @@ export function buildInternalError(id: JsonRpcId, message = 'Internal error', da
   return buildError(id, JSON_RPC_ERROR.INTERNAL_ERROR, message, data);
 }
 
-function buildAuthFailedError(id: JsonRpcId | null, message = 'Authentication failed'): JsonRpcError {
+export function buildAuthFailedError(id: JsonRpcId | null, message = 'Authentication failed'): JsonRpcError {
   return buildError(id, JSON_RPC_ERROR.AUTH_FAILED, message);
 }
 
-function buildRateLimitedError(id: JsonRpcId | null, retryAfter?: number): JsonRpcError {
+export function buildRateLimitedError(id: JsonRpcId | null, retryAfter?: number): JsonRpcError {
   return buildError(id, JSON_RPC_ERROR.RATE_LIMITED, 'Rate limit exceeded', { retryAfter });
 }
 

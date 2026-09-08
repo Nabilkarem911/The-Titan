@@ -1,15 +1,10 @@
-import { getLogger } from '@titan/logging';
-import type { CompositeToolDefinition, PipelineStep } from './types.js';
+import type { CompositeToolDefinition } from './types.js';
 import { ToolPipeline, type ToolExecutor } from './pipe.js';
-
-const log = getLogger().child({ component: 'macro-builder' });
-
 export class MacroBuilder {
   private macros: Map<string, CompositeToolDefinition> = new Map();
 
   define(macro: CompositeToolDefinition): void {
     this.macros.set(macro.name, macro);
-    log.info({ name: macro.name, steps: macro.pipeline.length }, 'macro defined');
   }
 
   remove(name: string): boolean {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ToolPipeline, pipe } from './pipe.js';
+import { pipe } from './pipe.js';
 import { parallelExec } from './parallel-exec.js';
 import { conditionalExec } from './conditional-tool.js';
 import { MacroBuilder } from './macro-builder.js';

@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { McpServer } from './mcp-server.js';
 import { McpToolAdapter } from './tool-adapter.js';
 import { McpClient } from './mcp-client.js';
-import type { McpToolDefinition, McpServerInfo } from './types.js';
+import type { McpServerInfo } from './types.js';
 
 // ── MCP Server ──
 

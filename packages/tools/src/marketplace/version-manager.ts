@@ -1,7 +1,3 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'version-manager' });
-
 export interface VersionInfo {
   current: string;
   available: string[];

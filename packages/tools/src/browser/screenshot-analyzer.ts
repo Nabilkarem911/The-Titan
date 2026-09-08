@@ -1,7 +1,4 @@
-import { getLogger } from '@titan/logging';
 import type { LlmProvider } from '@titan/agent-engine';
-
-const log = getLogger().child({ component: 'screenshot-analyzer' });
 
 export interface ScreenshotAnalysis {
   description: string;

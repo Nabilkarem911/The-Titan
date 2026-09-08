@@ -1,7 +1,3 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'browser-session' });
-
 export interface BrowserSession {
   id: string;
   cookies: Map<string, string>;

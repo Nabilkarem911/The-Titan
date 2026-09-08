@@ -3,9 +3,28 @@ import type { DockerOrchestratorInput } from '../schemas.js';
 
 const log = getLogger().child({ component: 'tool-docker' });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let Docker: any = null;
-async function getDocker(): Promise<any> {
+interface DockerContainer {
+  start: () => Promise<Record<string, unknown>>;
+  id: string;
+}
+
+interface DockerExec {
+  start: (opts: Record<string, unknown>) => Promise<{ on: (event: string, handler: (...args: unknown[]) => void) => void }>;
+}
+
+interface DockerClient {
+  listContainers: (opts: Record<string, unknown>) => Promise<Record<string, unknown>[]>;
+  createContainer: (opts: Record<string, unknown>) => Promise<DockerContainer>;
+  getContainer: (id: string) => {
+    stop: () => Promise<Record<string, unknown>>;
+    remove: (opts: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    logs: (opts: Record<string, unknown>) => Promise<Buffer>;
+    exec: (opts: Record<string, unknown>) => Promise<DockerExec>;
+  };
+}
+
+let Docker: unknown = null;
+async function getDocker(): Promise<unknown> {
   if (Docker) return Docker;
   try {
     const mod = await import('dockerode');
@@ -30,24 +49,24 @@ export async function dockerOrchestrate(input: DockerOrchestratorInput): Promise
     return { success: false, error: 'dockerode is not installed or Docker daemon is unavailable' };
   }
 
-  const docker = new DockerCtor();
+  const docker = new (DockerCtor as unknown as new () => DockerClient)();
 
   try {
     switch (action) {
       case 'list': {
-        const containers: any[] = await docker.listContainers({ all: true });
-        return { success: true, data: containers.map((c: any) => ({ id: c.Id, names: c.Names, state: c.State, image: c.Image })) };
+        const containers = await docker.listContainers({ all: true }) as Record<string, unknown>[];
+        return { success: true, data: containers.map((c) => ({ id: String(c.Id), names: Array.isArray(c.Names) ? c.Names.map(String) : [], state: String(c.State), image: String(c.Image) })) };
       }
       case 'run': {
         if (!image) return { success: false, error: 'image is required for run' };
-        const createOpts: any = {
+        const createOpts: Record<string, unknown> = {
           Image: image,
           name: containerName,
           Cmd: command ? command.split(' ') : undefined,
-          Env: env ? Object.entries(env).map(([k, v]) => `${k}=${v}`) : undefined,
+          Env: env ? Object.entries(env).map(([k, v]) => `${k}=${String(v)}`) : undefined,
           HostConfig: {
             PortBindings: ports
-              ? Object.fromEntries(Object.entries(ports).map(([k, v]) => [`${k}/tcp`, [{ HostPort: v }]]))
+              ? Object.fromEntries(Object.entries(ports).map(([k, v]) => [`${k}/tcp`, [{ HostPort: String(v) }]]))
               : undefined,
             Binds: volumes,
           },
@@ -87,10 +106,10 @@ export async function dockerOrchestrate(input: DockerOrchestratorInput): Promise
         const stream = await exec.start({ hijack: true, stdin: false });
         // Simplified: collect stdout/stderr
         let output = '';
-        stream.on('data', (chunk: Buffer) => {
-          output += chunk.toString('utf-8');
+        stream.on('data', (chunk: unknown) => {
+          output += (chunk as Buffer).toString('utf-8');
         });
-        await new Promise<void>((resolve) => stream.on('end', resolve));
+        await new Promise<void>((resolve) => stream.on('end', () => resolve()));
         return { success: true, data: { output: output.substring(0, 50_000) } };
       }
       default:

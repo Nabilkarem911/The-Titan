@@ -1,7 +1,4 @@
-import { getLogger } from '@titan/logging';
 import type { PluginManifest } from './plugin-store.js';
-
-const log = getLogger().child({ component: 'plugin-validator' });
 
 export interface ValidationResult {
   valid: boolean;

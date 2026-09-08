@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { writeFile } from '../writeFile.js';
 import { excelRead } from '../excelRead.js';
 import { logSearch } from '../logSearch.js';

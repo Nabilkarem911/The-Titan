@@ -1,7 +1,3 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'form-filler' });
-
 export interface FormField {
   name: string;
   type: string;
@@ -63,7 +59,6 @@ export class FormFiller {
 
     for (const field of form.fields) {
       const name = field.name.toLowerCase();
-      const label = (field.label ?? '').toLowerCase();
 
       if (contextLower[name]) { values[field.name] = contextLower[name]; continue; }
       if (name.includes('email') && contextLower['email']) { values[field.name] = contextLower['email']; continue; }

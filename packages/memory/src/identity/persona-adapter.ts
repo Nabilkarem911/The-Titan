@@ -1,7 +1,4 @@
-import { getLogger } from '@titan/logging';
 import type { UserProfile } from './user-profile-builder.js';
-
-const log = getLogger().child({ component: 'persona-adapter' });
 
 interface PersonaConfig {
   formality: 'casual' | 'balanced' | 'formal';

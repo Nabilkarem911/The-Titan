@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { CircuitBreaker, CircuitOpenError } from './circuit-breaker.js';
 import { Bulkhead, BulkheadFullError } from './bulkhead.js';
 import { HealthAggregator } from './health-aggregator.js';

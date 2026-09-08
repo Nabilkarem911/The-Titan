@@ -63,7 +63,7 @@ export interface ApiKey {
   createdAt: Date;
 }
 
-interface AuditLog {
+export interface AuditLog {
   id: string;
   actorId: UserId | null;
   workspaceId: WorkspaceId | null;
@@ -85,7 +85,7 @@ export interface AuthContext {
   permissions: readonly string[];
 }
 
-interface PaginatedResult<T> {
+export interface PaginatedResult<T> {
   items: T[];
   nextCursor: string | null;
   total: number;
