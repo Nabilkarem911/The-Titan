@@ -44,7 +44,7 @@ function renderPieChart(data: Array<{ label: string; value: number }>, title?: s
   return lines.join('\n');
 }
 
-function renderLineChart(data: Array<{ label: string; value: number }>, title?: string, width = 40): string {
+function renderLineChart(data: Array<{ label: string; value: number }>, title?: string, _width = 40): string {
   const max = Math.max(...data.map((d) => d.value));
   const min = Math.min(...data.map((d) => d.value));
   const range = max - min || 1;

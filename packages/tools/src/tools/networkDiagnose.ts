@@ -25,7 +25,6 @@ export async function networkDiagnose(params: { target: string; action?: 'ping' 
 
     for (const port of ports) {
       try {
-        const start = performance.now();
         await fetch(`http://${host}:${port}`, { method: 'HEAD', signal: AbortSignal.timeout(2000) });
         portResults[port] = true;
       } catch {
