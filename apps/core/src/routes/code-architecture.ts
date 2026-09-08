@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { requireAuth } from '../plugins/auth.js';
 import { DependencyGraph } from '@titan/agent-engine';
 import { readFileSync, existsSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { join } from 'node:path';
 
 let graph: DependencyGraph | null = null;
 

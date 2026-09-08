@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
-import { ChannelRouter, DiscordAdapter, SlackAdapter, WhatsAppAdapter } from '@titan/agent-engine';
+import { ChannelRouter } from '@titan/agent-engine';
 import type { ChannelConfig, ChannelMessage } from '@titan/agent-engine';
 import { getGlobalToolRegistry } from '@titan/agent-engine';
 import { getGlobalMemoryClient } from '@titan/memory';

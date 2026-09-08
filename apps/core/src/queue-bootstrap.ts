@@ -8,13 +8,13 @@ import {
 } from '@titan/queue';
 import { SwarmOrchestrator, createProviderFromEnv, getGlobalToolRegistry, type ToolResult, type AgentRun, type AgentRunInput } from '@titan/agent-engine';
 import { createRunner } from './create-runner.js';
-import { storeSwarmTask, getSwarmTask } from './swarm-store.js';
+import { storeSwarmTask } from './swarm-store.js';
 import { getGlobalMemoryClient } from '@titan/memory';
 import { agentRuns, userSecrets, userContext, userProjects } from '@titan/database';
 import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile, pdfCreate, spreadsheetCreate, imageGenerate, imageAnalyze, s3Operations, googleDrive, notionApi, linearApi, rssFeedParse, webMonitor, csvTransform, dataVisualize, slackMessage, smsMessage, textClassify, codeAnalyze, systemMetrics, invoiceGenerate, reportGenerate, jiraApi, seoAnalyze, xmlParse, networkDiagnose, textSummarize, entityExtract, accessibilityCheck, budgetTracker, imageEdit, documentTemplate, slideCreate, gcsOperations, dropboxSync, trelloApi, asanaApi, sitemapCrawl, jsonSchemaValidate, yamlConvert, discordMessage, whatsappMessage, pushNotification, embeddingsGenerate, logSearch, databaseBackup, cronManage, processManager, contractDraft } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { registerDesktopTools } from './desktop-tools.js';
-import { startBackgroundScheduler, stopBackgroundScheduler, touchActivity } from './background-scheduler.js';
+import { startBackgroundScheduler, stopBackgroundScheduler } from './background-scheduler.js';
 
 const cfg = loadConfig();
 
@@ -1321,6 +1321,7 @@ export function registerAllQueueSchemas(): void {
 }
 
 // Processor implementations
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const processors: Record<QueueName, (job: any) => Promise<any>> = {
   [QUEUE_NAMES.AGENT_EXECUTE]: async (job) => {
     const { prompt, runId, agentId, workspaceId, userId, apiKeyId, maxSteps, tokenBudget, forbiddenTools } = job.data;

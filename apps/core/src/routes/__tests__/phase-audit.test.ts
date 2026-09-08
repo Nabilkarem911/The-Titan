@@ -15,7 +15,7 @@
  * 11. Dynamic Tool Discovery — discover returns tools
  * 12. Proactive Intelligence — analyzePatterns returns suggestion
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Mock LLM provider for capabilities that need one
@@ -457,7 +457,7 @@ describe('Phase 4 — Proactive Intelligence', () => {
     // setDoNotDisturb takes start and end hours
     pi.setDoNotDisturb(0, 24); // all day
     // analyzePatterns should still work (DND only affects notifications, not analysis)
-    const suggestion = await pi.analyzePatterns(['user: hello', 'user: do task']);
+    await pi.analyzePatterns(['user: hello', 'user: do task']);
     // Result can be null if LLM mock doesn't return valid proactive format
     // The important thing is it doesn't crash
     expect(() => pi.getSuggestions()).not.toThrow();

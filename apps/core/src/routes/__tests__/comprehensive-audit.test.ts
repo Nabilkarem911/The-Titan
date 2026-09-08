@@ -5,7 +5,7 @@
  * cross-module integration scenarios, and external service
  * wiring (with graceful skip when env vars are missing).
  */
-import { describe, it, expect, beforeAll, afterAll, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 
 // ---------------------------------------------------------------------------

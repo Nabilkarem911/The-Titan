@@ -11,7 +11,6 @@ import {
   MultiModelRouter,
   wireCapabilities,
   getGlobalWiring,
-  ContextOptimizer,
   type LlmProvider,
   type ToolCall,
   type ToolResult,

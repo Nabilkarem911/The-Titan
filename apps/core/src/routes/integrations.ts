@@ -19,7 +19,6 @@ export default async function integrationsRoutes(app: FastifyInstance): Promise<
 
   app.post('/api/v1/integrations/:type/connect', async (req, reply) => {
     const { type } = req.params as { type: string };
-    const config = req.body as Record<string, unknown>;
     return { type, status: 'connected', note: `${type} integration connected — store config in integrations table` };
   });
 

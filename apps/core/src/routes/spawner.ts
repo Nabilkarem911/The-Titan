@@ -24,7 +24,7 @@ function getSpawner(): AgentSpawner {
   const registry = getGlobalToolRegistry();
   return new AgentSpawner({
     llm,
-    executeTool: async (call, runId) => registry.execute(call.name, call.params),
+    executeTool: async (call, _runId) => registry.execute(call.name, call.params),
     createAgentRun: async (input) => {
       const { randomUUID } = await import('node:crypto');
       return {
