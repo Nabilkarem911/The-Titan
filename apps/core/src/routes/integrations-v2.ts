@@ -56,7 +56,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app: FastifyInstanc
     const card = adapter.registerSelf({
       name, description, url, capabilities, authentication,
       signature, signedBy, tenantId,
-      transports: transports as any,
+      transports: transports as unknown as Parameters<typeof adapter.registerSelf>[0]['transports'],
       skills,
     });
     return reply.send(card);
@@ -66,7 +66,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app: FastifyInstanc
   app.post('/api/v1/a2a/agents', { preHandler: [requireAuth] }, async (req, reply) => {
     requirePermission(req.auth, PERMISSIONS.TOOL_EXECUTE);
     const adapter = getA2AAdapter();
-    adapter.registerAgent(req.body as any);
+    adapter.registerAgent(req.body as unknown as Parameters<typeof adapter.registerAgent>[0]);
     return reply.send({ success: true });
   });
 
@@ -115,7 +115,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app: FastifyInstanc
       parts?: unknown[]; metadata?: Record<string, unknown>;
     };
     const adapter = getA2AAdapter();
-    const task = adapter.sendTask(agentId, { name, description, content, parts: parts as any, metadata });
+    const task = adapter.sendTask(agentId, { name, description, content, parts: parts as unknown as Parameters<typeof adapter.sendTask>[1]['parts'], metadata });
     return reply.send(task);
   });
 
@@ -123,7 +123,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app: FastifyInstanc
   app.get('/api/v1/a2a/tasks', { preHandler: [requireAuth] }, async (req, reply) => {
     const { agentId, state } = req.query as { agentId?: string; state?: string };
     const adapter = getA2AAdapter();
-    return reply.send({ tasks: adapter.getTasks({ agentId, state: state as any }) });
+    return reply.send({ tasks: adapter.getTasks({ agentId, state: state as unknown as NonNullable<Parameters<typeof adapter.getTasks>[0]>['state'] }) });
   });
 
   // GET /api/v1/a2a/tasks/:id — get a task
@@ -143,7 +143,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app: FastifyInstanc
       state: string; content?: string; parts?: unknown[]; artifacts?: unknown[];
     };
     const adapter = getA2AAdapter();
-    const task = adapter.updateTaskState(id, state as any, content ? { content, parts: parts as any, artifacts: artifacts as any } : undefined);
+    const task = adapter.updateTaskState(id, state as unknown as Parameters<typeof adapter.updateTaskState>[1], content ? { content, parts: parts as unknown as NonNullable<Parameters<typeof adapter.updateTaskState>[2]>['parts'], artifacts: artifacts as unknown as NonNullable<Parameters<typeof adapter.updateTaskState>[2]>['artifacts'] } : undefined);
     if (!task) return reply.code(404).send({ error: 'Task not found' });
     return reply.send(task);
   });
@@ -281,7 +281,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app: FastifyInstanc
     };
     if (!query) return reply.code(400).send({ error: 'query is required' });
     const wi = getWebIntelligence();
-    const results = await wi.search(query, { maxResults, source, timeRange: timeRange as any });
+    const results = await wi.search(query, { maxResults, source, timeRange: timeRange as unknown as NonNullable<Parameters<typeof wi.search>[1]>['timeRange'] });
     return reply.send({ results });
   });
 
@@ -293,7 +293,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app: FastifyInstanc
     };
     if (!url) return reply.code(400).send({ error: 'url is required' });
     const wi = getWebIntelligence();
-    const result = await wi.scrape(url, { format: format as any, extractLinks, extractImages });
+    const result = await wi.scrape(url, { format: format as unknown as NonNullable<Parameters<typeof wi.scrape>[1]>['format'], extractLinks, extractImages });
     return reply.send(result);
   });
 
