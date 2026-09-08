@@ -75,7 +75,7 @@ export function validateJob<T>(queue: QueueName, data: unknown): T {
 }
 
 export function registerToolSchemas(): void {
-  registerJobSchema(QUEUE_NAMES.TOOL_EXECUTE, ToolInputSchema as any);
+  registerJobSchema(QUEUE_NAMES.TOOL_EXECUTE, ToolInputSchema);
   log.info({ queue: QUEUE_NAMES.TOOL_EXECUTE }, 'tool schemas registered');
 }
 

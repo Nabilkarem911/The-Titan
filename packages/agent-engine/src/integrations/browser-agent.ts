@@ -342,7 +342,7 @@ export class BrowserAgent extends EventEmitter {
 
       case 'click': {
         if (action.selector) {
-          await page.click(action.selector, { timeout: this.config.timeout } as any);
+          await page.click(action.selector);
         }
         await page.waitForNetworkIdle({ timeout: 5000 }).catch((err) => log.error({ err }, 'DB write failed'));
         const text = await page.evaluate('document.body?.innerText?.slice(0, 5000) ?? ""') as string;
@@ -402,7 +402,7 @@ export class BrowserAgent extends EventEmitter {
 
       case 'press_key': {
         if (action.value) {
-          await page.keyboard.press(action.value as any);
+          await page.keyboard.press(action.value as import('puppeteer').KeyInput);
         }
         return { url: page.url(), title: await page.title(), text: `[Pressed ${action.value}]`, success: true };
       }
