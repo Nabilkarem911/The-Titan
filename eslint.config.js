@@ -58,6 +58,12 @@ export default [
     },
   },
   {
+    files: ['apps/core/src/routes/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^(req|reply|request|_|unused)', varsIgnorePattern: '^_' }],
+    },
+  },
+  {
     ignores: [
       '**/dist/**',
       '**/node_modules/**',
