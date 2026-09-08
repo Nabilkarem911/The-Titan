@@ -1,8 +1,8 @@
 import { getLogger } from '@titan/logging';
-import { incCounter, observeHistogram } from '@titan/observability';
+import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import type { LlmProvider } from '../types.js';
-import { economyAccounts, economyReputation, economyListings, economyOffers, economyEscrows, economyAuditLog } from '@titan/database';
+import { economyAccounts, economyListings, economyOffers, economyEscrows, economyAuditLog } from '@titan/database';
 
 const log = getLogger().child({ component: 'agent-economy' });
 

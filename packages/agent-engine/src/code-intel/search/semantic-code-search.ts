@@ -1,9 +1,7 @@
-import { getLogger } from '@titan/logging';
 import type { CodebaseIndex } from '../indexer/codebase-index.js';
 import type { CrawledFile } from '../indexer/file-crawler.js';
 import type { CodeSymbol } from '../indexer/symbol-extractor.js';
 
-const log = getLogger().child({ component: 'code-search' });
 
 export interface SearchResult {
   file: CrawledFile;

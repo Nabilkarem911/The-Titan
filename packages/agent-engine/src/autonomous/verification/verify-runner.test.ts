@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { runTypeCheck, runTests, runLint, runBuild } from './verify-runner.js';
 
 describe('VerifyRunner — Security Regression Tests', () => {

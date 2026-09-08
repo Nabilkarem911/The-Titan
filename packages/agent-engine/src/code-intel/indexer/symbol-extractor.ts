@@ -1,6 +1,3 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'symbol-extractor' });
 
 type SymbolKind = 'function' | 'class' | 'interface' | 'type' | 'enum' | 'variable' | 'export' | 'import';
 

@@ -1,9 +1,7 @@
-import { getLogger } from '@titan/logging';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, basename, sep } from 'node:path';
 import { extractSymbols, type CodeSymbol } from '../indexer/symbol-extractor.js';
 
-const log = getLogger().child({ component: 'dependency-graph' });
 
 interface FileNode {
   path: string;

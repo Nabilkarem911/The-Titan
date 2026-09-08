@@ -28,7 +28,7 @@ interface TaskExecutionResult {
   durationMs: number;
 }
 
-class TaskExecutor {
+export class TaskExecutor {
   private deps: TaskExecutorDeps;
   private index: CodebaseIndex | null = null;
   private autoFixer: AutoFixer;

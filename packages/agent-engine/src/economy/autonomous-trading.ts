@@ -53,7 +53,7 @@ export class RLEnvironment {
     this.explorationRate = explorationRate;
   }
 
-  startEpisode(initialState: RLState): RLEpisode {
+  startEpisode(_initialState: RLState): RLEpisode {
     const episode: RLEpisode = {
       id: randomUUID(),
       steps: [],

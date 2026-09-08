@@ -532,7 +532,7 @@ export class CreativeEngine {
 
 let globalEngine: CreativeEngine | null = null;
 
-function getCreativeEngine(llm?: LlmProvider): CreativeEngine {
+export function getCreativeEngine(llm?: LlmProvider): CreativeEngine {
   if (!globalEngine) {
     if (!llm) throw new Error('CreativeEngine not initialized — provide LlmProvider');
     globalEngine = new CreativeEngine(llm);
@@ -540,7 +540,7 @@ function getCreativeEngine(llm?: LlmProvider): CreativeEngine {
   return globalEngine;
 }
 
-function initCreativeEngine(llm: LlmProvider, tempDir?: string): CreativeEngine {
+export function initCreativeEngine(llm: LlmProvider, tempDir?: string): CreativeEngine {
   globalEngine = new CreativeEngine(llm, tempDir);
   return globalEngine;
 }

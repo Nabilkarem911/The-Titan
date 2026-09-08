@@ -40,7 +40,6 @@ describe('GitHubMiner', () => {
   it('should crystallize patterns with value score > 0.4', async () => {
     const repos = await miner.searchRepositories('high quality tool');
     const patterns = await miner.cloneAndExtract(repos[0]);
-    const crystallized = patterns.filter((p) => p.crystallized);
     // Some patterns should crystallize if value score is high enough
     expect(patterns.length).toBeGreaterThan(0);
   });
