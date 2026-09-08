@@ -1,0 +1,529 @@
+
+> titan@0.1.0 lint
+> eslint .
+
+
+F:\projects\The-Titan\apps\core\src\create-runner.ts
+  14:3  warning  'ContextOptimizer' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\queue-bootstrap.ts
+    11:26  warning  'getSwarmTask' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+    17:61  warning  'touchActivity' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  1324:43  warning  Unexpected any. Specify a different type                                         @typescript-eslint/no-explicit-any
+  1324:59  warning  Unexpected any. Specify a different type                                         @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\apps\core\src\routes\__tests__\comprehensive-audit.test.ts
+  8:62  warning  'Mock' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\__tests__\phase-audit.test.ts
+   18:36  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  460:11  warning  'suggestion' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\chat.ts
+  89:17  warning  'reply' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\code-architecture.ts
+  5:16  warning  'relative' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  5:26  warning  'sep' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\collaboration.ts
+  79:85  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\apps\core\src\routes\cross-user.ts
+  11:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  53:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\apps\core\src\routes\files.ts
+  100:47  warning  'reply' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  275:48  warning  'reply' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\hypothesis.ts
+   7:7   warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  56:57  warning  Unexpected any. Specify a different type                                        @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\apps\core\src\routes\insights.ts
+  88:30  warning  'score' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\integration-keys.ts
+  114:46  warning  'req' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\integrations-v2.ts
+   59:33   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   69:39   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:90   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:76   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:55   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:97   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:126  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  284:90   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  296:61   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\apps\core\src\routes\integrations.ts
+   4:42  warning  'req' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+   4:47  warning  'reply' is defined but never used. Allowed unused args must match /^_/u            @typescript-eslint/no-unused-vars
+  20:62  warning  'reply' is defined but never used. Allowed unused args must match /^_/u            @typescript-eslint/no-unused-vars
+  22:11  warning  'config' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  26:56  warning  'reply' is defined but never used. Allowed unused args must match /^_/u            @typescript-eslint/no-unused-vars
+  31:60  warning  'reply' is defined but never used. Allowed unused args must match /^_/u            @typescript-eslint/no-unused-vars
+  36:59  warning  'reply' is defined but never used. Allowed unused args must match /^_/u            @typescript-eslint/no-unused-vars
+  41:54  warning  'req' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+  41:59  warning  'reply' is defined but never used. Allowed unused args must match /^_/u            @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\multi-platform-bots.ts
+  2:25  warning  'DiscordAdapter' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  2:41  warning  'SlackAdapter' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  2:55  warning  'WhatsAppAdapter' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\reasoning\cognition-routes.ts
+  254:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  286:82  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\apps\core\src\routes\reasoning\dream-debug-routes.ts
+   35:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   41:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   77:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  191:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  200:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\apps\core\src\routes\reasoning\infrastructure-routes.ts
+  151:127  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  166:33   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:34   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\apps\core\src\routes\reasoning\safety-routes.ts
+  38:86  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\apps\core\src\routes\spawner.ts
+  27:31  warning  'runId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\terminal.ts
+  53:7  warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+F:\projects\The-Titan\apps\core\src\routes\user-keys.ts
+  52:45  warning  'reply' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\apps\core\src\routes\v5.ts
+   10:3   warning  'WorkflowBuilder' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  186:70  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  342:40  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  343:22  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  346:30  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\apps\core\src\routes\workflows.ts
+  109:13  warning  'input' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\autonomous\fix-loop\auto-fixer.ts
+   3:15  warning  'VerificationResult' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  85:16  warning  'err' is defined but never used                                                       @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\autonomous\fix-loop\rollback.ts
+  13:7  warning  'RollbackManager' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\autonomous\git-ops\git-manager.ts
+  5:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\autonomous\proactive-intelligence.ts
+  151:101  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\packages\agent-engine\src\autonomous\sandbox\resource-monitor.ts
+   3:7   warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  26:7   warning  'ResourceMonitor' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  83:20  warning  A `require()` style import is forbidden                                            @typescript-eslint/no-require-imports
+
+F:\projects\The-Titan\packages\agent-engine\src\autonomous\task-executor.ts
+  31:7  warning  'TaskExecutor' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\autonomous\verification\verify-runner.test.ts
+  1:32  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\autonomous\verification\verify-runner.ts
+  72:45  warning  'buildCmd' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\capability-tools\metacognition-tools.ts
+  151:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\packages\agent-engine\src\capability-tools\reasoning-tools.ts
+  21:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\packages\agent-engine\src\capability-wiring.ts
+  208:9  warning  'registry' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\code-intel\analysis\dependency-graph.ts
+  6:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\code-intel\code-intel.test.ts
+  3:52  warning  'getDependents' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  4:22  warning  'findReferences' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\code-intel\indexer\symbol-extractor.ts
+  3:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\code-intel\search\semantic-code-search.ts
+  6:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\constitution\titan-constitution.ts
+  47:7  warning  'SAFETY_PRINCIPLES_IMMUTABLE' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\creative\creative-engine.ts
+  535:10  warning  'getCreativeEngine' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  543:10  warning  'initCreativeEngine' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\dream\dream-world.ts
+  231:82   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  237:76   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  243:103  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  250:76   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  257:91   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  263:106  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  270:70   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\packages\agent-engine\src\economy\agent-economy.ts
+  2:22  warning  'observeHistogram' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  5:27  warning  'economyReputation' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\economy\autonomous-trading.ts
+  56:16  warning  'initialState' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\evolution\github-miner.test.ts
+  43:11  warning  'crystallized' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\evolution\meta-evolution.test.ts
+  49:11  warning  'original' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\hive\hive-mind.test.ts
+  132:11  warning  'vote' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\hive\hive-mind.ts
+    2:22  warning  'observeHistogram' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  321:21  warning  'instance' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\integrations\browser-agent.ts
+  344:81  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  404:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\packages\agent-engine\src\integrations\mcp-governance.ts
+   9:6   warning  'MCPAuthType' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  51:11  warning  'MCPTransportConfig' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\learning\cross-user-learner.ts
+  5:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\learning\prompt-optimizer.ts
+  3:15  warning  'LlmProvider' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\metacognition\anti-sycophancy.ts
+  5:38  warning  'AgentStep' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\metacognition\capability-registry.ts
+  339:24  warning  'count' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\metacognition\multi-layer-guardrails.ts
+  155:17  warning  'name' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\mirror\digital-twin.ts
+   45:11  warning  'WhatIfScenario' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  375:10  warning  'getDigitalTwin' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  382:10  warning  'initDigitalTwin' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\mirror\inner-monologue.ts
+  4:10  warning  'randomUUID' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\mirror\mirror.test.ts
+  103:11  warning  'id' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\mirror\orchestrator.ts
+  185:10  warning  'getMirrorConsciousness' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  192:10  warning  'initMirrorConsciousness' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\multimodal\advanced-multimodal.ts
+   69:87  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  172:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\packages\agent-engine\src\multimodal\processor.ts
+  57:11  warning  'name' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\personality\prompt-builder.ts
+  2:29  warning  'AgentRule' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+  6:7   warning  'IDENTITY_CORE' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\planner\index.ts
+  1:10  warning  'shouldDecompose' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\planner\types.ts
+  1:28  warning  'ToolCall' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\providers\context-optimizer-learned.test.ts
+  2:51  warning  'ContextBudget' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\providers\context-optimizer.ts
+    3:46  warning  'ToolCall' is defined but never used. Allowed unused vars must match /^_/u                              @typescript-eslint/no-unused-vars
+   66:7   warning  'DEFAULT_BUDGET' is assigned a value but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+  146:5   warning  'steps' is defined but never used. Allowed unused args must match /^_/u                                 @typescript-eslint/no-unused-vars
+  178:13  warning  'toolCallsSummarized' is assigned a value but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  183:11  warning  'assistantMessagesSummarized' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\providers\multi-model-router.test.ts
+  2:51  warning  'TaskComplexity' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\providers\multi-model-router.ts
+  203:16  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\quantum\quantum-optimizer.test.ts
+  23:60  warning  's' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\reasoning\causal-replay.ts
+  3:10  warning  'randomUUID' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\reasoning\dream-mode.ts
+  321:10  warning  'setDreamMode' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\reasoning\hypothesis-tester.ts
+  3:10  warning  'randomUUID' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\reasoning\self-rewriter.ts
+  4:31  warning  'mkdir' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\reflection\retry-strategist.ts
+  6:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\reflection\self-critic.ts
+  2:38  warning  'AgentStep' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\reflection\types.ts
+   1:28  warning  'AgentStep' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+   1:39  warning  'AgentRun' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  43:11  warning  'ReflectionDeps' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\runner-additional.test.ts
+  4:55  warning  'ToolCall' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\runner.ts
+   27:30  warning  'PlanStep' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  932:16  warning  'err' is defined but never used                                             @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\self-forge\tool-forger.ts
+  2:10  warning  'randomUUID' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\self-forge\tool-validator.ts
+  3:16  warning  'dirname' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  8:7   warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\spawner\dynamic-factory.ts
+  5:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\spawner\orchestration-engine.ts
+  45:7  warning  'OrchestrationEngine' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\spawner\types.ts
+  1:15  warning  'AgentRunInput' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\strategies\three-fixes.test.ts
+  11:70  warning  'AgentStep' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\strategies\types.ts
+  6:3  warning  'AgentContext' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\swarm\swarm-advanced.test.ts
+  7:40  warning  'SwarmAgent' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\swarm\swarm-evolution.ts
+   4:88  warning  'smRepo' is defined but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  48:7   warning  'TASK_TIMEOUT_MS' is assigned a value but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  49:7   warning  'TOTAL_TIMEOUT_MS' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\teams\meeting-protocol.ts
+  29:7  warning  'MeetingProtocol' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\teams\peer-review.ts
+  22:7  warning  'PeerReview' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\teams\voting-system.ts
+  20:7  warning  'VotingSystem' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\temporal\temporal-intelligence.ts
+  276:106  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  285:94   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\packages\agent-engine\src\titan-rigorous-audit.test.ts
+     1:55  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+     2:10  warning  'MockLlmProvider' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+    51:42  warning  'opts' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+   229:11  warning  'wiring' is assigned a value but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   257:11  warning  'wiring' is assigned a value but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   905:11  warning  'id2' is assigned a value but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  1132:11  warning  'episode' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  1147:8   warning  's' is defined but never used. Allowed unused args must match /^_/u                 @typescript-eslint/no-unused-vars
+  1198:20  warning  Unexpected `await` of a non-Promise (non-"Thenable") value                          @typescript-eslint/await-thenable
+
+F:\projects\The-Titan\packages\agent-engine\src\titan-simulation.test.ts
+  414:27  warning  Unexpected `await` of a non-Promise (non-"Thenable") value  @typescript-eslint/await-thenable
+
+F:\projects\The-Titan\packages\agent-engine\src\translator\universal-translator.ts
+  2:22  warning  'observeHistogram' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\voice\conversation-manager.ts
+  23:7  warning  'VoiceConversationManager' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\voice\elevenlabs-tts.test.ts
+  1:32  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\voice\emotion-detector.ts
+  3:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\voice\voice-types.ts
+  20:11  warning  'VoiceConfig' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\workflow\dag-workflow-engine.ts
+    8:3  warning  'WorkflowRunState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  356:5  warning  'variables' is defined but never used. Allowed unused args must match /^_/u         @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\workflow\workflow.test.ts
+  68:11  warning  'input' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\agent-engine\src\world-model\autonomous-loop.ts
+  110:5  warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+F:\projects\The-Titan\packages\auth\src\enterprise\sso-provider.ts
+  3:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\auth\src\service.test.ts
+  43:56  warning  'hashApiKey' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  43:90  warning  'hashRefreshToken' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\database\src\audit-integrity.ts
+  9:11  warning  'HashChainEntry' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\logging\src\logger.test.ts
+  1:36  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  1:48  warning  'afterEach' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\logging\src\logger.ts
+  56:6  warning  'Logger' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\graph\graph-store.ts
+  5:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\identity\conversation-continuity.ts
+   3:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  15:7  warning  'ConversationContinuity' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\identity\persona-adapter.ts
+  4:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\identity\preference-learner.ts
+  3:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\identity\project-memory.ts
+  19:7  warning  'ProjectMemory' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\identity\user-profile-builder.ts
+  3:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\layers\semantic-memory.ts
+  20:16  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\rag\citation-tracker.ts
+  3:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\rag\hybrid-rag-pipeline.ts
+  30:7  warning  'HybridRAGPipeline' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\retrieval\context-ranker.ts
+  4:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\memory\src\retrieval\memory-router.ts
+   2:15  warning  'MemoryEntry' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  22:7   warning  'MemoryRouter' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\queue\src\validation.test.ts
+  1:44  warning  'afterEach' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\queue\src\validation.ts
+  78:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\packages\sdk\src\types.ts
+  42:11  warning  'ChatMessage' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\shared\src\compliance\pii-detector.ts
+  1:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\shared\src\constants.ts
+  142:6  warning  'AuditAction' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\shared\src\resilience\bulkhead.ts
+  1:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\shared\src\resilience\health-aggregator.ts
+  1:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\shared\src\resilience\resilience.test.ts
+  1:32  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\shared\src\types.ts
+  66:11  warning  'AuditLog' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  88:11  warning  'PaginatedResult' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\browser\form-filler.ts
+   3:7   warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  66:13  warning  'label' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\browser\screenshot-analyzer.ts
+  4:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\browser\session-manager.ts
+  3:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\composition\composition.test.ts
+  2:10  warning  'ToolPipeline' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\composition\macro-builder.ts
+  2:40  warning  'PipelineStep' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\marketplace\plugin-validator.ts
+  4:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\marketplace\version-manager.ts
+  3:7  warning  'log' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\mcp\mcp.test.ts
+  1:32  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u                 @typescript-eslint/no-unused-vars
+  5:15  warning  'McpToolDefinition' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\tools\__tests__\security-regression.test.ts
+  1:32  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  1:36  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\tools\dataVisualize.ts
+  47:89  warning  'width' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\tools\databaseBackup.ts
+  44:16  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\tools\docker.ts
+   8:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+F:\projects\The-Titan\packages\tools\src\tools\networkDiagnose.ts
+  28:15  warning  'start' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\tools\src\tools\zipUnzip.ts
+  1:16  warning  'readdir' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  1:32  warning  'readFile' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  1:42  warning  'writeFile' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  2:10  warning  'join' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+
+F:\projects\The-Titan\packages\websocket\src\protocol.ts
+  36:10  warning  'buildSuccess' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+  65:10  warning  'buildInvalidParamsError' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  73:10  warning  'buildAuthFailedError' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  77:10  warning  'buildRateLimitedError' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+
+✖ 240 problems (0 errors, 240 warnings)
+

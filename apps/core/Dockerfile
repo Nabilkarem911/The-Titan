@@ -27,6 +27,7 @@ RUN for i in 1 2 3; do npm ci --legacy-peer-deps && break || (echo "npm ci attem
 # ── Stage 2: Build ──────────────────────────────────────────
 FROM deps AS builder
 COPY tsconfig.base.json tsconfig.json ./
+COPY scripts/ ./scripts/
 COPY packages/ ./packages/
 COPY apps/core/ ./apps/core/
 COPY apps/dashboard/ ./apps/dashboard/
