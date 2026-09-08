@@ -1,7 +1,3 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'sso' });
-
 export interface SSOConfig {
   provider: 'saml' | 'oidc' | 'oauth2';
   clientId: string;

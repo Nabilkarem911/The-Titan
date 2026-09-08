@@ -20,7 +20,7 @@ interface VoiceTurn {
   timestamp: Date;
 }
 
-class VoiceConversationManager {
+export class VoiceConversationManager {
   private sessions: Map<string, VoiceSession> = new Map();
   private history: Map<string, VoiceTurn[]> = new Map();
   private emotionDetector = new EmotionDetector();

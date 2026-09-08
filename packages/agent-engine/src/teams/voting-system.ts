@@ -17,7 +17,7 @@ interface VoteResult {
   tally: Record<string, number>;
 }
 
-class VotingSystem {
+export class VotingSystem {
   vote(question: string, votes: Vote[]): VoteResult {
     const tally: Record<string, number> = {};
 

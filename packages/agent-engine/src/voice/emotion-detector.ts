@@ -1,7 +1,3 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'emotion-detector' });
-
 export type Emotion = 'neutral' | 'happy' | 'sad' | 'angry' | 'frustrated' | 'excited' | 'confused' | 'curious';
 
 export interface EmotionResult {

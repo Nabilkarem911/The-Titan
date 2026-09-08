@@ -65,7 +65,7 @@ describe('WorkflowBuilder', () => {
 
   it('adds condition with true/false edges', () => {
     const b = new WorkflowBuilder('Conditional', '');
-    const input = b.addInput('Start');
+    b.addInput('Start');
     const yes = b.addAgent('Yes path', { role: 'executor', prompt: 'Yes' });
     const no = b.addAgent('No path', { role: 'executor', prompt: 'No' });
     b.addCondition('Check', { expression: '$result == pass', trueNext: yes, falseNext: no });

@@ -1,5 +1,5 @@
 import { getLogger } from '@titan/logging';
-import { incCounter, observeHistogram } from '@titan/observability';
+import { incCounter } from '@titan/observability';
 import { randomUUID } from 'node:crypto';
 import type { LlmProvider } from '../types.js';
 

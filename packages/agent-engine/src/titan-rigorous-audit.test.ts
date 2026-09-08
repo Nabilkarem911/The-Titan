@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { MockLlmProvider } from './mockLlmProvider.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { wireCapabilities, resetGlobalWiring, type WiredCapabilities } from './capability-wiring.js';
 import { resetGlobalToolRegistry, getGlobalToolRegistry } from './tool-registry.js';
 import { AgentEconomy } from './economy/agent-economy.js';
@@ -48,7 +47,7 @@ class ConfigurableLlmProvider implements LlmProvider {
     this.responses.set(pattern, response);
   }
 
-  async complete(messages: LlmMessage[], opts?: { maxTokens?: number; temperature?: number; tools?: unknown[] }): Promise<LlmCompletion> {
+  async complete(messages: LlmMessage[], _opts?: { maxTokens?: number; temperature?: number; tools?: unknown[] }): Promise<LlmCompletion> {
     const userContent = messages.find(m => m.role === 'user')?.content ?? '';
     const systemContent = messages.find(m => m.role === 'system')?.content ?? '';
 
@@ -226,7 +225,7 @@ describe('Self-Forge — اختبار صنع الأدوات', () => {
       testCases: [],
     }));
 
-    const wiring = wireCapabilities(llm);
+    wireCapabilities(llm);
     const registry = getGlobalToolRegistry();
 
     // The self_forge_tool should be registered in the registry
@@ -254,7 +253,7 @@ describe('Self-Forge — اختبار صنع الأدوات', () => {
     resetGlobalToolRegistry();
     llm.setResponse('forge', 'invalid response');
 
-    const wiring = wireCapabilities(llm);
+    wireCapabilities(llm);
     const registry = getGlobalToolRegistry();
 
     const result = await registry.execute('self_forge_tool', {
@@ -902,7 +901,7 @@ describe('MIRROR Consciousness — اختبار الوعي الذاتي', () => 
 
   it('InnerMonologue — يجب أن يتتبع خيوط التفكير', () => {
     const id1 = monologue.addThread('reasoning', 'I need to analyze the problem');
-    const id2 = monologue.addThread('goals', 'Fix the bug');
+    monologue.addThread('goals', 'Fix the bug');
     const threads = monologue.getActiveThreads();
     expect(threads.length).toBe(2);
     expect(threads.find(t => t.id === id1)?.content).toBe('I need to analyze the problem');
@@ -1129,7 +1128,7 @@ describe('RL Environment — اختبار التعلم المعزز', () => {
   });
 
   it('يجب أن ينتهي الحلقة ويسجلها', () => {
-    const episode = rl.startEpisode({ id: 's1', features: [0.5], description: 'init', timestamp: new Date() });
+    rl.startEpisode({ id: 's1', features: [0.5], description: 'init', timestamp: new Date() });
     rl.recordStep(
       { id: 's1', features: [0.5], description: 'init', timestamp: new Date() },
       { id: 'a1', name: 'a1', expectedReward: 1 },
@@ -1144,7 +1143,7 @@ describe('RL Environment — اختبار التعلم المعزز', () => {
   it('يجب أن يتدرب ويُحسن المتوسط', () => {
     const result = rl.train(
       () => ({ id: `s-${Math.random()}`, features: [Math.random()], description: 'state', timestamp: new Date() }),
-      (s) => [{ id: 'a1', name: 'a1', expectedReward: 1, steps: [], totalReward: 0 }],
+      (_s) => [{ id: 'a1', name: 'a1', expectedReward: 1, steps: [], totalReward: 0 }],
       () => 1.0,
       (s, step) => step >= 3,
       10,
@@ -1194,8 +1193,8 @@ describe('Temporal Intelligence — اختبار التحليل الزمني', (
     temporal = new TemporalIntelligence(llm);
   });
 
-  it('يجب أن يحلل الماضي ويُرجع إحصائيات', async () => {
-    const result = await temporal.analyzePast();
+  it('يجب أن يحلل الماضي ويُرجع إحصائيات', () => {
+    const result = temporal.analyzePast();
     expect(result).toBeDefined();
     expect(result).toHaveProperty('totalEvents');
   });

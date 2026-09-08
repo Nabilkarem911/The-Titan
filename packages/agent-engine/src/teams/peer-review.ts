@@ -19,7 +19,7 @@ interface ReviewFeedback {
   summary: string;
 }
 
-class PeerReview {
+export class PeerReview {
   constructor(private llm: LlmProvider) {}
 
   async review(request: ReviewRequest): Promise<ReviewFeedback> {

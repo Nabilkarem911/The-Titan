@@ -40,7 +40,7 @@ import {
   createApiKey,
   revokeApiKey,
 } from './service.js';
-import { hashPassword, verifyPassword, generateApiKey, hashApiKey, generateRefreshToken, hashRefreshToken } from './crypto.js';
+import { hashPassword, verifyPassword, generateApiKey, generateRefreshToken } from './crypto.js';
 import { signAccessToken } from './jwt.js';
 import {
   ConflictError,

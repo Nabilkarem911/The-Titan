@@ -5,7 +5,6 @@ import type {
   Workflow,
   WorkflowNode,
   WorkflowEdge,
-  WorkflowRunState,
   NodeResult,
   AgentNodeConfig,
   ToolNodeConfig,
@@ -353,7 +352,7 @@ export class DAGWorkflowEngine {
   private gatherContext(
     nodeId: string,
     priorResults: Map<string, NodeResult>,
-    variables: Map<string, unknown>,
+    _variables: Map<string, unknown>,
   ): string {
     const contexts: string[] = [];
     for (const [id, result] of priorResults) {

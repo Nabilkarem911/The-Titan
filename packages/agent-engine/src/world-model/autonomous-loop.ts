@@ -107,7 +107,7 @@ export class AutonomousLoop {
     this.timer = setInterval(() => this.tick(), this.config.intervalMs);
     this.timer.unref?.();
     // Run immediately on start
-    this.tick();
+    void this.tick();
   }
 
   stop(): void {

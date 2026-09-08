@@ -411,7 +411,7 @@ describe('محاكاة صارمة لقدرات تيتان', () => {
     });
 
     it('ProactiveIntelligence — يجب أن يُرجع اقتراحات', async () => {
-      const suggestions = await wiring.proactiveIntelligence.getSuggestions();
+      const suggestions = wiring.proactiveIntelligence.getSuggestions();
       expect(Array.isArray(suggestions)).toBe(true);
     });
   });

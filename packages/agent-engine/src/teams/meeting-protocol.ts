@@ -26,7 +26,7 @@ interface MeetingResult {
   consensus: string;
 }
 
-class MeetingProtocol {
+export class MeetingProtocol {
   constructor(private llm: LlmProvider) {}
 
   async conduct(agenda: MeetingAgenda): Promise<MeetingResult> {

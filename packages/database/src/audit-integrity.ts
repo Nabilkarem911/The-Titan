@@ -6,12 +6,6 @@ import { incCounter } from '@titan/observability';
 
 const log = getLogger().child({ component: 'audit-integrity' });
 
-interface HashChainEntry {
-  id: string;
-  prevHash: string;
-  thisHash: string;
-  ts: string;
-}
 
 export function computeHash(prevHash: string, payload: string): string {
   return createHash('sha256').update(prevHash).update('|').update(payload).digest('hex');
