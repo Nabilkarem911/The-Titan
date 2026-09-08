@@ -1,1 +1,0 @@
-function shouldDecompose(task) { return task.complexity > 0.6; }
