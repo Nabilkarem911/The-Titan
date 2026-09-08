@@ -32,13 +32,13 @@ export const dreamDebugRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     if (!dm) return reply.code(503).send({ error: 'No LLM provider available' });
 
     if (bodyExperiences && bodyExperiences.length > 0) {
-      const report = await dm.dreamWithData(bodyExperiences as any);
+      const report = await dm.dreamWithData(bodyExperiences as unknown as Parameters<typeof dm.dreamWithData>[0]);
       return reply.send(report);
     }
 
     const dbExperiences = await experiencesRepo.getRecent(limit ?? 30);
     if (dbExperiences.length > 0) {
-      const report = await dm.dreamFromExperiences(dbExperiences as any);
+      const report = await dm.dreamFromExperiences(dbExperiences as unknown as Parameters<typeof dm.dreamFromExperiences>[0]);
       return reply.send(report);
     }
 
@@ -50,7 +50,7 @@ export const dreamDebugRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     const { type } = req.query as { type?: string };
     const dm = getDreamMode();
     if (!dm) return reply.send({ insights: [] });
-    return reply.send({ insights: dm.getInsights(type as any) });
+    return reply.send({ insights: dm.getInsights(type as unknown as Parameters<typeof dm.getInsights>[0]) });
   });
 
   app.get('/api/v1/dream/reports', { preHandler: [requireAuth] }, async (_req, reply) => {
@@ -74,7 +74,7 @@ export const dreamDebugRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     const cr = getCausalReplay();
     if (!cr) return reply.code(503).send({ error: 'No LLM provider available' });
 
-    const result = await cr.analyzeRun(run as any, budget ?? 5);
+    const result = await cr.analyzeRun(run as unknown as Parameters<typeof cr.analyzeRun>[0], budget ?? 5);
     return reply.send(result);
   });
 
@@ -129,7 +129,7 @@ export const dreamDebugRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     const sr = getSelfRewriter();
     if (!sr) return reply.code(503).send({ error: 'No LLM provider available' });
     const { recentPerformance } = req.body as { recentPerformance: Record<string, unknown> };
-    const proposal = await sr.proposeImprovement(recentPerformance as any);
+    const proposal = await sr.proposeImprovement(recentPerformance as unknown as Parameters<typeof sr.proposeImprovement>[0]);
     return reply.send(proposal);
   });
 
@@ -138,7 +138,7 @@ export const dreamDebugRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     const sr = getSelfRewriter();
     if (!sr) return reply.code(503).send({ error: 'No LLM provider available' });
     const { proposal } = req.body as { proposal: Record<string, unknown> };
-    const result = await sr.evaluateAndApply(proposal as any);
+    const result = await sr.evaluateAndApply(proposal as unknown as Parameters<typeof sr.evaluateAndApply>[0]);
     return reply.send(result);
   });
 
@@ -188,7 +188,7 @@ export const dreamDebugRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     if (!step) return reply.code(400).send({ error: 'step is required' });
     const im = getIntrospection();
     if (!im) return reply.code(503).send({ error: 'No LLM provider available' });
-    const report = await im.introspectStep(step as any, stepIndex ?? 0);
+    const report = await im.introspectStep(step as unknown as Parameters<typeof im.introspectStep>[0], stepIndex ?? 0);
     return reply.send(report);
   });
 
@@ -197,7 +197,7 @@ export const dreamDebugRoutes: FastifyPluginAsync = async (app: FastifyInstance)
     if (!steps || !Array.isArray(steps)) return reply.code(400).send({ error: 'steps array is required' });
     const im = getIntrospection();
     if (!im) return reply.code(503).send({ error: 'No LLM provider available' });
-    const reports = await im.introspectRun(steps as any);
+    const reports = await im.introspectRun(steps as unknown as Parameters<typeof im.introspectRun>[0]);
     return reply.send({ reports });
   });
 
