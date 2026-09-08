@@ -1,6 +1,5 @@
 import { getLogger } from '@titan/logging';
 import type { LlmProvider } from '../../types.js';
-import type { VerificationResult } from '../verification/verify-runner.js';
 
 const log = getLogger().child({ component: 'auto-fixer' });
 
@@ -82,7 +81,7 @@ export class AutoFixer {
       try {
         await this.writeFile(attempt.file, attempt.originalContent);
         log.info({ file: attempt.file }, 'rollback applied');
-      } catch (err) {
+      } catch {
         log.error({ file: attempt.file }, 'rollback failed');
       }
     }

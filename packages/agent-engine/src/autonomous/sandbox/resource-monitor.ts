@@ -1,6 +1,4 @@
-import { getLogger } from '@titan/logging';
-
-const log = getLogger().child({ component: 'resource-monitor' });
+import { cpus } from 'node:os';
 
 interface ResourceUsage {
   cpuPercent: number;
@@ -23,7 +21,7 @@ const DEFAULT_LIMITS: ResourceLimits = {
   maxDiskPercent: 90,
 };
 
-class ResourceMonitor {
+export class ResourceMonitor {
   private limits: ResourceLimits;
   private history: ResourceUsage[] = [];
   private maxHistory = 100;
@@ -80,10 +78,10 @@ class ResourceMonitor {
 
   private getCpuUsage(): number {
     try {
-      const cpus = require('node:os').cpus();
+      const cpuList = cpus();
       let totalIdle = 0;
       let totalTick = 0;
-      for (const cpu of cpus) {
+      for (const cpu of cpuList) {
         for (const type of Object.values(cpu.times) as number[]) {
           totalTick += type;
         }

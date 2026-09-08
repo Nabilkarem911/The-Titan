@@ -1,8 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { getLogger } from '@titan/logging';
 import type { LlmProvider } from '../../types.js';
-
-const log = getLogger().child({ component: 'git-manager' });
 
 function sanitizeBranchName(name: string): string {
   const cleaned = name.replace(/[^\w.\-\/]/g, '');

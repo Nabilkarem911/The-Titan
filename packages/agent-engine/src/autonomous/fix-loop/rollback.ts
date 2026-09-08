@@ -10,7 +10,7 @@ interface Snapshot {
   description: string;
 }
 
-class RollbackManager {
+export class RollbackManager {
   private snapshots: Snapshot[] = [];
   private maxSnapshots = 10;
 

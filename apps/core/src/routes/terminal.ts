@@ -50,7 +50,7 @@ export const terminalRoutes: FastifyPluginAsync = async (app) => {
     }
 
     terminalWss!.handleUpgrade(request, socket, head, (ws) => {
-      handleTerminalConnection(ws, userId);
+      void handleTerminalConnection(ws, userId);
     });
   });
 };
