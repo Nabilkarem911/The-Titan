@@ -8,7 +8,7 @@ export const crossUserRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     const { category, minFrequency } = req.query as { category?: string; minFrequency?: string };
     const learner = getCrossUserLearner();
     const insights = learner.getInsights(
-      category as any,
+      category as Parameters<typeof learner.getInsights>[0],
       minFrequency ? Number(minFrequency) : 3,
     );
     return reply.send({ insights });
@@ -19,7 +19,7 @@ export const crossUserRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
     const { category, count } = req.query as { category?: string; count?: string };
     const learner = getCrossUserLearner();
     const patterns = learner.getTopPatterns(
-      category as any,
+      category as Parameters<typeof learner.getTopPatterns>[0],
       count ? Number(count) : 10,
     );
     return reply.send({ patterns });
@@ -50,7 +50,7 @@ export const crossUserRoutes: FastifyPluginAsync = async (app: FastifyInstance) 
       return reply.code(400).send({ error: 'pattern and category are required' });
     }
     const learner = getCrossUserLearner();
-    learner.recordPattern(req.auth!.userId, pattern, category as any, success);
+    learner.recordPattern(req.auth!.userId, pattern, category as Parameters<typeof learner.recordPattern>[2], success);
     return reply.send({ recorded: true });
   });
 };

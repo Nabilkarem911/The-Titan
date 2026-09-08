@@ -76,7 +76,7 @@ export const collaborationRoutes: FastifyPluginAsync = async (app: FastifyInstan
     if (!agentId || !content) return reply.code(400).send({ error: 'agentId and content are required' });
 
     const mgr = getCollaborationManager();
-    const msg = mgr.postMessage(id, agentId, agentRole ?? 'agent', content, type as any, replyTo);
+    const msg = mgr.postMessage(id, agentId, agentRole ?? 'agent', content, type as Parameters<typeof mgr.postMessage>[4], replyTo);
     if (!msg) return reply.code(404).send({ error: 'Session not found or not active' });
     return reply.send(msg);
   });
