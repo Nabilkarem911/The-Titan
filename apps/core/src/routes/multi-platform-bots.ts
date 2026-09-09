@@ -74,8 +74,10 @@ async function handleMessage(
     if (profile) profileSystemPrompt = profile.systemPrompt;
   } catch { /* ignore */ }
 
-  const learnedPrefs = getLearnedPreferences(ownerId);
-  const personaInstr = getPersonaInstructionsForUser(ownerId);
+  const [learnedPrefs, personaInstr] = await Promise.all([
+    getLearnedPreferences(ownerId),
+    getPersonaInstructionsForUser(ownerId),
+  ]);
 
   const contextBlock = [
     ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
@@ -119,7 +121,7 @@ async function handleMessage(
   const answer = result.finalAnswer?.trim() || 'لم أتمكن من إكمال المهمة.';
   await saveChatMessage(sessionId, 'assistant', answer);
 
-  try { recordUserInteraction(ownerId, [text, answer]); } catch { /* optional */ }
+  try { await recordUserInteraction(ownerId, [text, answer]); } catch { /* optional */ }
 
   await channelRouter.sendResponse(channelType, replyTo, { content: answer });
   log.info({ channelType, senderId: msg.senderId, steps: result.steps.length }, 'platform bot response sent');

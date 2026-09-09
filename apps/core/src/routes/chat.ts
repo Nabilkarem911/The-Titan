@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getGlobalToolRegistry, getGlobalWiring, type ToolResult } from '@titan/agent-engine';
 import { createRunner } from '../create-runner.js';
 import { getGlobalMemoryClient } from '@titan/memory';
-import { agentRuns, userContext, getChatHistory, saveChatMessage, agentProfiles, query } from '@titan/database';
+import { agentRuns, userContext, getChatHistory, saveChatMessage, agentProfiles, query, toolExecutionStats } from '@titan/database';
 import { ValidationError } from '@titan/shared';
 import { getLogger } from '@titan/logging';
 import { requireAuth } from '../plugins/auth.js';
@@ -56,6 +56,35 @@ function createWorkspaceToolExecutor(
   userId?: string,
 ) {
   return async (name: string, params: unknown): Promise<ToolResult> => {
+    const startedAt = Date.now();
+    let result: ToolResult;
+    try {
+      result = await executeWorkspaceTool(registry, name, params, workspaceRoot, log, userId);
+    } catch (err) {
+      result = { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+    // Record execution stats (fire-and-forget — never block or fail the tool call)
+    void toolExecutionStats
+      .insert({
+        toolName: name,
+        success: result.success,
+        durationMs: Date.now() - startedAt,
+        tokensUsed: 0,
+        userId: userId ?? null,
+      })
+      .catch(() => {});
+    return result;
+  };
+}
+
+function executeWorkspaceTool(
+  registry: ReturnType<typeof getGlobalToolRegistry>,
+  name: string,
+  params: unknown,
+  workspaceRoot: string,
+  log: ReturnType<typeof getLogger>,
+  userId?: string,
+): Promise<ToolResult> {
     if (FILE_TOOLS.has(name) && typeof params === 'object' && params !== null) {
       const p = params as Record<string, unknown>;
       if (typeof p['filePath'] === 'string') {
@@ -78,7 +107,6 @@ function createWorkspaceToolExecutor(
       return userContextStorage.run({ userId }, () => registry.execute(name, params));
     }
     return registry.execute(name, params);
-  };
 }
 
 export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
@@ -199,6 +227,12 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         try {
           const tgCtx = await userContext.getAll(linkedTgId);
           mergedCtx = { ...tgCtx, ...ctx }; // dashboard context takes priority
+          // Pre-resolve identity (learned prefs + persona) once — async DB hydration
+          const [tgLearned, tgPersona] = await Promise.all([
+            getLearnedPreferences(userId),
+            getPersonaInstructionsForUser(userId),
+          ]);
+          const tgIdentityContext = { learned: tgLearned, persona: tgPersona };
           // Also load telegram chat history and merge
           const tgHistory = await getChatHistory(`tg:${linkedTgId}`, 20);
           if (tgHistory.length > 0) {
@@ -230,11 +264,11 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
               ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
               historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
               (() => {
-                const learned = getLearnedPreferences(userId);
-                const persona = getPersonaInstructionsForUser(userId);
                 const parts: string[] = [];
-                if (learned) parts.push(`\n\nLearned user preferences:\n${learned}`);
-                if (persona) parts.push(`\n\nAdaptive persona:\n${persona}`);
+                // getLearnedPreferences/getPersonaInstructionsForUser are async (DB hydration);
+                // values were pre-resolved into tgIdentityContext below.
+                if (tgIdentityContext.learned) parts.push(`\n\nLearned user preferences:\n${tgIdentityContext.learned}`);
+                if (tgIdentityContext.persona) parts.push(`\n\nAdaptive persona:\n${tgIdentityContext.persona}`);
                 return parts.join('');
               })(),
               `\n\nPersonality reminder:
@@ -381,7 +415,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
               // Record interaction for preference learning (non-blocking)
               try {
-                recordUserInteraction(userId, [input.prompt, answer]);
+                recordUserInteraction(userId, [input.prompt, answer]).catch(() => { /* optional */ });
               } catch {
                 // preference learning is optional
               }
@@ -469,9 +503,17 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       // Compute workspace root for this user
       const workspaceRoot = getWorkspaceRoot(userId);
 
+      // Pre-resolve identity (learned prefs + persona) — async DB hydration
+      const [mainLearned, mainPersona] = await Promise.all([
+        getLearnedPreferences(userId),
+        getPersonaInstructionsForUser(userId),
+      ]);
+
       const contextBlock = [
         ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
         historyLines.length ? `\n\nRecent conversation:\n${historyLines.join('\n')}` : '',
+        mainLearned ? `\n\nLearned user preferences:\n${mainLearned}` : '',
+        mainPersona ? `\n\nAdaptive persona:\n${mainPersona}` : '',
         `\n\nWorkspace:
 - The user's workspace root is: ${workspaceRoot}
 - When using write_file, read_file_content, or any file tool, use paths inside this workspace.
@@ -725,6 +767,13 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
         // Save assistant reply to history
         await saveChatMessage(sessionId, 'assistant', answer);
+
+        // Record interaction for preference learning (was missing on main path — identity never learned here)
+        try {
+          await recordUserInteraction(userId, [enrichedPrompt, answer]);
+        } catch {
+          // preference learning is optional
+        }
 
         // ── Post-run pipeline: proactive intelligence, skill synthesis ──
         if (wiring?.proactiveIntelligence && result.status === 'completed') {

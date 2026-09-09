@@ -436,23 +436,31 @@ export function startBackgroundScheduler(): void {
 
   wireCapabilities(llm);
 
+  // Optional/experimental cycles are opt-in via env flags — they burn LLM tokens
+  // in the background and are OFF by default in production.
+  const enabled = (name: string, def = false): boolean =>
+    (process.env[`TITAN_ENABLE_${name}`] ?? (def ? 'true' : 'false')).toLowerCase() === 'true';
+
   // Phase 2 tasks
-  scheduleDreamCycle();
-  scheduleCuriosityEngine();
+  if (enabled('DREAM_CYCLE')) scheduleDreamCycle();
+  else log.info('dream cycle disabled (TITAN_ENABLE_DREAM_CYCLE=false)');
+  if (enabled('CURIOSITY')) scheduleCuriosityEngine();
+  else log.info('curiosity engine disabled (TITAN_ENABLE_CURIOSITY=false)');
   scheduleCrossUserLearning();
   scheduleMetacognitiveConsolidation();
   scheduleStrategyTuner();
-  scheduleBenchmarkSuite();
+  if (enabled('BENCHMARK')) scheduleBenchmarkSuite();
+  else log.info('benchmark suite disabled (TITAN_ENABLE_BENCHMARK=false)');
 
   // Phase 5 tasks
   scheduleHyperAgent();
   scheduleMetaLearningOptimizer();
   scheduleHeuristicConsolidation();
-  scheduleGitHubMiner();
-  scheduleSelfEvolvingCode();
-  scheduleWeeklyBenchmark();
+  if (enabled('GITHUB_MINER')) scheduleGitHubMiner();
+  if (enabled('SELF_EVOLVING_CODE')) scheduleSelfEvolvingCode();
+  if (enabled('WEEKLY_BENCHMARK')) scheduleWeeklyBenchmark();
 
-  log.info('background scheduler started — 12 background tasks active');
+  log.info('background scheduler started');
 }
 
 export function stopBackgroundScheduler(): void {

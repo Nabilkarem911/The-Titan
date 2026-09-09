@@ -135,6 +135,58 @@ registry.register({
   tags: ['memory', 'secrets'],
 });
 
+// ── Skills: expose the synthesized-skills library to the agent ──
+import { synthesizedSkills } from '@titan/database';
+
+registry.register({
+  name: 'list_skills',
+  description: 'List verified skills Titan has synthesized from past tasks (name, description, proficiency). Use before attempting a complex task — a reusable skill may already exist.',
+  schema: {
+    limit: { type: 'number', description: 'Max skills to return (default 20)' },
+  },
+  requiredParams: [],
+  handler: async (params: unknown) => {
+    const { limit } = (params ?? {}) as { limit?: number };
+    const rows = await synthesizedSkills.listAll(Math.min(limit ?? 20, 100));
+    const skills = rows
+      .filter((r) => r['verified'] === true)
+      .map((r) => ({
+        id: r['id'],
+        name: r['name'],
+        description: r['description'],
+        proficiency: r['proficiency'],
+        timesUsed: r['times_used'] ?? null,
+      }));
+    return { total: await synthesizedSkills.count(), verified: skills.length, skills };
+  },
+  tags: ['skills', 'memory'],
+});
+
+registry.register({
+  name: 'use_skill',
+  description: 'Retrieve the full implementation (code + decomposition steps) of a synthesized skill by id. Marks the skill as used so proficiency grows.',
+  schema: {
+    skillId: { type: 'string', description: 'Skill id from list_skills' },
+  },
+  requiredParams: ['skillId'],
+  handler: async (params: unknown) => {
+    const { skillId } = params as { skillId: string };
+    const skill = await synthesizedSkills.findById(skillId);
+    if (!skill) return { success: false, error: `Skill not found: ${skillId}` };
+    // Growth on use: bump proficiency by 2 (cap 100)
+    const proficiency = Math.min(100, Number(skill['proficiency'] ?? 50) + 2);
+    await synthesizedSkills.upsert(skillId, { ...skill, proficiency }, ['proficiency']);
+    return {
+      success: true,
+      name: skill['name'],
+      description: skill['description'],
+      code: skill['code'],
+      proficiency,
+    };
+  },
+  tags: ['skills', 'memory'],
+});
+
 registry.register({
   name: 'list_secrets',
   description: 'List the names of stored secrets (not their values) for the user.',

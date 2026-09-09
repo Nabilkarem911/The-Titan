@@ -7,8 +7,51 @@ interface LearnedPreference {
   updatedAt: Date;
 }
 
+export interface SerializedPreference {
+  key: string;
+  value: string;
+  confidence: number;
+  evidence: string[];
+  learnedAt: string;
+  updatedAt: string;
+}
+
 export class PreferenceLearner {
   private preferences: Map<string, Map<string, LearnedPreference>> = new Map();
+
+  /** Serialize all preferences for a user (for persistence across restarts). */
+  serialize(userId: string): SerializedPreference[] {
+    const userPrefs = this.preferences.get(userId);
+    if (!userPrefs) return [];
+    return Array.from(userPrefs.values()).map((p) => ({
+      key: p.key,
+      value: p.value,
+      confidence: p.confidence,
+      evidence: p.evidence,
+      learnedAt: p.learnedAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
+    }));
+  }
+
+  /** Restore preferences previously captured by serialize() (e.g. from DB). */
+  hydrate(userId: string, items: SerializedPreference[]): void {
+    if (!items?.length) return;
+    if (!this.preferences.has(userId)) this.preferences.set(userId, new Map());
+    const userPrefs = this.preferences.get(userId)!;
+    for (const item of items) {
+      // Never downgrade an in-memory entry with older persisted data
+      const existing = userPrefs.get(item.key);
+      if (existing && existing.confidence >= item.confidence) continue;
+      userPrefs.set(item.key, {
+        key: item.key,
+        value: item.value,
+        confidence: item.confidence,
+        evidence: item.evidence ?? [],
+        learnedAt: new Date(item.learnedAt),
+        updatedAt: new Date(item.updatedAt),
+      });
+    }
+  }
 
   learn(userId: string, messages: string[]): LearnedPreference[] {
     const learned: LearnedPreference[] = [];

@@ -16,6 +16,66 @@ export interface UserProfile {
 export class UserProfileBuilder {
   private profiles: Map<string, UserProfile> = new Map();
 
+  /** Serialize a user's profile (for persistence across restarts). */
+  serialize(userId: string): string | null {
+    const profile = this.profiles.get(userId);
+    if (!profile) return null;
+    return JSON.stringify({
+      userId: profile.userId,
+      name: profile.name,
+      preferredLanguage: profile.preferredLanguage,
+      preferredTone: profile.preferredTone,
+      expertise: profile.expertise,
+      interests: profile.interests,
+      projects: profile.projects,
+      communicationStyle: profile.communicationStyle,
+      relationship: profile.relationship,
+      totalInteractions: profile.totalInteractions,
+      lastInteraction: profile.lastInteraction?.toISOString(),
+      facts: Array.from(profile.facts.entries()).map(([k, v]) => ({ key: k, ...v })),
+    });
+  }
+
+  /** Restore a profile previously captured by serialize() (e.g. from DB). */
+  hydrate(userId: string, json: string): void {
+    if (!json) return;
+    try {
+      const raw = JSON.parse(json) as {
+        userId?: string;
+        name?: string;
+        preferredLanguage?: string;
+        preferredTone?: string;
+        expertise?: string[];
+        interests?: string[];
+        projects?: string[];
+        communicationStyle?: UserProfile['communicationStyle'];
+        relationship?: UserProfile['relationship'];
+        totalInteractions?: number;
+        lastInteraction?: string;
+        facts?: Array<{ key: string; value: string; confidence: number; source?: string }>;
+      };
+      const profile = this.getOrCreate(userId);
+      // Hydrate is additive: persisted data fills gaps, live state wins on conflicts
+      profile.name = profile.name ?? raw.name;
+      profile.preferredLanguage = profile.preferredLanguage ?? raw.preferredLanguage;
+      profile.preferredTone = profile.preferredTone ?? raw.preferredTone;
+      profile.expertise = profile.expertise.length ? profile.expertise : (raw.expertise ?? []);
+      profile.interests = profile.interests.length ? profile.interests : (raw.interests ?? []);
+      profile.projects = profile.projects.length ? profile.projects : (raw.projects ?? []);
+      profile.communicationStyle = raw.communicationStyle ?? profile.communicationStyle;
+      profile.relationship = raw.relationship ?? profile.relationship;
+      profile.totalInteractions = Math.max(profile.totalInteractions, raw.totalInteractions ?? 0);
+      profile.lastInteraction = profile.lastInteraction ?? (raw.lastInteraction ? new Date(raw.lastInteraction) : undefined);
+      for (const f of raw.facts ?? []) {
+        if (!profile.facts.has(f.key)) {
+          profile.facts.set(f.key, { value: f.value, confidence: f.confidence, source: f.source ?? 'persisted' });
+        }
+      }
+    } catch {
+      // corrupted snapshot — start fresh rather than crash
+    }
+  }
+
   getOrCreate(userId: string): UserProfile {
     let profile = this.profiles.get(userId);
     if (!profile) {

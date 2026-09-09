@@ -4,6 +4,14 @@ import { getLogger } from '@titan/logging';
 let initialized = false;
 let sdkInstance: { shutdown(): Promise<void> } | null = null;
 
+/** Reject after ms — used to bound slow/hanging OTEL dynamic imports. */
+function importWithTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    p,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 export async function initTelemetry(): Promise<void> {
   if (initialized) return;
   const c = loadConfig();
@@ -15,11 +23,11 @@ export async function initTelemetry(): Promise<void> {
   }
   try {
     const [nodeSdk, exporter, autoInstr, resources, semconv] = await Promise.all([
-      import('@opentelemetry/sdk-node' as string).catch(() => null),
-      import('@opentelemetry/exporter-trace-otlp-http' as string).catch(() => null),
-      import('@opentelemetry/auto-instrumentations-node' as string).catch(() => null),
-      import('@opentelemetry/resources' as string).catch(() => null),
-      import('@opentelemetry/semantic-conventions' as string).catch(() => null),
+      importWithTimeout(import('@opentelemetry/sdk-node' as string), 5000).catch(() => null),
+      importWithTimeout(import('@opentelemetry/exporter-trace-otlp-http' as string), 5000).catch(() => null),
+      importWithTimeout(import('@opentelemetry/auto-instrumentations-node' as string), 5000).catch(() => null),
+      importWithTimeout(import('@opentelemetry/resources' as string), 5000).catch(() => null),
+      importWithTimeout(import('@opentelemetry/semantic-conventions' as string), 5000).catch(() => null),
     ]);
     if (!nodeSdk || !exporter || !autoInstr || !resources || !semconv) {
       log.warn('OpenTelemetry packages not installed; telemetry no-op');
