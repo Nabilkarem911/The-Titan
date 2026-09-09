@@ -473,27 +473,32 @@ type TaskType = 'simple_qa' | 'code' | 'debugging' | 'creative' | 'multi_step' |
 
 const TASK_TOOL_SETS: Record<TaskType, Set<string>> = {
   simple_qa: new Set([
-    'recall', 'remember', 'brave_search', 'brave_answers',
+    'recall', 'remember', 'brave_search', 'brave_answers', 'list_skills', 'use_skill',
   ]),
   code: new Set([
     'execute_bash', 'write_file', 'read_file_content', 'patch_file', 'read_file_ast',
     'http_request', 'firecrawl_scrape', 'brave_search', 'recall', 'remember',
     'parse_csv_json', 'json_validate', 'text_diff', 'markdown_to_html',
+    'list_skills', 'use_skill',
   ]),
   debugging: new Set([
     'execute_bash', 'read_file_content', 'read_file_ast', 'patch_file',
     'hypothesis_generate', 'self_heal_debug', 'brave_search', 'recall',
+    'list_skills', 'use_skill',
   ]),
   creative: new Set([
     'generate_creative', 'translate_text', 'brave_search', 'recall', 'remember',
+    'list_skills', 'use_skill',
   ]),
   multi_step: new Set([
     'execute_bash', 'write_file', 'read_file_content', 'patch_file', 'read_file_ast',
     'http_request', 'firecrawl_scrape', 'brave_search', 'brave_answers',
     'recall', 'remember', 'database_query', 'docker_manage', 'github_api',
+    'list_skills', 'use_skill',
   ]),
   default: new Set([
     'execute_bash', 'write_file', 'read_file_content', 'brave_search', 'recall', 'remember',
+    'list_skills', 'use_skill',
   ]),
 };
 
