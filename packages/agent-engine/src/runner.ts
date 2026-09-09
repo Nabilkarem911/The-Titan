@@ -373,8 +373,12 @@ export class AgentRunner {
           log.info({ runId: run.id, strategy: selected.classification.recommendedStrategy, type: selected.classification.type }, 'auto-selected strategy');
         }
 
-        // Ambiguous request — ask for clarification instead of guessing
-        if (classification?.type === 'ambiguous') {
+        // Ambiguous request — ask for clarification instead of guessing.
+        // BUT never short-circuit when we hold user context/memory: a vague message
+        // from a known user should be answered from context (persona + facts), not
+        // met with a canned "what do you want?" wall.
+        const hasUserContext = !!this.deps.userContextItems && Object.keys(this.deps.userContextItems).length > 0;
+        if (classification?.type === 'ambiguous' && !hasUserContext) {
           const isArabic = /[\u0600-\u06FF]/.test(input.prompt);
           const clarification = isArabic
             ? 'مش متأكد تمامًا إيه اللي تحتاجه بالظبط. ممكن توضح أكتر؟ يعني مثلاً:\n- عايز أساعدك في كود أو مشروع؟\n- عايز معلومات عن حاجة معينة؟\n- عايز أحلل داتا أو ملف؟\n- ولا حاجة تانية خالص؟\n\nقولي بالظبط وأنا أنفذ.'
