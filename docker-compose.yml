@@ -211,6 +211,19 @@ services:
         condition: service_healthy
     networks:
       - titan-net
+      - dokploy-network
+    labels:
+      - traefik.docker.network=dokploy-network
+      - traefik.enable=true
+      - traefik.http.routers.titan-web.rule=Host(`titan.orcanox.xyz`)
+      - traefik.http.routers.titan-web.entrypoints=web
+      - traefik.http.routers.titan-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.titan-web.service=titan-web
+      - traefik.http.services.titan-web.loadbalancer.server.port=3000
+      - traefik.http.routers.titan-websecure.rule=Host(`titan.orcanox.xyz`)
+      - traefik.http.routers.titan-websecure.entrypoints=websecure
+      - traefik.http.routers.titan-websecure.tls.certresolver=letsencrypt
+      - traefik.http.routers.titan-websecure.service=titan-web
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health/live"]
       interval: 30s
@@ -283,3 +296,5 @@ networks:
   titan-net:
     driver: bridge
     name: titan-net
+  dokploy-network:
+    external: true
