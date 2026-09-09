@@ -43,7 +43,9 @@ services:
           memory: 1G
           cpus: '1.0'
     networks:
-      - titan-net
+      titan-net:
+        aliases:
+          - titan-postgres
 
   # ============================================================================
   # Redis (Queue + Pub/Sub + Cache + Rate Limiting)
@@ -79,7 +81,9 @@ services:
           memory: 512M
           cpus: '0.5'
     networks:
-      - titan-net
+      titan-net:
+        aliases:
+          - titan-redis
 
   # ============================================================================
   # pgAdmin (optional - dev only)
@@ -188,8 +192,8 @@ services:
     env_file:
       - .env
     environment:
-      - POSTGRES_HOST=postgres
-      - REDIS_HOST=redis
+      - POSTGRES_HOST=titan-postgres
+      - REDIS_HOST=titan-redis
       - HTTP_HOST=0.0.0.0
       - EMBEDDING_BASE_URL=http://embed:8000/v1
       - EMBEDDING_DIMENSIONS=384
@@ -236,8 +240,8 @@ services:
     env_file:
       - .env
     environment:
-      - POSTGRES_HOST=postgres
-      - REDIS_HOST=redis
+      - POSTGRES_HOST=titan-postgres
+      - REDIS_HOST=titan-redis
       - SERVICE_NAME=titan-worker
       - EMBEDDING_BASE_URL=http://embed:8000/v1
       - EMBEDDING_DIMENSIONS=384
