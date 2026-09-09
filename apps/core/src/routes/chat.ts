@@ -69,7 +69,7 @@ function createWorkspaceToolExecutor(
         toolName: name,
         success: result.success,
         durationMs: Date.now() - startedAt,
-        tokensUsed: 0,
+        errorType: result.success ? null : (result.error?.slice(0, 100) ?? 'unknown'),
         userId: userId ?? null,
       })
       .catch(() => {});

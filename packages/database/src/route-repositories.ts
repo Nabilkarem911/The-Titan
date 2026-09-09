@@ -59,13 +59,13 @@ export const toolExecutionStats = {
     toolName: string;
     success: boolean;
     durationMs: number;
-    tokensUsed: number;
+    errorType?: string | null;
     userId?: string | null;
   }): Promise<void> {
     await query(
-      `INSERT INTO tool_execution_stats (tool_name, success, duration_ms, tokens_used, user_id)
+      `INSERT INTO tool_execution_stats (tool_name, success, duration_ms, error_type, user_id)
        VALUES ($1,$2,$3,$4,$5)`,
-      [e.toolName, e.success, e.durationMs, e.tokensUsed, e.userId ?? null],
+      [e.toolName, e.success, e.durationMs, e.errorType ?? null, e.userId ?? null],
     );
   },
 
