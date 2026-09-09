@@ -136,6 +136,21 @@ export class StrategySelector {
 
       if (!validTypes.includes(type)) return this.classifyWithHeuristics(prompt);
 
+      // Expensive-strategy guard: short conversational/opinion prompts (greetings,
+      // "what do you think of X", chit-chat) must NOT run multi-round strategies
+      // like debate — the LLM classifier over-labels casual chat as
+      // 'controversial'/'creative', costing 60k+ tokens for a one-liner.
+      const wordCount = prompt.trim().split(/\s+/).length;
+      const expensiveType = type === 'controversial' || type === 'creative' || type === 'complex_reasoning';
+      if (expensiveType && wordCount <= 15 && !/```|https?:\/\//.test(prompt)) {
+        return {
+          type: 'simple_qa',
+          confidence: 70,
+          recommendedStrategy: 'chain-of-thought',
+          reasoning: 'Short conversational prompt — downgraded from expensive strategy',
+        };
+      }
+
       return {
         type: type as TaskClassification['type'],
         confidence: Math.max(0, Math.min(100, Number(parsed.confidence) || 50)),
