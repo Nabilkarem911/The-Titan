@@ -105,6 +105,7 @@ export class AutonomousSkillSynthesis extends EventEmitter {
       // Phase 3: Verify with test cases
       const verification = await this.verifySkill(skillData);
 
+      const isCoded = typeof skillData.code === 'string' && skillData.code.trim().length > 50;
       const skill: SynthesizedSkill = {
         id: randomUUID().slice(0, 8),
         name: skillData.name,
@@ -112,8 +113,11 @@ export class AutonomousSkillSynthesis extends EventEmitter {
         sourceTask: taskDescription,
         code: skillData.code,
         testCases: skillData.testCases,
-        proficiency: verification.overallPassed ? 80 : 40,
-        verified: verification.overallPassed,
+        // Coded skills: verified by test simulation. Knowledge-only skills (no
+        // executable code) are knowledge notes — verified when they carry a
+        // meaningful decomposition, instead of being auto-failed by code tests.
+        proficiency: isCoded ? (verification.overallPassed ? 80 : 40) : (decomposition.steps.length > 0 ? 50 : 30),
+        verified: isCoded ? verification.overallPassed : decomposition.steps.length > 0,
         synthesizedAt: new Date(),
         timesUsed: 0,
         decompositionSteps: decomposition.steps,

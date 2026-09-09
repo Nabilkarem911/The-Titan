@@ -95,7 +95,16 @@ registry.register({
   },
   requiredParams: ['ownerId', 'key', 'value'],
   handler: async (params: unknown) => {
-    const { ownerId, key, value } = params as { ownerId: string; key: string; value: string };
+    const { ownerId: rawOwner, key, value } = params as { ownerId: string; key: string; value: string };
+    // Identity unification: facts saved under a Telegram chat id are re-pointed
+    // to the linked dashboard user so both surfaces see one memory.
+    let ownerId = rawOwner;
+    if (/^\d+$/.test(rawOwner)) {
+      try {
+        const linked = await userContext.findOwnerByKey('telegram_id', rawOwner);
+        if (linked) ownerId = linked;
+      } catch { /* keep raw owner */ }
+    }
     await userContext.set(ownerId, key, value);
     return { saved: true, key, value };
   },
@@ -140,24 +149,33 @@ import { synthesizedSkills } from '@titan/database';
 
 registry.register({
   name: 'list_skills',
-  description: 'List verified skills Titan has synthesized from past tasks (name, description, proficiency). Use before attempting a complex task — a reusable skill may already exist.',
+  description: 'List skills Titan has synthesized from past tasks. Skills with code are executable via use_skill; knowledge skills are background info. Use before attempting a complex task — a reusable skill may already exist.',
   schema: {
     limit: { type: 'number', description: 'Max skills to return (default 20)' },
+    verifiedOnly: { type: 'boolean', description: 'Only verified/executable skills (default false)' },
   },
   requiredParams: [],
   handler: async (params: unknown) => {
-    const { limit } = (params ?? {}) as { limit?: number };
+    const { limit, verifiedOnly } = (params ?? {}) as { limit?: number; verifiedOnly?: boolean };
     const rows = await synthesizedSkills.listAll(Math.min(limit ?? 20, 100));
-    const skills = rows
-      .filter((r) => r['verified'] === true)
-      .map((r) => ({
-        id: r['id'],
-        name: r['name'],
-        description: r['description'],
-        proficiency: r['proficiency'],
-        timesUsed: r['times_used'] ?? null,
-      }));
-    return { total: await synthesizedSkills.count(), verified: skills.length, skills };
+    const mapped = rows.map((r) => ({
+      id: r['id'],
+      name: r['name'],
+      description: r['description'],
+      proficiency: r['proficiency'],
+      verified: r['verified'] === true,
+      hasCode: typeof r['code'] === 'string' && (r['code'] as string).length > 50,
+      timesUsed: r['times_used'] ?? null,
+    }));
+    const skills = verifiedOnly ? mapped.filter((s) => s.verified && s.hasCode) : mapped;
+    const all = await synthesizedSkills.count();
+    return {
+      total: all,
+      shown: skills.length,
+      executable: mapped.filter((s) => s.verified && s.hasCode).length,
+      knowledgeOnly: mapped.filter((s) => !s.hasCode).length,
+      skills,
+    };
   },
   tags: ['skills', 'memory'],
 });

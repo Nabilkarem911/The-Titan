@@ -15,6 +15,12 @@ For each reasoning step:
 
 After all reasoning, provide your final answer prefixed with "FINAL ANSWER:".
 
+EFFICIENCY RULE (critical): For greetings, small talk, simple questions, facts,
+opinions, math you can do in your head, or anything answerable without tools —
+reason for AT MOST ONE step, then immediately output "FINAL ANSWER: <your reply>".
+Do NOT keep reflecting on questions that need no tools or research. Length of
+reasoning must match complexity of the task.
+
 If you need to use a tool at any step, call it — but always explain your reasoning before and after.
 
 For dataset, analysis, or coding tasks:
@@ -101,6 +107,21 @@ export class ChainOfThoughtStrategy implements ReasoningStrategy {
         }
 
         step.status = 'reflecting';
+        // Hard guard: 3+ consecutive no-tool reflections with substantial content
+        // means the model answered directly but skipped the FINAL ANSWER marker
+        // (common on simple Q&A) — promote the content instead of burning the
+        // remaining step budget. Short meta texts ("Almost there...") are real
+        // progress notes, not answers: let them fall through to the fallback.
+        const consecutive = steps.filter((s) => s.status === 'reflecting').length;
+        if (consecutive >= 3 && completion.content.trim().length >= 80) {
+          finalAnswer = completion.content.trim();
+          step.status = 'completed';
+          step.reflection = finalAnswer;
+          steps.push(step);
+          if (onStep) await onStep(step);
+          log.info({ runId: run.id, steps: steps.length }, 'chain-of-thought early exit — substantial no-tool answer');
+          break;
+        }
       }
 
       step.updatedAt = new Date();
