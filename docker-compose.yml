@@ -6,7 +6,6 @@ services:
   # ============================================================================
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: titan-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-titan}
@@ -52,7 +51,6 @@ services:
   # ============================================================================
   redis:
     image: redis:7.4-alpine
-    container_name: titan-redis
     restart: unless-stopped
     command:
       - "redis-server"
@@ -90,7 +88,6 @@ services:
   # ============================================================================
   pgadmin:
     image: dpage/pgadmin4:8
-    container_name: titan-pgadmin
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@titan.local
@@ -123,7 +120,6 @@ services:
   # ============================================================================
   redis-insight:
     image: redis/redisinsight:2.56
-    container_name: titan-redis-insight
     restart: unless-stopped
     ports:
       - "5540:5540"
@@ -153,7 +149,6 @@ services:
   embed:
     build:
       context: ./services/embed
-    container_name: titan-embed
     restart: unless-stopped
     ports:
       - "${EMBED_PORT:-8100}:8000"
@@ -185,7 +180,6 @@ services:
     build:
       context: .
       dockerfile: apps/core/Dockerfile
-    container_name: titan-core
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-3001}:3000"
@@ -248,7 +242,6 @@ services:
     build:
       context: .
       dockerfile: apps/core/Dockerfile.worker
-    container_name: titan-worker
     restart: unless-stopped
     env_file:
       - .env
