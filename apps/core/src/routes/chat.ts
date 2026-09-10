@@ -803,7 +803,7 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
 
-        if (result.status === 'completed' && answer.length > 20 && result.steps.filter((s) => s.action).length === 0) {
+        if (result.status === 'completed' && answer.length > 0 && result.steps.filter((s) => s.action).length === 0) {
           await setCachedChatAnswer(userId, effectivePrompt, answer);
         }
 
