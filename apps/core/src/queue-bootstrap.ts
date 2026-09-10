@@ -10,7 +10,7 @@ import { SwarmOrchestrator, createProviderFromEnv, getGlobalToolRegistry, type T
 import { createRunner } from './create-runner.js';
 import { storeSwarmTask } from './swarm-store.js';
 import { getGlobalMemoryClient } from '@titan/memory';
-import { agentRuns, userSecrets, userContext, userProjects } from '@titan/database';
+import { agentRuns, synthesizedSkills, userSecrets, userContext, userProjects } from '@titan/database';
 import { executeBash, patchFile, readFileAst, firecrawlScrape, httpRequest, writeFile, readFileRaw, braveSearch, braveAnswers, githubApi, dockerOrchestrate, sendEmail, parseCsvJson, zipUnzip, pdfRead, databaseQuery, telegramSendFile, excelRead, qrGenerate, hashCrypto, randomToken, base64Tool, uuidGenerate, jsonValidate, textDiff, markdownToHtml, weatherGet, currencyConvert, htmlToText, screenshotUrl, youtubeSearch, mapsGeocode, translateText, urlShorten, calculate, timezoneConvert, regexTest, jwtDecode, ipLookup, dnsLookup, textStats, passwordGenerate, colorConvert, fileWatch, manageAgentProfile, pdfCreate, spreadsheetCreate, imageGenerate, imageAnalyze, s3Operations, googleDrive, notionApi, linearApi, rssFeedParse, webMonitor, csvTransform, dataVisualize, slackMessage, smsMessage, textClassify, codeAnalyze, systemMetrics, invoiceGenerate, reportGenerate, jiraApi, seoAnalyze, xmlParse, networkDiagnose, textSummarize, entityExtract, accessibilityCheck, budgetTracker, imageEdit, documentTemplate, slideCreate, gcsOperations, dropboxSync, trelloApi, asanaApi, sitemapCrawl, jsonSchemaValidate, yamlConvert, discordMessage, whatsappMessage, pushNotification, embeddingsGenerate, logSearch, databaseBackup, cronManage, processManager, contractDraft } from '@titan/tools';
 import { loadConfig } from '@titan/config';
 import { registerDesktopTools } from './desktop-tools.js';
@@ -144,9 +144,6 @@ registry.register({
   tags: ['memory', 'secrets'],
 });
 
-// ── Skills: expose the synthesized-skills library to the agent ──
-import { synthesizedSkills } from '@titan/database';
-
 registry.register({
   name: 'list_skills',
   description: 'List skills Titan has synthesized from past tasks. Skills with code are executable via use_skill; knowledge skills are background info. Use before attempting a complex task — a reusable skill may already exist.',
@@ -178,6 +175,78 @@ registry.register({
     };
   },
   tags: ['skills', 'memory'],
+});
+
+registry.register({
+  name: 'reverify_skills',
+  description: 'Re-verify synthesized skills by simulating their test cases with the LLM. Skills that pass get verified=true and proficiency 80. Batch of 20 per call.',
+  schema: {
+    limit: { type: 'number', description: 'Max skills to check (default 20, max 50)' },
+  },
+  requiredParams: [],
+  handler: async (params: unknown) => {
+    const limitRaw = (params ?? {}) as { limit?: number };
+    const batchSize = Math.min(Math.max(Number(limitRaw.limit ?? 20) || 20, 1), 50);
+    const provider = createProviderFromEnv();
+    if (!provider) {
+      return { checked: 0, passed: 0, failed: 0, failures: [{ id: '', name: 'reverify_skills', reason: 'LLM provider not configured' }] };
+    }
+
+    const rows = await synthesizedSkills.listAll(1000);
+    const candidates = rows
+      .filter((skill) => skill['verified'] === false && typeof skill['code'] === 'string' && (skill['code'] as string).length > 50)
+      .slice(0, batchSize);
+
+    const failures: Array<{ id: string; name: string; reason: string }> = [];
+    let passed = 0;
+
+    for (const skill of candidates) {
+      try {
+        const code = String(skill['code'] ?? '').slice(0, 12_000);
+        const description = String(skill['description'] ?? '');
+        const completion = await provider.complete(
+          [
+            { role: 'system', content: 'Review this skill code. Does it implement its description correctly? Reply ONLY JSON: {"pass": true/false, "reason": "one line"}' },
+            { role: 'user', content: `Description:\n${description}\n\nCode:\n${code}` },
+          ],
+          { temperature: 0.1, maxTokens: 300 },
+        );
+
+        let parsed: { pass?: boolean; reason?: string } | null = null;
+        try {
+          const raw = completion.content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+          parsed = JSON.parse(raw) as { pass?: boolean; reason?: string };
+        } catch {
+          parsed = null;
+        }
+
+        if (parsed?.pass === true) {
+          await synthesizedSkills.upsert(String(skill['id']), { ...skill, verified: true, proficiency: 80 }, ['verified', 'proficiency']);
+          passed += 1;
+        } else {
+          failures.push({
+            id: String(skill['id'] ?? ''),
+            name: String(skill['name'] ?? ''),
+            reason: parsed?.reason?.trim() || 'LLM rejected or returned invalid JSON',
+          });
+        }
+      } catch (err) {
+        failures.push({
+          id: String(skill['id'] ?? ''),
+          name: String(skill['name'] ?? ''),
+          reason: err instanceof Error ? err.message : 'reverify failed',
+        });
+      }
+    }
+
+    return {
+      checked: candidates.length,
+      passed,
+      failed: failures.length,
+      failures,
+    };
+  },
+  tags: ['skills', 'memory', 'admin'],
 });
 
 registry.register({

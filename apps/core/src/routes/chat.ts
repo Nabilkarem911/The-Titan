@@ -1,9 +1,11 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { getGlobalToolRegistry, getGlobalWiring, type ToolResult } from '@titan/agent-engine';
 import { createRunner } from '../create-runner.js';
 import { getGlobalMemoryClient } from '@titan/memory';
 import { agentRuns, userContext, getChatHistory, saveChatMessage, agentProfiles, query, toolExecutionStats } from '@titan/database';
+import { getRedis } from '@titan/queue';
 import { ValidationError } from '@titan/shared';
 import { getLogger } from '@titan/logging';
 import { requireAuth } from '../plugins/auth.js';
@@ -38,11 +40,35 @@ const ChatInputSchema = z.object({
 });
 
 const RATE_LIMIT_CHAT = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
+const CHAT_CACHE_TTL_SECONDS = 6 * 60 * 60;
 
 let sharedLlm: ReturnType<typeof createProviderFromEnv> | null = null;
 function getSharedLlm() {
   if (!sharedLlm) sharedLlm = createProviderFromEnv();
   return sharedLlm;
+}
+
+function getChatCacheKey(userId: string, prompt: string): string {
+  const hash = createHash('sha256').update(prompt.toLowerCase().trim()).digest('hex');
+  return `cache:${userId}:${hash}`;
+}
+
+async function getCachedChatAnswer(userId: string, prompt: string): Promise<string | null> {
+  try {
+    const redis = getRedis();
+    return await redis.get(getChatCacheKey(userId, prompt));
+  } catch {
+    return null;
+  }
+}
+
+async function setCachedChatAnswer(userId: string, prompt: string, answer: string): Promise<void> {
+  try {
+    const redis = getRedis();
+    await redis.set(getChatCacheKey(userId, prompt), answer, 'EX', CHAT_CACHE_TTL_SECONDS);
+  } catch {
+    // cache is best-effort only
+  }
 }
 
 /** File tools that should have their filePath rewritten to workspace root. */
@@ -64,14 +90,15 @@ function createWorkspaceToolExecutor(
       result = { success: false, error: err instanceof Error ? err.message : String(err) };
     }
     // Record execution stats (fire-and-forget — never block or fail the tool call)
+    const toolStatsRow = {
+      toolName: name,
+      success: result.success,
+      durationMs: Date.now() - startedAt,
+      errorType: result.success ? null : (result.error?.slice(0, 100) ?? 'unknown'),
+      userId: userId ?? null,
+    };
     void toolExecutionStats
-      .insert({
-        toolName: name,
-        success: result.success,
-        durationMs: Date.now() - startedAt,
-        errorType: result.success ? null : (result.error?.slice(0, 100) ?? 'unknown'),
-        userId: userId ?? null,
-      })
+      .insert(toolStatsRow)
       .catch(() => {});
     return result;
   };
@@ -228,10 +255,8 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           const tgCtx = await userContext.getAll(linkedTgId);
           mergedCtx = { ...tgCtx, ...ctx }; // dashboard context takes priority
           // Pre-resolve identity (learned prefs + persona) once — async DB hydration
-          const [tgLearned, tgPersona] = await Promise.all([
-            getLearnedPreferences(userId),
-            getPersonaInstructionsForUser(userId),
-          ]);
+          const tgLearned = await getLearnedPreferences(userId);
+          const tgPersona = await getPersonaInstructionsForUser(userId);
           const tgIdentityContext = { learned: tgLearned, persona: tgPersona };
           // Also load telegram chat history and merge
           const tgHistory = await getChatHistory(`tg:${linkedTgId}`, 20);
@@ -504,10 +529,8 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       const workspaceRoot = getWorkspaceRoot(userId);
 
       // Pre-resolve identity (learned prefs + persona) — async DB hydration
-      const [mainLearned, mainPersona] = await Promise.all([
-        getLearnedPreferences(userId),
-        getPersonaInstructionsForUser(userId),
-      ]);
+      const mainLearned = await getLearnedPreferences(userId);
+      const mainPersona = await getPersonaInstructionsForUser(userId);
 
       const contextBlock = [
         ctxLines.length ? `\n\nUser context:\n${ctxLines.join('\n')}` : '',
@@ -554,6 +577,21 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           }
         } catch {
           // guardrails failure should not block chat
+        }
+      }
+
+      if (!input.stream) {
+        const cachedAnswer = await getCachedChatAnswer(userId, effectivePrompt);
+        if (cachedAnswer !== null) {
+          await saveChatMessage(sessionId, 'assistant', cachedAnswer);
+          return reply.send({
+            runId: getChatCacheKey(userId, effectivePrompt),
+            sessionId,
+            answer: cachedAnswer,
+            status: 'completed',
+            tokensUsed: 0,
+            cached: true,
+          });
         }
       }
 
@@ -765,12 +803,16 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
 
+        if (result.status === 'completed' && answer.length > 20 && result.steps.length <= 2) {
+          await setCachedChatAnswer(userId, effectivePrompt, answer);
+        }
+
         // Save assistant reply to history
         await saveChatMessage(sessionId, 'assistant', answer);
 
         // Record interaction for preference learning (was missing on main path — identity never learned here)
         try {
-          await recordUserInteraction(userId, [enrichedPrompt, answer]);
+          void recordUserInteraction(userId, [enrichedPrompt, answer]).catch(() => {});
         } catch {
           // preference learning is optional
         }
