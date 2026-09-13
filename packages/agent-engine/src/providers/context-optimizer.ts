@@ -473,7 +473,7 @@ type TaskType = 'simple_qa' | 'code' | 'debugging' | 'creative' | 'multi_step' |
 
 const TASK_TOOL_SETS: Record<TaskType, Set<string>> = {
   simple_qa: new Set([
-    'recall', 'remember', 'brave_search', 'brave_answers', 'list_skills', 'use_skill',
+    'recall', 'remember', 'list_skills', 'use_skill',
   ]),
   code: new Set([
     'execute_bash', 'write_file', 'read_file_content', 'patch_file', 'read_file_ast',

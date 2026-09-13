@@ -68,7 +68,7 @@ describe('ContextOptimizer', () => {
     const result = opt.optimizeTools(tools, [], 'what is the weather today');
     expect(result.tools.some(t => t.name === 'recall')).toBe(true);
     expect(result.tools.some(t => t.name === 'remember')).toBe(true);
-    expect(result.tools.some(t => t.name === 'brave_search')).toBe(true);
+    expect(result.tools.some(t => t.name === 'brave_search')).toBe(false);
     expect(result.tools.some(t => t.name === 'execute_bash')).toBe(false);
     expect(result.tools.some(t => t.name === 'docker_manage')).toBe(false);
   });

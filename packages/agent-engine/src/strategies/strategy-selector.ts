@@ -56,9 +56,21 @@ export class StrategySelector {
   }
 
   async autoSelect(prompt: string): Promise<{ strategy: ReasoningStrategy; classification: TaskClassification }> {
-    const classification = this.llm
-      ? await this.classifyWithLlm(prompt)
-      : this.classifyWithHeuristics(prompt);
+    const wordCount = prompt.trim().split(/\s+/).length;
+
+    // Short simple prompts: force simple_qa regardless of LLM classification.
+    // The LLM classifier often misclassifies "what is 2+2?" as complex/analytical,
+    // causing unnecessary tool calls (brave_answers) that prevent cache hits.
+    // Only apply for very short prompts (<=5 words) without action verbs.
+    const shortSimple = wordCount <= 5
+      && !/```|https?:\/\//.test(prompt)
+      && !/(error|bug|fix|debug|crash|traceback|不是一个|def |class |function |analyze|evaluate|calculate|build|create|deploy|fix|implement)/i.test(prompt);
+
+    const classification = shortSimple
+      ? { type: 'simple_qa' as TaskClassification['type'], confidence: 95, recommendedStrategy: 'chain-of-thought' as StrategyName, reasoning: 'Short simple prompt — forced simple_qa' }
+      : this.llm
+        ? await this.classifyWithLlm(prompt)
+        : this.classifyWithHeuristics(prompt);
 
     const strategy = this.getStrategy(classification.recommendedStrategy);
     log.info({ type: classification.type, strategy: classification.recommendedStrategy, confidence: classification.confidence }, 'strategy selected');
