@@ -384,6 +384,22 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
             const tgEnhancedPrompt = systemPromptExtra + tgEmotionContext + tgHeuristicContext + tgDreamContext + tgTomContext + tgConvMemoryContext;
 
+            // Cache check for Telegram path
+            if (!input.stream) {
+              const cachedTgAnswer = await getCachedChatAnswer(userId, tgEffectivePrompt);
+              if (cachedTgAnswer !== null) {
+                await saveChatMessage(sessionId, 'assistant', cachedTgAnswer);
+                return reply.send({
+                  runId: getChatCacheKey(userId, tgEffectivePrompt),
+                  sessionId,
+                  answer: cachedTgAnswer,
+                  status: 'completed',
+                  tokensUsed: 0,
+                  cached: true,
+                });
+              }
+            }
+
             // Create DB run record
             const dbRun = await agentRuns.create({
               agentId: input.agentId,
@@ -439,6 +455,12 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
               // Save assistant reply to history
               await saveChatMessage(sessionId, 'assistant', answer);
+
+              // Cache the answer for Telegram path too
+              const tgActionCount = result.steps.filter((s) => s.action).length;
+              if (result.status === 'completed' && answer.length > 0 && tgActionCount === 0) {
+                await setCachedChatAnswer(userId, tgEffectivePrompt, answer);
+              }
 
               // Record interaction for preference learning (non-blocking)
               try {
