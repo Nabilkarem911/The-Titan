@@ -65,9 +65,11 @@ async function getCachedChatAnswer(userId: string, prompt: string): Promise<stri
 async function setCachedChatAnswer(userId: string, prompt: string, answer: string): Promise<void> {
   try {
     const redis = getRedis();
-    await redis.set(getChatCacheKey(userId, prompt), answer, 'EX', CHAT_CACHE_TTL_SECONDS);
-  } catch {
-    // cache is best-effort only
+    const key = getChatCacheKey(userId, prompt);
+    await redis.set(key, answer, 'EX', CHAT_CACHE_TTL_SECONDS);
+    console.log(`[CACHE-SET] key=${key} answerLen=${answer.length}`);
+  } catch (err) {
+    console.error('[CACHE-SET-ERROR]', err);
   }
 }
 
@@ -802,8 +804,10 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         });
 
         const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
+        const actionCount = result.steps.filter((s) => s.action).length;
+        console.log(`[CACHE-CHECK] status=${result.status} answerLen=${answer.length} actionCount=${actionCount} totalSteps=${result.steps.length}`);
 
-        if (result.status === 'completed' && answer.length > 0 && result.steps.filter((s) => s.action).length === 0) {
+        if (result.status === 'completed' && answer.length > 0 && actionCount === 0) {
           await setCachedChatAnswer(userId, effectivePrompt, answer);
         }
 
