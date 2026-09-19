@@ -1,5 +1,6 @@
 """
-Titan Embedding Service — local BGE-small-en-v1.5 (384-dim).
+Titan Embedding Service — multilingual by default (intfloat/multilingual-e5-small, 384-dim).
+Supports Arabic + 100 languages. Set EMBEDDING_MODEL_NAME to change the model.
 Exposes an OpenAI-compatible /v1/embeddings endpoint + a convenience /embed endpoint.
 """
 
@@ -11,18 +12,23 @@ from fastapi import FastAPI, HTTPException
 from fastembed import TextEmbedding
 from pydantic import BaseModel, Field
 
-MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "BAAI/bge-small-en-v1.5")
+# ⚠️ كان bge-small-en-v1.5 (إنجليزي فقط) — بيخلي البحث في الذاكرة ضعيف جدًا بالعربي.
+MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "intfloat/multilingual-e5-small")
 
-app = FastAPI(title="Titan Embedding Service", version="1.0.0")
+app = FastAPI(title="Titan Embedding Service", version="1.1.0")
 
 # Load model at startup (already cached in Docker image)
 model: TextEmbedding | None = None
+DIMENSIONS: int = 0  # بتتحسب فعلًا عند التحميل — ممنوع نفترضها
 
 
 @app.on_event("startup")
 def load_model():
-    global model
+    global model, DIMENSIONS
     model = TextEmbedding(model_name=MODEL_NAME)
+    # نقيس الأبعاد الحقيقية من الموديل نفسه (بدل ما نفترض 384/1536)
+    probe = next(iter(model.embed(["probe"])))
+    DIMENSIONS = int(len(probe))
 
 
 # ─── Health ───────────────────────────────────────────────────────────────────
@@ -30,7 +36,7 @@ def load_model():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": MODEL_NAME, "dimensions": 384}
+    return {"status": "ok", "model": MODEL_NAME, "dimensions": DIMENSIONS}
 
 
 # ─── Simple /embed endpoint ──────────────────────────────────────────────────

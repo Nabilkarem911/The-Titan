@@ -149,11 +149,15 @@ services:
   embed:
     build:
       context: ./services/embed
+      # النموذج متعدد اللغات (عربي) — يتغير من هنا لو احتجنا نموذج أكبر
+      args:
+        EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-intfloat/multilingual-e5-small}
     restart: unless-stopped
     ports:
       - "${EMBED_PORT:-8100}:8000"
     environment:
-      - EMBEDDING_MODEL_NAME=${EMBEDDING_MODEL_NAME:-BAAI/bge-small-en-v1.5}
+      # ⚠️ كان BAAI/bge-small-en-v1.5 = إنجليزي فقط → الذاكرة ماكانتش تفهم العربي
+      - EMBEDDING_MODEL_NAME=${EMBEDDING_MODEL_NAME:-intfloat/multilingual-e5-small}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s

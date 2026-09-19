@@ -95,9 +95,18 @@ export class PgVectorMemoryProvider implements MemoryProvider {
 
   private async insertItem(collectionId: string, item: MemoryItem): Promise<void> {
     const embeddingJson = item.embedding ? JSON.stringify(item.embedding) : null;
-    const embeddingVec = item.embedding && item.embedding.length === 1536
+    // ⚠️ إصلاح: كان مكتوب 1536 ثابتة، وخدمة التمثيل بتنتج 384 → embedding_vec كان بيبقى NULL دايمًا
+    // والبحث الدلالي كان ميت. الأبعاد بقت من EMBEDDING_DIMENSIONS (افتراضي 1536 للتوافق الخلفي).
+    const expectedDims = Number(process.env['EMBEDDING_DIMENSIONS'] ?? 1536);
+    const embeddingVec = item.embedding && item.embedding.length === expectedDims
       ? `[${item.embedding.join(',')}]`
       : null;
+    if (item.embedding && !embeddingVec) {
+      log.warn(
+        { got: item.embedding.length, expected: expectedDims },
+        'embedding dimensions mismatch — vector search will not work for this item',
+      );
+    }
     await this.db.query(
       `INSERT INTO memory_items (collection_id, external_id, content, embedding, embedding_vec, metadata, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, now())
