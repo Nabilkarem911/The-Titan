@@ -1,5 +1,5 @@
 """
-Titan Embedding Service — multilingual by default (sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2, 384-dim).
+Titan Embedding Service — multilingual by default (intfloat/multilingual-e5-large, 384-dim).
 Supports Arabic + 100 languages. Set EMBEDDING_MODEL_NAME to change the model.
 Exposes an OpenAI-compatible /v1/embeddings endpoint + a convenience /embed endpoint.
 """
@@ -13,7 +13,7 @@ from fastembed import TextEmbedding
 from pydantic import BaseModel, Field
 
 # ⚠️ كان bge-small-en-v1.5 (إنجليزي فقط) — بيخلي البحث في الذاكرة ضعيف جدًا بالعربي.
-MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "intfloat/multilingual-e5-large")
 
 app = FastAPI(title="Titan Embedding Service", version="1.1.0")
 
