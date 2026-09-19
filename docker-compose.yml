@@ -114,6 +114,7 @@ services:
           cpus: '0.5'
     networks:
       - titan-net
+      - embeds
 
   # ============================================================================
   # Redis Insight (optional - dev only)
@@ -142,44 +143,13 @@ services:
           cpus: '0.5'
     networks:
       - titan-net
+      - embeds
 
   # ============================================================================
-  # Titan Embedding Service (local BGE-small-en-v1.5, 384-dim)
+  # ملاحظة: خدمة التمثيل بقت خارجية (embedsrv على شبكة embeds المشتركة)
+  # bge-m3 · 1024 بُعد · عربي متقدم — تخدم تيتان وأي مشروع تاني على السيرفر
   # ============================================================================
-  embed:
-    build:
-      context: ./services/embed
-      # النموذج متعدد اللغات (عربي) — يتغير من هنا لو احتجنا نموذج أكبر
-      args:
-        EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-intfloat/multilingual-e5-large}
-    restart: unless-stopped
-    ports:
-      - "${EMBED_PORT:-8100}:8000"
-    environment:
-      # ⚠️ كان BAAI/bge-small-en-v1.5 = إنجليزي فقط → الذاكرة ماكانتش تفهم العربي
-      - EMBEDDING_MODEL_NAME=${EMBEDDING_MODEL_NAME:-intfloat/multilingual-e5-large}
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1.0'
-    networks:
-      - titan-net
 
-  # ============================================================================
-  # Titan Core API
-  # ============================================================================
   core:
     build:
       context: .
@@ -193,7 +163,7 @@ services:
       - POSTGRES_HOST=titan-postgres
       - REDIS_HOST=titan-redis
       - HTTP_HOST=0.0.0.0
-      - EMBEDDING_BASE_URL=http://embed:8000/v1
+      - EMBEDDING_BASE_URL=http://embedsrv:8080/v1
       - EMBEDDING_DIMENSIONS=1024
       - EMBEDDING_API_KEY=local
       - POSTGRES_ALLOW_NO_TLS=true
@@ -205,10 +175,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      embed:
-        condition: service_healthy
     networks:
       - titan-net
+      - embeds
       - dokploy-network
     labels:
       - traefik.docker.network=dokploy-network
@@ -253,7 +222,7 @@ services:
       - POSTGRES_HOST=titan-postgres
       - REDIS_HOST=titan-redis
       - SERVICE_NAME=titan-worker
-      - EMBEDDING_BASE_URL=http://embed:8000/v1
+      - EMBEDDING_BASE_URL=http://embedsrv:8080/v1
       - EMBEDDING_DIMENSIONS=1024
       - EMBEDDING_API_KEY=local
       - POSTGRES_ALLOW_NO_TLS=true
@@ -261,8 +230,6 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      embed:
         condition: service_healthy
     logging:
       driver: json-file
@@ -276,6 +243,7 @@ services:
           cpus: '2.0'
     networks:
       - titan-net
+      - embeds
 
 volumes:
   postgres_data:
@@ -290,6 +258,9 @@ volumes:
     driver: local
 
 networks:
+  embeds:
+    external: true
+    name: embeds
   titan-net:
     driver: bridge
     name: titan-net
