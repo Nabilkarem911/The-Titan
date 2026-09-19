@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
 # ⚠️ كان bge-small-en-v1.5 (إنجليزي فقط) → الذاكرة مش بتفهم العربي.
 # الافتراضي بقى متعدد اللغات، ويقدر يتغيّر من وقت البناء:
 #   docker compose build --build-arg EMBEDDING_MODEL_NAME=BAAI/bge-m3
-ARG EMBEDDING_MODEL_NAME=intfloat/multilingual-e5-small
+ARG EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 ENV EMBEDDING_MODEL_NAME=${EMBEDDING_MODEL_NAME}
 
 # Pre-download model at build time (not runtime)
