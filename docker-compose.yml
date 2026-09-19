@@ -114,7 +114,6 @@ services:
           cpus: '0.5'
     networks:
       - titan-net
-      - embeds
 
   # ============================================================================
   # Redis Insight (optional - dev only)
@@ -143,7 +142,6 @@ services:
           cpus: '0.5'
     networks:
       - titan-net
-      - embeds
 
   # ============================================================================
   # ملاحظة: خدمة التمثيل بقت خارجية (embedsrv على شبكة embeds المشتركة)
@@ -177,7 +175,6 @@ services:
         condition: service_healthy
     networks:
       - titan-net
-      - embeds
       - dokploy-network
     labels:
       - traefik.docker.network=dokploy-network
@@ -243,7 +240,6 @@ services:
           cpus: '2.0'
     networks:
       - titan-net
-      - embeds
 
 volumes:
   postgres_data:
@@ -258,9 +254,6 @@ volumes:
     driver: local
 
 networks:
-  embeds:
-    external: true
-    name: embeds
   titan-net:
     driver: bridge
     name: titan-net
