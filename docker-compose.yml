@@ -163,7 +163,7 @@ services:
       - POSTGRES_HOST=titan-postgres
       - REDIS_HOST=titan-redis
       - HTTP_HOST=0.0.0.0
-      - EMBEDDING_BASE_URL=http://embedsrv:8080/v1
+      - EMBEDDING_BASE_URL=https://embed.orcanox.xyz/v1
       - EMBEDDING_DIMENSIONS=1024
       - EMBEDDING_API_KEY=local
       - POSTGRES_ALLOW_NO_TLS=true
@@ -222,7 +222,7 @@ services:
       - POSTGRES_HOST=titan-postgres
       - REDIS_HOST=titan-redis
       - SERVICE_NAME=titan-worker
-      - EMBEDDING_BASE_URL=http://embedsrv:8080/v1
+      - EMBEDDING_BASE_URL=https://embed.orcanox.xyz/v1
       - EMBEDDING_DIMENSIONS=1024
       - EMBEDDING_API_KEY=local
       - POSTGRES_ALLOW_NO_TLS=true
