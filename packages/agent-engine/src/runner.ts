@@ -971,18 +971,35 @@ export class AgentRunner {
     if (this.deps.memory) {
       try {
         const collection = input.workspaceId ? `workspace_${input.workspaceId}` : 'global';
+        const baseMeta = {
+          agentId: run.agentId,
+          status: run.status,
+          steps: run.steps.length,
+          tokensUsed: run.tokensUsed,
+          userId: run.userId,
+          workspaceId: run.workspaceId,
+        };
+        const answer = (run.finalAnswer ?? 'N/A').trim();
+        // ⚠️ بنخزّن السؤال والإجابة كعناصر مستقلة كمان، وليس النص الملزوق فقط.
+        // السبب: البحث الدلالي بيقارن سؤال قصير بنصوص قصيرة أدق بكتير من نص طويل
+        // مخلوط (المقاس الفعلي على ذاكرة نبيل: 0.68-0.75 → دلوقتي أدق).
         await this.deps.memory.upsert(collection, [
           {
             id: run.id,
-            content: `Prompt: ${run.prompt}\nAnswer: ${run.finalAnswer ?? 'N/A'}`,
-            metadata: {
-              agentId: run.agentId,
-              status: run.status,
-              steps: run.steps.length,
-              tokensUsed: run.tokensUsed,
-              userId: run.userId,
-              workspaceId: run.workspaceId,
-            },
+            content: `Prompt: ${run.prompt}\nAnswer: ${answer}`,
+            metadata: { ...baseMeta, derived: 'turn' },
+            timestamp: new Date(),
+          },
+          {
+            id: `${run.id}:q`,
+            content: `سؤال: ${run.prompt}`,
+            metadata: { ...baseMeta, derived: 'prompt', parentId: run.id },
+            timestamp: new Date(),
+          },
+          {
+            id: `${run.id}:a`,
+            content: `إجابة: ${answer.slice(0, 600)}`,
+            metadata: { ...baseMeta, derived: 'answer', parentId: run.id },
             timestamp: new Date(),
           },
         ]);
