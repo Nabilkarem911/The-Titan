@@ -1,7 +1,7 @@
 import { getLogger } from '@titan/logging';
 import type { MemoryConfig, MemoryProvider, HealthStatus, MemoryMessage, MemoryItem, SearchOpts, SearchResult, CollectionInfo } from './index.js';
 import { PgVectorMemoryProvider } from './pgvectorProvider.js';
-import { getEmbeddingProvider, type EmbeddingProvider } from './embeddings.js';
+import { getEmbeddingProvider, embeddingText, type EmbeddingProvider } from './embeddings.js';
 
 const log = getLogger().child({ component: 'memory-client' });
 
@@ -178,7 +178,7 @@ export class MemoryClient {
       const needsEmbedding = items.filter((i) => !i.embedding || i.embedding.length === 0);
       if (needsEmbedding.length > 0) {
         try {
-          const texts = needsEmbedding.map((i) => i.content);
+          const texts = needsEmbedding.map((i) => embeddingText(i.content));
           const embeddings = await this.embedder.embed(texts);
           for (let idx = 0; idx < needsEmbedding.length; idx++) {
             needsEmbedding[idx].embedding = embeddings[idx];

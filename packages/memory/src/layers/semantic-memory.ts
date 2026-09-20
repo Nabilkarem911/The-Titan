@@ -1,6 +1,6 @@
 import { getLogger } from '@titan/logging';
 import type { MemoryLayer, MemoryEntry } from './types.js';
-import type { EmbeddingProvider } from '../embeddings.js';
+import { embeddingText, type EmbeddingProvider } from '../embeddings.js';
 
 const log = getLogger().child({ component: 'semantic-memory' });
 
@@ -15,7 +15,7 @@ export class SemanticMemory implements MemoryLayer {
   async store(entry: MemoryEntry): Promise<void> {
     if (!entry.embedding && this.embedder) {
       try {
-        const [embedding] = await this.embedder.embed([entry.content]);
+        const [embedding] = await this.embedder.embed([embeddingText(entry.content)]);
         entry.embedding = embedding;
       } catch {
         log.warn({ id: entry.id }, 'failed to embed — storing without vector');

@@ -93,6 +93,28 @@ export function createEmbeddingProvider(): EmbeddingProvider | null {
 let _globalProvider: EmbeddingProvider | null | undefined;
 
 /**
+ * النص اللي بنحسب منه بصمة المعنى.
+ *
+ * ⚠️ السبب: العناصر المخزّنة بتيجي ملزوقة (سؤال + إجابة مع بعض في نص طويل)
+ * وده بيميّع البصمة فالبحث الدلالي بيرجع نتايج ضعيفة.
+ * الحل: نركّز على السؤال (اللي بيحمل الموضوع) + أول جزء من الإجابة.
+ *
+ * ⚠️ أي تغيير في القاعدة دي لازم يتطبق كمان في سكربت إعادة التمثيل القديم،
+ * وإلا البصمات القديمة والجديدة تبقى بتقيس حاجات مختلفة.
+ */
+export function embeddingText(content: string, maxLen = 900): string {
+  const flat = (content ?? '').replace(/\s+/g, ' ').trim();
+  if (!flat) return '';
+  const parts: string[] = [];
+  const p = flat.match(/Prompt:\s*(.*?)(?:\s*Answer:|$)/i);
+  const a = flat.match(/Answer:\s*(.*)$/i);
+  if (p?.[1]?.trim()) parts.push(p[1].trim());
+  if (a?.[1]?.trim()) parts.push(a[1].trim().slice(0, 300));
+  const text = parts.length > 0 ? parts.join(' | ') : flat;
+  return text.slice(0, maxLen);
+}
+
+/**
  * Get or create the global embedding provider singleton.
  */
 export function getEmbeddingProvider(): EmbeddingProvider | null {
