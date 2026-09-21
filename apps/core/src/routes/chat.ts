@@ -435,15 +435,6 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
               memory,
               userContextItems: Object.keys(mergedCtx).length > 0 ? mergedCtx : undefined,
               sse: input.stream ? { write: (d) => reply.raw.write(d) } : undefined,
-              // نفس تنظيف السياق — كل خطوة كانت بتعيد إرسال السياق كامل
-              contextOptimization: {
-                maxContextTokens: 12000,
-                maxToolOutputTokens: 800,
-                maxConversationMessages: 8,
-                enableToolFiltering: true,
-                enableHistoryCompaction: true,
-                enableOutputTruncation: true,
-              },
             });
 
             try {
@@ -818,16 +809,6 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         memory,
         userContextItems: Object.keys(ctx).length > 0 ? ctx : undefined,
         sse: input.stream ? { write: (d) => reply.raw.write(d) } : undefined,
-        // ⚠️ تشغيل محسّن السياق — بدونه كل خطوة بتعيد إرسال السياق كامل
-        // (المقاس الفعلي: الوسيط 69,512 توكن لكل رسالة ✗)
-        contextOptimization: {
-          maxContextTokens: 12000,
-          maxToolOutputTokens: 800,
-          maxConversationMessages: 8,
-          enableToolFiltering: true,
-          enableHistoryCompaction: true,
-          enableOutputTruncation: true,
-        },
       });
 
       try {
