@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import { isSimpleMessage } from '../lib/simple-message.js';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { getGlobalToolRegistry, getGlobalWiring, type ToolResult } from '@titan/agent-engine';
@@ -28,28 +29,6 @@ function isPathInsideWorkspace(workspaceRoot: string, filePath: string): boolean
   const resolved = resolve(filePath);
   const rel = relative(workspaceRoot, resolved);
   return !rel.startsWith('..') && !resolve(rel).startsWith(resolve('/'));
-}
-
-// ── تصنيف الرسايل البسيطة ────────────────────────────────────────────────
-// ⚠️ السبب: كل رسالة كانت بتاخد لحد 4 خطوات كاملة، وكل خطوة نداء كامل للمزود
-// (المقاس الفعلي: «صباح الخير» = 5 خطوات و72 ثانية و15,569 توكن ✗)
-// الرسالة البسيطة (سلام/شكر/سؤال قصير) مش محتاجة خطوات — رد واحد كفاية.
-const SIMPLE_PATTERNS = [
-  /^\s*(صباح|مساء|نهار)\s*(الخير|النور|الخير\s*يا)/,
-  /^\s*(ها+|هلا|أهلا|اهلا|أهلاً|سلام|سلامو|السلام)/,
-  /^\s*(ازيك|إزيك|إزاي\s*حالك|اخبارك|أخبارك|عامل\s*(اي|إيه)|عامل\s*ايه|إيه\s*أخبارك)/,
-  /^\s*(شكرا|شكراً|تسلم|متشكر|جزاك|ربنا\s*يكرمك|تسلم\s*ايدك)/,
-  /^\s*(تمام|ماشي|اوك|أوك|اوكي|طيب|معلش|خلاص|حلو|زي\s*الفل|الحمد\s*لله)/,
-  /^\s*(ها\s*يا|يا\s*حب|يا\s*صاحبي|يا\s*قلب|كمل|براحتك|زي\s*ما\s*تحب)\s*[\w\s!؟.]{0,15}$/,
-  /^\s*(hi|hello|hey|ok|okay|thanks|thank you|good\s*(morning|evening))\s*[!.]?\s*$/i,
-];
-function isSimpleMessage(prompt: string): boolean {
-  const p = (prompt ?? '').trim();
-  if (!p || p.length > 60) return false;
-  if (SIMPLE_PATTERNS.some((r) => r.test(p))) return true;
-  // سؤال قصير جدًا (أقل من 25 حرف) من غير كلمات تدل على مهمة/أداة
-  const taskWords = /(اكتب|اعمل|ابحث|حلل|صلح|برمج|لخص|راجع|انشر|ارسل|نفذ|شغل|كود|ملف|دالة|سكربت|تقرير|جدول)/;
-  return p.length <= 25 && !taskWords.test(p);
 }
 
 const ChatInputSchema = z.object({

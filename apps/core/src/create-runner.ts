@@ -158,7 +158,9 @@ export function createRunner(opts: CreateRunnerOptions): AgentRunner {
     // Context window compression — compact history after every few steps to prevent 400k+ token usage
     contextOptimization: {
       maxContextTokens: 32000,
-      maxToolOutputTokens: 2000,
+      // ⚠️ مقاس الفعلي: رسالة بحث = 143,684 توكن لأن نتايج البحث كاملة بتتحقن.
+      // 600 بدل 2000 — الروابط والعناوين بتفضل، والمحتوى بيتقصّر.
+      maxToolOutputTokens: 600,
       maxConversationMessages: 4,
       enableToolFiltering: true,
       enableHistoryCompaction: true,

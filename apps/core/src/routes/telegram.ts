@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { stepsForMessage } from '../lib/simple-message.js';
 import { loadConfig } from '@titan/config';
 import { getLogger } from '@titan/logging';
 import { agentRuns, userContext, userProjects, getChatHistory, saveChatMessage, agentProfiles } from '@titan/database';
@@ -582,7 +583,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
       const createdRun = await agentRuns.create({
         agentId,
         prompt: text,
-        maxSteps: 10,
+        maxSteps: stepsForMessage(text),
       });
       const runId = createdRun.id;
 
