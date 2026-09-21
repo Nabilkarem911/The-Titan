@@ -29,7 +29,8 @@ export async function httpRequest(input: {
     res.headers.forEach((v, k) => { resHeaders[k] = v; });
 
     log.info({ url, status: res.status }, 'http request complete');
-    return { status: res.status, headers: resHeaders, body: text.substring(0, 200_000) };
+    return { status: res.status, headers: resHeaders, // ⚠️ كان 200,000 حرف = ~60 ألف توكن للطلب الواحد ✗
+    body: text.substring(0, 10_000) };
   } catch (err) {
     clearTimeout(timer);
     throw new Error(`HTTP request failed: ${err instanceof Error ? err.message : 'Unknown'}`, { cause: err });

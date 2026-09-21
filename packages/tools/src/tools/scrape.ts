@@ -35,7 +35,9 @@ export async function firecrawlScrape(input: FirecrawlScrapeInput): Promise<{
       url,
       statusCode: res.status,
       title,
-      content: text.substring(0, 100_000),
+      // ⚠️ كان 100,000 حرف للصفحة = ~30 ألف توكن → رسالة بحث واحدة = 141,438 توكن ✗
+      // 8,000 حرف كافية جدًا للموديل (يحتفظ بالعنوان والرابط والمقدمة والتفاصيل).
+      content: text.substring(0, 8_000),
       contentType,
     };
   } catch (err) {

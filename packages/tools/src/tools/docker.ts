@@ -110,7 +110,8 @@ export async function dockerOrchestrate(input: DockerOrchestratorInput): Promise
           output += (chunk as Buffer).toString('utf-8');
         });
         await new Promise<void>((resolve) => stream.on('end', () => resolve()));
-        return { success: true, data: { output: output.substring(0, 50_000) } };
+        return { success: true, data: { // ⚠️ كان 50,000 حرف = ~15 ألف توكن ✗
+        output: output.substring(0, 8_000) } };
       }
       default:
         return { success: false, error: `Unsupported action: ${action}` };

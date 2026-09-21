@@ -76,7 +76,8 @@ export class BrowserController {
     return {
       url,
       title: this.extractTitle(html),
-      text: this.extractText(html).slice(0, 20000),
+      // ⚠️ كان 20,000 حرف = ~6 آلاف توكن ✗
+      text: this.extractText(html).slice(0, 10_000),
       links: this.extractLinks(html, url),
       forms: this.extractForms(html),
     };
