@@ -19,7 +19,7 @@ const SIMPLE_PATTERNS: RegExp[] = [
 ];
 
 /** كلمات تدل على إن فيه مهمة حقيقية → تستاهل خطوات */
-const TASK_WORDS = /(اكتب|اعمل|ابحث|حلل|صلح|برمج|لخص|راجع|انشر|ارسل|نفذ|شغل|كود|ملف|دالة|سكربت|تقرير|جدول|احسب|قارن|ترجم|صمم|طور|ثبت|نصب|deploy|fix|build)/;
+const TASK_WORDS = /(اكتب|اعمل|ابحث|حلل|صلح|برمج|لخص|راجع|انشر|ارسل|نفذ|كود|دالة|سكربت|تقرير|جدول|احسب|قارن|ترجم|صمم|طور|ثبت|نصب|deploy|fix|build)/;
 
 export function isSimpleMessage(prompt: string): boolean {
   const p = (prompt ?? '').trim();

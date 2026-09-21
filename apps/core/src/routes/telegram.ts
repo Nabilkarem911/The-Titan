@@ -661,6 +661,7 @@ export async function registerTelegramRoutes(app: FastifyInstance): Promise<void
         runId,
         agentId,
         prompt: text,
+        maxSteps: stepsForMessage(text),
         systemPromptExtra: (profileSystemPrompt ? profileSystemPrompt + '\n\n' : '') + contextBlock,
         conversationHistory: chatHistory.slice(-10),
       }).then(async (result) => {
