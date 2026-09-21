@@ -440,6 +440,10 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
               memory,
               userContextItems: Object.keys(mergedCtx).length > 0 ? mergedCtx : undefined,
               sse: input.stream ? { write: (d) => reply.raw.write(d) } : undefined,
+              // ⚡ المرحلة ٠: نفس الشيء لمسار تليجرام
+              enablePlanning: false,
+              enableAutoStrategy: false,
+              enableSelfCritique: false,
             });
 
             try {
@@ -814,6 +818,12 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         memory,
         userContextItems: Object.keys(ctx).length > 0 ? ctx : undefined,
         sse: input.stream ? { write: (d) => reply.raw.write(d) } : undefined,
+        // ⚡ المرحلة ٠: لكل رسالة كان بيحصل 3-4 نداءات زيادة
+        // (تخطيط + اختيار استراتيجية + مراجعة ذاتية) — كل واحد بسياق كامل ✗
+        // المقاس: 5-10 خطوات و140 ألف توكن لرسالة واحدة. المحادثة مش محتاجة كده.
+        enablePlanning: false,
+        enableAutoStrategy: false,
+        enableSelfCritique: false,
       });
 
       try {
