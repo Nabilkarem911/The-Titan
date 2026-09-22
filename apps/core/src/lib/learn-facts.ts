@@ -30,6 +30,42 @@ function apiKey(): string | undefined {
   return process.env.MILLISECONDS_API_KEY ?? process.env.MILLISECONDS_PLAYGROUND_KEY;
 }
 
+/**
+ * بصمة المعنى — من خدمة التمثيل بتاعتنا (bge-m3 · 1024 بُعد).
+ * مهم: بنحسبها هنا بنفسنا لأن عميل الذاكرة في تيتان بيرجّع null
+ * لما EMBEDDING_BASE_URL مش مضبوط → فالحقايق كانت بتتخزن من غير تمثيل
+ * → فالبحث الدلالي مش بيلاقيها. الحساب هنا مستقل تمامًا عن إعدادات تيتان.
+ */
+const EMBED_BASE = process.env.EMBEDDING_BASE_URL ?? 'https://embed.orcanox.xyz/v1';
+const EMBED_KEY = process.env.EMBEDDING_API_KEY ?? process.env.EMBED_SERVICE_KEY ?? '';
+
+async function embedOne(text: string): Promise<number[] | undefined> {
+  if (!text) return undefined;
+  try {
+    const res = await fetch(`${EMBED_BASE}/embeddings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(EMBED_KEY ? { Authorization: `Bearer ${EMBED_KEY}` } : {}),
+      },
+      body: JSON.stringify({ input: text, model: 'bge-m3' }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) {
+      log.warn({ status: res.status }, 'embed service rejected the request');
+      return undefined;
+    }
+    const j = (await res.json()) as { data?: Array<{ embedding?: number[] }> };
+    const vec = j.data?.[0]?.embedding;
+    if (!vec || vec.length === 0) return undefined;
+    log.debug({ dims: vec.length }, 'embedding computed');
+    return vec;
+  } catch (err) {
+    log.warn({ err: String(err).slice(0, 150) }, 'embedding failed (fact still stored without vector)');
+    return undefined;
+  }
+}
+
 async function msDecide(endpoint: string, body: Record<string, unknown>): Promise<unknown> {
   const key = apiKey();
   if (!key) throw new Error('MILLISECONDS_API_KEY is not set');
@@ -63,6 +99,17 @@ export async function isDurableFact(userText: string): Promise<boolean> {
 }
 
 export interface LearnDeps {
+  /**
+   * جدول user_context — ده اللي تيتان بيحقنه فعلًا في البرومبت
+   * (chat.ts بيقرا userContext.getAll(userId)).
+   * ⚠️ الدرس: الكتابة في الذاكرة الدلالية لوحدها مش كفاية — مفيش حد بيقراها في مسار المحادثة.
+   */
+  userContextDep?: {
+    get: (ownerId: string, key: string) => Promise<string | null>;
+    set: (ownerId: string, key: string, value: string) => Promise<void>;
+  };
+  /** معرّف المستخدم — مفتاح القراءة في userContext */
+  userId?: string;
   /** واجهة الذاكرة — بتستخدم upsert (زي المتوقع من @titan/memory) */
   memory?: { upsert: (collection: string, items: unknown[]) => Promise<void> };
   /** مساحة العمل/معرّف المحادثة — للفصل بين المستخدمين */
@@ -98,10 +145,14 @@ export async function learnFromTurn(
     }
 
     const id = deps.messageId ?? `fact-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    // البصمة: نرمز على «النص المجرّد» (مش على نص ملزوق) عشان البحث يلاقيه
+    const vec = await embedOne(clean);
+    if (!vec) log.warn({ id }, 'storing fact without an embedding');
     await deps.memory.upsert(COLLECTION, [
       {
         id,
         content: clean,
+        ...(vec ? { embedding: vec } : {}),
         workspaceId: deps.workspaceId ?? 'default',
         metadata: {
           kind: 'durable_fact',
@@ -111,6 +162,19 @@ export async function learnFromTurn(
         },
       },
     ]);
+
+    // ✅ المكان اللي تيتان بيقرا منه فعلًا
+    if (deps.userContextDep?.set && deps.userId) {
+      const d = new Date();
+      const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      const key = `learned_facts_${ymd}`; // مفتاح يومي — مش بيكبر بلا حدود
+      const prev = await deps.userContextDep.get(deps.userId, key);
+      const merged = prev ? `${prev} | ${clean}` : clean;
+      await deps.userContextDep.set(deps.userId, key, merged.slice(-1_500));
+      log.info({ userId: deps.userId, key, len: merged.length }, 'fact written to user_context');
+    } else {
+      log.warn('no userContext dep — fact only in vector store (chat will not see it)');
+    }
 
     log.info({ id, chars: clean.length, ms: Date.now() - started }, 'durable fact stored');
     return 1;

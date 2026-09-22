@@ -469,6 +469,9 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
                   const _mem = await getGlobalMemoryClient();
                   await learnFromTurn(tgEffectivePrompt, {
                     memory: _mem as unknown as { upsert: (c: string, i: unknown[]) => Promise<void> },
+                    // ⚠️ ده المكان اللي تيتان بيقرا منه فعلًا (chat.ts → userContext.getAll)
+                    userContextDep: userContext,
+                    userId: String(userId),
                     workspaceId: req.auth?.workspaceId ?? undefined,
                     messageId: runId,
                   });
