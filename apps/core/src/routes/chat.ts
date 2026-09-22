@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { getGlobalToolRegistry, getGlobalWiring, type ToolResult } from '@titan/agent-engine';
 import { createRunner } from '../create-runner.js';
 import { getGlobalMemoryClient } from '@titan/memory';
+import { learnFromTurn } from '../lib/learn-facts.js';
 import { agentRuns, userContext, getChatHistory, saveChatMessage, agentProfiles, query, toolExecutionStats } from '@titan/database';
 import { getRedis } from '@titan/queue';
 import { ValidationError } from '@titan/shared';
@@ -460,7 +461,23 @@ export const chatRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
                 conversationHistory: history.slice(-10).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
               });
 
-              const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
+
+              // 🧠 التعلّم: نستخرج المعلومة الدائمة ونخزّنها — بعد الرد، و fire-and-forget
+              // (لو فشل مايكسرش المحادثة، ولو مفيش معلومة مايعملش حاجة)
+              void (async () => {
+                try {
+                  const _mem = await getGlobalMemoryClient();
+                  await learnFromTurn(tgEffectivePrompt, {
+                    memory: _mem as unknown as { upsert: (c: string, i: unknown[]) => Promise<void> },
+                    workspaceId: req.auth?.workspaceId ?? undefined,
+                    messageId: runId,
+                  });
+                } catch { /* ساكت عن قصد — التعلم مش أهم من الرد */ }
+              })();
+
+      
+
+        const answer = result.finalAnswer?.trim() || 'لم أتمكن من إيجاد إجابة. حاول صياغة السؤال بشكل مختلف.';
 
               // Save assistant reply to history
               await saveChatMessage(sessionId, 'assistant', answer);
