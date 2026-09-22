@@ -126,6 +126,36 @@ function buildToolsFromRegistry(): LlmToolDefinition[] {
   }));
 }
 
+/**
+ * حقن حقايق المستخدم في البرومبت — بسقف وأولويات.
+ *
+ * ⚠️ السبب (مقاس 2026-09): الحقايق كانت بتتحقن كاملة وبلا سقف، وده بيتكرر
+ * مع كل خطوة → البرومبت بيتضخم والتكلفة بتزيد. إضافة لمفاتيح داخلية
+ * (_identity_*_json) مش محتاجة في المحادثة.
+ *
+ * الترتيب: الحقايق الجوهرية الأول، وبعدين الباقي لحد السقف.
+ */
+const USER_CONTEXT_MAX_CHARS = 1_200;
+const USER_CONTEXT_SKIP = /^_|^(telegram_screenshots|call_name|favorite_project)$/;
+const USER_CONTEXT_CORE = ['name', 'city', 'job', 'role', 'style', 'son', 'wife', 'age', 'prefers', 'dislikes'];
+
+export function buildUserContextItems(items: Record<string, string>): string[] {
+  const entries = Object.entries(items).filter(([k, v]) => !!v && !!v.trim() && !USER_CONTEXT_SKIP.test(k));
+  entries.sort(([a], [b]) => {
+    const ra = USER_CONTEXT_CORE.indexOf(a), rb = USER_CONTEXT_CORE.indexOf(b);
+    return (ra === -1 ? 999 : ra) - (rb === -1 ? 999 : rb);
+  });
+  const out: string[] = [];
+  let used = 0;
+  for (const [k, v] of entries) {
+    const line = `${k}: ${v}`;
+    if (used + line.length > USER_CONTEXT_MAX_CHARS) continue;
+    out.push(line);
+    used += line.length;
+  }
+  return out;
+}
+
 function isToolCallAllowed(call: ToolCall, rules: AgentRule[]): boolean {
   const forbidden = rules.filter((r) => r.type === 'forbidden_tools').flatMap((r) => r.value as string[]);
   return !forbidden.includes(call.name);
@@ -320,7 +350,8 @@ export class AgentRunner {
 
     // Always inject user context facts first (guaranteed, bypasses vector search)
     if (this.deps.userContextItems && Object.keys(this.deps.userContextItems).length > 0) {
-      memoryItems = Object.entries(this.deps.userContextItems).map(([k, v]) => `${k}: ${v}`);
+      // سقف + أولويات — بدل الحقن الكامل اللي كان بيضخّم البرومبت مع كل خطوة
+      memoryItems = buildUserContextItems(this.deps.userContextItems);
       log.info({ runId: run.id, facts: memoryItems.length }, 'user context facts injected');
     }
 
