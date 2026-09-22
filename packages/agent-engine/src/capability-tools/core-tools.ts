@@ -5,6 +5,79 @@ import type { WiredCapabilities } from '../capability-wiring.js';
 export function registerCoreTools(wiring: WiredCapabilities, _llm: LlmProvider): void {
   const registry = getGlobalToolRegistry();
 
+  // ── milliseconds.ai — قرارات/تصنيف/استخراج سريع وموثوق (مقيس على العربي 2026-09) ──
+  // بديل رخيص للفشل المتكرر في استخراج الحقايق بالموديل الصغير. مفتاحه من env فقط.
+  const msCall = async (endpoint: string, body: Record<string, unknown>): Promise<unknown> => {
+    const key = process.env.MILLISECONDS_API_KEY ?? process.env.MILLISECONDS_PLAYGROUND_KEY;
+    if (!key) throw new Error('MILLISECONDS_API_KEY is not set');
+    const res = await fetch(`https://api.milliseconds.ai/v1/decision-machine-1/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(45_000),
+    });
+    const text = await res.text();
+    if (!res.ok) throw new Error(`milliseconds.ai ${endpoint}: ${res.status} ${text.slice(0, 300)}`);
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { raw: text.slice(0, 4_000) };
+    }
+  };
+
+  registry.register({
+    name: 'ms_extract',
+    description:
+      'Extract structured fields from text using a JSON schema. Typed answers with probabilities, ' +
+      'multilingual (understands Egyptian/Saudi/English dialects). Use for facts, orders, invoices.',
+    tags: ['extraction', 'decision'],
+    schema: {
+      text: { type: 'string', description: 'The text to extract from' },
+      schema: { type: 'object', description: 'JSON schema of the fields to extract' },
+    },
+    requiredParams: ['text', 'schema'],
+    handler: async (params: unknown) => {
+      const p = params as { text: string; schema: Record<string, unknown> };
+      return msCall('extract', { text: p.text, schema: p.schema });
+    },
+  });
+
+  registry.register({
+    name: 'ms_classify',
+    description:
+      'Classify text into one of the given labels, or check a yes/no statement. Fast (~0.6s), ' +
+      'dialect-aware. Use to route or triage a message instead of guessing with regex.',
+    tags: ['classification', 'decision'],
+    schema: {
+      text: { type: 'string', description: 'The text to classify' },
+      labels: { type: 'array', description: 'Candidate labels (omit for a yes/no check)' },
+      statement: { type: 'string', description: 'Yes/no statement to check (used when labels are omitted)' },
+    },
+    requiredParams: ['text'],
+    handler: async (params: unknown) => {
+      const p = params as { text: string; labels?: string[]; statement?: string };
+      if (p.labels && p.labels.length > 0) return msCall('classify', { text: p.text, labels: p.labels });
+      return msCall('yes-no', { text: p.text, statement: p.statement ?? '' });
+    },
+  });
+
+  registry.register({
+    name: 'ms_entities',
+    description:
+      'Extract named entities (people, amounts, dates, order ids, cities) from text with ' +
+      'probabilities and character offsets. Multilingual.',
+    tags: ['extraction', 'entities'],
+    schema: {
+      text: { type: 'string', description: 'The text to read entities from' },
+      types: { type: 'array', description: 'Entity types to look for' },
+    },
+    requiredParams: ['text'],
+    handler: async (params: unknown) => {
+      const p = params as { text: string; types?: string[] };
+      return msCall('entities', { text: p.text, types: p.types ?? ['person', 'amount', 'date', 'city', 'order_id'] });
+    },
+  });
+
   registry.register({
     name: 'translate_text',
     description: 'Translate text between 100+ languages, code languages, or protocols',
