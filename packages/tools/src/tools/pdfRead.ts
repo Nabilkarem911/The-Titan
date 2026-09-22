@@ -10,7 +10,7 @@ export async function pdfRead(input: {
   maxChars?: number;
   page?: number;
 }): Promise<{ filePath: string; content: string; truncated: boolean; pages?: number }> {
-  const { filePath, maxChars = 100_000, page } = input;
+  const { filePath, maxChars = 10_000, page } = input;
   log.info({ filePath, page }, 'reading PDF');
 
   try {

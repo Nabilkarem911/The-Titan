@@ -2,10 +2,11 @@ interface HtmlToTextResult {
   text: string;
   length: number;
   wordCount: number;
+  truncated?: boolean;
 }
 
-export async function htmlToText(params: { html: string; preserveNewlines?: boolean }): Promise<HtmlToTextResult> {
-  const { html, preserveNewlines = true } = params;
+export async function htmlToText(params: { html: string; preserveNewlines?: boolean; maxChars?: number }): Promise<HtmlToTextResult> {
+  const { html, preserveNewlines = true, maxChars = 8_000 } = params;
 
   if (!html) throw new Error('html is required');
 
@@ -44,5 +45,9 @@ export async function htmlToText(params: { html: string; preserveNewlines?: bool
 
   const wordCount = text.split(/\s+/).filter(Boolean).length;
 
-  return { text, length: text.length, wordCount };
+  // سقف المخرج: صفحة كاملة كنص = قنبلة توكنات في السياق
+  const truncated = text.length > maxChars;
+  const out = truncated ? text.substring(0, maxChars) : text;
+
+  return { text: out, length: out.length, wordCount, truncated };
 }
